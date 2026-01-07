@@ -18,7 +18,9 @@
     "containerEnv": {
         "JUPYTER_PORT": "8888",
         "RESTARTABLE": "yes",
+        "ACL2_LISP": "sbcl",
         "ACL2_HOME": "/workspaces/acl2",
-        "ACL2_SYSTEM_BOOKS": "/workspaces/acl2/books"
+        "ACL2_SYSTEM_BOOKS": "/workspaces/acl2/books",
+        "CERT_PL_RM_OUTFILES": "1"
     }
 }

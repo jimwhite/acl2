@@ -100,15 +100,18 @@ RUN mkdir /root/sbcl \
 # COPY archlinux-cl/make-rc /usr/local/bin/make-rc
 # COPY archlinux-cl/lisp /usr/local/bin/lisp
 
-ENV LISP="sbcl"
-
-ARG ACL2_BUILD_OPTS=""
-ARG ACL2_CERTIFY_OPTS="-j 6"
-ARG ACL2_CERTIFY_TARGETS="basic"
+# ARG ACL2_BUILD_OPTS=""
+# ARG ACL2_CERTIFY_OPTS="-j 6"
+# ARG ACL2_CERTIFY_TARGETS="basic"
 # The ACL2 Bridge and such for Jupyter need everything.
 # ARG ACL2_CERTIFY_TARGETS="all acl2s centaur/bridge"
-ENV CERT_PL_RM_OUTFILES="1"
+# ENV CERT_PL_RM_OUTFILES="1"
+
+COPY quicklisp.lisp quicklisp.lisp
 
 RUN chown -R ${USER}:users ${HOME}
 
 USER ${USER}
+
+RUN sbcl --non-interactive --load quicklisp.lisp \
+      --eval "(quicklisp-quickstart:install)" --eval "(ql-util:without-prompting (ql:add-to-init-file))"
