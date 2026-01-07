@@ -1,6 +1,7 @@
 {
     "name": "ACL2 Builder",
-    // "image": "ghcr.io/jimwhite/acl2-jupyter:latest",
+    // "image": "quay.io/jupyter/minimal-notebook:latest",
+    // "image": "ghcr.io/jimwhite/acl2:latest",
     "build": {
         "dockerfile": "../Dockerfile",
         "context": ".."
