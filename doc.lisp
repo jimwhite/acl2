@@ -1625,7 +1625,7 @@ Subtopics
   (START-HERE)
   "General information About ACL2
 
-  This is ACL2 Version 8.6, [copyright] (C) 2025, Regents of the
+  This is ACL2 Version 8.6, [copyright] (C) 2026, Regents of the
   University of Texas, authored by Matt Kaufmann and J Strother
   Moore.
 
@@ -4203,7 +4203,7 @@ Subtopics
       Control radix in which numbers are printed and printing of the radix
 
   [Set-print-case]
-      Control whether symbols are printed in upper case or in lower case
+      Control whether [symbols] are printed in upper case or in lower case
 
   [Set-print-radix]
       Control printing of the radix for numbers
@@ -5954,14 +5954,14 @@ Subtopics
   symbols but [47m+12[0m is a number.  Roughly speaking, when symbols are
   read lower case characters are converted to upper case, so we
   frequently do not distinguish [47mABC[0m from [47mAbc[0m or [47mabc[0m.  Click here (see
-  [Conversion]) for information about case conversion when symbols
-  are read.  However, any character can be used in a symbol, but some
-  characters must be ``escaped'' to allow the Lisp reader to parse
-  the sequence as a symbol.  For example, [47m|Abc|[0m is a symbol whose
-  first character is capitalized and whose remaining characters are
-  in lower case.  [47m|An odd duck|[0m is a symbol containing two #\\Space
-  characters.  See any Common Lisp documentation for the syntactic
-  rules for symbols.
+  [SYMBOLS]) {ICON} (see [A_Tiny_Warning_Sign]) for information about
+  case conversion when symbols are read.  However, any character can
+  be used in a symbol, but some characters must be ``escaped'' to
+  allow the Lisp reader to parse the sequence as a symbol.  For
+  example, [47m|Abc|[0m is a symbol whose first character is capitalized and
+  whose remaining characters are in lower case.  [47m|An odd duck|[0m is a
+  symbol containing two #\\Space characters.  See any Common Lisp
+  documentation for the syntactic rules for symbols.
 
   Technically, a symbol is a special kind of pair consisting of a
   package name (which is a string) and a symbol name (which is also a
@@ -13876,16 +13876,13 @@ Subtopics
 
 Prerequisites
 
-  We assume that you have already downloaded and installed ACL2 as per
-  the ACL2 installation instructions, which you can access from the
-  ACL2 home page, or see [installation].
+  We assume that you have already installed ACL2 as per the
+  [installation-instructions].  In particular, the [community-books]
+  should be present as the [47mbooks/[0m subdirectory of your ACL2
+  distribution.
 
   We assume you know the path to your ACL2 executable.  Typically this
   is a script named [47msaved_acl2[0m in your [47macl2-sources[0m directory.
-
-  We assume the ACL2 [community-books] are installed in the [47mbooks/[0m
-  subdirectory of your ACL2 distribution, as is the case when you
-  have followed the ACL2 [installation] instructions.
 
   The instructions below are suitable for ACL2 and all of its
   experimental extensions, e.g., ACL2(p) and ACL2(r).
@@ -13898,13 +13895,11 @@ Prerequisites
 
 A Basic Build
 
-  Before ACL2 Version 6.4, building the Community Books could take
-  several hours.  Now, the default [47mmake[0m target in [47mbooks/GNUmakefile[0m,
-  called [47mbasic[0m, is much faster --- it excludes many books and
-  certifies only books listed below, which tend to be widely used.
-  [31;1mWARNING[0m: the [47mbasic[0m target of [47mbooks/GNUmakefile[0m is insufficient for
-  validating changes that will go into the [community-books]; for
-  that, use the [47mall[0m target.
+  The default [47mmake[0m target in [47mbooks/GNUmakefile[0m, called [47mbasic[0m, is quite
+  fast --- it excludes many books and certifies only the directories
+  listed below, which tend to be widely used.  [31;1mWARNING[0m: This basic
+  build is insufficient for validating changes that will go into the
+  [community-books]; for that, see [how-to-contribute].
 
     * arithmetic
 
@@ -13923,6 +13918,8 @@ A Basic Build
     * [xdoc] (in part)
 
     * data-structures
+
+    * apply
 
   To certify these books, you should be able to run [47mmake[0m as follows.
   The [47m-j 2[0m part of this command is suitable for a computer with two
@@ -22657,22 +22654,6 @@ See [47m[set-constraint-tracking][0m.")
                                (value-cmp (* 3 4)))
           (NIL 12)
           ACL2 !>")
- (CONVERSION
-  (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
-  "Conversion to Uppercase
-
-  When symbols are read by Common Lisp they are converted to upper
-  case.  Note carefully that this remark applies to the characters in
-  [3msymbols[0m.  The characters in strings are not converted upper case.
-
-  To type a symbol containing lower case characters you can enclose the
-  symbol in vertical bars, as in [47m|AbC|[0m or you can put a ``backslash''
-  before each lower case character you wish to preserve, as in [47mA\\bC[0m.
-  [47m|AbC|[0m and [47mA\\bC[0m are two different ways of writing the same symbol
-  (just like 2/4 and 1/2 are two different ways of writing the same
-  rational and 123 and 0123 are two different ways to write the same
-  natural number).  The symbol has three characters in its name, the
-  middle one of which is a lower case b.")
  (COPYRIGHT
   (ABOUT-ACL2)
   "ACL2 copyright, license, authorship
@@ -22685,7 +22666,7 @@ See [47m[set-constraint-tracking][0m.")
   ACL2 Version 8.6 --- A Computational Logic for Applicative Common
   Lisp
 
-  Copyright (C) 2025, Regents of the University of Texas
+  Copyright (C) 2026, Regents of the University of Texas
 
   This version of ACL2 is a descendant of ACL2 Version 1.9, Copyright
   (C) 1997 Computational Logic, Inc.  See the documentation topic
@@ -37749,13 +37730,16 @@ Subtopics
 
   {IMAGE}
 
+  Click here (see [SYMBOLS]) {ICON} (see [A_Tiny_Warning_Sign]) for an
+  explanation of conversion of symbols to upper case.
+
     ACL2 !>[31;1m(app nil '(x y z))[0m
     (X Y Z)
 
     ACL2 !>[31;1m(app '(1 2 3) '(4 5 6 7))[0m
     (1 2 3 4 5 6 7)
 
-    ACL2 !>[31;1m(app '(a b c d e f g) '(x y z))[0m   ; click here (see [Conversion]) for an explanation
+    ACL2 !>[31;1m(app '(a b c d e f g) '(x y z))[0m
     (A B C D E F G X Y Z)
 
     ACL2 !>[31;1m(app (app '(1 2) '(3 4)) '(5 6))[0m
@@ -42957,10 +42941,10 @@ Example 2
   [47mFmx-cw[0m is a variant of [47mcw[0m: both take the same arguments and have the
   same behavior on well-formed input, and both return [47mnil[0m.  See [cw]
   for documentation on how to use both utilities.  Unlike [47mcw[0m, which
-  has a [guard] of [47mt[0m, [47mfmx-cw[0m has a non-trivial guard that can can
-  catch errors in the use of tilde-directives.  Here is an example of
-  such a guard violation, where the corresponding call of [47mcw[0m would
-  instead cause a hard error.
+  has a [guard] of [47mt[0m, [47mfmx-cw[0m has a non-trivial guard that can catch
+  errors in the use of tilde-directives.  Here is an example of such
+  a guard violation, where the corresponding call of [47mcw[0m would instead
+  cause a hard error.
 
     ACL2 !>(fmx-cw \"Hello ~s0.\" '(world))
 
@@ -58100,7 +58084,8 @@ Subtopics
   (ACL2 ABOUT-ACL2)
   "Installing ACL2
 
-  See the [installation-instructions] for steps to install ACL2.
+  See the [installation-instructions] for steps to install ACL2 on
+  Unix-like systems (Linux, macOS, and FreeBSD).
 
   If you encounter problems installing ACL2, or need more information,
   see [installation-support].
@@ -59035,10 +59020,10 @@ Subtopics
   that would be premature because the imports to the package are
   unknown.  For example, if [47m\"P\"[0m were introduced with
 
-    (defpkg \"P\" '(LISP::X))
+    (defpkg \"P\" '(COMMON-LISP::X))
 
   then in Common Lisp [47m(symbol-package-name (intern \"X\" \"P\"))[0m returns
-  [47m\"LISP\"[0m.
+  [47m\"COMMON-LISP\"[0m.
 
   The obvious restriction on [47mintern[0m is that its second argument be the
   name of a package known to ACL2.  We cannot express such a
@@ -59095,7 +59080,7 @@ Subtopics
 
   For example, suppose [47m\"MY-PKG\"[0m was created by
 
-    (defpkg \"MY-PKG\" '(ACL2::ABC LISP::CAR)).
+    (defpkg \"MY-PKG\" '(ACL2::ABC COMMON-LISP::CAR)).
 
   Let [47mw[0m be [47m'my-pkg::witness[0m.  Observe that
 
@@ -59114,7 +59099,7 @@ Subtopics
 
     (intern-in-package-of-symbol \"ABC\" w) is ACL2::ABC
 
-    (intern-in-package-of-symbol \"CAR\" w) is LISP::CAR
+    (intern-in-package-of-symbol \"CAR\" w) is COMMON-LISP::CAR (i.e., ACL2::CAR)
 
     (intern-in-package-of-symbol \"car\" w) is MY-PKG::|car|")
  (INTERRUPTS (POINTERS)
@@ -63735,7 +63720,7 @@ Subtopics
       Control radix in which numbers are printed and printing of the radix
 
   [Set-print-case]
-      Control whether symbols are printed in upper case or in lower case
+      Control whether [symbols] are printed in upper case or in lower case
 
   [Set-print-radix]
       Control printing of the radix for numbers
@@ -112274,9 +112259,6 @@ Subtopics
   [Common_Lisp_as_a_Modeling_Language]
       Common Lisp as a Modeling Language
 
-  [Conversion]
-      Conversion to Uppercase
-
   [Corroborating_Models]
       Corroborating Models
 
@@ -114022,9 +114004,11 @@ Implementation
   imported into [47mpkg[0m, which should be the name of a package known to
   ACL2.  For example, suppose [47m\"MY-PKG\"[0m was created by
 
-    (defpkg \"MY-PKG\" '(ACL2::ABC LISP::CAR)).
+    (defpkg \"MY-PKG\" '(ACL2::ABC COMMON-LISP::CAR)).
 
-  Then [47m(pkg-imports \"MY-PKG\")[0m equals the list [47m(ACL2::ABC LISP::CAR)[0m.
+  Then [47m(pkg-imports \"MY-PKG\")[0m equals the list [47m(ACL2::ABC
+  COMMON-LISP::CAR)[0m.  Note that [47mCOMMON-LISP::CAR[0m is the same as
+  [47mACL2::CAR[0m, which is printed as just [47mCAR[0m.
 
   If [47mpkg[0m is not a string, then [47m(pkg-imports pkg)[0m is [47mnil[0m.  If [47mpkg[0m is a
   string but not the name of a package known to ACL2, then the value
@@ -118438,11 +118422,12 @@ Subtopics
   [31;1mQ[0m: How did [47mrev[0m change the case of the elements, e.g., lowercase [47ma[0m was
   in the input list but uppercase [47mA[0m was in the output?  [31;1mA[0m: This is a
   trick question.  [47mRev[0m doesn't change the case of the elements.  ACL2
-  is case-insensitive when dealing with symbols.  The symbol [47ma[0m is
-  read in as the symbol [47mA[0m.  Thus, when writing function names, for
-  example, we can write [47mrev[0m, [47mRev[0m, [47mREV[0m, or even [47mReV[0m and always be
-  referring to the function [47mREV[0m.  By default, ACL2 prints symbols in
-  uppercase.
+  typically converts to upper case when reading symbols (see
+  [symbols] {ICON} (see [A_Tiny_Warning_Sign]) for details).  The
+  symbol [47ma[0m is read in as the symbol [47mA[0m.  Thus, when writing function
+  names, for example, we can write [47mrev[0m, [47mRev[0m, [47mREV[0m, or even [47mReV[0m and
+  always be referring to the function [47mREV[0m.  By default, ACL2 prints
+  symbols in uppercase.
 
   [31;1mQ[0m: What does [47m(rev '((a b c) \"Abc\" \"a\" b #\\c))[0m return?  [31;1mA[0m: [47m(#\\c B \"a\"
   \"Abc\" (A B C))[0m.  If you thought the answer was either of these,
@@ -122923,23 +122908,111 @@ Subtopics
   (RECURSION-AND-INDUCTION)
   "Recursion and Induction: Abbreviations for Terms
 
-  If [3mx[0m  is [47mt[0m, [47mnil[0m, an integer, a character object, or a string, and [3mx[0m
-  is used where a term is expected, then [3mx[0m  abbreviates the quoted
-  constant [47m'[0m[3mx[0m.  Recall that a single quote mark followed by a symbol,
-  e.g., [47m'load[0m, is a quoted constant.
+  Recall that a term is a variable symbol, a quoted constant, or a
+  function application written as a sequence, enclosed in
+  parentheses, consisting of a function symbol of arity [3mn[0m  followed
+  by [3mn[0m  terms.  See Terms (see [R-AND-I-TERMS]).  However, we
+  implement certain conventions that allow terms to be abbreviated.
+  The conventions allow case to be ignored (when writing symbols),
+  certain constants to be written without being quoted, and certain
+  primitive functions to be given more arguments than their arity
+  implies.  The ACL2 implementation also supports a powerful macro
+  facility inherited from Lisp, but we do not discuss macros in this
+  course.
 
-  In the following, an [3mexpression[0m  is an integer, a character object,
-  a string, a symbol, an optionally dotted parenthesized sequence of
+  When input is being read in and parsed into lexical tokens, the
+  characters in tokens parsed as Lisp symbols are converted to upper
+  case.  Thus, the following are three different ways to type in the
+  same symbol: [47mNIL[0m, [47mNil[0m, and [47mnil[0m.  Similarly, [47m(cons 'e x)[0m and [47m(Cons
+  'E x)[0m are both read the same way as [47m(CONS 'E X)[0m.  It may seem
+  strange to have different ways to write the same symbol but you're
+  very familiar with the similar conventions applied to numbers: 123,
+  +123, and 0123 are three different ways to write the same integer.
+  If you wish to type a symbol whose name includes lower case
+  characters you must surround the whole symbol with vertical bars.
+  E.g., [47m|nil|[0m is a different symbol than [47mnil[0m.  But in this course we
+  do not use symbols whose names include lower case characters.
+
+  The conversion to upper case only happens when parsing symbols.
+  Strings and character objects are not automatically converted to
+  upper case.  Thus, [47m\"NIL\"[0m, [47m\"Nil\"[0m and [47m\"nil\"[0m are three different
+  strings, and [47m#\\a[0m is a different character object than [47m#\\A[0m.
+
+  In this document, when we write symbols we generally write them in
+  lower case typewriter font, e.g., [47mnil[0m, and we capitalize them when
+  used as the first word of a sentence, e.g., [47mNil[0m. Occasionally we
+  write them in all upper case, e.g., [47mNIL[0m, to emphasize that
+  particular symbol or to further distinguish the symbol from a
+  nearby English word with the same spelling, as in the sentence
+  ``[47mAND[0m and [47mOR[0m denote conjunction and disjunction.'' But regardless
+  of the case we use --- whether lower case, captialized, or upper
+  case --- we are referring to the same upper case symbol.
+
+  The next convention allows you to drop the single quote mark on
+  certain constants.  The definition of a term requires constants to
+  be quoted.  E.g., since [47mevenp[0m is a function symbol of arity 1,
+  [47m(evenp '3)[0m is a term but [47m(evenp 3)[0m is not because [47m3[0m is neither a
+  variable symbol, a [3mquoted[0m  constant, or a function application.
+  But we accept the latter as an abbreviation of the former because
+  what else could it mean?  To see that ambiguity is lurking if quote
+  marks are dropped, consider [47m(member 'e '(a b c))[0m, where [47mmember[0m is a
+  function symbol of arity 2.  What happens if we drop either or both
+  of the quote marks?  Then we might still get a term that means
+  something completely different.  Here, the function [47mmember[0m means
+  ``is the first argument an element of the second?''
+
+    * [47m(member 'e '(a b c))[0m: is the constant symbol [47me[0m an element of the
+      constant list [47m(a b c)[0m?
+
+    * [47m(member e '(a b c))[0m: is the value of the variable [47me[0m an element of the
+      constant list [47m(a b c)[0m?
+
+    * [47m(member 'e (a b c))[0m: is the constant symbol [47me[0m an element of the list
+      computed by applying the function [47ma[0m to the values of variables
+      [47mb[0m and [47mc[0m?
+
+    * [47m(member e (a b c))[0m: is the value of the variable [47me[0m an element of the
+      list computed by applying the function [47ma[0m to the values of
+      variables [47mb[0m and [47mc[0m?
+
+  Meaning changes if quote marks are dropped from symbols and lists.
+  When the symbol [47me[0m is quoted in a term it denotes the constant [47me[0m;
+  when [47me[0m is not quoted it is a variable symbol and takes on whatever
+  value that variable has been assigned in the environment.
+  Similarly, when a list is quoted it denotes that list constant;
+  when it is not quoted it denotes the application of its first
+  element to the values of the other elements.
+
+  But unquoted numbers, character objects, and strings used as terms
+  cannot be confused with variable symbols or function applications,
+  so by convention they just abbreviate their own quotations.
+
+  More precisely, the quote convention for atomic objects is as
+  follows: If [3mx[0m  is the symbol [47mT[0m, the symbol [47mNIL[0m, an integer, a
+  character object, or a string, and [3mx[0m  is used where a term is
+  expected, then [3mx[0m  abbreviates the quoted constant [47m'[0m[3mx[0m.
+
+  Next we deal with quoted parenthesized expressions.  In the
+  following, an [3mexpression[0m  is an integer, a character object, a
+  string, a symbol, an optionally dotted parenthesized sequence of
   expressions, or a single quote mark followed by an expression.  By
   [3moptionally dotted parenthesized sequence of expressions[0m we mean a
   parenthesized non-empty sequence of expressions, optionally
   containing a dot (.) between the last two expressions in the
-  sequence.  For example ``[47m(A 123 . B)[0m'' and ``[47m(A (123 B) 'C)[0m'' are
-  both optionally dotted parenthesized sequences of expressions.
+  sequence.  For example ``[47m(A 123 B)[0m'' and ``[47m(A 123 . B)[0m'' are both
+  optionally dotted parenthesized sequences of expressions.  (There's
+  no dot in the first expression; the dot in the second one changes
+  the meaning.)
 
-  A single quote mark followed by an optionally dotted parenthesized
-  sequence of expressions, when used as a term, denotes a [47mcons[0m term
-  as follows, using these four rules:
+  We'll be precise in a moment, but [47m'(A 123 B)[0m is an abbreviation for
+  [47m(cons 'A (cons '123 (cons 'B 'nil)))[0m, which could also be written
+  [47m(cons 'A (cons 123 (cons 'B nil)))[0m.  Meanwhile, [47m'(A 123 . B)[0m is an
+  abbreviation for [47m(cons 'A (cons '123 'B))[0m which could also be
+  written [47m(cons 'A (cons 123 'B))[0m.
+
+  More generally, a single quote mark followed by an optionally dotted
+  parenthesized sequence of expressions, when used as a term, denotes
+  a [47mcons[0m term as follows, using these four rules:
 
   [3mNULL Rule:[0m  If '() is used as a term, it abbreviates [47m'nil[0m.
 
@@ -122959,10 +123032,13 @@ Subtopics
 
   If [47m'(A B . C)[0m is used as a term it denotes [47m(cons 'A (cons 'B 'C))[0m.
 
-  It remains to deal with cases like [47m'[0m[47m'A[0m and [47m'[0m[47m'(A 'B)[0m involving
-  multiple single quote marks.  We do not expect to use such
-  expressions in this course but we specify their meaning just for
-  completeness.
+  It remains to deal with cases like [47m'[0m[47m'A[0m and [47m'[0m[47m'(A 'B)[0m involving nested
+  single quote marks.  Expressions involving nested single quote
+  marks will not arise in this course.  But we specify their meaning
+  for completeness.
+
+  [3mYou may consider the following paragraph and the subsequent example
+  as optional![0m
 
   Let [3m\\alpha[0m  be an expression that does not start with a single quote
   mark.  Consider a sequence of two or more single quote marks
@@ -122989,19 +123065,20 @@ Subtopics
   Note that every occurrence of single quote now marks a quoted
   constant.
 
+  [3mEnd of optional material.[0m
+
   When [47m(list [3mx_1[0m[47m   ... )[0m is used as a term, it abbreviates [47m(cons [3mx_1[0m[47m
   (list  ... ))[0m.  When [47m(list)[0m is used as a term, it abbreviates [47mnil[0m.
   Thus [47m(list a b c)[0m abbreviates [47m(cons a (cons b (cons c nil)))[0m.
 
-  [47mAnd[0m and [47mor[0m will be defined as function symbols of two arguments.
-  But if [47mand[0m is used as though it were a function symbol of more than
-  two arguments, then it abbreviates the corresponding
-  right-associated nest of [47mand[0ms.  Thus, [47m(and p q r s)[0m, when used
-  where a term is expected, abbreviates [47m(and p (and q (and r s)))[0m.
-
-  If [47mor[0m is used as though it were a function symbol of more than two
-  arguments, then it abbreviates the corresponding right-associated
-  nest of [47mor[0ms.
+  For the purposes of this course you may imagine that [47mAND[0m and [47mOR[0m are
+  defined as function symbols of two arguments.  But we use them as
+  though they were function symbols of varying numbers of argument.
+  When [47mAND[0m and [47mOR[0m are provided more than two arguments it just
+  abbreviates the corresponding right-associated nest.  Thus, [47m(and p
+  q r s)[0m, when used where a term is expected, abbreviates [47m(and p (and
+  q (and r s)))[0m.  In the actual ACL2 implementation, [47mAND[0m and [47mOR[0m are
+  ``macros.''
 
   (Maybe explore term abbreviation in ACL2?  But abbreviation is
   complicated in ACL2 by the presence of a powerful macro facility.
@@ -126002,14 +126079,15 @@ Recursion and Induction Table of Contents
 
   For the purposes of this document, a [3mterm[0m  is a variable symbol, a
   quoted constant, or a function application written as a sequence,
-  enclosed in parenthesis, consisting of a function symbol of arity [3mn[0m
+  enclosed in parentheses, consisting of a function symbol of arity [3mn[0m
   followed by [3mn[0m  terms.
 
   Since [47mcar[0m is a function symbol of arity one and [47mcons[0m is a function
-  symbol of arity two, then [47m(cons (car x) y)[0m is a term.  In more
-  conventional notation this term would be written [3mcons[0m ([3mcar[0m ([3mx[0m ), [3my[0m
-  ).  We call [47m(car x)[0m and [47my[0m the [3mactual expressions[0m  or [3mactuals[0m  of
-  the [3mfunction call[0m  [47m(cons (car x) y)[0m.
+  symbol of arity two, and [47mx[0m and [47my[0m are variable symbols, then [47m(cons
+  (car x) y)[0m is a term.  In more conventional notation this term
+  would be written [3mcons[0m ([3mcar[0m ([3mx[0m ), [3my[0m ).  We call [47m(car x)[0m and [47my[0m the
+  [3mactual expressions[0m  or [3mactuals[0m  of the [3mfunction call[0m  [47m(cons (car x)
+  y)[0m.
 
   Semantically, terms are interpreted with respect to (i) an
   assignment binding variable symbols to constants and (ii) an
@@ -126854,7 +126932,7 @@ Summary documentation
   be violated, and some of these errors are shown below.
 
   Note that ACL2 characters always fit into a single byte, which is why
-  we can can talk about ``bytes''.
+  we can talk about ``bytes''.
 
   Compared with the usual [io] routines provided by ACL2,
   [47mread-file-into-string[0m is generally much more efficient, and also it
@@ -138318,13 +138396,13 @@ Example
     (25 25/3)
     ACL2 !>")
  (SET-PRINT-CASE
-  (IO ACL2-BUILT-INS)
-  "Control whether symbols are printed in upper case or in lower case
+  (IO ACL2-BUILT-INS SYMBOLS)
+  "Control whether [symbols] are printed in upper case or in lower case
 
-  By default, symbols are printed in upper case when vertical bars are
-  not required, as specified by Common Lisp.  As with Common Lisp,
-  ACL2 supports printing in a \"downcase\" mode, where symbols are
-  printed in lower case.  Many printing functions (some details
+  By default, [symbols] are printed in upper case when vertical bars
+  are not required, as specified by Common Lisp.  As with Common
+  Lisp, ACL2 supports printing in a \"downcase\" mode, where symbols
+  are printed in lower case.  Many printing functions (some details
   below) print characters in lower case for a symbol when the ACL2
   [state] global variable [47mprint-case[0m has value [47m:downcase[0m and vertical
   bars are not necessary for printing that symbol.  (Thus, this state
@@ -142589,9 +142667,9 @@ Subtopics
 
     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-    +   built January 14, 2025  10:09:28.                                  +
-    +   (Git commit hash: 89b2701f59f8e561b17121cf0a25cb8d1910377f)        +
-    + Copyright (C) 2025, Regents of the University of Texas.              +
+    +   built January 14, 2026  10:09:28.                                  +
+    +   (Git commit hash: 1234567890abcdefghijklmnopqrstuvwxyz!@#$)        +
+    + Copyright (C) 2026, Regents of the University of Texas.              +
     + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
     + you are welcome to redistribute it under certain conditions.  For    +
     + details, see the LICENSE file distributed with ACL2.                 +
@@ -142605,10 +142683,10 @@ Subtopics
 
     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
     + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-    +   built January 14, 2025  09:56:49.                                  +
+    +   built January 14, 2026  09:56:49.                                  +
     +   (Note from the environment when this executable was saved:         +
     +    This is my private executable.)                                   +
-    + Copyright (C) 2025, Regents of the University of Texas.              +
+    + Copyright (C) 2026, Regents of the University of Texas.              +
     + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
     + you are welcome to redistribute it under certain conditions.  For    +
     + details, see the LICENSE file distributed with ACL2.                 +
@@ -146274,11 +146352,20 @@ Subtopics
   has two components: its name (see [symbol-name]) and its package
   name (see [symbol-package-name]).
 
-  Note that ACL2 is case-insensitive when dealing with symbols.  The
-  symbol [47ma[0m is read in as the symbol [47mA[0m.  Thus, when writing function
-  names, for example, we can write [47mrev[0m, [47mRev[0m, [47mREV[0m, or even [47mReV[0m and
-  always be referring to the function [47mREV[0m.  By default, ACL2 prints
-  symbols in uppercase.
+  When symbols are read by Common Lisp or ACL2, they are converted to
+  upper case.  Note carefully that this remark applies to the
+  characters in [3msymbols[0m.  The characters in strings are not converted
+  to upper case.
+
+  To type a symbol containing lower case characters you can enclose the
+  symbol in vertical bars, as in [47m|AbC|[0m, or you can put a
+  ``backslash'' before each lower case character you wish to
+  preserve, as in [47mA\\bC[0m.  [47m|AbC|[0m and [47mA\\bC[0m are two different ways of
+  writing the same symbol (just like 2/4 and 1/2 are two different
+  ways of writing the same rational and 123 and 0123 are two
+  different ways to write the same natural number).  The symbol has
+  three characters in its name, the middle one of which is a lower
+  case b.
 
 
 Subtopics
@@ -146294,6 +146381,9 @@ Subtopics
 
   [Packn-pos]
       Build a symbol in a specified package from a list
+
+  [Set-print-case]
+      Control whether [symbols] are printed in upper case or in lower case
 
   [Symbol-listp]
       Recognizer for a true list of symbols
