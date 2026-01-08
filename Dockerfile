@@ -3,7 +3,7 @@ ARG BASE_IMAGE=quay.io/jupyter/minimal-notebook:latest
 FROM ${BASE_IMAGE}
 LABEL org.opencontainers.image.source="https://github.com/jimwhite/acl2"
 LABEL org.opencontainers.image.description="A Docker image for building the ACL2 theorem proving system and books in JupyterLab"
-LABEL org.opencontainers.image.licenses=MIT
+LABEL org.opencontainers.image.licenses=BSD-3-Clause
 
 ARG SBCL_VERSION=2.5.11
 
@@ -83,18 +83,18 @@ RUN mkdir /root/sbcl \
     && cd /root \
     && rm -R /root/sbcl
 
-# # Include Z3
-# # Do we get everything with pip? pip install z3-solver
-# RUN mkdir /root/z3 \
-#     && cd /root/z3 \
-#     && wget "https://github.com/Z3Prover/z3/archive/refs/tags/z3-${Z3_VERSION}.tar.gz" -O z3.tar.gz -q \
-#     && tar -xzf z3.tar.gz --strip-components=1 \
-#     && ./configure \
-#     && cd build \
-#     && make -j$(nproc) \
-#     && make install \
-#     && cd /root \
-#     && rm -R /root/z3
+# Include Z3
+# Do we get everything with pip? pip install z3-solver
+RUN mkdir /root/z3 \
+    && cd /root/z3 \
+    && wget "https://github.com/Z3Prover/z3/archive/refs/tags/z3-${Z3_VERSION}.tar.gz" -O z3.tar.gz -q \
+    && tar -xzf z3.tar.gz --strip-components=1 \
+    && ./configure \
+    && cd build \
+    && make -j$(nproc) \
+    && make install \
+    && cd /root \
+    && rm -R /root/z3
 
 # COPY archlinux-cl/asdf-add /usr/local/bin/asdf-add
 # COPY archlinux-cl/make-rc /usr/local/bin/make-rc
