@@ -8,5 +8,8 @@ if [[ ! -f "$INPUT_FILE" ]]; then
     exit 1
 fi
 
-# Extract .cert paths from error lines and convert to .cert.out
-grep -oP '(?<=: )[^ ]+\.cert(?=\] Error)' "$INPUT_FILE" | sed 's/\.cert$/.cert.out/'
+# Get the directory of the input file
+INPUT_DIR="$(cd "$(dirname "$INPUT_FILE")" && pwd)"
+
+# Extract .cert paths from error lines and convert to full .cert.out paths
+grep -oP '(?<=: )[^ ]+\.cert(?=\] Error)' "$INPUT_FILE" | sed "s|^|$INPUT_DIR/|; s/\.cert$/.cert.out/"
