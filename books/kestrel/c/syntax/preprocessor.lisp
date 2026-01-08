@@ -812,7 +812,7 @@
      (xdoc::p
       "Otherwise, we create a local preprocessing state stobj from
        the bytes of the file,
-       the recursion limit,
+       a file recursion limit of 200 (consistent with GCC),
        the macro table
        (which @(tsee init-ppstate) extends with a new empty scope for the file),
        and the implementation environment.
@@ -849,7 +849,7 @@
             (mv-let (erp rev-lexemes macros ppstate preprocessed state)
                 (b* ((ppstate
                       (init-ppstate bytes
-                                    limit
+                                    200
                                     (macro-table-fix macros)
                                     ienv
                                     ppstate))
@@ -1205,8 +1205,13 @@
        and we call @(tsee pproc-file) to preprocess it.
        If the call returns @(':not-self-contained') as @('erp'),
        the included file is not self-contained,
-       and we need to expand it in place.
-       If the call returns some other error, we pass it up to the caller.
+       and we need to expand it in place:
+       we put any unread character back into the current input bytes
+       (see documentation of @(tsee unread-char-to-bytes)),
+       and we store the bytes from the file into the stobj
+       (see documentation of @(tsee ppstate-add-bytes)).
+       If the call of @(tsee pproc-file) returns some other error,
+       we pass it up to the caller.
        If the call returns no error,
        we leave the @('#include') directive as is.
        More precisely, the resulting @('#include') directive
@@ -1275,8 +1280,12 @@
                           state
                           (1- limit)))
              ((when (eq erp :not-self-contained))
-              (reterr
-               (msg "Non-self-contained #include not yet supported."))) ; TODO
+              (b* ((ppstate (unread-char-to-bytes ppstate))
+                   ((erp ppstate) (ppstate-add-bytes bytes ppstate)))
+                (retok (plexeme-list-fix rev-lexemes)
+                       ppstate
+                       (string-scfile-alist-fix preprocessed)
+                       state)))
              ((when erp) (reterr erp))
              (ppstate (update-ppstate->macros
                        (macro-table-extend-top
@@ -1323,7 +1332,8 @@
     (xdoc::topstring
      (xdoc::p
       "That is, preprocess a line that does not start with a hash
-       (possibly after some white space and comments).
+       (possibly after some white space and comments,
+       which are passed as the @('nontoknls') input to this function).
        This is called after putting back the first token of the line,
        but without having put back any leading white space or comments,
        since those do not matter for the purpose of preprocessing the text line.
@@ -1351,10 +1361,8 @@
   :verify-guards :after-returns
 
   :guard-hints
-  (("Goal"
-    :in-theory
-    (enable alistp-when-string-scfile-alistp-rewrite
-            true-listp-when-plexeme-listp))))
+  (("Goal" :in-theory (enable alistp-when-string-scfile-alistp-rewrite
+                              true-listp-when-plexeme-listp))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

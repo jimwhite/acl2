@@ -109554,6 +109554,13 @@ it."
  (assert-event (equal (fld st) nil))
  })
 
+ <p>We fixed a low-level bug in @(tsee include-book), which we have only
+ observed using ACL2 built on host Lisp SBCL with safety 3 (an optimization
+ setting that causes more runtime checks at the cost of longer run times).
+ (Technical note: The bug was in bogus type declarations in the definition of
+ ACL2 source macro @('with-hcomp-bindings').)  Thanks to Jim White for
+ reporting the bug.</p>
+
  <h3>Changes at the System Level</h3>
 
  <p>Modifications have been made that allow ACL2 to be hosted on GCL Version
