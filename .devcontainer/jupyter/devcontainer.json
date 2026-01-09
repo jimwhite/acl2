@@ -16,6 +16,7 @@
         }
     },
     "containerEnv": {
+        "USER": "jovyan",
         "JUPYTER_PORT": "8888",
         "RESTARTABLE": "yes",
         "ACL2_LISP": "sbcl",
