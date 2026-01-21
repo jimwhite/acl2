@@ -13913,7 +13913,7 @@ A Basic Build
 
     * tools (mostly)
 
-    * [std]
+    * [std] (mostly)
 
     * [xdoc] (in part)
 

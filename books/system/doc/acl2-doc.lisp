@@ -10978,7 +10978,7 @@ way to split up large ACL2 developments into separate modules."
  <li>@(see ihs)</li>
  <li>misc</li>
  <li>tools (mostly)</li>
- <li>@(see std)</li>
+ <li>@(see std) (mostly)</li>
  <li>@(see xdoc) (in part)</li>
  <li>data-structures</li>
  <li>apply</li>

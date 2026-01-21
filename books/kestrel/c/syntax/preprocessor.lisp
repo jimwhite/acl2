@@ -10,6 +10,8 @@
 
 (in-package "C$")
 
+(include-book "preprocessor-lexemes")
+(include-book "macro-tables")
 (include-book "preprocessor-states")
 (include-book "preprocessor-messages")
 (include-book "preprocessor-reader")
@@ -21,6 +23,7 @@
 (include-book "std/strings/strpos" :dir :system)
 (include-book "std/strings/strrpos" :dir :system)
 
+(local (include-book "kestrel/lists-light/subsetp-equal" :dir :system))
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 (local (include-book "std/alists/top" :dir :system))
@@ -116,7 +119,9 @@
      At some point we should integrate the preprocessor with the parser.")
    (xdoc::p
     "This preprocessor is still work in progress."))
-  :order-subtopics (preprocessor-states
+  :order-subtopics (preprocessor-lexemes
+                    macro-tables
+                    preprocessor-states
                     preprocessor-messages
                     preprocessor-reader
                     preprocessor-lexer
@@ -318,7 +323,7 @@
      We capture these different modes of operations via this fixtype:")
    (xdoc::ul
     (xdoc::li
-     "The @(':line') mode is for text lines (see ABNF grammar),
+     "The @(':text') mode is for text lines (see ABNF grammar),
       as well as for the rest of the lines of certain directives.
       The stopping criterion is the end of the line,
       and macro replacement is the normal one.")
@@ -620,8 +625,8 @@
        ((when erp)
         (reterr (msg "Cannot read file ~x0." included-file-path))))
     (retok resolved-included-file bytes state))
-  :guard-hints (("Goal" :in-theory (enable length string-append)))
   :no-function nil
+  :guard-hints (("Goal" :in-theory (enable length string-append)))
   :hooks nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -786,7 +791,7 @@
     (plexeme-list-not-token/newline-p nontoknls))
 
   (defret plexeme-token/newline-p-of-read-token/newline
-    (implies token?
+    (implies toknl?
              (plexeme-token/newline-p toknl?)))
 
   (defret ppstate->size-of-read-token/newline-uncond
@@ -841,6 +846,424 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define read-macro-params ((ppstate ppstatep))
+  :returns (mv erp
+               (params ident-listp)
+               (ellipsis booleanp)
+               (new-ppstate ppstatep))
+  :short "Read the parameters of a function-like macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after reading the left parenthesis,
+     and it consumes the right parenthesis if successful.
+     If successful, this function returns the list of named parameters,
+     and a boolean indicating whether there is an ellipsis parameter or not.")
+   (xdoc::p
+    "We could not find, in [C17], any particular prohibition
+     on the identifiers used as named parameters.
+     Clang even accepts @('__VA_ARGS__'),
+     regardless of whether the macro has ellipsis or not;
+     if it has ellipsis,
+     the @('__VA_ARGS__') used as named parameter takes precedence,
+     in the sense that, when the macro is instantiated,
+     all the occurrences of @('__VA_ARGS__') in the macro's replacement list
+     are replaced with the argument for the named parameter @('__VA_ARGS__'),
+     and not with the argument(s) for the ellipsis parameter.
+     However, for now we prefer to prohibit @('__VA_ARGS__')
+     as a named parameter, in case [C17] somehow intends that.")
+   (xdoc::p
+    "We read the next token or new line, skipping white space and comments.
+     If we find a right parenthesis, there are no parameters.
+     If we find an ellipsis, that is the only parameter;
+     we ensure there is a right parenthesis just after, consuming it.
+     If we find an identifier, it is the first named parameter;
+     we use an auxiliary recursive function to read any following parameters,
+     which consumes the right parenthesis,
+     and we combine those with the first parameter.")
+   (xdoc::p
+    "We also ensure that the parameters have distinct names [C17:6.10.3/6]."))
+  (b* ((ppstate (ppstate-fix ppstate)) ; # define name (
+       ((reterr) nil nil ppstate)
+       ((erp & token span ppstate) (read-token/newline ppstate)))
+    (cond
+     ((and token ; # define name ( )
+           (plexeme-punctuatorp token ")"))
+      (retok nil nil ppstate))
+     ((and token ; # define name ( ...
+           (plexeme-punctuatorp token "..."))
+      (b* (((erp & token2 span2 ppstate) (read-token/newline ppstate))
+           ((unless (and token2 ; # define name ( ... )
+                         (plexeme-punctuatorp token2 ")")))
+            (reterr-msg :where (position-to-msg (span->start span2))
+                        :expected "a right parenthesis"
+                        :found (plexeme-to-msg token2))))
+        (retok nil t ppstate)))
+     ((and token
+           (plexeme-case token :ident)) ; # define name ( param
+      (b* ((param (plexeme-ident->ident token))
+           ((when (equal param (ident "__VA_ARGS__")))
+            (reterr (msg "Disallowed macro parameter '__VA_ARGS__' at ~x0."
+                         (span-to-msg span))))
+           ((erp params ellipsis ppstate) ; # define ( params[...] )
+            (read-macro-params-rest ppstate))
+           ((when (member-equal param params))
+            (reterr (msg "Duplicate macro parameter ~x0 at ~x1."
+                         param (span-to-msg span)))))
+        (retok (cons param params) ellipsis ppstate)))
+     (t ; # define name ( EOF/other
+      (reterr-msg :where (position-to-msg (span->start span))
+                  :expected "a right parenthesis or ~
+                             an ellipsis or ~
+                             an identifer"
+                  :found (plexeme-to-msg token)))))
+  :no-function nil
+  :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp)))
+
+  :prepwork
+  ((define read-macro-params-rest ((ppstate ppstatep))
+     :returns (mv erp
+                  (params ident-listp)
+                  (ellipsis booleanp)
+                  (new-ppstate ppstatep))
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate)) ; # define name ( 1stparam
+          ((reterr) nil nil ppstate)
+          ((erp & token span ppstate) (read-token/newline ppstate)))
+       (cond
+        ((and token ; # define name ( 1stparam ,
+              (plexeme-punctuatorp token ","))
+         (b* (((erp & token2 span2 ppstate) (read-token/newline ppstate)))
+           (cond
+            ((and token2 ; # define name ( 1stparam , ...
+                  (plexeme-punctuatorp token2 "..."))
+             (b* (((erp & token3 span3 ppstate) (read-token/newline ppstate))
+                  ((unless (and token3 ; # define name ( 1stparam , ... )
+                                (plexeme-punctuatorp token3 ")")))
+                   (reterr-msg :where (position-to-msg (span->start span3))
+                               :expected "a right parenthesis"
+                               :found (plexeme-to-msg token2))))
+               (retok nil t ppstate)))
+            ((and token2 ; # define name ( 1stparam , param
+                  (plexeme-case token2 :ident))
+             (b* ((param (plexeme-ident->ident token2))
+                  ((when (equal param (ident "__VA_ARGS__")))
+                   (reterr (msg "Disallowed macro parameter ~
+                                 '__VA_ARGS__' at ~x0."
+                                (span-to-msg span2))))
+                  ((erp params ellipsis ppstate)
+                   (read-macro-params-rest ppstate))
+                  ;; # define name ( 1stparam , param params[...] )
+                  ((when (member-equal param params))
+                   (reterr (msg "Duplicate macro parameter ~x0 at ~x1."
+                                param (span-to-msg span2)))))
+               (retok (cons param params) ellipsis ppstate)))
+            (t ; # define name ( 1stparam , EOF/other
+             (reterr-msg :where (position-to-msg (span->start span2))
+                         :expected "an ellipsis or an identifier"
+                         :found (plexeme-to-msg token2))))))
+        ((and token ; # define name ( 1stparam )
+              (plexeme-punctuatorp token ")"))
+         (retok nil nil ppstate))
+        (t ; # define name ( 1stparam EOF/other
+         (reterr-msg :where (position-to-msg (span->start span))
+                     :expected "a comma or a right parenthesis"
+                     :found (plexeme-to-msg token)))))
+     :no-function nil
+     :measure (ppstate->size ppstate)
+     :verify-guards :after-returns
+     :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-macro-object-replist ((name identp) (ppstate ppstatep))
+  :returns (mv erp
+               (replist plexeme-listp)
+               (new-ppstate ppstatep))
+  :short "Read the replacement list of an object-like macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "We go through the lexemes,
+     collecting tokens,
+     normalizing white space and comments to single spaces,
+     and stopping at new line.
+     We use a flag, initially @('t') and then always @('nil'),
+     to exclude any initial white space and comments,
+     which are not part of the replacement list [C17:6.10.3/7].
+     We ensure that @('##') does not occur
+     at the start or end of the replacement list [C17:6.10.3.3/1]."))
+  (b* ((ppstate (ppstate-fix ppstate))
+       ((reterr) nil ppstate)
+       ((erp replist ppstate) (read-macro-object-replist-loop t ppstate))
+       ((when (and (consp replist)
+                   (or (plexeme-hashhashp (car replist))
+                       (plexeme-hashhashp (car (last replist))))))
+        (reterr (msg "The replacement list of ~x0 starts or ends with ##."
+                     (ident-fix name)))))
+    (retok replist ppstate))
+
+  :prepwork
+  ((define read-macro-object-replist-loop ((startp booleanp) (ppstate ppstatep))
+     :returns (mv erp
+                  (replist plexeme-listp)
+                  (new-ppstate ppstatep))
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((reterr) nil ppstate)
+          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
+       (cond
+        ((not toknl) ; EOF
+         (reterr-msg :where (position-to-msg (span->start span))
+                     :expected "a token or ~
+                                a comment or ~
+                                a new line or ~
+                                other white space"
+                     :found (plexeme-to-msg toknl)))
+        ((plexeme-case toknl :newline) ; EOL
+         (retok nil ppstate))
+        (t ; token
+         (b* (((erp replist ppstate) ; token replist
+               (read-macro-object-replist-loop nil ppstate))
+              (replist (cons toknl replist))
+              (replist (if (and nontoknls
+                                (not startp))
+                           (cons (plexeme-spaces 1) replist)
+                         replist)))
+           (retok replist ppstate)))))
+     :no-function nil
+     :measure (ppstate->size ppstate)
+
+     ///
+
+     (defret plexeme-list-token/space-p-of-read-macro-object-replist-loop
+       (plexeme-list-token/space-p replist)
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory (e/d (plexeme-token/space-p
+                          plexeme-tokenp
+                          plexeme-token/newline-p)
+                         (plexeme-token/newline-p-of-read-token/newline)))
+        '(:use plexeme-token/newline-p-of-read-token/newline)))))
+
+  ///
+
+  (defret plexeme-list-token/space-p-of-read-macro-object-replist
+    (plexeme-list-token/space-p replist)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define read-macro-function-replist ((name identp)
+                                     (params ident-listp)
+                                     (ellipsis booleanp)
+                                     (ppstate ppstatep))
+  :returns (mv erp
+               (replist plexeme-listp)
+               (hash-params ident-listp)
+               (new-ppstate ppstatep))
+  :short "Read the replacement list of a function-like macro."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Similarly to @(tsee read-macro-object-replist),
+     we go through the list,
+     collecting tokens,
+     normalizing white space and comments to single spaces,
+     and stopping at new line.
+     We keep track, in the @('previous') input of the recursive function,
+     of the previous token, initially @('nil').
+     We use this for various purposes:")
+   (xdoc::ul
+    (xdoc::li
+     "To determine when a macro parameter
+      is immediately preceded by @('#') or @('##')
+      or immediately followed by @('##'),
+      in which case we add it to the @('hash-params') result.
+      If the macro has an ellipsis parameter,
+      we include @('__VA_ARGS__') in this check against @('#') and @('##').")
+    (xdoc::li
+     "To discard white space and comments before the first token,
+      which are not part of the replacement list [C17:6.10.3/7].")
+    (xdoc::li
+     "To ensure that @('#') is followed by a parameter [C17:6.10.3.1/1],
+      possibly including @('__VA_ARGS__') if the macro has ellipsis.")
+    (xdoc::li
+     "To ensure that @('##') does not occur
+      at the start or end of the replacement list [C17:6.10.3.3/1]."))
+   (xdoc::p
+    "We also ensure that @('__VA_ARGS__') occurs in the replacement list
+     only if the macro has ellipsis."))
+  (read-macro-function-replist-loop name nil params ellipsis ppstate)
+
+  :prepwork
+  ((define read-macro-function-replist-loop ((name identp)
+                                             (previous plexeme-optionp)
+                                             (params ident-listp)
+                                             (ellipsis booleanp)
+                                             (ppstate ppstatep))
+     :returns (mv erp
+                  (replist plexeme-listp)
+                  (hash-params ident-listp)
+                  (new-ppstate ppstatep))
+     :parents nil
+     (b* ((ppstate (ppstate-fix ppstate))
+          ((reterr) nil nil ppstate)
+          ((erp nontoknls toknl span ppstate) (read-token/newline ppstate)))
+       (cond
+        ((not toknl) ; EOF
+         (reterr-msg :where (position-to-msg (span->start span))
+                     :expected "a token or ~
+                                a comment or ~
+                                a new line or ~
+                                other white space"
+                     :found (plexeme-to-msg toknl)))
+        ((plexeme-case toknl :newline) ; EOL
+         (b* (((when (and previous
+                          (plexeme-hashp previous))) ; # EOL
+               (reterr (msg "The replacement list of ~x0 must not end with #."
+                            (ident-fix name))))
+              ((when (and previous
+                          (plexeme-hashhashp previous))) ; ## EOL
+               (reterr (msg "The replacement list of ~x0 must not end with ##."
+                            (ident-fix name)))))
+           (retok nil nil ppstate)))
+        ((plexeme-case toknl :ident) ; ident
+         (b* ((ident (plexeme-ident->ident toknl))
+              ((when (and (equal ident (ident "__VA_ARGS__"))
+                          (not ellipsis)))
+               (reterr (msg "The replacement list of ~x0 ~
+                             must not contain '__VA_ARGS__', ~
+                             because it has no ellipsis."
+                            (ident-fix name))))
+              (paramp (or (member-equal ident (ident-list-fix params))
+                          (and (equal (ident->unwrap ident) "__VA_ARGS__")
+                               ellipsis)))
+              ((when (and previous
+                          (plexeme-hashp previous) ; # ident
+                          (not paramp)))
+               (reterr (msg "The replacement list of ~x0 ~
+                             must not contain a # ~
+                             not immediately followed by a parameter."
+                            (ident-fix name))))
+              ((erp replist hash-params ppstate)
+               (read-macro-function-replist-loop name
+                                                 toknl
+                                                 params
+                                                 ellipsis
+                                                 ppstate))
+              (hash-params
+               (if (and previous
+                        (or (plexeme-hashp previous) ; # ident (PARAMP = T)
+                            (and (plexeme-hashhashp previous) ; ## ident
+                                 paramp)))
+                   (add-to-set-equal ident hash-params)
+                 hash-params))
+              (replist (cons toknl replist))
+              (replist (if (and previous nontoknls)
+                           (cons (plexeme-spaces 1) replist)
+                         replist)))
+           (retok replist hash-params ppstate)))
+        ((plexeme-hashhashp toknl) ; ##
+         (b* (((when (not previous)) ; nothing ##
+               (reterr
+                (msg "The replacement list of ~x0 must not start with ##."
+                     (ident-fix name))))
+              ((when (and previous
+                          (plexeme-hashp previous))) ; # ##
+               (reterr (msg "The replacement list of ~x0 ~
+                             must not contain a # ~
+                             not immediately followed by a parameter."
+                            (ident-fix name))))
+              ((erp replist hash-params ppstate)
+               (read-macro-function-replist-loop name
+                                                 toknl
+                                                 params
+                                                 ellipsis
+                                                 ppstate))
+              (hash-params
+               (if (plexeme-case previous :ident) ; ident ##
+                   (b* ((ident (plexeme-ident->ident previous)))
+                     (if (or (member-equal ident (ident-list-fix params))
+                             (and (equal (ident->unwrap ident) "__VA_ARGS__")
+                                  ellipsis)) ; param ##
+                         (add-to-set-equal ident hash-params)
+                       hash-params))
+                 hash-params))
+              (replist (cons toknl replist))
+              (replist (if nontoknls
+                           (cons (plexeme-spaces 1) replist)
+                         replist)))
+           (retok replist hash-params ppstate)))
+        (t ; other token
+         (b* (((when (and previous
+                          (plexeme-hashp previous))) ; # token
+               (reterr (msg "The replacement list of ~x0 ~
+                             must not contain a # ~
+                             not immediately followed by a parameter."
+                            (ident-fix name))))
+              ((erp replist hash-params ppstate)
+               (read-macro-function-replist-loop name
+                                                 toknl
+                                                 params
+                                                 ellipsis
+                                                 ppstate))
+              (replist (cons toknl replist))
+              (replist (if (and previous nontoknls)
+                           (cons (plexeme-spaces 1) replist)
+                         replist)))
+           (retok replist hash-params ppstate)))))
+     :no-function nil
+     :measure (ppstate->size ppstate)
+     :verify-guards :after-returns
+     :guard-hints (("Goal" :in-theory (enable true-listp-when-ident-listp)))
+
+     ///
+
+     (defret plexeme-list-token/space-p-of-read-macro-function-replist-loop
+       (plexeme-list-token/space-p replist)
+       :hints
+       (("Goal"
+         :induct t
+         :in-theory (e/d (plexeme-token/space-p
+                          plexeme-tokenp
+                          plexeme-token/newline-p)
+                         (plexeme-token/newline-p-of-read-token/newline)))
+        '(:use plexeme-token/newline-p-of-read-token/newline)))
+
+     (defret read-macro-function-replist-loop-subsetp-when-ellipsis
+       (subsetp-equal hash-params
+                      (cons (ident "__VA_ARGS__") params))
+       :hyp (and ellipsis
+                 (ident-listp params))
+       :hints (("Goal" :induct t :in-theory (disable (:e ident)))))
+
+     (defret read-macro-function-replist-loop-subsetp-when-not-ellipsis
+       (subsetp-equal hash-params params)
+       :hyp (and (not ellipsis)
+                 (ident-listp params))
+       :hints (("Goal" :induct t)))))
+
+  ///
+
+  (defret plexeme-list-token/space-p-of-read-macro-function-replist
+    (plexeme-list-token/space-p replist))
+
+  (defret read-macro-replist-subsetp-when-ellipsis
+    (subsetp-equal hash-params
+                   (cons (ident "__VA_ARGS__") params))
+    :hyp (and ellipsis
+              (ident-listp params))
+    :hints (("Goal" :in-theory (disable (:e ident)))))
+
+  (defret read-macro-replist-subsetp-when-not-ellipsis
+    (subsetp-equal hash-params params)
+    :hyp (and (not ellipsis)
+              (ident-listp params))
+    :hints (("Goal" :in-theory (disable (:e ident))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define pproc-define ((ppstate ppstatep))
   :returns (mv erp (new-ppstate ppstatep))
   :short "Preprocess a @('#define') directive."
@@ -849,10 +1272,667 @@
    (xdoc::p
     "This is called just after the @('define') identifier has been parsed.
      We do not pass the comments and white space before and after the @('#'),
-     because we make no use of them, at lest for now."))
+     because we make no use of them, at lest for now.")
+   (xdoc::p
+    "We read an identifier, which is the name of the macro.
+     This name must not be the @('defined') identifier [C17:6.10.8/2].
+     This name must be also distinct from
+     the names of the predefined macros [C17:6.10/8];
+     Clang warns about but allows defining predefined macros,
+     so we may need to optionally relax this restriction at some point.")
+   (xdoc::p
+    "After the name, we read the next lexeme,
+     via @(tsee read-lexeme) instead of the usual @(tsee read-token/newline),
+     because white space and comments matter here:
+     white space is required between the name and replacement list
+     of an object like macro definition [C17:6.10.3/3];
+     and white space is prohibited between the name and left parenthesis
+     of a function-like macro definition,
+     according to the grammar rule for <i>lparen</i> in [C17:6.10/1].
+     [C17:5.1.1.2/1] in phase 3
+     (which precedes preprocessing, i.e. phase 4)
+     requires comments to be replaced by spaces.
+     Although we do not do that to preserve comments, we must act as if we did:
+     thus, for the purpose of enforcing
+     these white-space-related restrictions in macro definitions,
+     we need to treat comments the same as white space.
+     Although [C17:6.10.3/5] only allows space and horizontal tab in directives,
+     [C17:5.1.1.2/1] in phase 3 allows
+     vertical tabs and form feeds to be replaced with spaces;
+     so we allow vertical tabs and form feeds as white space here too.")
+   (xdoc::p
+    "If the next lexeme is a new line,
+     we have an object-like macro definition with an empty replacement list.
+     [C17:6.10.3/3] requires white space
+     between the name and the replacement list,
+     without making an exception for an empty replacement list.
+     However, Clang readily accepts it (although it could be a Clang extension),
+     and the example in [C17:6.10/8] about @('EMPTY') suggests
+     that it is legal according to the standard.
+     [C17:6.10.3/3] could be interpreted with
+     the addition of something like ``unless the replacement list is empty''.
+     We try to add the macro definition to the macro table.")
+   (xdoc::p
+    "If the next lexeme is a comment or (non-new-line) white space,
+     we have an object-like macro definition.
+     We use a separate function to obtain the replacement list;
+     that function consumes the final new line.
+     We try to add the macro definition to the macro table.")
+   (xdoc::p
+    "If the next lexeme is a left parenthesis,
+     we have a function-like macro definition.
+     We use a separate functions to obtain the parameters;
+     that function consumed the right parenthesis.
+     We use a separate function to obtain the replacement list;
+     that function consumes the final new line.
+     We try to add the macro definition to the macro table.")
+   (xdoc::p
+    "If the next lexeme is absent, or anything else than the above,
+     the macro definition is syntactically incorrect."))
+  (b* ((ppstate (ppstate-fix ppstate)) ; # define
+       ((reterr) ppstate)
+       ((erp & name name-span ppstate) (read-token/newline ppstate))
+       ((unless (and name (plexeme-case name :ident))) ; # define name
+        (reterr-msg :where (position-to-msg (span->start name-span))
+                    :expected "an identifier"
+                    :found (plexeme-to-msg name)))
+       (name (plexeme-ident->ident name))
+       ((when (equal name (ident "defined")))
+        (reterr (msg "Cannot define macro with name 'defined'.")))
+       ((when (assoc-equal name
+                           (macro-table->predefined (ppstate->macros ppstate))))
+        (reterr (msg "Cannot define macro with predefined name '~s0'."
+                     (ident->unwrap name))))
+       ((erp lexeme lexeme-span ppstate) (read-lexeme nil ppstate)))
+    (cond
+     ((and lexeme
+           (plexeme-case lexeme :newline)) ; # define name EOL
+      (b* ((macros (ppstate->macros ppstate))
+           (info (make-macro-info-object :replist nil))
+           ((erp new-macros) (macro-add name info macros))
+           (ppstate (update-ppstate->macros new-macros ppstate)))
+        (retok ppstate)))
+     ((and lexeme
+           (not (plexeme-token/newline-p lexeme))) ; # define name WSC
+      (b* (((erp replist ppstate) ; # define name WSC REPLIST
+            (read-macro-object-replist name ppstate))
+           (macros (ppstate->macros ppstate))
+           (info (make-macro-info-object :replist replist))
+           ((erp new-macros) (macro-add name info macros))
+           (ppstate (update-ppstate->macros new-macros ppstate)))
+        (retok ppstate)))
+     ((and lexeme
+           (plexeme-equiv lexeme (plexeme-punctuator "("))) ; # define (
+      (b* (((erp params ellipsis ppstate) ; # define ( params )
+            (read-macro-params ppstate))
+           ((erp replist hash-params ppstate) ; # define ( params ) replist
+            (read-macro-function-replist name params ellipsis ppstate))
+           (macros (ppstate->macros ppstate))
+           (info (make-macro-info-function :params params
+                                           :ellipsis ellipsis
+                                           :replist replist
+                                           :hash-params hash-params))
+           ((erp new-macros) (macro-add name info macros))
+           (ppstate (update-ppstate->macros new-macros ppstate)))
+        (retok ppstate)))
+     (t ; # define EOF/other
+      (reterr-msg :where (position-to-msg (span->start lexeme-span))
+                  :expected "a left parenthesis or ~
+                             a comment or ~
+                             a new line or ~
+                             other white space"
+                  :found (plexeme-to-msg lexeme)))))
+  :no-function nil
+  :guard-simplify :limited ; to stop (:E IDENT)
+  :guard-hints (("Goal" :in-theory (e/d (alistp-when-macro-scopep-rewrite)
+                                        ((:e ident))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define pproc-undef ((ppstate ppstatep))
+  :returns (mv erp (new-ppstate ppstatep))
+  :short "Preprocess a @('#undef') directive."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is called just after the @('define') identifier has been parsed.
+     We do not pass the comments and white space before and after the @('#'),
+     because we make no use of them, at lest for now.")
+   (xdoc::p
+    "We read an identifier, which is the name of the macro.
+     The name must not be the @('defined') identifier [C17:6.10.8/2].
+     We also ensure that we find a new line after the name,
+     possibly with some white space and comments in between.")
+   (xdoc::p
+    "We remove the macro from the table.
+     Note that @(tsee macro-remove) takes care of
+     ensuring that the macro is not a predefined one."))
   (b* ((ppstate (ppstate-fix ppstate))
-       ((reterr) ppstate))
-    (reterr (msg "#define directive not yet supported.")))) ; TODO
+       ((reterr) ppstate)
+       ((erp & name? name?-span ppstate) (read-token/newline ppstate))
+       ((unless (and name?
+                     (plexeme-case name? :ident))) ; # undef name
+        (reterr-msg :where (position-to-msg (span->start name?-span))
+                    :expected "an identifier"
+                    :found (plexeme-to-msg name?)))
+       (name (plexeme-ident->ident name?))
+       ((when (equal name (ident "defined")))
+        (reterr (msg "Cannot undefine macro with name 'defined'.")))
+       ((erp & newline? newline?-span ppstate) (read-token/newline ppstate))
+       ((unless (and newline?
+                     (plexeme-case newline? :newline))) ; # undef name EOL
+        (reterr-msg :where (position-to-msg (span->start newline?-span))
+                    :expected "a new line"
+                    :found (plexeme-to-msg newline?)))
+       (macros (ppstate->macros ppstate))
+       ((erp new-macros) (macro-remove name macros))
+       (ppstate (update-ppstate->macros new-macros ppstate)))
+    (retok ppstate))
+  :no-function nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defalist ident-plexeme-list-alist
+  :short "Fixtype of alists from identifiers to lists of preprocessing lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are used to model the mapping of macro parameters
+     to the corresponding macro arguments."))
+  :key-type ident
+  :val-type plexeme-list
+  :true-listp t
+  :keyp-of-nil nil
+  :valp-of-nil t
+  :pred ident-plexeme-list-alistp
+  :prepwork ((set-induction-depth-limit 1))
+
+  ///
+
+  (defruled plexeme-listp-of-cdr-of-assoc-equal-when-ident-plexeme-list-alistp
+    (implies (and (ident-plexeme-list-alistp alist)
+                  (assoc-equal key alist))
+             (plexeme-listp (cdr (assoc-equal key alist))))
+    :induct t
+    :enable assoc-equal))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define replist-next-token ((replist plexeme-listp))
+  :guard (and (plexeme-list-token/space-p replist)
+              (consp replist))
+  :returns (mv (spacep booleanp) (token plexemep) (replist-rest plexeme-listp))
+  :short "Obtain the next token from a replacement list,
+          indicating whether it was preceded by space or not."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If the next lexeme in the replacement list is a token, we return it,
+     indicating that it has no preceding space.
+     Otherwise, the lexeme must be a space (because of the guard),
+     and so there must be another lexeme, which must be a token,
+     and we return it, indicating that it was preceded by a space.")
+   (xdoc::p
+    "We also return the rest of the replacement list."))
+  (b* (((cons lexeme replist) replist)
+       ((when (plexeme-tokenp lexeme))
+        (mv nil (plexeme-fix lexeme) (plexeme-list-fix replist)))
+       ((when (endp replist))
+        (raise "Internal error: replacement list ends with space.")
+        (mv nil (irr-plexeme) nil))
+       ((cons token replist) replist)
+       ((unless (plexeme-tokenp token))
+        (raise "Internal error: replacement list has two consecutive spaces.")
+        (mv nil (irr-plexeme) nil)))
+    (mv t (plexeme-fix token) (plexeme-list-fix replist)))
+  :no-function nil
+  :prepwork ((local (in-theory (enable cdr-of-plexeme-list-fix))))
+
+  ///
+
+  (defret plexeme-tokenp-of-replist-next-token
+    (plexeme-tokenp token)
+    :hints (("Goal" :in-theory (enable irr-plexeme))))
+
+  (defret plexeme-list-token/space-p-of-replist-next-token
+    (plexeme-list-token/space-p replist-rest)
+    :hyp (plexeme-list-token/space-p replist))
+
+  (defret len-of-replist-next-token-decreases
+    (< (len replist-rest)
+       (len replist))
+    :hyp (consp replist)
+    :rule-classes :linear))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define stringize-lexemes ((lexemes plexeme-listp))
+  :returns (stringlit stringlitp)
+  :short "Stringize a list of lexemes."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This implements the semantics of the @('#') operator [C17:6.10.3.2/2].
+     The term `stringize' and `destringize' occur in [C17]."))
+  (declare (ignore lexemes))
+  (irr-stringlit)) ; TODO
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define join-tokens ((token1 plexemep) (token2 plexemep))
+  :guard (and (plexeme-tokenp token1)
+              (plexeme-tokenp token2))
+  :returns (token plexemep)
+  :short "Join two tokens into one."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is used to implement the @('##') operator [C17:6.10.3.3]."))
+  (declare (ignore token1 token2))
+  (irr-plexeme) ; TODO
+  :prepwork ((local (in-theory (enable irr-plexeme))))
+
+  ///
+
+  (defret plexeme-tokenp-of-join-tokens
+    (plexeme-tokenp token)
+    :hyp (and (plexeme-tokenp token1)
+              (plexeme-tokenp token2))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define join-optional-tokens ((token1? plexeme-optionp)
+                              (token2? plexeme-optionp))
+  :guard (and (or (not token1?) (plexeme-tokenp token1?))
+              (or (not token2?) (plexeme-tokenp token2?)))
+  :returns (token? plexeme-optionp)
+  ;; TODO
+  (if (or token1? token2?)
+      (irr-plexeme)
+    nil)
+  :prepwork ((local (in-theory (enable irr-plexeme))))
+
+  ///
+
+  (defret plexeme-tokenp-of-join-optional-tokens
+    (implies token?
+             (plexeme-tokenp token?))
+    :hyp (and (implies token1? (plexeme-tokenp token1?))
+              (implies token2? (plexeme-tokenp token2?))))
+
+  (defret join-optional-tokens-iff-first-or-second
+    (iff token? (or token1? token2?))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define find-first-token ((lexemes plexeme-listp))
+  :returns (mv (nontokens plexeme-listp)
+               (token? plexeme-optionp)
+               (lexemes-rest plexeme-listp))
+  :short "Find the first token in a list of lexemes, if any."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "If there is no token, we return @('nil').
+     We also return the non-tokens that precede the token;
+     if there is no token, these are all the lexemes passed as input.
+     We also return the remaining lexemes."))
+  (b* (((when (endp lexemes)) (mv nil nil nil))
+       (lexeme (plexeme-fix (car lexemes)))
+       ((when (plexeme-tokenp lexeme))
+        (mv nil lexeme (plexeme-list-fix (cdr lexemes))))
+       ((mv nontokens token? lexemes-rest) (find-first-token (cdr lexemes))))
+    (mv (cons lexeme nontokens) token? lexemes-rest))
+
+  ///
+
+  (defret plexeme-tokenp-of-find-first-token
+    (implies token?
+             (plexeme-tokenp token?))
+    :hints (("Goal" :induct t)))
+
+  (defret plexeme-list-not-tokenp-of-find-first-token
+    (plexeme-list-not-tokenp nontokens)
+    :hints (("Goal" :induct t)))
+
+  (defret len-of-find-first-token
+    (implies token?
+             (< (len lexemes-rest)
+                (len lexemes)))
+    :rule-classes :linear
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define normalize-macro-arg ((arg plexeme-listp))
+  :returns (norm-arg plexeme-listp)
+  :short "Normalize a macro argument,
+          turning comments and white space (including new lines)
+          into single spaces between tokens."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "When we calculate the arguments of a macro call,
+     each argument is a list of zero or more lexemes;
+     the calculation involves macro expansion within the arguments themselves,
+     unless the corresponding parameters in the macro's replacement list
+     are preceded by @('#') or @('##') or followed by @('##')
+     [C17:6.10.3.1/1].
+     Each calculated argument needs to replace the correspoding parameter
+     in the replacement list in order to realize the macro call
+     [C17:6.10.3/10].
+     The list of lexemes that forms an argument
+     could include comments and white space,
+     including new lines [C17:6.10.3/10].
+     Since we generally try to preserve comments and white space,
+     there might be reasons to preserve comments and white space
+     in the arguments passed to a macro;
+     but for now, to keep things simple,
+     we normalize all those comments and white space
+     to single spaces between tokens.
+     That is, given the list of lexemes that forms an argument,
+     we remove all the white space and comments at the start and end,
+     and we join all the contiguous white space and comments
+     into single spaces.
+     Note that the evaluation of @('#') [C17:6.10.3.2/2]
+     requires to normalize comments and white space that separated token
+     to single spaces,
+     so our normalization is consistent with that.")
+   (xdoc::p
+    "The resulting of lexemes is a sequence of tokens
+     with single spaces between some of the tokens.
+     This happens to be the same form in which
+     we store replacement lists in the macro table
+     (see @(tsee macro-info)),
+     but there is no need for them to have the same form.")
+   (xdoc::p
+    "This function performs this normalization.
+     The result satisfies @(tsee plexeme-list-token/space-p),
+     which captures some but not all of the constraints on the list."))
+  (normalize-macro-arg-loop t arg)
+
+  :prepwork
+  ((define normalize-macro-arg-loop ((startp booleanp) (arg plexeme-listp))
+     :returns (norm-arg plexeme-listp)
+     :parents nil
+     (b* (((mv nontokens token arg-rest) (find-first-token arg))
+          ((when (not token)) nil)
+          (norm-arg-rest (normalize-macro-arg-loop nil arg-rest)))
+       (append (if (or startp
+                       (not nontokens))
+                   nil
+                 (list (plexeme-spaces 1)))
+               (cons token
+                     norm-arg-rest)))
+     :measure (len arg)
+     :verify-guards :after-returns
+
+     ///
+
+     (defret plexeme-list-token/space-p-of-normalize-macro-arg-loop
+       (plexeme-list-token/space-p norm-arg)
+       :hints (("Goal"
+                :induct t
+                :in-theory (enable plexeme-list-token/space-p
+                                   plexeme-token/space-p))))))
+
+  ///
+
+  (defret plexeme-list-token/space-p-of-normalize-macro-arg
+    (plexeme-list-token/space-p norm-arg)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define replace-macro-args ((replist plexeme-listp)
+                            (subst ident-plexeme-list-alistp))
+  :guard (plexeme-list-token/space-p replist)
+  :returns (replaced-replist plexeme-listp)
+  :short "In the replacement list of a function-like macro,
+          replace all the parameters with the corresponding arguments,
+          and evaluate the @('#') and @('##') operators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The alist @('subst') is calculated elsewhere.
+     It consists of the parameter names as keys,
+     including @('__VA_ARGS__') if the macro has ellipsis,
+     and the corresponding list of lexemes as values.
+     The list of lexemes associated to each parameter
+     is generally fully replaced [C17:6.10.3.1],
+     unless it is preceded by @('#') or @('##') or followed by @('##'),
+     in which case the argument lexemes are not replaced.
+     Either way, the alist has the appropriate lists of lexemes here.
+     Those are already normalized via @(tsee normalize-macro-arg).")
+   (xdoc::p
+    "We go through the replacement list.
+     When we encounter a parameter of the macro,
+     we replace it with the corresponding argument in @('subst')
+     [C17:6.10.3.1].
+     When we encounter @('#'),
+     which must be followed by a parameter,
+     we stringize the argument corresponding to the parameter
+     [C17:6.10.3.2].
+     When we encounter @('##'),
+     which must be followed and preceded by a token,
+     we combine those tokens into one [C17:6.10.3.3].")
+   (xdoc::p
+    "For @('##'), while the token that follows
+     is accessible in the rest of @('replist'),
+     the preceding token is tracked via
+     the @('last-token/placemarker') parameter of the loop function.
+     But instead of a token, this may indicate a placemarker [C17:6.10.3.3],
+     which we model as @('nil').
+     We also @('nil') at the beginning of the replacement list,
+     in this case to indicate no token or placemarker;
+     since @('##') cannot start the replacement list,
+     there is no ambiguity in the use of @('nil') for these two purposes.")
+   (xdoc::p
+    "When we encounter a token in @('replist'),
+     it could be followed by @('##') or not.
+     If there is a @('##'),
+     the recursive call of the loop function,
+     which is passed the token as @('last-token/placemarker'),
+     joins that token with the one after the @('##');
+     thus, after calling the recursive loop function,
+     we must not add the token to the output list.
+     To handle this uniformly,
+     we must always leave to the recursive call
+     the responsibility of adding @('last-token/placemarker') if appropriate,
+     namely if it is not followed by @('##').
+     This makes the code a bit ore complicated.")
+   (xdoc::p
+    "Another complication arises from the treatment of
+     parameters adjacent to @('##'),
+     which are replaced with the tokens of the corresponding arguments,
+     which may be zero or more.
+     If zero, they are treated like placemarkers.
+     If non-zero, we need to take the last one (if before @('##'))
+     or the first one (if after @('##')),
+     as the operands of @('##').
+     For argument tokens following @('##'),
+     @('last-token/placemarker') becomes its last token,
+     unless the argument is a singleton list,
+     in which case @('last-token/placemarker') is the combined token.")
+   (xdoc::p
+    "Note that only the @('##') operators that occur in @('replist'),
+     and not any coming from the arguments in @('subst'),
+     are evaluated [C17:6.10.3.3/3]."))
+  (replace-macro-args-loop nil
+                           (plexeme-list-fix replist)
+                           (ident-plexeme-list-alist-fix subst))
+
+  :prepwork
+  ((define replace-macro-args-loop ((last-token/placemarker plexeme-optionp)
+                                    (replist plexeme-listp)
+                                    (subst ident-plexeme-list-alistp))
+     :guard (and (plexeme-list-token/space-p replist)
+                 (or (not last-token/placemarker)
+                     (plexeme-tokenp last-token/placemarker)))
+     :returns (replaced-replist plexeme-listp)
+     :parents nil
+     (b* ((last-token/placemarker (plexeme-option-fix last-token/placemarker))
+          ((when (endp replist))
+           ;; If we reach the end of REPLIST and we have a previous token,
+           ;; we must add it to the output, because the caller does not.
+           (and last-token/placemarker
+                (list (plexeme-fix last-token/placemarker))))
+          ((mv spacep token replist) (replist-next-token replist)))
+       (cond
+        ((plexeme-hashp token) ; #
+         (b* (;; REPLIST cannot end with #.
+              ((unless (consp replist))
+               (raise "Internal error: replacement list ends with #."))
+              ((mv & param replist) (replist-next-token replist))
+              ;; The following token must be a parameter.
+              ((unless (plexeme-case param :ident)) ; # param
+               (raise "Internal error: # is followed by non-identifier ~x0."
+                      param))
+              (param (plexeme-ident->ident param))
+              (param+arg (assoc-equal param
+                                      (ident-plexeme-list-alist-fix subst)))
+              ((unless param+arg)
+               (raise "Internal error: # is followed by a non-parameter ~x0."
+                      param))
+              (arg (cdr param+arg))
+              ;; Combine # and ARG into TOKEN.
+              (stringlit (stringize-lexemes arg))
+              (token (plexeme-string stringlit)))
+           ;; Do not add TOKEN to the output here,
+           ;; because it might be followed by ##;
+           ;; let the recursive call handle TOKEN.
+           ;; But add LAST-TOKEN/PLACEMARKER if non NIL,
+           ;; because it is not followed by ##.
+           (append (and last-token/placemarker
+                        (list (plexeme-fix last-token/placemarker)))
+                   (and spacep (list (plexeme-spaces 1)))
+                   (replace-macro-args-loop token replist subst))))
+        ((plexeme-hashhashp token) ; ##
+         (b* (;; REPLIST cannot end with ##.
+              ((unless (consp replist))
+               (raise "Internal error: replacement list ends with ##."))
+              ((mv & token2 replist) (replist-next-token replist)))
+           (if (and (plexeme-case token2 :ident) ; ## param
+                    (assoc-equal (plexeme-ident->ident token2)
+                                 (ident-plexeme-list-alist-fix subst)))
+               ;; If the token after ## is a parameter,
+               ;; consider its corresponding argument ARG from SUBST.
+               (b* ((arg
+                     (cdr (assoc-equal (plexeme-ident->ident token2)
+                                       (ident-plexeme-list-alist-fix subst))))
+                    ;; The right operand of ## is
+                    ;; a placemarker if ARG is empty,
+                    ;; otherwise it is its first token.
+                    ((mv next-token/placemarker rest-arg)
+                     (if (consp arg)
+                         (mv (car arg) (cdr arg))
+                       (mv nil nil)))
+                    ((unless (or (not next-token/placemarker)
+                                 (plexeme-tokenp next-token/placemarker)))
+                     (raise "Internal error: ~x0 is not token."
+                            next-token/placemarker))
+                    ;; The left operand of ## is always
+                    ;; the LAST-TOKEN/PLACEMARKER value,
+                    ;; either NIL (placemarker) or a token.
+                    (token? (join-optional-tokens last-token/placemarker
+                                                  next-token/placemarker))
+                    ;; The LAST-TOKEN/PLACEMARKER to pass to the recursive call
+                    ;; is calculated as follows.
+                    ;; If both the left and right operands of ##
+                    ;; are placemarkers (NIL),
+                    ;; the result TOKEN? of ## is a placemarker,
+                    ;; and that is the new LAST-TOKEN/PLACEMARKER.
+                    ;; If the left operand of ## is a token
+                    ;; and the right one is a placemarker,
+                    ;; the result TOKEN? is the left operand,
+                    ;; and since ARG (and REST-ARG) is empty,
+                    ;; LAST-TOKEN/PLACEMARKER is the left operand.
+                    ;; If the left operand is a placemarker
+                    ;; and the right operand is a token (the first of ARG),
+                    ;; the result is that token;
+                    ;; if ARG only consists of that token,
+                    ;; the token also becomes LAST-TOKEN/PLACEMARKER,
+                    ;; otherwise we take the last token of REST-ARG.
+                    ;; If both left and right operands are tokens,
+                    ;; TOKEN? is their combination,
+                    ;; and LAST-TOKEN/PLACEMARKER is as in the previous case.
+                    (last-token/placemarker
+                     (if token?
+                         (if (consp rest-arg)
+                             (car (last rest-arg))
+                           token?)
+                       nil))
+                    ((unless (or (not last-token/placemarker)
+                                 (plexeme-tokenp last-token/placemarker)))
+                     (raise "Internal error: ~x0 is not a token."
+                            last-token/placemarker)))
+                 ;; The recursive call takes care of LAST-TOKEN/PLACEMARKER,
+                 ;; but if ARG has two or more tokens
+                 ;; (which is the case exactly when REST-ARG is not NIL),
+                 ;; here we need to add to the output
+                 ;; all but the last token of ARG.
+                 (append (and spacep (list (plexeme-spaces 1)))
+                         (and (consp rest-arg) (butlast arg 1))
+                         (replace-macro-args-loop last-token/placemarker
+                                                  replist
+                                                  subst)))
+             ;; If the token after ## is not a parameter,
+             ;; we combine it with LAST-TOKEN/PLACEMARKER,
+             ;; which always gives us a token because TOKEN2 is a token,
+             ;; and that resulting token is passed to the recursive call.
+             (b* ((token (join-optional-tokens last-token/placemarker token2)))
+               (append (and spacep (list (plexeme-spaces 1)))
+                       (replace-macro-args-loop token replist subst))))))
+        ((plexeme-case token :ident) ; ident (param or not)
+         (b* ((ident (plexeme-ident->ident token))
+              (ident+arg (assoc-equal ident
+                                      (ident-plexeme-list-alist-fix subst)))
+              ((when (not ident+arg))
+               ;; If the token is an identifier but not a parameter,
+               ;; it becomes the next LAST-TOKEN/PLACEMARKER.
+               ;; We add the previous LAST-TOKEN/PLACEMARKER if not NIL,
+               ;; because it is not followed by ##.
+               (append (and last-token/placemarker
+                            (list (plexeme-fix last-token/placemarker)))
+                       (and spacep (list (plexeme-spaces 1)))
+                       (replace-macro-args-loop token replist subst)))
+              ;; If the token is a parameter,
+              ;; consider its correspoding argument ARG.
+              ;; If it is NIL, it is a placemarker passed to the recursive call.
+              ;; Otherwise, we pass its last token as LAST-TOKEN/PLACEMARKER
+              ;; to the recursive call.
+              ;; But the previous LAST-TOKEN/PLACEMARKER, if not NIL,
+              ;; must be added to the output,
+              ;; because it is not followed by ##.
+              (arg (cdr ident+arg))
+              ((mv arg-but-last arg-last)
+               (if (consp arg)
+                   (mv (butlast arg 1) (car (last arg)))
+                 (mv nil nil)))
+              ((unless (or (not arg-last)
+                           (plexeme-tokenp arg-last)))
+               (raise "Internal error: ~x0 is not a token." arg-last)))
+           (append (and last-token/placemarker
+                        (list (plexeme-fix last-token/placemarker)))
+                   (and spacep (list (plexeme-spaces 1)))
+                   arg-but-last
+                   (replace-macro-args-loop arg-last replist subst))))
+        (t ; other token
+         ;; This case is the same as that above
+         ;; of an identifier that is not a parameter.
+         (append (and last-token/placemarker
+                      (list (plexeme-fix last-token/placemarker)))
+                 (and spacep (list (plexeme-spaces 1)))
+                 (replace-macro-args-loop token replist subst)))))
+     :no-function nil
+     :measure (len replist)
+     :guard-hints
+     (("Goal" :in-theory (enable
+                          alistp-when-ident-plexeme-list-alistp-rewrite
+                          plexeme-tokenp
+                          true-listp-when-plexeme-listp
+                          listp)))
+     :prepwork ((local (in-theory (disable acl2::member-of-cons))))
+     :hooks nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1314,7 +2394,12 @@
                          (string-scfile-alist-fix preprocessed)
                          state)))
                ((equal directive "undef") ; # undef
-                (reterr (msg "#undef directive not yet supported."))) ; TODO
+                (b* (((erp ppstate) (pproc-undef ppstate)))
+                  (retok nil ; no group ending
+                         (plexeme-list-fix rev-lexemes)
+                         ppstate
+                         (string-scfile-alist-fix preprocessed)
+                         state)))
                ((equal directive "line") ; # line
                 (reterr (msg "#line directive not yet supported."))) ; TODO
                ((equal directive "error") ; # error
@@ -1322,7 +2407,7 @@
                ((equal directive "pragma") ; # pragma
                 (reterr (msg "#pragma directive not yet supported."))) ; TODO
                (t ;  # other -- non-directive
-                (reterr-msg :where (span->start span2)
+                (reterr-msg :where (position-to-msg (span->start span2))
                             :expected "a directive name among ~
                                        'if', ~
                                        'ifdef', ~
@@ -1455,8 +2540,8 @@
        ((plexeme-case toknl :header) ; # include headername
         (b* (((erp nontoknls-after-header toknl2 span2 ppstate)
               (read-token/newline ppstate))
-             ((unless (and toknl2
-                           (plexeme-case toknl2 :newline))) ; # include EOL
+             ((unless (and toknl2 ; # include headername EOL
+                           (plexeme-case toknl2 :newline)))
               (reterr-msg :where (position-to-msg (span->start span2))
                           :expected "a new line"
                           :found (plexeme-to-msg toknl2)))
