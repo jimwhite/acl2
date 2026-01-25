@@ -326,11 +326,10 @@ parameters by OR-ing the boolean restrictions.</p>"
    :uses-cpp       (or (cert-params->uses-cpp p1)
                        (cert-params->uses-cpp p2))
    ;; Custom image doesn't propagate
-   :acl2-image  (cert-params->acl2-image p1))
+   :acl2-image  (cert-params->acl2-image p1)))
   
-  ///
-  (defthm merge-cert-params-type
-    (cert-params-p (merge-cert-params p1 p2))))
+(defthm merge-cert-params-type
+  (cert-params-p (merge-cert-params p1 p2)))
 
 ;; Merging is commutative for the propagating fields
 (defthm merge-cert-params-ansi-only-commutative

@@ -1,7 +1,10 @@
 ; Build2 certificate customization
 ; Copyright (C) 2026
 
-; Load the package definition
+; Load std's package first (for STD, STR packages)
+(ld "std/package.lsp" :dir :system)
+
+; Load the package definition (uses std::*std-exports*)
 (ld "package.lsp")
 
 ; Include the portcullis book
