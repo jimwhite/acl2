@@ -1,0 +1,4 @@
+; Portcullis.lisp certification customization
+; Copyright (C) 2026
+
+(ld "package.lsp")

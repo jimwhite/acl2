@@ -1,0 +1,8 @@
+; Build2 certificate customization
+; Copyright (C) 2026
+
+; Load the package definition
+(ld "package.lsp")
+
+; Include the portcullis book
+(include-book "portcullis")
