@@ -4,8 +4,7 @@
 #
 # License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 
-# This is the main entry point shell script for cert2.
-# It loads the cert2 system in ACL2/raw Lisp and runs it.
+# This script invokes ACL2 with the build2 system to certify books.
 
 set -e
 
@@ -15,10 +14,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Determine ACL2 executable
 if [ -z "$ACL2" ]; then
     # Try to find ACL2 in common locations
-    if command -v acl2 &> /dev/null; then
-        ACL2="acl2"
-    elif [ -x "$SCRIPT_DIR/../../saved_acl2" ]; then
+    if [ -x "$SCRIPT_DIR/../../saved_acl2" ]; then
         ACL2="$SCRIPT_DIR/../../saved_acl2"
+    elif command -v acl2 &> /dev/null; then
+        ACL2="acl2"
     else
         echo "Error: Cannot find ACL2 executable." >&2
         echo "Set the ACL2 environment variable or add acl2 to your PATH." >&2
@@ -36,44 +35,25 @@ export ACL2_SYSTEM_BOOKS
 # Disable ACL2 customization
 export ACL2_CUSTOMIZATION=NONE
 
-# Create a temporary file for our startup script
-STARTUP_FILE=$(mktemp)
-trap "rm -f $STARTUP_FILE" EXIT
-
-cat > "$STARTUP_FILE" << 'EOF'
-; Startup script for cert2
-(value :q)
-(in-package "COMMON-LISP")
-
-; We need to handle the case where BUILD2 package doesn't exist yet
-(unless (find-package "BUILD2")
-  (defpackage "BUILD2"
-    (:use "COMMON-LISP")
-    (:export "BUILD-TARGETS" "MAIN")))
-
-EOF
-
-# Add the load command
-echo "(load \"$SCRIPT_DIR/cert2.lsp\")" >> "$STARTUP_FILE"
-
-# Add the main call with arguments
-echo -n "(build2::main '(" >> "$STARTUP_FILE"
+# Build the argument list as a Lisp list
+LISP_ARGS="("
 for arg in "$@"; do
-    # Escape any special characters in arguments
+    # Escape double quotes in arguments
     escaped_arg=$(printf '%s' "$arg" | sed 's/"/\\"/g')
-    echo -n "\"$escaped_arg\" " >> "$STARTUP_FILE"
+    LISP_ARGS="$LISP_ARGS\"$escaped_arg\" "
 done
-echo "))" >> "$STARTUP_FILE"
+LISP_ARGS="$LISP_ARGS)"
 
-# Add exit
-cat >> "$STARTUP_FILE" << 'EOF'
+# Create the ACL2 script
+read -r -d '' ACL2_SCRIPT << 'ENDSCRIPT' || true
+(ld "SCRIPT_DIR/cert2.lsp" :ld-error-action :error)
+(let ((exit-code (build2-cli-fn 'ARGS_PLACEHOLDER)))
+  (good-bye (if exit-code (if (eq exit-code t) 0 exit-code) 1)))
+ENDSCRIPT
 
-; Exit with appropriate code
-#+sbcl (sb-ext:exit :code 0)
-#+ccl (ccl:quit 0)
-#-(or sbcl ccl) (cl-user::exit)
-EOF
+# Replace placeholders
+ACL2_SCRIPT="${ACL2_SCRIPT//SCRIPT_DIR/$SCRIPT_DIR}"
+ACL2_SCRIPT="${ACL2_SCRIPT//ARGS_PLACEHOLDER/$LISP_ARGS}"
 
-# Run ACL2 with the startup script
-# Use --no-init or similar to skip normal ACL2 initialization if available
-exec "$ACL2" < "$STARTUP_FILE"
+# Run ACL2 with the script on stdin
+echo "$ACL2_SCRIPT" | exec "$ACL2"

@@ -81,7 +81,7 @@
                (process-events (cdr events) certinfo base-dir in-acl2-file
                                (cons new-level skip-level))
              ;; Check condition
-             (let* ((defined (assoc-equal var (certinfo->local-defines certinfo)))
+             (let* ((defined (assoc var (certinfo->local-defines certinfo) :test #'equal))
                     (cond-true (if is-ifdef defined (not defined))))
                (process-events (cdr events) certinfo base-dir in-acl2-file
                                (cons new-level (if cond-true 0 new-level)))))))
