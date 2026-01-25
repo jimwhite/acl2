@@ -4,9 +4,14 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 
 ; This file contains the raw Common Lisp implementation of file scanning.
-; It should be loaded after scan.lisp is certified.
+; Loaded into raw Lisp mode from ACL2.
 
 (in-package "BUILD2")
+
+;; Ensure we have the data structure definitions
+(unless (fboundp 'make-cert-params)
+  (load (merge-pathnames "data-structures.lsp"
+                         (make-pathname :directory (pathname-directory *load-truename*)))))
 
 ;; ============================================================================
 ;; File I/O for scanning

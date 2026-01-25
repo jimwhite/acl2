@@ -2,175 +2,130 @@
 ; Copyright (C) 2026
 ;
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
-
-; This is the main driver script for cert2.
-; Load this file in ACL2 or raw Lisp to run the certification system.
-
-;; ============================================================================
-;; Package setup
-;; ============================================================================
+;
+; Usage: echo '(ld "books/build2/cert2.lsp") (build2-main "target.lisp")' | ./saved_acl2
+; Or:    ./books/build2/cert2 target.lisp
 
 (in-package "ACL2")
 
-;; We need to be in raw Lisp for most of this
-(defun run-cert2 ()
-  "Main entry point - called from ACL2."
-  (value :q)  ; Exit ACL2 loop
-  (run-cert2-raw))
-
 ;; ============================================================================
-;; Raw Lisp implementation
+;; Exit to raw Lisp to define the BUILD2 package and load implementation
 ;; ============================================================================
 
-(in-package "ACL2")
+(defttag :build2)
 
-#+acl2-loop-only
-(defun run-cert2-raw () nil)
-
-#-acl2-loop-only
-(progn
-
-(defpackage "BUILD2"
-  (:use "COMMON-LISP")
-  (:export "BUILD-TARGETS" "ANALYZE-TARGETS" "PRINT-DEPS"
-           "*ACL2-EXECUTABLE*" "*ACL2-SYSTEM-BOOKS*" "*VERBOSE*" "*DEBUG*"))
-
-;; Load the implementation files
-(defvar *build2-dir*
-  (make-pathname :directory (pathname-directory *load-truename*)))
-
-(defun load-build2-file (name)
-  (load (merge-pathnames name *build2-dir*)))
-
-;; Note: In actual use, we'd load the certified .lisp files
-;; For bootstrapping, we load the raw Lisp files directly
-(load-build2-file "scan-raw.lsp")
-(load-build2-file "depgraph-raw.lsp")
-(load-build2-file "certify-raw.lsp")
-(load-build2-file "scheduler-raw.lsp")
-
-(in-package "BUILD2")
-
-;; ============================================================================
-;; Command-line argument parsing
-;; ============================================================================
-
-(defun parse-args (args)
-  "Parse command-line arguments.
-   Returns a plist of options and a list of target files."
-  (let ((options (list :jobs 1
-                       :keep-going nil
-                       :no-build nil
-                       :verbose nil
-                       :debug nil
-                       :help nil
-                       :acl2 nil
-                       :acl2-books nil))
-        (targets nil))
-    (loop while args do
-      (let ((arg (pop args)))
-        (cond
-          ((or (string= arg "-h") (string= arg "--help"))
-           (setf (getf options :help) t))
-          
-          ((or (string= arg "-j") (string= arg "--jobs"))
-           (setf (getf options :jobs)
-                 (parse-integer (pop args))))
-          
-          ((or (string= arg "-k") (string= arg "--keep-going"))
-           (setf (getf options :keep-going) t))
-          
-          ((or (string= arg "-n") (string= arg "--no-build"))
-           (setf (getf options :no-build) t))
-          
-          ((or (string= arg "-v") (string= arg "--verbose"))
-           (setf (getf options :verbose) t))
-          
-          ((string= arg "--debug")
-           (setf (getf options :debug) t))
-          
-          ((or (string= arg "-a") (string= arg "--acl2"))
-           (setf (getf options :acl2) (pop args)))
-          
-          ((or (string= arg "-b") (string= arg "--acl2-books"))
-           (setf (getf options :acl2-books) (pop args)))
-          
-          ;; Anything else is a target
-          (t (push arg targets)))))
-    
-    (values options (nreverse targets))))
-
-(defun print-help ()
-  "Print help message."
-  (format t "~%cert2 - ACL2 Book Certification System~%~%")
-  (format t "Usage: cert2 [options] <targets...>~%~%")
-  (format t "Options:~%")
-  (format t "  -h, --help          Show this help message~%")
-  (format t "  -j, --jobs N        Run N parallel jobs (default: 1)~%")
-  (format t "  -k, --keep-going    Continue after failures~%")
-  (format t "  -n, --no-build      Just show what would be built~%")
-  (format t "  -v, --verbose       Verbose output~%")
-  (format t "  --debug             Enable debug output~%")
-  (format t "  -a, --acl2 PATH     Path to ACL2 executable~%")
-  (format t "  -b, --acl2-books DIR  Path to ACL2 system books~%")
-  (format t "~%")
-  (format t "Targets can be .lisp files or .cert2 files.~%")
-  (format t "~%")
-  (format t "This system produces .cert2 files to avoid conflicts with~%")
-  (format t "the existing cert.pl system.~%"))
+(progn!
+ (set-raw-mode t)
+ 
+ ;; Define BUILD2 package if not already defined
+ (unless (find-package "BUILD2")
+   (defpackage "BUILD2"
+     (:use "COMMON-LISP")
+     (:export
+      ;; Configuration
+      "*ACL2-EXECUTABLE*" "*ACL2-SYSTEM-BOOKS*" "*VERBOSE*" "*DEBUG*"
+      ;; Main interface
+      "BUILD-TARGETS" "ANALYZE-TARGETS" "PRINT-DEPS" "MAIN"
+      ;; Utilities
+      "LISP-TO-CERT2" "CANONICAL-PATH")))
+ 
+ ;; Load the implementation files
+ (let ((build2-dir (make-pathname 
+                    :directory (pathname-directory 
+                                (or *load-truename* 
+                                    *compile-file-pathname*
+                                    (truename "./"))))))
+   (labels ((load-build2-file (name)
+              (let ((path (merge-pathnames name build2-dir)))
+                (format t "Loading ~A~%" path)
+                (load path))))
+     (load-build2-file "scan-raw.lsp")
+     (load-build2-file "depgraph-raw.lsp") 
+     (load-build2-file "certify-raw.lsp")
+     (load-build2-file "scheduler-raw.lsp")))
+ 
+ (format t "~%BUILD2 system loaded.~%")
+ 
+ (set-raw-mode nil))
 
 ;; ============================================================================
-;; Main function
+;; ACL2 interface functions
 ;; ============================================================================
 
-(defun main (args)
-  "Main entry point for cert2."
-  (multiple-value-bind (options targets) (parse-args args)
-    
-    ;; Handle help
-    (when (getf options :help)
-      (print-help)
-      (return-from main 0))
-    
-    ;; Check for targets
-    (when (null targets)
-      (format *error-output* "Error: No targets specified~%")
-      (format *error-output* "Use --help for usage information~%")
-      (return-from main 1))
-    
-    ;; Set global options
-    (setf *acl2-executable* (or (getf options :acl2)
-                                (uiop:getenv "ACL2")
-                                "acl2"))
-    (setf *acl2-system-books* (or (getf options :acl2-books)
-                                  (uiop:getenv "ACL2_SYSTEM_BOOKS")))
-    (setf *verbose* (getf options :verbose))
-    (setf *debug* (getf options :debug))
-    
-    ;; Register system books directory
-    (when *acl2-system-books*
-      (register-include-book-dir :system *acl2-system-books*))
-    
-    ;; Run the build
-    (if (build-targets targets
-                       :jobs (getf options :jobs)
-                       :keep-going (getf options :keep-going)
-                       :no-build (getf options :no-build)
-                       :verbose (getf options :verbose))
-        0   ; Success
-      1)))  ; Failure
+(defun build2-main-fn (targets jobs keep-going no-build verbose)
+  "Internal function - runs in raw mode."
+  (declare (xargs :mode :program))
+  (progn!
+   (set-raw-mode t)
+   (let ((result (build2::build-targets 
+                  (if (stringp targets) (list targets) targets)
+                  :jobs jobs
+                  :keep-going keep-going
+                  :no-build no-build
+                  :verbose verbose)))
+     (set-raw-mode nil)
+     result)))
 
-(defun run-cert2-raw ()
-  "Entry point from ACL2."
-  ;; Get command-line arguments
-  ;; The exact method depends on the Lisp implementation
-  (let ((args
-         #+sbcl (cdr sb-ext:*posix-argv*)
-         #+ccl (cdr ccl:*command-line-argument-list*)
-         #-(or sbcl ccl) nil))
-    (let ((exit-code (main args)))
-      #+sbcl (sb-ext:exit :code exit-code)
-      #+ccl (ccl:quit exit-code)
-      #-(or sbcl ccl) exit-code)))
+(defmacro build2-main (targets &key (jobs '1) keep-going no-build verbose)
+  "Main entry point for build2 from ACL2.
+   TARGETS is a string or list of .lisp or .cert2 file paths to build.
+   JOBS is the number of parallel certification jobs.
+   KEEP-GOING if T, continue after failures.
+   NO-BUILD if T, just analyze and print what would be built.
+   VERBOSE if T, print detailed progress."
+  `(build2-main-fn ,targets ,jobs ,keep-going ,no-build ,verbose))
 
-) ; end progn for #-acl2-loop-only
+(defun build2-analyze-fn (targets verbose)
+  "Internal - analyze dependencies."
+  (declare (xargs :mode :program))
+  (progn!
+   (set-raw-mode t)
+   (let ((build2::*verbose* verbose))
+     (let ((result (build2::analyze-targets
+                    (if (stringp targets) (list targets) targets))))
+       (set-raw-mode nil)
+       result))))
+
+(defmacro build2-analyze (targets &key verbose)
+  "Analyze dependencies for TARGETS without building.
+   Returns the list of certificates in build order."
+  `(build2-analyze-fn ,targets ,verbose))
+
+(defun build2-deps-fn (target)
+  "Internal - print dependencies."
+  (declare (xargs :mode :program))
+  (progn!
+   (set-raw-mode t)
+   (build2::analyze-targets (list target))
+   (let ((cert-path (if (search ".lisp" target)
+                        (build2::lisp-to-cert2 (build2::canonical-path target))
+                      (build2::canonical-path target))))
+     (build2::print-deps cert-path))
+   (set-raw-mode nil)
+   t))
+
+(defmacro build2-deps (target)
+  "Print dependencies for a single TARGET."
+  `(build2-deps-fn ,target))
+
+;; ============================================================================  
+;; Command-line interface (for use with cert2 shell script)
+;; ============================================================================
+
+(defun build2-cli-fn (args)
+  "Process command-line arguments and run build2."
+  (declare (xargs :mode :program))
+  (progn!
+   (set-raw-mode t)
+   (let ((exit-code (build2::main args)))
+     (set-raw-mode nil)
+     exit-code)))
+
+;; For convenience when using interactively
+(defmacro cert2 (&rest targets)
+  "Convenience macro for certifying books.
+   Usage: (cert2 \"book1.lisp\" \"book2.lisp\")"
+  `(build2-main-fn 
+    (list ,@(loop for targ in targets 
+                  collect (if (stringp targ) targ `',targ)))
+    1 nil nil t))
