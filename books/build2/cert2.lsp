@@ -28,6 +28,9 @@
 (defvar *system-books-dir* nil
   "Path to ACL2 system books directory.")
 
+(defvar *acl2-source-dir* nil
+  "Path to ACL2 source directory (parent of books).")
+
 (defvar *verbose* nil
   "Verbose output flag.")
 
@@ -39,6 +42,10 @@
 
 (defvar *generate-html* t
   "Whether to generate HTML documentation during certification.")
+
+(defvar *acl2-system-index* nil
+  "Hash table of ACL2 system definitions (from axioms.lisp, etc.).
+   Maps symbol-name -> file-basename (e.g., 'axioms').")
 
 ;;; ============================================================================
 ;;; Symbol extraction from forms
@@ -428,6 +435,38 @@
           (format nil "~{~A~^~%~}" result))))
     (error () "")))
 
+(defun build-system-index-from-file (lisp-file file-basename)
+  "Extract definition names from LISP-FILE and add to *acl2-system-index*.
+   FILE-BASENAME is the name without extension (e.g., 'axioms')."
+  (let ((forms (read-forms-from-file lisp-file)))
+    (when forms
+      (dolist (form forms)
+        (handler-case
+          (let ((name (get-form-name form)))
+            (when name
+              (setf (gethash (symbol-name name) *acl2-system-index*) file-basename)))
+          (error () nil))))))
+
+(defun build-acl2-system-index ()
+  "Build index of ACL2 system definitions from source files.
+   Should be called before generating HTML for books."
+  (when (and *acl2-source-dir* (null *acl2-system-index*))
+    (setf *acl2-system-index* (make-hash-table :test 'equal))
+    (let* ((src-dir (namestring *acl2-source-dir*))
+           (src-dir-slash (if (char= (char src-dir (1- (length src-dir))) #\/)
+                              src-dir
+                            (concatenate 'string src-dir "/"))))
+      ;; Key files with definitions
+      (dolist (basename '("axioms" "basis-a" "basis-b" "defthm" "defuns" 
+                          "rewrite" "prove" "history-management"))
+        (let ((lisp-file (concatenate 'string src-dir-slash basename ".lisp")))
+          (when (probe-file lisp-file)
+            (when *verbose*
+              (format t "  Indexing system file: ~A~%" basename))
+            (build-system-index-from-file lisp-file basename))))
+      (when *verbose*
+        (format t "  System index: ~A definitions~%" (hash-table-count *acl2-system-index*))))))
+
 (defun compute-definition-snippets (forms &optional (max-lines 5))
   "Compute tooltip snippets for all definitions in FORMS.
    Returns hash table: symbol-name -> snippet string."
@@ -472,29 +511,44 @@
 
 (defun make-sym-link (sym index local-file)
   "Generate HTML anchor for a symbol reference.
-   INDEX is the xref-index, LOCAL-FILE is current file."
+   INDEX is the xref-index, LOCAL-FILE is current file.
+   Also checks *acl2-system-index* for ACL2 system definitions."
   (let* ((sym-name (symbol-name sym))
          (entry (gethash sym-name index))
          (target-file (and entry (xref-entry-file entry)))
+         ;; Check system index if not found locally
+         (system-file (and (null entry) 
+                           *acl2-system-index*
+                           (gethash sym-name *acl2-system-index*)))
          (is-local-def (and entry (equal target-file local-file)))
          (is-external (and target-file (not (equal target-file local-file))))
-         (has-definition (not (null entry)))
+         (is-system (not (null system-file)))
+         (has-definition (or entry system-file))
          (snippet (when *definition-snippets*
                     (gethash sym-name *definition-snippets*)))
          (class (cond
                   (is-local-def "sym-link local-def")
                   (is-external "sym-link external")
+                  (is-system "sym-link system")
                   (has-definition "sym-link")
                   (t nil)))  ; No class for unknown symbols
          (id-name (symbol-to-id sym)))
     (if has-definition
         ;; Symbol has a known definition - make it a link
-        (let* ((relative-target (if is-external
-                                    (compute-relative-path local-file target-file)
-                                    nil))
-               (href (if is-external
-                        (concatenate 'string relative-target ".html#def-" id-name)
-                      (concatenate 'string "#def-" id-name)))
+        (let* ((href (cond
+                       ;; System definition - need to go up from books to ACL2 source dir
+                       (is-system
+                        (let* ((local-parts (remove "" (split-string local-file #\/) :test #'equal))
+                               (depth (length (butlast local-parts)))  ; Directory depth
+                               (ups (make-list (1+ depth) :initial-element ".."))  ; +1 to go above books/
+                               (sys-rel (format nil "~{~A/~}~A.html#def-~A" ups system-file id-name)))
+                          sys-rel))
+                       ;; External book definition
+                       (is-external
+                        (let ((relative-target (compute-relative-path local-file target-file)))
+                          (concatenate 'string relative-target ".html#def-" id-name)))
+                       ;; Local definition
+                       (t (concatenate 'string "#def-" id-name))))
                (tooltip-attr (if snippet
                                 (format nil " title=\"~A\"" (html-escape snippet))
                               "")))
@@ -1416,13 +1470,16 @@
       (progn
         (setf *acl2-executable* acl2-path)
         (setf *system-books-dir* (pathname books-dir))
-        ;; Set build2 dir for finding template files (CSS, JS)
+        ;; Set ACL2 source dir (parent of books dir)
         (let ((dir-str (if (pathnamep books-dir) (namestring books-dir) books-dir)))
           (unless (char= (char dir-str (1- (length dir-str))) #\/)
             (setf dir-str (concatenate 'string dir-str "/")))
+          ;; ACL2 source is parent of books
+          (setf *acl2-source-dir* (pathname (concatenate 'string dir-str "../")))
           (setf *build2-dir* (pathname (concatenate 'string dir-str "build2/"))))
         (setf *certifying* (make-hash-table :test 'equal))
         (setf *certified* (make-hash-table :test 'equal))
+        (setf *acl2-system-index* nil)  ; Reset system index
         (multiple-value-bind (books options)
             (parse-args args)
           ;; Handle help
@@ -1431,6 +1488,8 @@
             (return-from build2-cli-fn 0))
           ;; Set verbose
           (setf *verbose* (cdr (assoc :verbose options)))
+          ;; Build system index for linking to ACL2 system definitions
+          (build-acl2-system-index)
           ;; Handle --html-only mode
           (when (cdr (assoc :html-only options))
             (process-html-only books)
