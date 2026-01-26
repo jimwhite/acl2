@@ -191,7 +191,13 @@
     (equal (ident-listp (add-to-set-equal ident idents))
            (and (identp ident)
                 (ident-listp idents)))
-    :enable add-to-set-equal))
+    :enable add-to-set-equal)
+
+  (defrule ident-listp-of-remove1-equal
+    (implies (ident-listp x)
+             (ident-listp (remove1-equal a x)))
+    :induct t
+    :enable remove1-equal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -905,7 +911,15 @@
   :elt-type s-char
   :true-listp t
   :elementp-of-nil nil
-  :pred s-char-listp)
+  :pred s-char-listp
+
+  ///
+
+  (defruled true-listp-when-s-char-listp
+    (implies (s-char-listp x)
+             (true-listp x))
+    :induct t
+    :enable s-char-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

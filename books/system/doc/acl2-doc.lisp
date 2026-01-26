@@ -109377,7 +109377,9 @@ it."
  can be expected to be compiled twice, once for each pass of the encapsulate.
  Implementation-level details are explained in the section entitled
  &ldquo;Appendix 2: Extension for Encapsulate&rdquo; in the ACL2 source code
- comment, &ldquo;Essay on Hash Table Support for Compilation&rdquo;.</p>
+ comment, &ldquo;Essay on Hash Table Support for Compilation&rdquo;.  In
+ particular, the end of that Essay discusses an enhancement that saves compiled
+ code for redundant @('defun')s.</p>
 
  <h3>Bug Fixes</h3>
 

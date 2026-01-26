@@ -36,6 +36,20 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; Turn fileset into map from strings to strings.
+
+(defun fileset-map-to-string-map (fileset-map)
+  (b* (((when (omap::emptyp fileset-map)) nil)
+       ((mv filepath filedata) (omap::head fileset-map)))
+    (omap::update (filepath->unwrap filepath)
+                  (acl2::nats=>string (filedata->unwrap filedata))
+                  (fileset-map-to-string-map (omap::tail fileset-map)))))
+
+(defun fileset-to-string-map (fileset)
+  (fileset-map-to-string-map (fileset->unwrap fileset)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; Check result of preprocessing against expectation.
 
 (defmacro test-preproc (files &key expected)
@@ -49,7 +63,8 @@
       (mv (if erp
               (cw "~@0" erp) ; CW returns NIL, so ASSERT!-STOBJ fails
             (or (equal fileset ,expected)
-                (cw "Actual:~%~x0" fileset))) ; CW returns nil (see above)
+                (cw "Actual:~%~x0" ; CW returns nil (see above)
+                    (fileset-to-string-map fileset))))
           state))
     state))
 
@@ -123,7 +138,71 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc-1 "macros.c" "")
+(test-preproc-1 "macros.c"
+                "
+char[100] buffer;
+
+int x =  0;
+
+int y = 3;
+
+int z1 = (1, );
+int z2 = (1, i);
+int z3 = (1, a,b);
+int z4 = (1, a, b);
+int z5 = (1, a, b);
+int z6 = (1, (a,b));
+
++;
++3;
++5.7e88;
++x;
+++uu; // needs a space: + +uu
++x+y;
+++7; // needs a space: + +7
+
+-;
+-3;
+-5.7e88;
+-x;
+-+uu;
+-x+y;
+-0;
+
+(a)+(b);
+(a * b)+(a / b);
+()+(78);
+(87)+();
+()+();
+(f(x,y))+(g(w));
+
+((a)*(b),);
+((a + b)*(a - b),);
+(()*(78),);
+((87)*(),);
+(()*(),);
+((f(x,y))*(g(w)),);
+((1)*(2),3);
+((1)*(2),3, 4);
+")
+; TODO: printer must add space where needed (see comments)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(test-preproc-1 "stringize.c"
+                "
+\"\";
+\"id\";
+\"+=\";
+\"739.88e+78\";
+\"'a'\";
+\"'\\\\n'\";
+\"'\\\\002'\";
+\"L'a'\";
+\"U'a'\";
+\"u'a'\";
+\"\\\"abc\\\"\";
+")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -131,14 +210,16 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(test-preproc-1 "c17-std-example-6.10.3.4.c" "")
+(test-preproc-1 "c17-std-example-6.10.3.4.c"
+                "
+2*9*g
+")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example1-6.10.3.5.c"
                 "
-// int table[TABSIZE];
+int table[100];
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -147,31 +228,23 @@ void f(double y) {
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example3-6.10.3.5.c"
                 "
-/*
-f(y+1) + f(f(z)) % t(t(g)(0) + t)(1);
-g(x+(3,4)-w) | h 5) & m
-      (f)^m(m);
-p() i[q()] = { q(1), r(2,3), r(4,), r(,5), r(,) };
-char c[2][6] = { str(hello), str() };
-*/
+f(2 * (y+1)) + f(2 * (f(2 * (z[0])))) % f(2 * (0)) + t(1);
+f(2 * (2+(3,4)-0,1)) | f(2 * (\\~{ } 5)) & f(2 * (0,1))^m(0,1);
+int i[] = { 1, 23, 4, 5,  };
+char c[2][6] = { \"hello\", \"\" };
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example4-6.10.3.5.c"
                 "
-/*
-debug(1, 2);
-fputs(str(strncmp(\"abc\\0d\", \"abc\", ’\\4’) // this goes away
-      == 0) str(: @\\n), s);
-#include xstr(INCFILE(2).h)
-glue(HIGH, LOW);
-xglue(HIGH, LOW)
-*/
+printf(\"x\" \"1\" \"= %d, x\" \"2\" \"= %s\", x1, x2);
+fputs(\"strncmp(\\\"abc\\\\0d\\\", \\\"abc\\\", '\\\\4') == 0\" \": @\\n\", s);
+include \"vers2.h\" // omit # in #include to avoid access
+\"hello\";
+\"hello\" \", world\"
 ")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -180,7 +253,7 @@ xglue(HIGH, LOW)
 (test-preproc-1 "c17-std-example5-6.10.3.5.c"
                 "/*
 int j[] = { t(1,2,3), t(,4,5), t(6,,7), t(8,9,),
-t(10,,), t(,11,), t(,,12), t(,,) };
+           t(10,,), t(,11,), t(,,12), t(,,) };
 */
 ")
 
@@ -190,12 +263,10 @@ t(10,,), t(,11,), t(,,12), t(,,) };
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; TODO: handle macro replacement
 (test-preproc-1 "c17-std-example7-6.10.3.5.c"
-                "/*
-debug(\"Flag\");
-debug(\"X = %d\\n\", x);
-showlist(The first, second, and third items.);
-report(x>y, \"x is %d but y is %d\", x, y);
-*/
+                "
+fprintf(stderr, \"Flag\");
+fprintf(stderr, \"X = %d\\n\", x);
+puts(\"The first, second, and third items.\");
+((x>y)?puts(\"x>y\"): printf(\"x is %d but y is %d\", x, y));
 ")
