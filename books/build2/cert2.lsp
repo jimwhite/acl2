@@ -514,6 +514,55 @@
         collect (subseq string start (or end (length string)))
         while end))
 
+(defun needs-escape-p (char)
+  "Return T if CHAR needs escaping in a symbol name for display."
+  (or (char<= char #\Space)           ; Control chars and space
+      (member char '(#\( #\) #\' #\` #\" #\; #\, #\: #\\ #\|
+                     #\[ #\] #\{ #\} #\# #\Newline #\Tab))))
+
+(defun symbol-needs-escaping-p (name)
+  "Return T if symbol NAME needs escaping for display.
+   Also returns T if it contains lowercase (since CL reader upcases)."
+  (loop for char across name
+        thereis (or (needs-escape-p char)
+                    (lower-case-p char))))
+
+(defun format-symbol-for-display (name)
+  "Format a symbol NAME for display with proper CL escaping.
+   Uses | | for multiple special chars, \\ for single."
+  (let ((escape-count 0)
+        (has-lowercase nil))
+    ;; Count chars needing escape and check for lowercase
+    (loop for char across name do
+          (when (needs-escape-p char) (incf escape-count))
+          (when (lower-case-p char) (setf has-lowercase t)))
+    (cond
+      ;; No escaping needed - just downcase for display
+      ((and (= escape-count 0) (not has-lowercase))
+       (string-downcase name))
+      ;; Multiple escapes or lowercase - use |...|
+      ((or (> escape-count 1) has-lowercase)
+       (with-output-to-string (out)
+         (write-char #\| out)
+         (loop for char across name do
+               ;; Inside |...|, only | and \ need escaping
+               (when (member char '(#\| #\\))
+                 (write-char #\\ out))
+               (write-char char out))
+         (write-char #\| out)))
+      ;; Single escape - use \ before that character
+      ((= escape-count 1)
+       (with-output-to-string (out)
+         (loop for char across name do
+               (cond
+                 ((needs-escape-p char)
+                  (write-char #\\ out)
+                  (write-char (char-downcase char) out))
+                 (t
+                  (write-char (char-downcase char) out))))))
+      ;; Fallback
+      (t (string-downcase name)))))
+
 (defun make-sym-link (sym index local-file)
   "Generate HTML anchor for a symbol reference.
    INDEX is the xref-index, LOCAL-FILE is current file.
@@ -562,9 +611,9 @@
                   (html-escape href)
                   (html-escape sym-name)
                   tooltip-attr
-                  (html-escape (string-downcase sym-name))))
+                  (html-escape (format-symbol-for-display sym-name))))
       ;; Unknown symbol - just output as text
-      (html-escape (string-downcase sym-name)))))
+      (html-escape (format-symbol-for-display sym-name)))))
 
 (defun format-atom (atom index local-file)
   "Format a single atom as HTML."
@@ -576,7 +625,7 @@
       ;; Keyword
       ((keywordp atom)
        (format nil "<span class=\"keyword\">:~A</span>"
-               (html-escape (string-downcase (symbol-name atom)))))
+               (html-escape (format-symbol-for-display (symbol-name atom)))))
       ;; String
       ((stringp atom)
        (format nil "<span class=\"string\">\"~A\"</span>"
@@ -783,7 +832,7 @@
       (when name
         (format out "<span class=\"form-name\" property=\"name\" data-sym=\"~A\">~A</span>"
                 (symbol-name name)
-                (html-escape (string-downcase (symbol-name name)))))
+                (html-escape (format-symbol-for-display (symbol-name name)))))
       (format out "<span class=\"form-type\">~A</span>" type-str)
       (format out "</div>~%")
       
