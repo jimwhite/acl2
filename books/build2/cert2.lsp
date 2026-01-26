@@ -8,6 +8,16 @@
 (in-package "BUILD2")
 
 ;;; ============================================================================
+;;; Global configuration
+;;; ============================================================================
+
+(defvar *acl2-executable* nil
+  "Path to ACL2 executable, set by shell script.")
+
+(defvar *system-books-dir* nil
+  "Path to ACL2 system books directory.")
+
+;;; ============================================================================
 ;;; Command-line interface (runs in raw Lisp)
 ;;; ============================================================================
 
@@ -49,6 +59,43 @@
    Returns (values books options) where options is an alist."
   (parse-args-helper args nil nil))
 
+;;; ============================================================================
+;;; ACL2 invocation for certification
+;;; ============================================================================
+
+(defun make-certify-script (book-path)
+  "Create the ACL2 script to certify BOOK-PATH.
+   Handles .acl2 file if present."
+  (let* ((acl2-file (concatenate 'string book-path ".acl2"))
+         (has-acl2 (probe-file acl2-file)))
+    (with-output-to-string (s)
+      ;; Load .acl2 file if it exists (sets up package, includes, etc.)
+      (when has-acl2
+        (format s "(ld ~S)~%" acl2-file))
+      ;; Certify the book
+      (format s "(certify-book ~S ? t)~%" book-path)
+      ;; Exit
+      (format s "(quit)~%"))))
+
+(defun run-acl2-certify (book-path verbose)
+  "Run ACL2 to certify BOOK-PATH. Returns T on success, NIL on failure."
+  (let* ((script (make-certify-script book-path))
+         (acl2 (or *acl2-executable* "acl2")))
+    (when verbose
+      (format t "  Running: ~A~%" acl2)
+      (format t "  Script: ~A~%" script))
+    ;; Run ACL2 with the script
+    (let* ((process (sb-ext:run-program 
+                     acl2
+                     nil
+                     :input (make-string-input-stream script)
+                     :output t
+                     :error :output
+                     :wait t
+                     :environment (list (format nil "ACL2_CUSTOMIZATION=NONE"))))
+           (exit-code (sb-ext:process-exit-code process)))
+      (zerop exit-code))))
+
 (defun certify-one-book (book-path verbose)
   "Certify a single book. Returns T on success, NIL on failure."
   (let* ((lisp-file (concatenate 'string book-path ".lisp"))
@@ -56,20 +103,23 @@
     (when verbose
       (format t "~%Checking ~A...~%" book-path))
     ;; Check if source exists
-    (unless (file-exists-p-raw lisp-file)
+    (unless (probe-file lisp-file)
       (format t "Error: Source file not found: ~A~%" lisp-file)
       (return-from certify-one-book nil))
     ;; Check if already up-to-date
-    (let ((lisp-date (file-write-date-raw lisp-file))
-          (cert-date (file-write-date-raw cert-file)))
+    (let ((lisp-date (file-write-date lisp-file))
+          (cert-date (ignore-errors (file-write-date cert-file))))
       (when (and cert-date lisp-date (>= cert-date lisp-date))
         (when verbose
           (format t "  Already up-to-date.~%"))
         (return-from certify-one-book t)))
-    ;; For now, just report what we would do
-    (format t "  Needs certification: ~A~%" book-path)
-    (format t "  (Full certification not yet implemented - use cert.pl for now)~%")
-    t))
+    ;; Actually certify the book
+    (format t "Certifying ~A...~%" book-path)
+    (let ((success (run-acl2-certify book-path verbose)))
+      (if success
+          (format t "  Success.~%")
+        (format t "  FAILED.~%"))
+      success)))
 
 (defun process-books (books verbose)
   "Process a list of books, return T if all succeed."
@@ -79,10 +129,12 @@
           (rest-ok (process-books (cdr books) verbose)))
       (and this-ok rest-ok))))
 
-(defun build2-cli-fn (args)
+(defun build2-cli-fn (args acl2-path)
   "Main entry point for the cert2 command-line tool.
    ARGS is a list of command-line arguments (strings).
+   ACL2-PATH is the path to the ACL2 executable.
    Returns 0 on success, non-zero on failure."
+  (setf *acl2-executable* acl2-path)
   (multiple-value-bind (books options)
       (parse-args args)
     ;; Handle help
