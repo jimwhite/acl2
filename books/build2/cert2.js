@@ -222,7 +222,7 @@ function navigateTo(symName, file) {
     if (target) {
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
       target.classList.add('highlight');
-      setTimeout(() => target.classList.remove('highlight'), 2000);
+      setTimeout(() => target.classList.remove('highlight'), 400);
     }
   }
 }
@@ -307,7 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
           // Add highlight effect after a short delay
           setTimeout(() => {
             target.classList.add('highlight');
-            setTimeout(() => target.classList.remove('highlight'), 2000);
+            setTimeout(() => target.classList.remove('highlight'), 400);
           }, 100);
         }
       }
@@ -329,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
         target.classList.add('highlight');
-        setTimeout(() => target.classList.remove('highlight'), 2000);
+        setTimeout(() => target.classList.remove('highlight'), 400);
       }, 200);
     }
   }

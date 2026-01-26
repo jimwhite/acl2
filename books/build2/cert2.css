@@ -165,7 +165,7 @@ body {
 .form-block.dimmed { opacity: 0.3; }
 
 .form-block.highlight {
-  animation: highlight-pulse 2s ease-out;
+  animation: highlight-pulse 0.4s ease-out;
 }
 
 @keyframes highlight-pulse {
