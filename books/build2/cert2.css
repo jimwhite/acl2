@@ -202,6 +202,20 @@ pre.code {
   color: #fab387; /* Catppuccin peach */
 }
 
+/* Include-book path links */
+.include-path {
+  color: var(--string);
+  text-decoration: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.include-path:hover {
+  background: var(--highlight);
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
 /* Part buttons for defthm */
 .part-buttons {
   display: flex;

@@ -404,6 +404,56 @@
       (declare (ignore e))
       "&lt;unprintable&gt;")))
 
+(defun get-include-book-dir (form)
+  "Extract :dir value from include-book form if present."
+  (when (and (consp form) (> (length form) 2))
+    (let ((rest (cddr form)))
+      (loop while rest
+            when (and (eq (car rest) :dir) (cdr rest))
+            return (cadr rest)
+            do (setf rest (cddr rest))))))
+
+(defun format-include-book-path (path-str dir-keyword)
+  "Format an include-book path as a clickable link.
+   PATH-STR is the book path string, DIR-KEYWORD is :system or nil."
+  (let* ((html-path (concatenate 'string path-str ".html"))
+         (display (html-escape path-str)))
+    (format nil "<a class=\"include-path\" href=\"~A\" title=\"Open ~A\">\"~A\"</a>"
+            (html-escape html-path)
+            (html-escape path-str)
+            display)))
+
+(defun format-include-book-form (form index local-file indent)
+  "Format an include-book form with clickable path."
+  (with-output-to-string (out)
+    (write-char #\( out)
+    ;; include-book symbol
+    (write-string (format-form-with-links-internal (car form) index local-file (+ indent 1) t) out)
+    (write-char #\Space out)
+    ;; Path - make it a link
+    (let ((path (cadr form))
+          (dir-keyword (get-include-book-dir form)))
+      (if (stringp path)
+          (write-string (format-include-book-path path dir-keyword) out)
+        (write-string (format-form-with-links-internal path index local-file (+ indent 2) t) out)))
+    ;; Rest of the arguments (keywords like :dir :system)
+    (let ((rest (cddr form)))
+      (loop while rest do
+        (write-char #\Space out)
+        (write-string (format-form-with-links-internal (car rest) index local-file (+ indent 2) t) out)
+        (setf rest (cdr rest))))
+    (write-char #\) out)))
+
+(defun include-book-form-p (form)
+  "Check if FORM is an include-book form."
+  (and (consp form)
+       (member (car form) '(acl2::include-book include-book))))
+
+(defun local-form-p (form)
+  "Check if FORM is a local form."
+  (and (consp form)
+       (member (car form) '(acl2::local local))))
+
 (defun format-form-with-links-internal (form index local-file &optional (indent 0) (in-list nil))
   "Internal implementation of format-form-with-links."
   (cond
@@ -422,7 +472,18 @@
     ;; Comma (unquote)
     ((and (consp form) (member (car form) '(acl2::comma sb-impl::comma)))
      (concatenate 'string "," (format-form-with-links-internal (cadr form) index local-file indent t)))
-    ;; List
+    ;; Include-book form - special handling for clickable path
+    ((include-book-form-p form)
+     (format-include-book-form form index local-file indent))
+    ;; Local form wrapping include-book
+    ((and (local-form-p form) (cdr form) (include-book-form-p (cadr form)))
+     (with-output-to-string (out)
+       (write-char #\( out)
+       (write-string (format-form-with-links-internal (car form) index local-file (+ indent 1) t) out)
+       (write-char #\Space out)
+       (write-string (format-include-book-form (cadr form) index local-file (+ indent 2)) out)
+       (write-char #\) out)))
+    ;; Regular list
     ((consp form)
      (with-output-to-string (out)
        (write-char #\( out)
