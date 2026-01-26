@@ -4,6 +4,48 @@
 // State
 let activeFilter = null;
 let activePartFilter = null;
+let currentFontSize = 14;
+
+// Theme management
+function getStoredTheme() {
+  return localStorage.getItem('acl2-theme') || 'dark';
+}
+
+function setTheme(theme) {
+  if (theme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    document.getElementById('theme-toggle').textContent = '🌙';
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+    document.getElementById('theme-toggle').textContent = '☀️';
+  }
+  localStorage.setItem('acl2-theme', theme);
+}
+
+function toggleTheme() {
+  const current = getStoredTheme();
+  setTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+// Font size management
+function getStoredFontSize() {
+  return parseInt(localStorage.getItem('acl2-fontsize') || '14', 10);
+}
+
+function setFontSize(size) {
+  size = Math.max(10, Math.min(24, size)); // Clamp between 10-24
+  currentFontSize = size;
+  document.body.style.fontSize = size + 'px';
+  localStorage.setItem('acl2-fontsize', size.toString());
+}
+
+function increaseFontSize() {
+  setFontSize(currentFontSize + 2);
+}
+
+function decreaseFontSize() {
+  setFontSize(currentFontSize - 2);
+}
 
 // Get all form blocks
 function getFormBlocks() {
@@ -191,4 +233,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }, 200);
     }
   }
+  
+  // Initialize theme from storage
+  setTheme(getStoredTheme());
+  
+  // Initialize font size from storage
+  currentFontSize = getStoredFontSize();
+  setFontSize(currentFontSize);
+  
+  // Theme toggle button
+  document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+  
+  // Font size buttons
+  document.getElementById('font-larger').addEventListener('click', increaseFontSize);
+  document.getElementById('font-smaller').addEventListener('click', decreaseFontSize);
 });
