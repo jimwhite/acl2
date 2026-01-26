@@ -4,6 +4,7 @@
 // State
 let activeFilter = null;
 let activePartFilter = null;
+let activeNameFilter = null;
 let currentFontSize = 14;
 
 // Theme management
@@ -56,11 +57,30 @@ function getFormBlocks() {
 function clearFilter() {
   activeFilter = null;
   activePartFilter = null;
+  activeNameFilter = null;
   getFormBlocks().forEach(b => {
     b.classList.remove('hidden', 'dimmed');
   });
   document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector('.filter-status').classList.remove('active');
+  const status = document.querySelector('.filter-status');
+  status.classList.remove('active');
+  // Slide name filter back to original position
+  document.querySelector('.controls-left').style.transform = '';
+  // Clear the name filter input
+  const nameInput = document.getElementById('name-filter');
+  if (nameInput) nameInput.value = '';
+}
+
+// Show filter status and slide name filter right
+function showFilterStatus(text) {
+  const status = document.querySelector('.filter-status');
+  status.classList.add('active');
+  status.querySelector('.filter-text').textContent = text;
+  // Slide name filter to the right to make room
+  setTimeout(() => {
+    const statusWidth = status.offsetWidth;
+    document.querySelector('.controls-left').style.transform = `translateX(${statusWidth + 15}px)`;
+  }, 10);
 }
 
 // Filter to show only forms that define or reference a symbol
@@ -94,10 +114,7 @@ function filterBySymbol(symName, showUsedBy) {
   });
   
   // Update status
-  const status = document.querySelector('.filter-status');
-  status.classList.add('active');
-  status.querySelector('.filter-text').textContent = 
-    `Filtering by: ${symName} (${visibleCount} items)`;
+  showFilterStatus(`Filtering by: ${symName} (${visibleCount} items)`);
 }
 
 // Filter by defthm part (term, hints, rule-classes, etc.)
@@ -128,10 +145,61 @@ function filterByPart(formId, partName) {
   });
   
   // Update status
-  const status = document.querySelector('.filter-status');
-  status.classList.add('active');
-  status.querySelector('.filter-text').textContent = 
-    `Filtering ${formId} :${partName} (${partSyms.length} references)`;
+  showFilterStatus(`Filtering ${formId} :${partName} (${partSyms.length} references)`);
+}
+
+// Filter by name (substring or regex)
+function filterByName(pattern, useRegex) {
+  // Clear other filters but keep the input value
+  activeFilter = null;
+  activePartFilter = null;
+  document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
+  
+  if (!pattern || pattern.trim() === '') {
+    // Empty pattern - show all
+    activeNameFilter = null;
+    getFormBlocks().forEach(b => b.classList.remove('hidden'));
+    const status = document.querySelector('.filter-status');
+    status.classList.remove('active');
+    document.querySelector('.controls-left').style.transform = '';
+    return;
+  }
+  
+  activeNameFilter = pattern;
+  
+  let matcher;
+  let isValidRegex = true;
+  
+  if (useRegex) {
+    try {
+      matcher = new RegExp(pattern, 'i');
+    } catch (e) {
+      // Invalid regex - show error in status and don't filter
+      showFilterStatus(`Invalid regex: ${e.message}`);
+      return;
+    }
+  } else {
+    // Plain substring match (case-insensitive)
+    const lowerPattern = pattern.toLowerCase();
+    matcher = { test: (s) => s.toLowerCase().includes(lowerPattern) };
+  }
+  
+  const blocks = getFormBlocks();
+  let visibleCount = 0;
+  
+  blocks.forEach(block => {
+    const definesName = block.dataset.defines || '';
+    if (matcher.test(definesName)) {
+      block.classList.remove('hidden');
+      visibleCount++;
+    } else {
+      block.classList.add('hidden');
+    }
+  });
+  
+  // Update status
+  const modeText = useRegex ? 'regex' : 'name';
+  showFilterStatus(`Filtering by ${modeText}: "${pattern}" (${visibleCount} matches)`);
 }
 
 // Click on a name to show what references it
@@ -178,6 +246,34 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Clear filter button
   document.querySelector('.clear-filter').addEventListener('click', clearFilter);
+  
+  // Name filter input
+  const nameFilter = document.getElementById('name-filter');
+  const regexToggle = document.getElementById('regex-toggle');
+  
+  let filterTimeout = null;
+  nameFilter.addEventListener('input', () => {
+    // Debounce the filter to avoid excessive updates while typing
+    clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(() => {
+      filterByName(nameFilter.value, regexToggle.checked);
+    }, 150);
+  });
+  
+  // Re-filter when regex toggle changes
+  regexToggle.addEventListener('change', () => {
+    if (nameFilter.value) {
+      filterByName(nameFilter.value, regexToggle.checked);
+    }
+  });
+  
+  // Allow Escape key to clear filter when in input
+  nameFilter.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      clearFilter();
+      nameFilter.blur();
+    }
+  });
   
   // Symbol references (old span-based refs)
   document.querySelectorAll('.sym-ref').forEach(ref => {
