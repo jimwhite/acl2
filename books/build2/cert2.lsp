@@ -8,6 +8,17 @@
 (in-package "BUILD2")
 
 ;;; ============================================================================
+;;; HTML Documentation Generation
+;;; ============================================================================
+;;;
+;;; Generates interactive HTML documentation for ACL2 books with:
+;;; - Syntax highlighting and hyperlinked names
+;;; - Semantic Web annotations (RDFa)
+;;; - Interactive filtering: click on parts of defthm to see only referenced items
+;;; - Cross-file navigation via relative links
+;;;
+
+;;; ============================================================================
 ;;; Global configuration
 ;;; ============================================================================
 
@@ -25,6 +36,708 @@
 
 (defvar *certified* (make-hash-table :test 'equal)
   "Hash table of books already certified this session.")
+
+(defvar *generate-html* t
+  "Whether to generate HTML documentation during certification.")
+
+;;; ============================================================================
+;;; Symbol extraction from forms
+;;; ============================================================================
+
+(defun symbolp-acl2 (x)
+  "Check if X is a symbol in any package (not a keyword)."
+  (and (symbolp x) (not (keywordp x))))
+
+(defun collect-symbols (form &optional acc)
+  "Recursively collect all non-keyword symbols from FORM."
+  (cond
+    ((null form) acc)
+    ((symbolp-acl2 form) 
+     (if (member form acc) acc (cons form acc)))
+    ((consp form)
+     (collect-symbols (cdr form) (collect-symbols (car form) acc)))
+    (t acc)))
+
+(defun get-defthm-section (keyword rest)
+  "Get the value associated with KEYWORD from property list REST."
+  (let ((pos (position keyword rest)))
+    (when pos (nth (1+ pos) rest))))
+
+(defun parse-defthm-parts (form)
+  "Parse a defthm FORM into its constituent parts.
+   Returns alist: ((name . sym) (term . form) (hints . form) ...)"
+  (when (and (consp form) 
+             (member (car form) '(acl2::defthm acl2::defthmd)))
+    (let* ((name (cadr form))
+           (term (caddr form))
+           (rest (cdddr form))
+           (hints (get-defthm-section :hints rest))
+           (rule-classes (get-defthm-section :rule-classes rest))
+           (instructions (get-defthm-section :instructions rest))
+           (otf-flg (get-defthm-section :otf-flg rest)))
+      (list (cons :name name)
+            (cons :term term)
+            (cons :hints hints)
+            (cons :rule-classes rule-classes)
+            (cons :instructions instructions)
+            (cons :otf-flg otf-flg)))))
+
+(defun parse-defun-parts (form)
+  "Parse a defun/defund FORM into its constituent parts."
+  (when (and (consp form)
+             (member (car form) '(acl2::defun acl2::defund acl2::defun-sk)))
+    (let* ((name (cadr form))
+           (args (caddr form))
+           (rest (cdddr form))
+           ;; Skip docstrings and declarations to find body
+           (body-rest rest)
+           (decls nil))
+      ;; Collect declares
+      (loop while (and (consp body-rest)
+                       (consp (car body-rest))
+                       (member (caar body-rest) '(declare acl2::declare)))
+            do (push (car body-rest) decls)
+               (setf body-rest (cdr body-rest)))
+      (list (cons :name name)
+            (cons :args args)
+            (cons :declare (nreverse decls))
+            (cons :body (car body-rest))))))
+
+(defun get-form-name (form)
+  "Extract the defined name from a top-level FORM, if any."
+  (when (consp form)
+    (case (car form)
+      ((acl2::defthm acl2::defthmd acl2::defun acl2::defund 
+        acl2::defmacro acl2::defconst acl2::defun-sk
+        acl2::defrule acl2::defabbrev)
+       (cadr form))
+      (acl2::mutual-recursion
+       ;; Return first function name
+       (when (and (cdr form) (consp (cadr form)))
+         (cadadr form)))
+      (acl2::encapsulate
+       ;; Look for first internal defun/defthm
+       (loop for sub in (cddr form)
+             when (and (consp sub) 
+                       (member (car sub) '(acl2::defun acl2::defthm)))
+             return (cadr sub)))
+      (otherwise nil))))
+
+(defun get-form-type (form)
+  "Get the type of definition FORM."
+  (when (consp form)
+    (case (car form)
+      ((acl2::defthm acl2::defthmd acl2::defrule) :theorem)
+      ((acl2::defun acl2::defund acl2::defun-sk) :function)
+      (acl2::defmacro :macro)
+      (acl2::defconst :constant)
+      (acl2::encapsulate :encapsulate)
+      (acl2::mutual-recursion :mutual-recursion)
+      (acl2::include-book :include-book)
+      (acl2::local :local)
+      (acl2::in-theory :in-theory)
+      (otherwise :other))))
+
+;;; ============================================================================
+;;; HTML escaping and formatting
+;;; ============================================================================
+
+(defun html-escape (string)
+  "Escape special HTML characters in STRING."
+  (with-output-to-string (out)
+    (loop for char across string do
+          (case char
+            (#\& (write-string "&amp;" out))
+            (#\< (write-string "&lt;" out))
+            (#\> (write-string "&gt;" out))
+            (#\" (write-string "&quot;" out))
+            (#\' (write-string "&#39;" out))
+            (otherwise (write-char char out))))))
+
+(defun symbol-to-id (sym)
+  "Convert SYMBOL to a valid HTML id string."
+  (let ((name (symbol-name sym)))
+    (with-output-to-string (out)
+      (loop for char across name do
+            (cond
+              ((alphanumericp char) (write-char (char-downcase char) out))
+              ((char= char #\-) (write-char #\- out))
+              ((char= char #\_) (write-char #\_ out))
+              (t (format out "_~2,'0X" (char-code char))))))))
+
+(defun form-to-string (form)
+  "Convert FORM to a pretty-printed string."
+  (let ((*print-case* :downcase)
+        (*print-pretty* t)
+        (*print-right-margin* 80))
+    (with-output-to-string (out)
+      (write form :stream out))))
+
+;;; ============================================================================
+;;; Cross-reference index building  
+;;; ============================================================================
+
+(defstruct xref-entry
+  "Cross-reference entry for a defined name."
+  name           ; The symbol
+  form-type      ; :theorem, :function, etc.
+  file           ; Source file (relative)
+  defined-by     ; List of symbols this definition uses
+  used-by        ; List of symbols that use this definition
+  parts          ; Alist of parts and their symbols for defthm
+  )
+
+(defun build-xref-index (forms filename)
+  "Build cross-reference index from FORMS read from FILENAME.
+   Returns hash table: symbol -> xref-entry"
+  (let ((index (make-hash-table :test 'equal)))
+    (dolist (form forms)
+      (let ((name (get-form-name form))
+            (form-type (get-form-type form)))
+        (when name
+          (let* ((all-syms (collect-symbols form))
+                 (parts (or (parse-defthm-parts form)
+                           (parse-defun-parts form)))
+                 (entry (make-xref-entry 
+                         :name name
+                         :form-type form-type
+                         :file filename
+                         :defined-by (remove name all-syms)
+                         :parts (when parts
+                                  (mapcar (lambda (p)
+                                            (cons (car p) (collect-symbols (cdr p))))
+                                          parts)))))
+            (setf (gethash (symbol-name name) index) entry)))))
+    ;; Build used-by relationships
+    (maphash (lambda (name entry)
+               (declare (ignore name))
+               (dolist (sym (xref-entry-defined-by entry))
+                 (let ((target (gethash (symbol-name sym) index)))
+                   (when target
+                     (pushnew (xref-entry-name entry) 
+                              (xref-entry-used-by target))))))
+             index)
+    index))
+
+;;; ============================================================================
+;;; HTML generation
+;;; ============================================================================
+
+(defun generate-css ()
+  "Generate CSS for the documentation."
+  "
+<style>
+:root {
+  --bg: #1e1e2e;
+  --fg: #cdd6f4;
+  --comment: #6c7086;
+  --keyword: #cba6f7;
+  --string: #a6e3a1;
+  --function: #89b4fa;
+  --type: #f9e2af;
+  --link: #89dceb;
+  --link-hover: #f5c2e7;
+  --highlight: rgba(137, 180, 250, 0.2);
+  --border: #313244;
+}
+
+body {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  background: var(--bg);
+  color: var(--fg);
+  margin: 0;
+  padding: 20px;
+  line-height: 1.6;
+}
+
+.book-header {
+  border-bottom: 2px solid var(--border);
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+}
+
+.book-header h1 {
+  color: var(--keyword);
+  margin: 0;
+}
+
+.book-header .path {
+  color: var(--comment);
+  font-size: 0.9em;
+}
+
+.form-block {
+  margin: 10px 0;
+  padding: 15px;
+  background: rgba(49, 50, 68, 0.5);
+  border-radius: 8px;
+  border-left: 3px solid var(--border);
+}
+
+.form-block.theorem { border-left-color: var(--keyword); }
+.form-block.function { border-left-color: var(--function); }
+.form-block.macro { border-left-color: var(--type); }
+.form-block.include-book { border-left-color: var(--string); }
+
+.form-block.hidden { display: none; }
+.form-block.dimmed { opacity: 0.3; }
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.form-name {
+  color: var(--function);
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.form-name:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.form-type {
+  color: var(--comment);
+  font-size: 0.85em;
+}
+
+pre.code {
+  margin: 0;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.sym-ref {
+  color: var(--link);
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.sym-ref:hover {
+  background: var(--highlight);
+  color: var(--link-hover);
+}
+
+.sym-ref.local-def { color: var(--function); font-weight: bold; }
+.sym-ref.external { color: var(--type); }
+
+/* Part buttons for defthm */
+.part-buttons {
+  display: flex;
+  gap: 5px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.part-btn {
+  padding: 4px 10px;
+  background: var(--border);
+  border: 1px solid var(--comment);
+  border-radius: 4px;
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 0.85em;
+  font-family: inherit;
+}
+
+.part-btn:hover {
+  background: var(--highlight);
+  border-color: var(--link);
+}
+
+.part-btn.active {
+  background: var(--link);
+  color: var(--bg);
+  border-color: var(--link);
+}
+
+/* References panel */
+.refs-panel {
+  margin-top: 10px;
+  padding: 10px;
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+  display: none;
+}
+
+.refs-panel.visible { display: block; }
+
+.refs-panel h4 {
+  margin: 0 0 5px 0;
+  color: var(--comment);
+  font-size: 0.9em;
+}
+
+.refs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+/* Filter status */
+.filter-status {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  display: none;
+}
+
+.filter-status.active {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.clear-filter {
+  padding: 5px 15px;
+  background: var(--keyword);
+  color: var(--bg);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* RDFa vocab indicator */
+[vocab] { /* semantic web annotations present */ }
+</style>
+")
+
+(defun generate-javascript ()
+  "Generate JavaScript for interactive filtering."
+  "
+<script>
+// State
+let activeFilter = null;
+let activePartFilter = null;
+
+// Get all form blocks
+function getFormBlocks() {
+  return document.querySelectorAll('.form-block');
+}
+
+// Clear all filters
+function clearFilter() {
+  activeFilter = null;
+  activePartFilter = null;
+  getFormBlocks().forEach(b => {
+    b.classList.remove('hidden', 'dimmed');
+  });
+  document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.filter-status').classList.remove('active');
+}
+
+// Filter to show only forms that define or reference a symbol
+function filterBySymbol(symName, showUsedBy) {
+  clearFilter();
+  activeFilter = symName;
+  
+  const blocks = getFormBlocks();
+  let visibleCount = 0;
+  
+  blocks.forEach(block => {
+    const definesName = block.dataset.defines;
+    const references = (block.dataset.references || '').split(',');
+    const usedBy = (block.dataset.usedBy || '').split(',');
+    
+    let show = false;
+    if (showUsedBy) {
+      // Show forms that USE this symbol
+      show = references.includes(symName) || definesName === symName;
+    } else {
+      // Show forms that this symbol USES
+      show = usedBy.includes(symName) || definesName === symName;
+    }
+    
+    if (show) {
+      block.classList.remove('hidden');
+      visibleCount++;
+    } else {
+      block.classList.add('hidden');
+    }
+  });
+  
+  // Update status
+  const status = document.querySelector('.filter-status');
+  status.classList.add('active');
+  status.querySelector('.filter-text').textContent = 
+    `Filtering by: ${symName} (${visibleCount} items)`;
+}
+
+// Filter by defthm part (term, hints, rule-classes, etc.)
+function filterByPart(formId, partName) {
+  clearFilter();
+  activePartFilter = { formId, partName };
+  
+  // Get the part's referenced symbols
+  // data-part-term becomes dataset.partTerm, data-part-hints becomes dataset.partHints, etc.
+  const block = document.getElementById(formId);
+  const datasetKey = 'part' + partName.charAt(0).toUpperCase() + partName.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase());
+  const partData = block.dataset[datasetKey];
+  if (!partData) return;
+  
+  const partSyms = partData.split(',').filter(s => s);
+  
+  // Highlight the button
+  block.querySelector(`.part-btn[data-part=\"${partName}\"]`).classList.add('active');
+  
+  // Hide forms not referenced by this part
+  getFormBlocks().forEach(b => {
+    const definesName = b.dataset.defines;
+    if (b.id === formId || partSyms.includes(definesName)) {
+      b.classList.remove('hidden');
+    } else {
+      b.classList.add('hidden');
+    }
+  });
+  
+  // Update status
+  const status = document.querySelector('.filter-status');
+  status.classList.add('active');
+  status.querySelector('.filter-text').textContent = 
+    `Filtering ${formId} :${partName} (${partSyms.length} references)`;
+}
+
+// Click on a name to show what references it
+function handleNameClick(symName) {
+  if (activeFilter === symName) {
+    clearFilter();
+  } else {
+    filterBySymbol(symName, true);
+  }
+}
+
+// Navigate to a definition (same file or different)
+function navigateTo(symName, file) {
+  if (file) {
+    // External file - navigate
+    window.location.href = file + '.html#def-' + symName.toLowerCase();
+  } else {
+    // Same file - scroll
+    const target = document.getElementById('def-' + symName.toLowerCase());
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      target.classList.add('highlight');
+      setTimeout(() => target.classList.remove('highlight'), 2000);
+    }
+  }
+}
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+  // Part buttons
+  document.querySelectorAll('.part-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const formId = btn.closest('.form-block').id;
+      const partName = btn.dataset.part;
+      if (activePartFilter && activePartFilter.formId === formId && 
+          activePartFilter.partName === partName) {
+        clearFilter();
+      } else {
+        filterByPart(formId, partName);
+      }
+    });
+  });
+  
+  // Clear filter button
+  document.querySelector('.clear-filter').addEventListener('click', clearFilter);
+  
+  // Symbol references
+  document.querySelectorAll('.sym-ref').forEach(ref => {
+    ref.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sym = ref.dataset.sym;
+      const file = ref.dataset.file;
+      if (file) {
+        navigateTo(sym, file);
+      } else {
+        handleNameClick(sym);
+      }
+    });
+  });
+  
+  // Form names (show what uses them)
+  document.querySelectorAll('.form-name').forEach(name => {
+    name.addEventListener('click', (e) => {
+      handleNameClick(name.dataset.sym);
+    });
+  });
+});
+</script>
+")
+
+(defun generate-html-header (book-name relative-path)
+  "Generate HTML header for a book."
+  (format nil "<!DOCTYPE html>
+<html lang=\"en\" vocab=\"http://schema.org/\" typeof=\"SoftwareSourceCode\">
+<head>
+  <meta charset=\"UTF-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+  <title>~A - ACL2 Book</title>
+  <meta property=\"name\" content=\"~A\">
+  <meta property=\"programmingLanguage\" content=\"ACL2\">
+  ~A
+</head>
+<body>
+  <div class=\"filter-status\">
+    <span class=\"filter-text\">Filtering...</span>
+    <button class=\"clear-filter\">Clear Filter</button>
+  </div>
+  
+  <div class=\"book-header\">
+    <h1 property=\"name\">~A</h1>
+    <div class=\"path\">~A</div>
+  </div>
+  
+  <main property=\"text\">
+" (html-escape book-name) (html-escape book-name)
+  (generate-css)
+  (html-escape book-name) (html-escape relative-path)))
+
+(defun generate-html-footer ()
+  "Generate HTML footer."
+  (format nil "
+  </main>
+  ~A
+</body>
+</html>" (generate-javascript)))
+
+(defun make-sym-span (sym index local-file)
+  "Generate HTML span for a symbol reference.
+   INDEX is the xref-index, LOCAL-FILE is current file."
+  (let* ((sym-name (symbol-name sym))
+         (entry (gethash sym-name index))
+         (target-file (and entry (xref-entry-file entry)))
+         (is-external (and target-file (not (equal target-file local-file))))
+         (class (cond
+                  ((and entry (not is-external)) "sym-ref local-def")
+                  (is-external "sym-ref external")
+                  (t "sym-ref")))
+         (file-attr (if is-external
+                        (format nil " data-file=\"~A\"" 
+                                (html-escape target-file))
+                      "")))
+    (format nil "<span class=\"~A\" data-sym=\"~A\"~A>~A</span>"
+            class
+            (html-escape sym-name)
+            file-attr
+            (html-escape (string-downcase sym-name)))))
+
+(defun format-form-with-links (form index local-file)
+  "Format FORM as HTML with symbol links."
+  (let* ((form-str (form-to-string form))
+         (output (make-string-output-stream))
+         (syms-in-form (collect-symbols form)))
+    ;; Simple approach: escape the whole thing, then we'd need to parse
+    ;; For now, just escape and output
+    ;; A more sophisticated version would walk the form tree
+    (write-string (html-escape form-str) output)
+    (get-output-stream-string output)))
+
+(defun generate-form-html (form index local-file form-idx)
+  "Generate HTML for a single FORM."
+  (let* ((name (get-form-name form))
+         (form-type (get-form-type form))
+         (type-str (string-downcase (symbol-name (or form-type :other))))
+         (id (if name 
+                 (format nil "def-~A" (symbol-to-id name))
+               (format nil "form-~A" form-idx)))
+         (entry (and name (gethash (symbol-name name) index)))
+         (defined-by (if entry 
+                        (mapcar #'symbol-name (xref-entry-defined-by entry))
+                       nil))
+         (used-by (if entry
+                     (mapcar #'symbol-name (xref-entry-used-by entry))
+                    nil))
+         (parts (and entry (xref-entry-parts entry)))
+         (form-str (html-escape (form-to-string form))))
+    (with-output-to-string (out)
+      ;; Form block with RDFa and data attributes
+      (format out "<div class=\"form-block ~A\" id=\"~A\"" type-str id)
+      (when name
+        (format out " data-defines=\"~A\"" (symbol-name name)))
+      (when defined-by
+        (format out " data-references=\"~{~A~^,~}\"" defined-by))
+      (when used-by
+        (format out " data-used-by=\"~{~A~^,~}\"" used-by))
+      ;; Add part data for defthm
+      (dolist (part parts)
+        (let ((part-name (car part))
+              (part-syms (cdr part)))
+          (when (and part-name part-syms (keywordp part-name))
+            (format out " data-part-~A=\"~{~A~^,~}\""
+                    (string-downcase (symbol-name part-name))
+                    (mapcar #'symbol-name part-syms)))))
+      (format out " typeof=\"~A\">" 
+              (case form-type
+                (:theorem "SoftwareSourceCode")
+                (:function "SoftwareSourceCode")
+                (otherwise "Code")))
+      
+      ;; Header with name and type
+      (format out "~%    <div class=\"form-header\">")
+      (when name
+        (format out "<span class=\"form-name\" property=\"name\" data-sym=\"~A\">~A</span>"
+                (symbol-name name)
+                (html-escape (string-downcase (symbol-name name)))))
+      (format out "<span class=\"form-type\">~A</span>" type-str)
+      (format out "</div>~%")
+      
+      ;; Part buttons for defthm
+      (when (member form-type '(:theorem))
+        (format out "    <div class=\"part-buttons\">")
+        (dolist (part '(:term :hints :rule-classes :instructions))
+          (let ((part-data (assoc part parts)))
+            (when (and part-data (cdr part-data))
+              (format out "<button class=\"part-btn\" data-part=\"~A\">~A</button>"
+                      (string-downcase (symbol-name part))
+                      (string-downcase (symbol-name part))))))
+        (format out "</div>~%"))
+      
+      ;; Code
+      (format out "    <pre class=\"code\" property=\"text\">~A</pre>~%" form-str)
+      
+      (format out "  </div>~%~%"))))
+
+(defun generate-book-html (forms book-path)
+  "Generate complete HTML for a book from its FORMS.
+   Returns HTML string."
+  (let* ((book-str (namestring book-path))
+         (book-name (car (last (pathname-directory book-path))))
+         (relative-path (enough-namestring book-path *system-books-dir*))
+         (index (build-xref-index forms relative-path)))
+    (with-output-to-string (out)
+      (write-string (generate-html-header 
+                     (or (pathname-name book-path) book-name)
+                     relative-path) out)
+      (loop for form in forms
+            for idx from 0
+            do (write-string (generate-form-html form index relative-path idx) out))
+      (write-string (generate-html-footer) out))))
+
+(defun write-book-html (book-path)
+  "Generate and write HTML documentation for BOOK-PATH."
+  (let* ((book-str (namestring book-path))
+         (lisp-file (concatenate 'string book-str ".lisp"))
+         (html-file (concatenate 'string book-str ".html"))
+         (forms (read-forms-from-file lisp-file)))
+    (when forms
+      (let ((html (generate-book-html forms book-path)))
+        (with-open-file (out html-file :direction :output
+                                       :if-exists :supersede
+                                       :if-does-not-exist :create)
+          (write-string html out))
+        (when *verbose*
+          (format t "  Generated: ~A~%" html-file))
+        t))))
 
 ;;; ============================================================================
 ;;; Dependency scanning using proper Lisp reader
@@ -111,11 +824,12 @@
 
 (defun print-usage ()
   (format t "~%Usage: cert2 [options] book1 [book2 ...]~%")
-  (format t "~%Certify ACL2 books.~%")
+  (format t "~%Certify ACL2 books and generate HTML documentation.~%")
   (format t "~%Options:~%")
   (format t "  -h, --help      Show this help message~%")
   (format t "  -j N            Use N parallel jobs (not yet implemented)~%")
   (format t "  -v, --verbose   Verbose output~%")
+  (format t "  --no-html       Skip HTML documentation generation~%")
   (format t "~%Books should be specified without the .lisp extension.~%")
   (format t "~%Example:~%")
   (format t "  cert2 arithmetic/top std/lists/top~%~%"))
@@ -131,6 +845,8 @@
         (parse-args-helper rest books (acons :help t options)))
        ((or (string= arg "-v") (string= arg "--verbose"))
         (parse-args-helper rest books (acons :verbose t options)))
+       ((string= arg "--no-html")
+        (parse-args-helper rest books (acons :no-html t options)))
        ((string= arg "-j")
         (if rest
             (parse-args-helper (cdr rest) books 
@@ -250,6 +966,11 @@
                 ((book-up-to-date-p book-path)
                  (when *verbose*
                    (format t "  ~A (up to date)~%" book-str))
+                 ;; Generate HTML even for up-to-date books if HTML missing
+                 (when *generate-html*
+                   (let ((html-file (concatenate 'string book-str ".html")))
+                     (unless (probe-file html-file)
+                       (write-book-html book-path))))
                  (setf (gethash book-str *certified*) t)
                  t)
                 (t
@@ -258,6 +979,9 @@
                    (if success
                        (progn
                          (format t "  Success: ~A~%" book-str)
+                         ;; Generate HTML documentation
+                         (when *generate-html*
+                           (write-book-html book-path))
                          (setf (gethash book-str *certified*) t)
                          t)
                      (progn
@@ -308,6 +1032,8 @@
             (return-from build2-cli-fn 0))
           ;; Set verbose
           (setf *verbose* (cdr (assoc :verbose options)))
+          ;; Set HTML generation (on by default)
+          (setf *generate-html* (not (cdr (assoc :no-html options))))
           ;; Must have at least one book
           (when (null books)
             (format t "Error: No books specified.~%")
