@@ -271,6 +271,12 @@
   ~A
 </head>
 <body>
+  <div class=\"controls\">
+    <button class=\"control-btn\" id=\"theme-toggle\" title=\"Toggle light/dark theme\">☀️</button>
+    <button class=\"control-btn\" id=\"font-smaller\" title=\"Decrease font size\">A-</button>
+    <button class=\"control-btn\" id=\"font-larger\" title=\"Increase font size\">A+</button>
+  </div>
+
   <div class=\"filter-status\">
     <span class=\"filter-text\">Filtering...</span>
     <button class=\"clear-filter\">Clear Filter</button>
@@ -441,7 +447,9 @@
                ;; Normal list element
                (t
                 (incf elem-count)
-                (if (and multi-line (> elem-count 1))
+                ;; Keep first 2 elements on same line (e.g., defthm name)
+                ;; Then use multi-line for rest
+                (if (and multi-line (> elem-count 2))
                     (format out "~%~A" (make-string new-indent :initial-element #\Space))
                   (write-char #\Space out))
                 (write-string (format-form-with-links-internal (car rest) index local-file new-indent t) out)
