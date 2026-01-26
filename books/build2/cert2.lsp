@@ -1126,12 +1126,43 @@
         (format t "  Generated: ~A~%" html-file)
         t))))
 
+(defun raw-lisp-file-p (filename)
+  "Check if FILENAME is a .lisp file we should process (not *-raw.lisp)."
+  (let ((name (if (pathnamep filename) (namestring filename) filename)))
+    (and (> (length name) 5)
+         (string-equal ".lisp" (subseq name (- (length name) 5)))
+         (not (and (> (length name) 9)
+                   (string-equal "-raw.lisp" (subseq name (- (length name) 9))))))))
+
+(defun find-raw-lisp-files (dir)
+  "Find all .lisp files in DIR (non-recursive), excluding *-raw.lisp files."
+  (let ((results nil)
+        (dir-str (namestring dir)))
+    (unless (char= (char dir-str (1- (length dir-str))) #\/)
+      (setf dir-str (concatenate 'string dir-str "/")))
+    ;; Use shell find to get .lisp files (non-recursive)
+    (let ((cmd (format nil "find ~A -maxdepth 1 -name '*.lisp' -type f 2>/dev/null | sort" 
+                       (sb-ext:native-namestring (truename dir-str)))))
+      (let ((output (with-output-to-string (s)
+                      (sb-ext:run-program "/bin/sh" (list "-c" cmd)
+                                          :output s
+                                          :error nil))))
+        (with-input-from-string (in output)
+          (loop for line = (read-line in nil nil)
+                while line
+                when (raw-lisp-file-p line)
+                do (push line results)))))
+    (nreverse results)))
+
 (defun process-raw-lisp (args)
   "Generate HTML for raw .lisp files (no certification required).
-   ARGS should be paths to .lisp files.
+   ARGS can be .lisp files or directories containing .lisp files.
+   Excludes *-raw.lisp files when processing directories.
    Returns count of HTML files generated."
   (let ((generated 0)
-        (errors 0))
+        (errors 0)
+        (files-to-process nil))
+    ;; Collect all files to process
     (dolist (item args)
       (let* ((item-str (if (pathnamep item) (namestring item) item))
              ;; Handle relative vs absolute paths
@@ -1141,20 +1172,30 @@
                           ;; Relative to current directory, not books dir
                           (concatenate 'string (namestring (truename ".")) "/" item-str))))
         (cond
-          ((not (probe-file full-path))
-           (format t "Error: File not found: ~A~%" full-path)
-           (incf errors))
+          ;; Check if it's a directory
+          ((and (probe-file full-path)
+                (sb-posix:s-isdir (sb-posix:stat-mode (sb-posix:stat full-path))))
+           (let ((lisp-files (find-raw-lisp-files full-path)))
+             (format t "Found ~A .lisp files in ~A~%" (length lisp-files) full-path)
+             (setf files-to-process (append files-to-process lisp-files))))
+          ;; Single file
+          ((probe-file full-path)
+           (push full-path files-to-process))
           (t
-           (format t "Processing: ~A~%" full-path)
-           (handler-case
-               (if (write-raw-lisp-html (pathname full-path))
-                   (incf generated)
-                 (progn
-                   (format t "  Skipped: ~A (could not read forms)~%" full-path)
-                   (incf errors)))
-             (error (e)
-               (format t "  Error: ~A~%" e)
-               (incf errors)))))))
+           (format t "Error: Not found: ~A~%" full-path)
+           (incf errors)))))
+    ;; Process all collected files
+    (dolist (full-path files-to-process)
+      (format t "Processing: ~A~%" full-path)
+      (handler-case
+          (if (write-raw-lisp-html (pathname full-path))
+              (incf generated)
+            (progn
+              (format t "  Skipped: ~A (could not read forms)~%" full-path)
+              (incf errors)))
+        (error (e)
+          (format t "  Error: ~A~%" e)
+          (incf errors))))
     (format t "~%Raw Lisp HTML generation: ~A generated, ~A errors~%"
             generated errors)
     generated))
