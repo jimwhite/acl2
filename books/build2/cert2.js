@@ -195,21 +195,25 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Symbol links (new anchor-based links)
   // These use standard <a> tags so navigation happens automatically
-  // But we can enhance with highlighting on arrival
+  // But we need to clear filters if target would be hidden
   document.querySelectorAll('.sym-link').forEach(link => {
     link.addEventListener('click', (e) => {
-      // If it's a local link, add highlight effect
       const href = link.getAttribute('href');
       if (href && href.startsWith('#')) {
-        // Local link - let default behavior happen, but add highlight
-        setTimeout(() => {
-          const targetId = href.substring(1);
-          const target = document.getElementById(targetId);
-          if (target) {
+        // Local link - check if target is hidden by filter
+        const targetId = href.substring(1);
+        const target = document.getElementById(targetId);
+        if (target) {
+          // If target is hidden, clear the filter first
+          if (target.classList.contains('hidden')) {
+            clearFilter();
+          }
+          // Add highlight effect after a short delay
+          setTimeout(() => {
             target.classList.add('highlight');
             setTimeout(() => target.classList.remove('highlight'), 2000);
-          }
-        }, 100);
+          }, 100);
+        }
       }
       // For external links, default behavior handles navigation
     });

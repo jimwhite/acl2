@@ -109,7 +109,7 @@
     (case (car form)
       ((acl2::defthm acl2::defthmd acl2::defun acl2::defund 
         acl2::defmacro acl2::defconst acl2::defun-sk
-        acl2::defrule acl2::defabbrev)
+        acl2::defrule acl2::defabbrev acl2::defaxiom)
        (cadr form))
       (acl2::mutual-recursion
        ;; Return first function name
@@ -128,6 +128,7 @@
   (when (consp form)
     (case (car form)
       ((acl2::defthm acl2::defthmd acl2::defrule) :theorem)
+      (acl2::defaxiom :axiom)
       ((acl2::defun acl2::defund acl2::defun-sk) :function)
       (acl2::defmacro :macro)
       (acl2::defconst :constant)
@@ -873,14 +874,17 @@
   "Read all Lisp forms from FILENAME using the standard reader.
    Creates packages on-the-fly as needed, restarting from beginning if necessary.
    Returns list of forms, or NIL on error."
-  (let ((max-retries 20))
+  (let ((max-retries 20)
+        ;; Add :acl2-loop-only to *features* for reading ACL2 source files
+        (*features* (cons :acl2-loop-only *features*)))
     (loop for attempt from 1 to max-retries do
       (handler-case
           (with-open-file (stream filename :direction :input
                                            :if-does-not-exist nil)
             (when stream
               (let ((*package* (find-package "ACL2"))
-                    (*read-eval* nil)
+                    ;; Allow #. for reading ACL2 source files that use read-time eval
+                    (*read-eval* t)
                     (forms nil))
                 (loop
                   (let ((form (read stream nil :eof)))
@@ -901,7 +905,8 @@
               (format t "  Creating package ~A...~%" pkg-name))
             (ensure-package-exists pkg-name)))
         (error (c)
-          (declare (ignore c))
+          (when *verbose*
+            (format t "  Read error: ~A~%" c))
           (return-from read-forms-from-file nil))))
     ;; Exceeded max retries
     nil))
@@ -1101,6 +1106,59 @@
             generated skipped errors)
     generated))
 
+(defun write-raw-lisp-html (lisp-file)
+  "Generate HTML for a raw .lisp file (no .cert required).
+   Output goes next to the input file with .html extension."
+  (let* ((lisp-str (namestring lisp-file))
+         ;; Strip .lisp extension if present to get base path
+         (base-str (if (and (> (length lisp-str) 5)
+                            (string-equal ".lisp" (subseq lisp-str (- (length lisp-str) 5))))
+                       (subseq lisp-str 0 (- (length lisp-str) 5))
+                     lisp-str))
+         (html-file (concatenate 'string base-str ".html"))
+         (forms (read-forms-from-file lisp-str)))
+    (when forms
+      (let ((html (generate-book-html forms (pathname base-str))))
+        (with-open-file (out html-file :direction :output
+                                       :if-exists :supersede
+                                       :if-does-not-exist :create)
+          (write-string html out))
+        (format t "  Generated: ~A~%" html-file)
+        t))))
+
+(defun process-raw-lisp (args)
+  "Generate HTML for raw .lisp files (no certification required).
+   ARGS should be paths to .lisp files.
+   Returns count of HTML files generated."
+  (let ((generated 0)
+        (errors 0))
+    (dolist (item args)
+      (let* ((item-str (if (pathnamep item) (namestring item) item))
+             ;; Handle relative vs absolute paths
+             (full-path (if (and (> (length item-str) 0)
+                                 (char= (char item-str 0) #\/))
+                            item-str
+                          ;; Relative to current directory, not books dir
+                          (concatenate 'string (namestring (truename ".")) "/" item-str))))
+        (cond
+          ((not (probe-file full-path))
+           (format t "Error: File not found: ~A~%" full-path)
+           (incf errors))
+          (t
+           (format t "Processing: ~A~%" full-path)
+           (handler-case
+               (if (write-raw-lisp-html (pathname full-path))
+                   (incf generated)
+                 (progn
+                   (format t "  Skipped: ~A (could not read forms)~%" full-path)
+                   (incf errors)))
+             (error (e)
+               (format t "  Error: ~A~%" e)
+               (incf errors)))))))
+    (format t "~%Raw Lisp HTML generation: ~A generated, ~A errors~%"
+            generated errors)
+    generated))
+
 ;;; ============================================================================
 ;;; Command-line interface
 ;;; ============================================================================
@@ -1108,6 +1166,7 @@
 (defun print-usage ()
   (format t "~%Usage: cert2 [options] book1 [book2 ...]~%")
   (format t "       cert2 --html-only [directory]~%")
+  (format t "       cert2 --raw file1.lisp [file2.lisp ...]~%")
   (format t "~%Certify ACL2 books and generate HTML documentation.~%")
   (format t "~%Options:~%")
   (format t "  -h, --help      Show this help message~%")
@@ -1116,10 +1175,13 @@
   (format t "  --no-html       Skip HTML documentation generation~%")
   (format t "  --html-only     Generate HTML only for books with .cert files~%")
   (format t "                  (does not certify, just generates docs)~%")
+  (format t "  --raw           Generate HTML for raw .lisp files (no certification needed)~%")
+  (format t "                  Use for ACL2 source files like axioms.lisp~%")
   (format t "~%Books should be specified without the .lisp extension.~%")
   (format t "~%Example:~%")
   (format t "  cert2 arithmetic/top std/lists/top~%")
-  (format t "  cert2 --html-only arithmetic-2~%~%"))
+  (format t "  cert2 --html-only arithmetic-2~%")
+  (format t "  cert2 --raw /path/to/acl2/axioms.lisp~%~%"))
 
 (defun parse-args-helper (args books options)
   "Helper for parse-args using recursion instead of loop."
@@ -1136,6 +1198,8 @@
         (parse-args-helper rest books (acons :no-html t options)))
        ((string= arg "--html-only")
         (parse-args-helper rest books (acons :html-only t options)))
+       ((string= arg "--raw")
+        (parse-args-helper rest books (acons :raw t options)))
        ((string= arg "-j")
         (if rest
             (parse-args-helper (cdr rest) books 
@@ -1329,6 +1393,12 @@
           ;; Handle --html-only mode
           (when (cdr (assoc :html-only options))
             (process-html-only books)
+            (return-from build2-cli-fn 0))
+          ;; Handle --raw mode (for ACL2 system files)
+          (when (cdr (assoc :raw options))
+            (if books
+                (process-raw-lisp books)
+              (format t "Error: No .lisp files specified for --raw mode.~%"))
             (return-from build2-cli-fn 0))
           ;; Set HTML generation (on by default)
           (setf *generate-html* (not (cdr (assoc :no-html options))))
