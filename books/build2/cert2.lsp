@@ -984,6 +984,13 @@
           (format t "  Generated: ~A~%" html-file))
         t))))
 
+(defun resolve-to-absolute (path-str)
+  "Resolve PATH-STR to an absolute path. If relative, resolve from cwd."
+  (if (and (> (length path-str) 0)
+           (char= (char path-str 0) #\/))
+      path-str
+    (concatenate 'string (sb-posix:getcwd) "/" path-str)))
+
 (defun ensure-directory-exists (path)
   "Create directory PATH and all parent directories if they don't exist."
   (let ((dir (if (pathnamep path) path (pathname path))))
@@ -1251,20 +1258,14 @@
         (errors 0))
     (dolist (item items)
       (let* ((item-str (if (pathnamep item) (namestring item) item))
-             (sys-str (namestring *system-books-dir*))
-             (_ (unless (char= (char sys-str (1- (length sys-str))) #\/)
-                  (setf sys-str (concatenate 'string sys-str "/"))))
-             (full-path (if (and (> (length item-str) 0)
-                                 (char= (char item-str 0) #\/))
-                            item-str
-                          (concatenate 'string sys-str item-str)))
+             ;; Always resolve to absolute path first
+             (full-path (resolve-to-absolute item-str))
              ;; Check if this is a book (has .cert file) or a directory
              (cert-file (concatenate 'string full-path ".cert"))
              (is-book (probe-file cert-file))
              (is-dir (and (not is-book) 
                           (probe-file full-path)
                           (sb-posix:s-isdir (sb-posix:stat-mode (sb-posix:stat full-path))))))
-        (declare (ignore _))
         (cond
           ;; Single book with .cert file
           (is-book
@@ -1749,14 +1750,9 @@
           ;; Set output directory (only when explicitly specified with -o or --output-dir)
           (let ((out-dir-opt (cdr (assoc :output-dir options))))
             (when out-dir-opt
-              (let* ((out-dir-str out-dir-opt)
-                     (out-dir-path (if (and (> (length out-dir-str) 0)
-                                            (char= (char out-dir-str 0) #\/))
-                                       (pathname out-dir-str)
-                                     ;; Relative to ACL2 source dir
-                                     (pathname (concatenate 'string 
-                                                           (namestring *acl2-source-dir*)
-                                                           out-dir-str "/")))))
+              (let* ((out-dir-path (pathname (concatenate 'string 
+                                                         (resolve-to-absolute out-dir-opt)
+                                                         "/"))))
                 ;; Ensure output directory exists before calling truename
                 (ensure-directories-exist out-dir-path)
                 (setf *output-dir* (truename out-dir-path))
