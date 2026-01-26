@@ -91,6 +91,16 @@ body {
   font-size: 0.9em;
 }
 
+.book-header .path .source-link {
+  color: var(--comment);
+  text-decoration: none;
+}
+
+.book-header .path .source-link:hover {
+  color: var(--link);
+  text-decoration: underline;
+}
+
 .form-block {
   margin: 10px 0;
   padding: 15px;

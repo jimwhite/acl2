@@ -187,6 +187,21 @@
   parts          ; Alist of parts and their symbols for defthm
   )
 
+(defun clean-relative-path (path)
+  "Remove leading ./ from PATH and clean up any double slashes."
+  (let ((str (if (pathnamep path) (namestring path) path)))
+    ;; Remove leading ./
+    (loop while (and (>= (length str) 2)
+                     (string= (subseq str 0 2) "./"))
+          do (setf str (subseq str 2)))
+    ;; Remove any double slashes
+    (loop for pos = (search "//" str)
+          while pos
+          do (setf str (concatenate 'string
+                                    (subseq str 0 pos)
+                                    (subseq str (1+ pos)))))
+    str))
+
 (defun build-xref-index (forms filename)
   "Build cross-reference index from FORMS read from FILENAME.
    Returns hash table: symbol -> xref-entry"
@@ -216,6 +231,89 @@
                    (when target
                      (pushnew (xref-entry-name entry) 
                               (xref-entry-used-by target))))))
+             index)
+    index))
+
+(defvar *scanned-books* nil
+  "Hash table tracking books already scanned for cross-references to avoid cycles.")
+
+(defun get-book-definitions (book-path)
+  "Read BOOK-PATH.lisp and return list of (symbol-name . relative-path) for definitions."
+  (let ((lisp-file (concatenate 'string (namestring book-path) ".lisp"))
+        (sys-dir (pathname (ensure-trailing-slash *system-books-dir*))))
+    (when (probe-file lisp-file)
+      (let ((forms (read-forms-from-file lisp-file))
+            (relative-path (clean-relative-path (enough-namestring book-path sys-dir))))
+        (when forms
+          (loop for form in forms
+                for name = (get-form-name form)
+                when name
+                collect (cons (symbol-name name) relative-path)))))))
+
+(defun scan-included-books-for-defs (forms book-path index &optional (depth 0))
+  "Scan books included by FORMS for their definitions and add to INDEX.
+   BOOK-PATH is the current book being processed.
+   DEPTH limits recursion to avoid excessive scanning."
+  (when (< depth 3)  ; Limit recursion depth
+    (let* ((book-dir (make-pathname :directory (pathname-directory book-path)))
+           (includes (loop for form in forms append (extract-include-books form))))
+      (dolist (inc includes)
+        (let* ((inc-path (first inc))
+               (dir-kw (third inc))
+               (resolved (resolve-book-path book-dir inc-path dir-kw))
+               (resolved-str (namestring resolved)))
+          ;; Skip if already scanned
+          (unless (gethash resolved-str *scanned-books*)
+            (setf (gethash resolved-str *scanned-books*) t)
+            ;; Get definitions from this book
+            (let ((defs (get-book-definitions resolved)))
+              (dolist (def defs)
+                (let ((sym-name (car def))
+                      (file-path (cdr def)))
+                  ;; Only add if not already in index (local definitions take precedence)
+                  (unless (gethash sym-name index)
+                    (setf (gethash sym-name index)
+                          (make-xref-entry :name (intern sym-name "ACL2")
+                                          :form-type :external
+                                          :file file-path))))))))))))
+
+(defun build-xref-index-with-includes (forms filename book-path)
+  "Build cross-reference index from FORMS, including definitions from included books.
+   Returns hash table: symbol -> xref-entry"
+  (let ((*scanned-books* (make-hash-table :test 'equal))
+        (index (make-hash-table :test 'equal)))
+    ;; First, index local definitions
+    (dolist (form forms)
+      (let ((name (get-form-name form))
+            (form-type (get-form-type form)))
+        (when name
+          (let* ((all-syms (collect-symbols form))
+                 (parts (or (parse-defthm-parts form)
+                           (parse-defun-parts form)))
+                 (entry (make-xref-entry 
+                         :name name
+                         :form-type form-type
+                         :file filename
+                         :defined-by (remove name all-syms)
+                         :parts (when parts
+                                  (mapcar (lambda (p)
+                                            (cons (car p) (collect-symbols (cdr p))))
+                                          parts)))))
+            (setf (gethash (symbol-name name) index) entry)))))
+    ;; Mark current book as scanned
+    (setf (gethash (namestring book-path) *scanned-books*) t)
+    ;; Scan included books for their definitions
+    (scan-included-books-for-defs forms book-path index 0)
+    ;; Build used-by relationships (only for local definitions)
+    (maphash (lambda (name entry)
+               (declare (ignore name))
+               (when (not (eq (xref-entry-form-type entry) :external))
+                 (dolist (sym (xref-entry-defined-by entry))
+                   (let ((target (gethash (symbol-name sym) index)))
+                     (when (and target 
+                                (not (eq (xref-entry-form-type target) :external)))
+                       (pushnew (xref-entry-name entry) 
+                                (xref-entry-used-by target)))))))
              index)
     index))
 
@@ -284,13 +382,15 @@
   
   <div class=\"book-header\">
     <h1 property=\"name\">~A</h1>
-    <div class=\"path\">~A</div>
+    <div class=\"path\"><a href=\"~A.lisp\" class=\"source-link\">~A</a></div>
   </div>
   
   <main property=\"text\">
 " (html-escape book-name) (html-escape book-name)
   (generate-css)
-  (html-escape book-name) (html-escape relative-path)))
+  (html-escape book-name)
+  (html-escape (pathname-name (pathname relative-path)))
+  (html-escape relative-path)))
 
 (defun generate-html-footer ()
   "Generate HTML footer."
@@ -341,6 +441,34 @@
         (error () nil)))
     snippets))
 
+(defun compute-relative-path (from-file to-file)
+  "Compute relative path from FROM-FILE to TO-FILE.
+   Both should be relative paths from the same base (e.g., system books dir)."
+  (let* ((from-parts (remove "" (split-string from-file #\/) :test #'equal))
+         (to-parts (remove "" (split-string to-file #\/) :test #'equal))
+         ;; Remove filename from from-parts to get directory
+         (from-dir (butlast from-parts))
+         ;; Find common prefix
+         (common-len 0))
+    (loop for f-part in from-dir
+          for t-part in to-parts
+          while (equal f-part t-part)
+          do (incf common-len))
+    ;; Build relative path: go up from from-dir, then down to to-file
+    (let* ((ups (- (length from-dir) common-len))
+           (downs (nthcdr common-len to-parts))
+           (parts (append (make-list ups :initial-element "..") downs)))
+      (if parts
+          (format nil "~{~A~^/~}" parts)
+          (car (last to-parts))))))  ; Same directory
+
+(defun split-string (string char)
+  "Split STRING by CHAR into a list of substrings."
+  (loop for start = 0 then (1+ end)
+        for end = (position char string :start start)
+        collect (subseq string start (or end (length string)))
+        while end))
+
 (defun make-sym-link (sym index local-file)
   "Generate HTML anchor for a symbol reference.
    INDEX is the xref-index, LOCAL-FILE is current file."
@@ -360,8 +488,11 @@
          (id-name (symbol-to-id sym)))
     (if has-definition
         ;; Symbol has a known definition - make it a link
-        (let* ((href (if is-external
-                        (concatenate 'string target-file ".html#def-" id-name)
+        (let* ((relative-target (if is-external
+                                    (compute-relative-path local-file target-file)
+                                    nil))
+               (href (if is-external
+                        (concatenate 'string relative-target ".html#def-" id-name)
                       (concatenate 'string "#def-" id-name)))
                (tooltip-attr (if snippet
                                 (format nil " title=\"~A\"" (html-escape snippet))
@@ -413,10 +544,18 @@
             return (cadr rest)
             do (setf rest (cddr rest))))))
 
-(defun format-include-book-path (path-str dir-keyword)
+(defun format-include-book-path (path-str dir-keyword local-file)
   "Format an include-book path as a clickable link.
-   PATH-STR is the book path string, DIR-KEYWORD is :system or nil."
-  (let* ((html-path (concatenate 'string path-str ".html"))
+   PATH-STR is the book path string, DIR-KEYWORD is :system or nil.
+   LOCAL-FILE is the current file's relative path for computing relative URLs."
+  (let* ((target-path (if (eq dir-keyword :system)
+                          path-str  ; :dir :system - path relative to books root
+                        ;; Relative path - resolve against current file's directory
+                        (let* ((local-dir-parts (butlast (split-string local-file #\/)))
+                               (resolved (append local-dir-parts (split-string path-str #\/))))
+                          (format nil "~{~A~^/~}" resolved))))
+         (relative-url (compute-relative-path local-file target-path))
+         (html-path (concatenate 'string relative-url ".html"))
          (display (html-escape path-str)))
     (format nil "<a class=\"include-path\" href=\"~A\" title=\"Open ~A\">\"~A\"</a>"
             (html-escape html-path)
@@ -434,7 +573,7 @@
     (let ((path (cadr form))
           (dir-keyword (get-include-book-dir form)))
       (if (stringp path)
-          (write-string (format-include-book-path path dir-keyword) out)
+          (write-string (format-include-book-path path dir-keyword local-file) out)
         (write-string (format-form-with-links-internal path index local-file (+ indent 2) t) out)))
     ;; Rest of the arguments (keywords like :dir :system)
     (let ((rest (cddr form)))
@@ -447,12 +586,14 @@
 (defun include-book-form-p (form)
   "Check if FORM is an include-book form."
   (and (consp form)
-       (member (car form) '(acl2::include-book include-book))))
+       (let ((name (symbol-name (car form))))
+         (string-equal name "INCLUDE-BOOK"))))
 
 (defun local-form-p (form)
   "Check if FORM is a local form."
   (and (consp form)
-       (member (car form) '(acl2::local local))))
+       (let ((name (symbol-name (car form))))
+         (string-equal name "LOCAL"))))
 
 (defun format-form-with-links-internal (form index local-file &optional (indent 0) (in-list nil))
   "Internal implementation of format-form-with-links."
@@ -666,13 +807,23 @@
         (format out "    </div>~%")
         (format out "  </div>~%~%")))))
 
+(defun ensure-trailing-slash (path)
+  "Ensure PATH string ends with a slash."
+  (let ((str (if (pathnamep path) (namestring path) path)))
+    (if (and (> (length str) 0)
+             (char= (char str (1- (length str))) #\/))
+        str
+        (concatenate 'string str "/"))))
+
 (defun generate-book-html (forms book-path)
   "Generate complete HTML for a book from its FORMS.
    Returns HTML string."
   (let* ((book-str (namestring book-path))
          (book-name (car (last (pathname-directory book-path))))
-         (relative-path (enough-namestring book-path *system-books-dir*))
-         (index (build-xref-index forms relative-path))
+         ;; Ensure system-books-dir has trailing slash for enough-namestring
+         (sys-dir (pathname (ensure-trailing-slash *system-books-dir*)))
+         (relative-path (clean-relative-path (enough-namestring book-path sys-dir)))
+         (index (build-xref-index-with-includes forms relative-path book-path))
          ;; Compute definition snippets for tooltips
          (*definition-snippets* (compute-definition-snippets forms 5)))
     (with-output-to-string (out)
