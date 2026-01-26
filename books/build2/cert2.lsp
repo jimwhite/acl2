@@ -377,7 +377,12 @@
   ~A
 </head>
 <body>
-  <div class=\"controls\">
+  <div class=\"controls-left\">
+    <input type=\"text\" id=\"name-filter\" class=\"name-filter\" placeholder=\"Filter by name...\" title=\"Filter definitions by name\">
+    <label class=\"regex-label\"><input type=\"checkbox\" id=\"regex-toggle\"> regex</label>
+  </div>
+
+  <div class=\"controls-right\">
     <button class=\"control-btn\" id=\"theme-toggle\" title=\"Toggle light/dark theme\">☀️</button>
     <button class=\"control-btn\" id=\"font-smaller\" title=\"Decrease font size\">A-</button>
     <button class=\"control-btn\" id=\"font-larger\" title=\"Increase font size\">A+</button>

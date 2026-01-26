@@ -49,12 +49,24 @@ body {
 }
 
 /* Controls toolbar */
-.controls {
+.controls-left {
+  position: fixed;
+  top: 10px;
+  left: 20px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  z-index: 200;
+  transition: transform 0.3s ease;
+}
+
+.controls-right {
   position: fixed;
   top: 10px;
   right: 20px;
   display: flex;
   gap: 8px;
+  align-items: center;
   z-index: 200;
 }
 
@@ -73,6 +85,41 @@ body {
 .control-btn:hover {
   background: var(--btn-hover);
   border-color: var(--link);
+}
+
+.name-filter {
+  padding: 6px 10px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: 13px;
+  width: 150px;
+  transition: all 0.2s;
+}
+
+.name-filter:focus {
+  outline: none;
+  border-color: var(--link);
+  width: 200px;
+}
+
+.name-filter::placeholder {
+  color: var(--comment);
+}
+
+.regex-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--comment);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.regex-label input {
+  cursor: pointer;
 }
 
 .book-header {
@@ -322,13 +369,17 @@ pre.code {
 
 /* Filter status */
 .filter-status {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  top: 10px;
+  left: 20px;
   background: var(--bg);
-  padding: 10px;
-  border-bottom: 1px solid var(--border);
-  z-index: 100;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  z-index: 201;
   display: none;
+  align-items: center;
+  gap: 10px;
 }
 
 .filter-status.active {
