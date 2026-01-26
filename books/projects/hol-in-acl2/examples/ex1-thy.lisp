@@ -6,11 +6,11 @@
 
 (in-package "HOL")
 
-; (depends-on "eval_poly.defhol")
+; (depends-on "ex1.defhol")
 
 (include-book "../acl2/theories")
 
-(zf::import-theory ex1)
+(import-theory ex1)
 
 ; A trivial consequence of the imported axiom for FST:
 (defgoal fst-comma

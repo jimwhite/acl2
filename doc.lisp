@@ -13913,7 +13913,7 @@ A Basic Build
 
     * tools (mostly)
 
-    * [std]
+    * [std] (mostly)
 
     * [xdoc] (in part)
 
@@ -106485,7 +106485,9 @@ Heuristic and Efficiency Improvements
   pass of the encapsulate.  Implementation-level details are
   explained in the section entitled ``Appendix 2: Extension for
   Encapsulate'' in the ACL2 source code comment, ``Essay on Hash
-  Table Support for Compilation''.
+  Table Support for Compilation''.  In particular, the end of that
+  Essay discusses an enhancement that saves compiled code for
+  redundant [47mdefun[0ms.
 
 
 Bug Fixes
