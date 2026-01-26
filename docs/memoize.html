@@ -432,13 +432,13 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">memoize</h1>
-    <div class="path"><a href="memoize.lisp" class="source-link">/workspaces/acl2/memoize</a></div>
+    <div class="path"><a href="memoize.lisp" class="source-link">memoize</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-1" typeof="Code">
@@ -463,12 +463,12 @@ pre.code {
 
 <div class="form-block macro" id="def-memsum" data-defines="MEMSUM" data-references="MEMOIZE-SUMMARY,QUOTE,DEFMACRO" data-used-by="*HONS-PRIMITIVES*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="MEMSUM">memsum</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memsum" data-sym="MEMSUM" title="(defmacro memsum () &#39;(memoize-summary))">memsum</a> nil '(memoize-summary))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memsum" data-sym="MEMSUM" title="(defmacro memsum () &#39;(memoize-summary))">memsum</a> nil '(memoize-summary))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ahons-primitive-fns_2A" data-defines="*HONS-PRIMITIVE-FNS*" data-references="CLEAR-MEMOIZE-STATISTICS,MEMOIZE-SUMMARY,CLEAR-MEMOIZE-TABLES,CLEAR-MEMOIZE-TABLE,FLUSH-HONS-GET-HASH-TABLE-LINK,NUMBER-SUBTREES,CONS-SUBTREES,FAST-ALIST-SUMMARY,FAST-ALIST-FREE,FAST-ALIST-LEN,FAST-ALIST-CLEAN!,FAST-ALIST-CLEAN,FAST-ALIST-FORK!,FAST-ALIST-FORK,HONS-ACONS!,HONS-ACONS,HONS-GET,GET-SLOW-ALIST-ACTION,HONS-RESIZE-FN,HONS-SUMMARY,HONS-WASH!,HONS-WASH,HONS-CLEAR!,HONS-CLEAR,HONS-EQUAL-LITE,HONS-EQUAL,HONS,HONS-COPY,QUOTE,DEFCONST" data-used-by="*HONS-PRIMITIVES*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*HONS-PRIMITIVE-FNS*">*hons-primitive-fns*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ahons-primitive-fns_2A" data-sym="*HONS-PRIMITIVE-FNS*" title="(defconst *hons-primitive-fns*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ahons-primitive-fns_2A" data-sym="*HONS-PRIMITIVE-FNS*" title="(defconst *hons-primitive-fns*
           &#39;(hons-copy hons hons-equal hons-equal-lite hons-clear hons-clear!
                       hons-wash hons-wash! hons-summary hons-resize-fn
                       get-slow-alist-action hons-get hons-acons hons-acons!
@@ -505,10 +505,10 @@ pre.code {
 
 <div class="form-block constant" id="def-_2Ahons-primitives_2A" data-defines="*HONS-PRIMITIVES*" data-references="*HONS-PRIMITIVE-FNS*,MEMSUM,UNMEMOIZE,MEMOIZE,SET-SLOW-ALIST-ACTION,HONS-RESIZE,QUOTE,APPEND,DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*HONS-PRIMITIVES*">*hons-primitives*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ahons-primitives_2A" data-sym="*HONS-PRIMITIVES*" title="(defconst *hons-primitives*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ahons-primitives_2A" data-sym="*HONS-PRIMITIVES*" title="(defconst *hons-primitives*
           (append &#39;(hons-resize set-slow-alist-action memoize unmemoize memsum)
                   *hons-primitive-fns*))">*hons-primitives*</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-append" data-sym="APPEND">append</a> '(hons-resize set-slow-alist-action <a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
+  (<a class="sym-link system" href="axioms.html#def-append" data-sym="APPEND">append</a> '(hons-resize set-slow-alist-action <a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
           (fn
            &amp;key (condition &#39;t condition-p) condition-fn hints otf-flg
            (recursive &#39;:default) commutative forget memo-table-init-size aokp
@@ -529,12 +529,12 @@ pre.code {
 
 <div class="form-block constant" id="def-_2Amht-default-size_2A" data-defines="*MHT-DEFAULT-SIZE*" data-references="DEFCONST" data-used-by="MEMOIZE-FORM" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*MHT-DEFAULT-SIZE*">*mht-default-size*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Amht-default-size_2A" data-sym="*MHT-DEFAULT-SIZE*" title="(defconst *mht-default-size* 60)">*mht-default-size*</a> <span class="number">60</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Amht-default-size_2A" data-sym="*MHT-DEFAULT-SIZE*" title="(defconst *mht-default-size* 60)">*mht-default-size*</a> <span class="number">60</span>)</pre>
   </div>
 
 <div class="form-block function" id="def-memoize-form" data-defines="MEMOIZE-FORM" data-references="*MHT-DEFAULT-SIZE*,VERIFY-GUARDS,IGNORABLE,MEMBER-EQ,MEMOIZE,HARD,ER,CLTL-DEF-FROM-NAME,STOBJS-OUT,ADD-SUFFIX,OR,STOBJS-IN,GETPROPC,SYMBOLP,FORMALS,WRLD,LET*,MAKE-EVENT,STATE,W,VALUE-TRIPLE,LIST,EQ,NOT,CONS,LIST*,WORLD,MACRO-ALIASES,DEREF-MACRO-NAME,MEMOIZE-TABLE,TABLE,PROGN,QUASIQUOTE,NULL,AND,QUOTE,EQUAL,COND,LET,T,XARGS,DECLARE,IDEAL-OKP,INVOKE,TOTAL,STATS,AOKP,MEMO-TABLE-INIT-SIZE,FORGET,COMMUTATIVE,INLINE,OTF-FLG,HINTS,CONDITION-FN,CONDITION-P,CONDITION,FN,DEFUN" data-used-by="MEMOIZE" data-part-name="MEMOIZE-FORM" data-part-args="IDEAL-OKP,INVOKE,TOTAL,STATS,AOKP,MEMO-TABLE-INIT-SIZE,FORGET,COMMUTATIVE,INLINE,OTF-FLG,HINTS,CONDITION-FN,CONDITION-P,CONDITION,FN" data-part-declare="T,XARGS,DECLARE" data-part-body="*MHT-DEFAULT-SIZE*,VERIFY-GUARDS,XARGS,IGNORABLE,DECLARE,DEFUN,MEMBER-EQ,MEMOIZE,HARD,ER,CLTL-DEF-FROM-NAME,STOBJS-OUT,IDEAL-OKP,INVOKE,TOTAL,STATS,AOKP,MEMO-TABLE-INIT-SIZE,FORGET,COMMUTATIVE,INLINE,OTF-FLG,HINTS,ADD-SUFFIX,OR,STOBJS-IN,GETPROPC,SYMBOLP,FORMALS,FN,WRLD,LET*,MAKE-EVENT,STATE,W,VALUE-TRIPLE,LIST,EQ,NOT,CONS,LIST*,WORLD,MACRO-ALIASES,DEREF-MACRO-NAME,MEMOIZE-TABLE,TABLE,PROGN,QUASIQUOTE,CONDITION-P,NULL,CONDITION-FN,AND,T,QUOTE,EQUAL,COND,CONDITION,LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="MEMOIZE-FORM">memoize-form</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-memoize-form" data-sym="MEMOIZE-FORM" title="(defun memoize-form
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-memoize-form" data-sym="MEMOIZE-FORM" title="(defun memoize-form
        (fn condition condition-p condition-fn hints otf-flg inline commutative
         forget memo-table-init-size aokp stats total invoke ideal-okp)
   (declare (xargs :guard t))
@@ -554,13 +554,13 @@ pre.code {
     total
     invoke
     ideal-okp)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-  (let ((condition (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((equal condition ''<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>) <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+  (let ((condition (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((equal condition ''<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>) <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
          ((equal condition ''nil) nil)
-         (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> condition))))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> condition-fn (<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> condition-p)) `(<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
-            (<a class="sym-link system" href="../../../axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> world))
-            (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (cons <span class="keyword">:condition-fn</span> ,CONDITION-FN)
+         (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> condition))))
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> condition-fn (<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> condition-p)) `(<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
+            (<a class="sym-link system" href="axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> world))
+            (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (cons <span class="keyword">:condition-fn</span> ,CONDITION-FN)
               (cons <span class="keyword">:inline</span> ,INLINE)
               (cons <span class="keyword">:commutative</span> ,COMMUTATIVE)
               (cons <span class="keyword">:forget</span> ,FORGET)
@@ -569,16 +569,16 @@ pre.code {
               (cons <span class="keyword">:stats</span> ,STATS)
               (cons <span class="keyword">:total</span> ,TOTAL)
               (cons <span class="keyword">:invoke</span> ,INVOKE)
-              (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> ,IDEAL-OKP <span class="keyword">:default</span>))
-                (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (cons <span class="keyword">:ideal-okp</span> ,IDEAL-OKP)))))
-          (<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> (<a class="sym-link system" href="../../../axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))))))
-      ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> condition-p
-         (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> condition <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-         (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> condition nil))) `(<a class="sym-link system" href="../../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((wrld (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state)) (fn (<a class="sym-link system" href="../../../axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> wrld)))
+              (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> ,IDEAL-OKP <span class="keyword">:default</span>))
+                (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (cons <span class="keyword">:ideal-okp</span> ,IDEAL-OKP)))))
+          (<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> (<a class="sym-link system" href="axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))))))
+      ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> condition-p
+         (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> condition <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+         (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> condition nil))) `(<a class="sym-link system" href="axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((wrld (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state)) (fn (<a class="sym-link system" href="axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> wrld)))
               (condition ,CONDITION)
-              (<a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (symbolp fn) (<a class="sym-link system" href="../../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn '<a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> wrld)))
-              (<a class="sym-link system" href="../../../axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a> (<a class="sym-link system" href="../../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn '<a class="sym-link system" href="../../../axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> wrld))
-              (condition-fn (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> ,CONDITION-FN (<a class="sym-link system" href="../../../axioms.html#def-add-suffix" data-sym="ADD-SUFFIX">add-suffix</a> fn <span class="string">"-MEMOIZE-CONDITION"</span>)))
+              (<a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (symbolp fn) (<a class="sym-link system" href="axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn '<a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> wrld)))
+              (<a class="sym-link system" href="axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a> (<a class="sym-link system" href="axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn '<a class="sym-link system" href="axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> wrld))
+              (condition-fn (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> ,CONDITION-FN (<a class="sym-link system" href="axioms.html#def-add-suffix" data-sym="ADD-SUFFIX">add-suffix</a> fn <span class="string">"-MEMOIZE-CONDITION"</span>)))
               (hints ,HINTS)
               (otf-flg ,OTF-FLG)
               (inline ,INLINE)
@@ -590,11 +590,11 @@ pre.code {
               (total ,TOTAL)
               (invoke ,INVOKE)
               (ideal-okp ,IDEAL-OKP))
-            (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (symbolp fn)
-                   (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> <a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a>))
-                   (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> <a class="sym-link system" href="../../../axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a>))
-                   (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn '<a class="sym-link system" href="../../../axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> wrld)))
-                   (cltl-def-from-name fn wrld))) (<a class="sym-link system" href="../../../axioms.html#def-er" data-sym="ER">er</a> hard
+            (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (symbolp fn)
+                   (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> <a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a>))
+                   (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> <a class="sym-link system" href="axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a>))
+                   (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn '<a class="sym-link system" href="axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> wrld)))
+                   (cltl-def-from-name fn wrld))) (<a class="sym-link system" href="axioms.html#def-er" data-sym="ER">er</a> hard
                   '<a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
           (fn
            &amp;key (condition &#39;t condition-p) condition-fn hints otf-flg
@@ -604,7 +604,7 @@ pre.code {
                   <span class="string">"The symbol ~x0 is not a known function symbol, and thus ~
                       it cannot be memoized."</span>
                   fn))
-              ((<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> inline '(<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))) (<a class="sym-link system" href="../../../axioms.html#def-er" data-sym="ER">er</a> hard
+              ((<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> inline '(<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))) (<a class="sym-link system" href="axioms.html#def-er" data-sym="ER">er</a> hard
                   '<a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
           (fn
            &amp;key (condition &#39;t condition-p) condition-fn hints otf-flg
@@ -614,9 +614,9 @@ pre.code {
                   <span class="string">"The value ~x0 for inline is illegal (must be ~x1 or ~
                       ~x2)."</span>
                   inline
-                  <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>
+                  <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>
                   nil))
-              (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> `(<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> ,CONDITION-FN
+              (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> `(<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> ,CONDITION-FN
                     ,FORMALS
                     (declare (ignorable ,@FORMALS)
                       (xargs <span class="keyword">:guard</span> ,(GETPROPC FN &#39;GUARD *T* WRLD)
@@ -626,49 +626,49 @@ pre.code {
                       ,@(LET ((DFS (COLLECT-BY-POSITION &#39;(:DF) STOBJS-IN FORMALS)))
     (AND DFS `((TYPE DOUBLE-FLOAT ,@DFS)))))
                     ,CONDITION)
-                  (<a class="sym-link system" href="../../../axioms.html#def-verify-guards" data-sym="VERIFY-GUARDS">verify-guards</a> ,CONDITION-FN
+                  (<a class="sym-link system" href="axioms.html#def-verify-guards" data-sym="VERIFY-GUARDS">verify-guards</a> ,CONDITION-FN
                     ,@(AND HINTS `(:HINTS ,HINTS))
                     ,@(AND OTF-FLG `(:OTF-FLG ,OTF-FLG)))
-                  (<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
+                  (<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
                     ',FN
-                    (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (cons <span class="keyword">:condition-fn</span> ',CONDITION-FN)
+                    (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (cons <span class="keyword">:condition-fn</span> ',CONDITION-FN)
                       (cons <span class="keyword">:inline</span> ',INLINE)
                       (cons <span class="keyword">:commutative</span> ',COMMUTATIVE)
                       (cons <span class="keyword">:forget</span> ',FORGET)
-                      (cons <span class="keyword">:memo-table-init-size</span> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> ,MEMO-TABLE-INIT-SIZE <a class="sym-link local-def" href="#def-_2Amht-default-size_2A" data-sym="*MHT-DEFAULT-SIZE*" title="(defconst *mht-default-size* 60)">*mht-default-size*</a>))
+                      (cons <span class="keyword">:memo-table-init-size</span> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> ,MEMO-TABLE-INIT-SIZE <a class="sym-link local-def" href="#def-_2Amht-default-size_2A" data-sym="*MHT-DEFAULT-SIZE*" title="(defconst *mht-default-size* 60)">*mht-default-size*</a>))
                       (cons <span class="keyword">:aokp</span> ',AOKP)
                       (cons <span class="keyword">:stats</span> ,STATS)
                       (cons <span class="keyword">:total</span> ',TOTAL)
                       (cons <span class="keyword">:invoke</span> ',INVOKE)
-                      (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> ',IDEAL-OKP <span class="keyword">:default</span>))
-                        (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (cons <span class="keyword">:ideal-okp</span> ',IDEAL-OKP)))))
-                  (<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> ',FN)))))))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> `(<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
-            (<a class="sym-link system" href="../../../axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> world))
-            (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (cons <span class="keyword">:condition-fn</span> ,CONDITION)
+                      (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> ',IDEAL-OKP <span class="keyword">:default</span>))
+                        (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (cons <span class="keyword">:ideal-okp</span> ',IDEAL-OKP)))))
+                  (<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> ',FN)))))))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> `(<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
+            (<a class="sym-link system" href="axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> world))
+            (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (cons <span class="keyword">:condition-fn</span> ,CONDITION)
               (cons <span class="keyword">:inline</span> ,INLINE)
               (cons <span class="keyword">:commutative</span> ,COMMUTATIVE)
               (cons <span class="keyword">:forget</span> ,FORGET)
-              (cons <span class="keyword">:memo-table-init-size</span> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> ,MEMO-TABLE-INIT-SIZE <a class="sym-link local-def" href="#def-_2Amht-default-size_2A" data-sym="*MHT-DEFAULT-SIZE*" title="(defconst *mht-default-size* 60)">*mht-default-size*</a>))
+              (cons <span class="keyword">:memo-table-init-size</span> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> ,MEMO-TABLE-INIT-SIZE <a class="sym-link local-def" href="#def-_2Amht-default-size_2A" data-sym="*MHT-DEFAULT-SIZE*" title="(defconst *mht-default-size* 60)">*mht-default-size*</a>))
               (cons <span class="keyword">:aokp</span> ',AOKP)
               (cons <span class="keyword">:stats</span> ,STATS)
               (cons <span class="keyword">:total</span> ,TOTAL)
               (cons <span class="keyword">:invoke</span> ,INVOKE)
-              (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> ',IDEAL-OKP <span class="keyword">:default</span>))
-                (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (cons <span class="keyword">:ideal-okp</span> ',IDEAL-OKP)))))
-          (<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> (<a class="sym-link system" href="../../../axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state)))))))))</pre>
+              (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> ',IDEAL-OKP <span class="keyword">:default</span>))
+                (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (cons <span class="keyword">:ideal-okp</span> ',IDEAL-OKP)))))
+          (<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> (<a class="sym-link system" href="axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state)))))))))</pre>
   </div>
 
 <div class="form-block macro" id="def-memoize" data-defines="MEMOIZE" data-references="EVENT,PROVE,SUMMARY,WITH-OUTPUT,MEMOIZE-FORM,Y,X,EQUAL,DEFTHM,INCLUDE-BOOK-PATH,GLOBAL-VAL,CAR,STATE,W,MAX-ABSOLUTE-EVENT-NUMBER,CONS,KWOTE,VALUE-TRIPLE,ENCAPSULATE,LIST,ADD-SUFFIX,MAKE-EVENT,QUASIQUOTE,FORM,NOT,EQ,IF,INLINE,LET*,AND,HARD,ER,SYMBOLP,COND,IGNORABLE,MEMBER-EQ,XARGS,DECLARE,VERBOSE,IDEAL-OKP,INVOKE,TOTAL,STATS,AOKP,MEMO-TABLE-INIT-SIZE,FORGET,COMMUTATIVE,RECURSIVE,OTF-FLG,HINTS,CONDITION-FN,CONDITION-P,T,QUOTE,CONDITION,&KEY,FN,DEFMACRO" data-used-by="PROFILE,MEMOIZE-FORM,*HONS-PRIMITIVES*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="MEMOIZE">memoize</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
           (fn
            &amp;key (condition &#39;t condition-p) condition-fn hints otf-flg
            (recursive &#39;:default) commutative forget memo-table-init-size aokp
            (stats &#39;:default) total invoke (ideal-okp &#39;:default) (verbose &#39;nil))
 ...">memoize</a>
   (fn &amp;key
-    (condition '<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> condition-p)
+    (condition '<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> condition-p)
     condition-fn
     hints
     otf-flg
@@ -682,7 +682,7 @@ pre.code {
     invoke
     (ideal-okp '<span class="keyword">:default</span>)
     (verbose 'nil))
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> recursive '(<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil <span class="keyword">:default</span>)))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> recursive '(<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil <span class="keyword">:default</span>)))
     (ignorable condition-p
       condition
       condition-fn
@@ -698,7 +698,7 @@ pre.code {
       invoke
       ideal-okp
       verbose))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((symbolp fn) (<a class="sym-link system" href="../../../axioms.html#def-er" data-sym="ER">er</a> hard
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((symbolp fn) (<a class="sym-link system" href="axioms.html#def-er" data-sym="ER">er</a> hard
         '<a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
           (fn
            &amp;key (condition &#39;t condition-p) condition-fn hints otf-flg
@@ -709,7 +709,7 @@ pre.code {
          Note that the arguments to MEMOIZE are evaluated; so perhaps you ~
          intended the first argument to be (QUOTE ~x0) or, equivalently, &#39;~x0."</span>
         fn))
-    ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> invoke (symbolp invoke)) (<a class="sym-link system" href="../../../axioms.html#def-er" data-sym="ER">er</a> hard
+    ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> invoke (symbolp invoke)) (<a class="sym-link system" href="axioms.html#def-er" data-sym="ER">er</a> hard
         '<a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
           (fn
            &amp;key (condition &#39;t condition-p) condition-fn hints otf-flg
@@ -720,38 +720,38 @@ pre.code {
          Note that the arguments to MEMOIZE are evaluated; so perhaps you ~
          intended that argument to be (QUOTE ~x0) or, equivalently, &#39;~x0."</span>
         invoke))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((inline (if (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> recursive <span class="keyword">:default</span>)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((inline (if (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> recursive <span class="keyword">:default</span>)
              (if invoke
                nil
-               <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
-             recursive)) (condition (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> invoke (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> condition-p) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> condition-fn)) nil)
-              (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> condition)))
-          (stats (if (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> invoke (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> stats <span class="keyword">:default</span>))
+               <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
+             recursive)) (condition (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> invoke (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> condition-p) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> condition-fn)) nil)
+              (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> condition)))
+          (stats (if (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> invoke (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> stats <span class="keyword">:default</span>))
               nil
               stats))
-          (form (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> commutative <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>) `(<a class="sym-link system" href="../../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((fn ,FN) (commutative (<a class="sym-link system" href="../../../axioms.html#def-add-suffix" data-sym="ADD-SUFFIX">add-suffix</a> fn <span class="string">"-COMMUTATIVE"</span>)))
-                    (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> '<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a>
+          (form (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> commutative <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>) `(<a class="sym-link system" href="axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((fn ,FN) (commutative (<a class="sym-link system" href="axioms.html#def-add-suffix" data-sym="ADD-SUFFIX">add-suffix</a> fn <span class="string">"-COMMUTATIVE"</span>)))
+                    (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> '<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a>
                       nil
-                      (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> '<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a>
-                        (<a class="sym-link system" href="../../../axioms.html#def-kwote" data-sym="KWOTE">kwote</a> (cons (max-absolute-event-number (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))
-                            (car (<a class="sym-link system" href="../../../axioms.html#def-global-val" data-sym="GLOBAL-VAL">global-val</a> 'include-book-path (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))))))
-                      (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> '<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a>
+                      (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> '<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a>
+                        (<a class="sym-link system" href="axioms.html#def-kwote" data-sym="KWOTE">kwote</a> (cons (max-absolute-event-number (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))
+                            (car (<a class="sym-link system" href="axioms.html#def-global-val" data-sym="GLOBAL-VAL">global-val</a> 'include-book-path (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))))))
+                      (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> '<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a>
                         commutative
-                        (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'equal (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> fn 'x 'y) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> fn 'y 'x))
+                        (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'equal (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> fn 'x 'y) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> fn 'y 'x))
                         <span class="keyword">:rule-classes</span> nil)
                       (<a class="sym-link local-def" href="#def-memoize-form" data-sym="MEMOIZE-FORM" title="(defun memoize-form
        (fn condition condition-p condition-fn hints otf-flg inline commutative
         forget memo-table-init-size aokp stats total invoke ideal-okp)
   (declare (xargs :guard t))
   (let ((condition
-...">memoize-form</a> (<a class="sym-link system" href="../../../axioms.html#def-kwote" data-sym="KWOTE">kwote</a> fn)
+...">memoize-form</a> (<a class="sym-link system" href="axioms.html#def-kwote" data-sym="KWOTE">kwote</a> fn)
                         ',CONDITION
                         ',CONDITION-P
                         ',CONDITION-FN
                         ',HINTS
                         ',OTF-FLG
                         ',INLINE
-                        (<a class="sym-link system" href="../../../axioms.html#def-kwote" data-sym="KWOTE">kwote</a> commutative)
+                        (<a class="sym-link system" href="axioms.html#def-kwote" data-sym="KWOTE">kwote</a> commutative)
                         ',FORGET
                         ',MEMO-TABLE-INIT-SIZE
                         ',AOKP
@@ -759,7 +759,7 @@ pre.code {
                         ',TOTAL
                         ',INVOKE
                         ',IDEAL-OKP)))))
-              (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-memoize-form" data-sym="MEMOIZE-FORM" title="(defun memoize-form
+              (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-memoize-form" data-sym="MEMOIZE-FORM" title="(defun memoize-form
        (fn condition condition-p condition-fn hints otf-flg inline commutative
         forget memo-table-init-size aokp stats total invoke ideal-okp)
   (declare (xargs :guard t))
@@ -779,40 +779,40 @@ pre.code {
                   total
                   invoke
                   ideal-okp)))))
-        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (verbose form)
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> `(<a class="sym-link system" href="../../../axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:off</span> (summary <a class="sym-link system" href="../../../prove.html#def-prove" data-sym="PROVE">prove</a> event) <span class="keyword">:gag-mode</span> nil ,FORM)))))))</pre>
+        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (verbose form)
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> `(<a class="sym-link system" href="axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:off</span> (summary <a class="sym-link system" href="prove.html#def-prove" data-sym="PROVE">prove</a> event) <span class="keyword">:gag-mode</span> nil ,FORM)))))))</pre>
   </div>
 
 <div class="form-block macro" id="def-unmemoize" data-defines="UNMEMOIZE" data-references="STATE,W,VALUE-TRIPLE,WORLD,MACRO-ALIASES,DEREF-MACRO-NAME,MEMOIZE-TABLE,TABLE,PROGN,SUMMARY,WITH-OUTPUT,QUASIQUOTE,T,XARGS,DECLARE,FN,DEFMACRO" data-used-by="*HONS-PRIMITIVES*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="UNMEMOIZE">unmemoize</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-unmemoize" data-sym="UNMEMOIZE" title="(defmacro unmemoize (fn)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-unmemoize" data-sym="UNMEMOIZE" title="(defmacro unmemoize (fn)
   (declare (xargs :guard t))
   `(with-output :off summary
                 (progn
                  (table memoize-table
 ...">unmemoize</a>
   (fn)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-  `(<a class="sym-link system" href="../../../axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:off</span> summary
-    (<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
-        (<a class="sym-link system" href="../../../axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> world))
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+  `(<a class="sym-link system" href="axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:off</span> summary
+    (<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> memoize-table
+        (<a class="sym-link system" href="axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> world))
         nil)
-      (<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> (<a class="sym-link system" href="../../../axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state)))))))</pre>
+      (<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> (<a class="sym-link system" href="axioms.html#def-deref-macro-name" data-sym="DEREF-MACRO-NAME">deref-macro-name</a> ,FN (<a class="sym-link system" href="axioms.html#def-macro-aliases" data-sym="MACRO-ALIASES">macro-aliases</a> (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state)))))))</pre>
   </div>
 
 <div class="form-block macro" id="def-profile" data-defines="PROFILE" data-references="MEMOIZE,QUASIQUOTE,ASSOC-KEYWORD,NOT,KEYWORD-VALUE-LISTP,AND,XARGS,DECLARE,R,&REST,FN,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="PROFILE">profile</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-profile" data-sym="PROFILE" title="(defmacro profile (fn &amp;rest r)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-profile" data-sym="PROFILE" title="(defmacro profile (fn &amp;rest r)
   (declare
    (xargs :guard
     (and (keyword-value-listp r) (not (assoc-keyword :condition r))
          (not (assoc-keyword :condition-fn r))
 ...">profile</a>
   (fn &amp;rest r)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-keyword-value-listp" data-sym="KEYWORD-VALUE-LISTP">keyword-value-listp</a> r)
-        (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-assoc-keyword" data-sym="ASSOC-KEYWORD">assoc-keyword</a> <span class="keyword">:condition</span> r))
-        (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-assoc-keyword" data-sym="ASSOC-KEYWORD">assoc-keyword</a> <span class="keyword">:condition-fn</span> r))
-        (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-assoc-keyword" data-sym="ASSOC-KEYWORD">assoc-keyword</a> <span class="keyword">:recursive</span> r)))))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-keyword-value-listp" data-sym="KEYWORD-VALUE-LISTP">keyword-value-listp</a> r)
+        (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-assoc-keyword" data-sym="ASSOC-KEYWORD">assoc-keyword</a> <span class="keyword">:condition</span> r))
+        (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-assoc-keyword" data-sym="ASSOC-KEYWORD">assoc-keyword</a> <span class="keyword">:condition-fn</span> r))
+        (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-assoc-keyword" data-sym="ASSOC-KEYWORD">assoc-keyword</a> <span class="keyword">:recursive</span> r)))))
   `(<a class="sym-link local-def" href="#def-memoize" data-sym="MEMOIZE" title="(defmacro memoize
           (fn
            &amp;key (condition &#39;t condition-p) condition-fn hints otf-flg
@@ -823,26 +823,26 @@ pre.code {
 
 <div class="form-block macro" id="def-memoizedp-world" data-defines="MEMOIZEDP-WORLD" data-references="MEMOIZE-TABLE,QUOTE,TABLE-ALIST,ASSOC-EQ,CDR,QUASIQUOTE,WRLD,FN,DEFMACRO" data-used-by="MEMOIZEDP" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="MEMOIZEDP-WORLD">memoizedp-world</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memoizedp-world" data-sym="MEMOIZEDP-WORLD" title="(defmacro memoizedp-world (fn wrld)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memoizedp-world" data-sym="MEMOIZEDP-WORLD" title="(defmacro memoizedp-world (fn wrld)
   `(cdr (assoc-eq ,fn (table-alist &#39;memoize-table ,wrld))))">memoizedp-world</a>
   (fn wrld)
-  `(cdr (<a class="sym-link system" href="../../../axioms.html#def-assoc-eq" data-sym="ASSOC-EQ">assoc-eq</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-table-alist" data-sym="TABLE-ALIST">table-alist</a> 'memoize-table ,WRLD))))</pre>
+  `(cdr (<a class="sym-link system" href="axioms.html#def-assoc-eq" data-sym="ASSOC-EQ">assoc-eq</a> ,FN (<a class="sym-link system" href="axioms.html#def-table-alist" data-sym="TABLE-ALIST">table-alist</a> 'memoize-table ,WRLD))))</pre>
   </div>
 
 <div class="form-block macro" id="def-memoizedp" data-defines="MEMOIZEDP" data-references="STATE,W,MEMOIZEDP-WORLD,QUASIQUOTE,T,XARGS,DECLARE,FN,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="MEMOIZEDP">memoizedp</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memoizedp" data-sym="MEMOIZEDP" title="(defmacro memoizedp (fn)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-memoizedp" data-sym="MEMOIZEDP" title="(defmacro memoizedp (fn)
   (declare (xargs :guard t))
   `(memoizedp-world ,fn (w state)))">memoizedp</a>
   (fn)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
   `(<a class="sym-link local-def" href="#def-memoizedp-world" data-sym="MEMOIZEDP-WORLD" title="(defmacro memoizedp-world (fn wrld)
-  `(cdr (assoc-eq ,fn (table-alist &#39;memoize-table ,wrld))))">memoizedp-world</a> ,FN (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state)))</pre>
+  `(cdr (assoc-eq ,fn (table-alist &#39;memoize-table ,wrld))))">memoizedp-world</a> ,FN (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state)))</pre>
   </div>
 
 <div class="form-block function" id="def-never-memoize-fn" data-defines="NEVER-MEMOIZE-FN" data-references="IGNORE,SYMBOLP,XARGS,DECLARE,FN,DEFUN" data-used-by="NEVER-MEMOIZE" data-part-name="NEVER-MEMOIZE-FN" data-part-args="FN" data-part-declare="IGNORE,FN,SYMBOLP,XARGS,DECLARE" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="NEVER-MEMOIZE-FN">never-memoize-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-never-memoize-fn" data-sym="NEVER-MEMOIZE-FN" title="(defun never-memoize-fn (fn)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-never-memoize-fn" data-sym="NEVER-MEMOIZE-FN" title="(defun never-memoize-fn (fn)
   (declare (xargs :guard (symbolp fn))
            (ignore fn))
   nil)">never-memoize-fn</a>
@@ -854,53 +854,53 @@ pre.code {
 
 <div class="form-block macro" id="def-never-memoize" data-defines="NEVER-MEMOIZE" data-references="T,VALUE-TRIPLE,QUOTE,NEVER-MEMOIZE-FN,PROG2$,MAKE-EVENT,QUASIQUOTE,SYMBOLP,XARGS,DECLARE,FN,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="NEVER-MEMOIZE">never-memoize</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-never-memoize" data-sym="NEVER-MEMOIZE" title="(defmacro never-memoize (fn)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-never-memoize" data-sym="NEVER-MEMOIZE" title="(defmacro never-memoize (fn)
   (declare (xargs :guard (symbolp fn)))
   `(make-event (prog2$ (never-memoize-fn &#39;,fn) &#39;(value-triple :invisible))
                :check-expansion t))">never-memoize</a>
   (fn)
   (declare (xargs <span class="keyword">:guard</span> (symbolp fn)))
-  `(<a class="sym-link system" href="../../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (<a class="sym-link system" href="../../../axioms.html#def-prog2_24" data-sym="PROG2$">prog2$</a> (<a class="sym-link local-def" href="#def-never-memoize-fn" data-sym="NEVER-MEMOIZE-FN" title="(defun never-memoize-fn (fn)
+  `(<a class="sym-link system" href="axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (<a class="sym-link system" href="axioms.html#def-prog2_24" data-sym="PROG2$">prog2$</a> (<a class="sym-link local-def" href="#def-never-memoize-fn" data-sym="NEVER-MEMOIZE-FN" title="(defun never-memoize-fn (fn)
   (declare (xargs :guard (symbolp fn))
            (ignore fn))
-  nil)">never-memoize-fn</a> ',FN) '(<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> <span class="keyword">:invisible</span>))
-    <span class="keyword">:check-expansion</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))</pre>
+  nil)">never-memoize-fn</a> ',FN) '(<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> <span class="keyword">:invisible</span>))
+    <span class="keyword">:check-expansion</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Abad-lisp-consp-memoization_2A" data-defines="*BAD-LISP-CONSP-MEMOIZATION*" data-references="T,BAD-LISP-CONSP,QUOTE,DEFCONST" data-used-by="*THREAD-UNSAFE-BUILTIN-MEMOIZATIONS*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*BAD-LISP-CONSP-MEMOIZATION*">*bad-lisp-consp-memoization*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Abad-lisp-consp-memoization_2A" data-sym="*BAD-LISP-CONSP-MEMOIZATION*" title="(defconst *bad-lisp-consp-memoization* &#39;(bad-lisp-consp :forget t))">*bad-lisp-consp-memoization*</a>
-  '(bad-lisp-consp <span class="keyword">:forget</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Abad-lisp-consp-memoization_2A" data-sym="*BAD-LISP-CONSP-MEMOIZATION*" title="(defconst *bad-lisp-consp-memoization* &#39;(bad-lisp-consp :forget t))">*bad-lisp-consp-memoization*</a>
+  '(bad-lisp-consp <span class="keyword">:forget</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Athread-unsafe-builtin-memoizations_2A" data-defines="*THREAD-UNSAFE-BUILTIN-MEMOIZATIONS*" data-references="*BAD-LISP-CONSP-MEMOIZATION*,LIST,DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*THREAD-UNSAFE-BUILTIN-MEMOIZATIONS*">*thread-unsafe-builtin-memoizations*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Athread-unsafe-builtin-memoizations_2A" data-sym="*THREAD-UNSAFE-BUILTIN-MEMOIZATIONS*" title="(defconst *thread-unsafe-builtin-memoizations*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Athread-unsafe-builtin-memoizations_2A" data-sym="*THREAD-UNSAFE-BUILTIN-MEMOIZATIONS*" title="(defconst *thread-unsafe-builtin-memoizations*
           (list *bad-lisp-consp-memoization*))">*thread-unsafe-builtin-memoizations*</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> <a class="sym-link local-def" href="#def-_2Abad-lisp-consp-memoization_2A" data-sym="*BAD-LISP-CONSP-MEMOIZATION*" title="(defconst *bad-lisp-consp-memoization* &#39;(bad-lisp-consp :forget t))">*bad-lisp-consp-memoization*</a>))</pre>
+  (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> <a class="sym-link local-def" href="#def-_2Abad-lisp-consp-memoization_2A" data-sym="*BAD-LISP-CONSP-MEMOIZATION*" title="(defconst *bad-lisp-consp-memoization* &#39;(bad-lisp-consp :forget t))">*bad-lisp-consp-memoization*</a>))</pre>
   </div>
 
 <div class="form-block function" id="def-set-bad-lisp-consp-memoize" data-defines="SET-BAD-LISP-CONSP-MEMOIZE" data-references="IGNORE,T,XARGS,DECLARE,ARG,DEFUN" data-part-name="SET-BAD-LISP-CONSP-MEMOIZE" data-part-args="ARG" data-part-declare="ARG,IGNORE,T,XARGS,DECLARE" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="SET-BAD-LISP-CONSP-MEMOIZE">set-bad-lisp-consp-memoize</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-set-bad-lisp-consp-memoize" data-sym="SET-BAD-LISP-CONSP-MEMOIZE" title="(defun set-bad-lisp-consp-memoize (arg)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-set-bad-lisp-consp-memoize" data-sym="SET-BAD-LISP-CONSP-MEMOIZE" title="(defun set-bad-lisp-consp-memoize (arg)
   (declare (xargs :guard t)
            (ignore arg))
   nil)">set-bad-lisp-consp-memoize</a>
   (arg)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
     (ignore arg))
   nil)</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Aspecial-cltl-cmd-attachment-mark-name_2A" data-defines="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK-NAME*" data-references="QUOTE,DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK-NAME*">*special-cltl-cmd-attachment-mark-name*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Aspecial-cltl-cmd-attachment-mark-name_2A" data-sym="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK-NAME*" title="(defconst *special-cltl-cmd-attachment-mark-name* &#39;:apply$-userfn/badge-userfn)">*special-cltl-cmd-attachment-mark-name*</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Aspecial-cltl-cmd-attachment-mark-name_2A" data-sym="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK-NAME*" title="(defconst *special-cltl-cmd-attachment-mark-name* &#39;:apply$-userfn/badge-userfn)">*special-cltl-cmd-attachment-mark-name*</a>
   '<span class="keyword">:apply$-userfn/badge-userfn</span>)</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Aspecial-cltl-cmd-attachment-mark_2A" data-defines="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK*" data-references="ATTACHMENT,QUASIQUOTE,DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK*">*special-cltl-cmd-attachment-mark*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Aspecial-cltl-cmd-attachment-mark_2A" data-sym="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK*" title="(defconst *special-cltl-cmd-attachment-mark*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Aspecial-cltl-cmd-attachment-mark_2A" data-sym="*SPECIAL-CLTL-CMD-ATTACHMENT-MARK*" title="(defconst *special-cltl-cmd-attachment-mark*
           `(attachment ,*special-cltl-cmd-attachment-mark-name*))">*special-cltl-cmd-attachment-mark*</a>
   `(attachment ,*SPECIAL-CLTL-CMD-ATTACHMENT-MARK-NAME*))</pre>
   </div>

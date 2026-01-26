@@ -432,14 +432,14 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">acl2-doc</h1>
-    <div class="path"><a href="acl2-doc.lisp" class="source-link">system/doc/acl2-doc</a></div>
+    <div class="path"><a href="acl2-doc.lisp" class="source-link">books/system/doc/acl2-doc</a></div>
   </div>
   
   <main property="text">
   <div class="includes-section">
     <h2>Included Books</h2>
     <div class="includes-list">
-      <a class="include-link" href="../../../xdoc/top.html" title="xdoc/top">top</a>
+      <a class="include-link" href="../../xdoc/top.html" title="xdoc/top">top</a>
     </div>
   </div>
 
@@ -450,7 +450,7 @@ pre.code {
 
 <div class="form-block include-book" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">include-book</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../xdoc/top.html" title="Open xdoc/top">"xdoc/top"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../../xdoc/top.html" title="Open xdoc/top">"xdoc/top"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Aacl2-broken-links-alist_2A" data-defines="*ACL2-BROKEN-LINKS-ALIST*" data-references="XDOC,WRITE-LIST,WORKING-WITH-PACKAGES,WITHOUT-SUBSUMPTION,WITH-TIMEOUT,WITH-REDEF-ALLOWED,WITH-RAW-MODE,USING-EXTENDED-ACL2-IMAGES,USE-TRIVIAL-ANCESTORS-CHECK,UNTRANSLATE-PATTERNS,UNSOUND-READ,TRANS-EVAL-STATE,TRANS-EVAL-ERROR-TRIPLE,TERMINAL,SUBSEQ-LIST,STRICT-LIST-RECOGNIZERS,STD/UTIL,STD/STRINGS,STD/IO,STD,SPACEWALK,SET-MAX-MEM,SAVE-RENDERED-EVENT,SAVE-RENDERED,SAVE,SATLINK,SAT-SOLVER-OPTIONS,RUN-SCRIPT,RTL,REWRITE-EQUIV-HINT,REWRITE$,REMOVE-HYPS,REMOVABLE-RUNES,RELEASE-NOTES-BOOKS,QUICKLISP,PROVE$,PROFILE-ALL,PROFILE-ACL2,PRETTY-PRINTING,PRETTY,PREPROCESSOR,PRE-CERTIFY-BOOK-COMMANDS,PATBIND-THE,OSLIB,ORACLE-TIMELIMIT,OPEN-TRACE-FILE!,NUMBERS,NOTE-8-6-BOOKS,NOTE-8-5-BOOKS,NOTE-8-4-BOOKS,NOTE-8-3-BOOKS,NOTE-8-2-BOOKS,NOTE-8-1-BOOKS,NOTE-8-0-BOOKS,NOTE-7-2-BOOKS,NOTE-7-1-BOOKS,NOTE-7-0-BOOKS,NOTE-6-5-BOOKS,NOTE-6-4-BOOKS,NON-PARALLEL-BOOK,NAT-TO-DEC-STRING,MUST-FAIL,MEMOIZED-PROVER-FNS,MARKUP,MAKE-TERMINATION-THEOREM,MAKE-FLAG,LOGBITP-REASONING,LIST-FIX,LIST-EQUIV,INSTALL-NOT-NORMALIZED,INCLUDE-RAW,IHS,HACKER,GL,GETOPT,FTY,FINAL-CDR,ER-SOFT+,EASY-SIMPLIFY-TERM,DO-NOT-HINT,DEVELOPERS-GUIDE-UTILITIES,DEVELOPERS-GUIDE,DEMO2,DEFXDOC,DEFUNC,DEFTHMG,DEFTHM<W,DEFPUN,DEFPROD,DEFMACROQ,DEFMAC,DEFINE,DEFDATA,DEFCONSTS,DEFAGGREGATE,CUSTOM-CERTIFY-BOOK-COMMANDS,CONSIDERATION,COMMUNITY,CHECKPOINT-LIST,CGEN,CERT_PARAM,CERT.PL,CATPATH,BRIDGE,BIT-VECTORS,B*,ASSERT!-STOBJ,ASSERT!,ARITY+,ARITHMETIC/NATP-POSP,ARITHMETIC-1,ARITHMETIC,ARITH-EQUIVS,ARGV,APPEND-WITHOUT-GUARD,ALGEBRA,ADD-IO-PAIRS,ACL2S-INSTALLATION,<<,*ACL2-SYSTEM-EXPORTS*,QUOTE,DEFCONST" typeof="Code">
@@ -11784,7 +11784,7 @@ way to split up large ACL2 developments into separate modules."</span>
  &lt;li&gt;@(see ihs)&lt;/li&gt;
  &lt;li&gt;misc&lt;/li&gt;
  &lt;li&gt;tools (mostly)&lt;/li&gt;
- &lt;li&gt;@(see std)&lt;/li&gt;
+ &lt;li&gt;@(see std) (mostly)&lt;/li&gt;
  &lt;li&gt;@(see xdoc) (in part)&lt;/li&gt;
  &lt;li&gt;data-structures&lt;/li&gt;
  &lt;li&gt;apply&lt;/li&gt;
@@ -105383,7 +105383,9 @@ it."</span>
  can be expected to be compiled twice, once for each pass of the encapsulate.
  Implementation-level details are explained in the section entitled
  &amp;ldquo;Appendix 2: Extension for Encapsulate&amp;rdquo; in the ACL2 source code
- comment, &amp;ldquo;Essay on Hash Table Support for Compilation&amp;rdquo;.&lt;/p&gt;
+ comment, &amp;ldquo;Essay on Hash Table Support for Compilation&amp;rdquo;.  In
+ particular, the end of that Essay discusses an enhancement that saves compiled
+ code for redundant @(&#39;defun&#39;)s.&lt;/p&gt;
 
  &lt;h3&gt;Bug Fixes&lt;/h3&gt;
 

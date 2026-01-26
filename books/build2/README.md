@@ -86,14 +86,29 @@ The system proves several important properties:
 ./cert2 -n mybook.lisp
 ```
 
+### Generate HTML Documentation
+
+Generate browsable HTML documentation with syntax highlighting and cross-references.
+By default, output goes to the `docs/` directory (suitable for GitHub Pages).
+
 ```bash
 cd $ACL2_SYSTEM_BOOKS
-./build2/cert2 --raw /workspaces/acl2
-find . -name "*.cert" -type f | while read cert; do \
-  base="${cert%.cert}";   if [ -f "$base.html" ]; then     rm -f "$base.html";   fi; \
-done
+
+# Generate HTML for ACL2 source files (axioms.lisp, etc.)
+build2/cert2 --raw $ACL2_HOME
+
+# Generate HTML for all certified books  
 build2/cert2 --html-only .
+
+# Use a custom output directory
+build2/cert2 --raw $ACL2_HOME --output-dir /path/to/output
+build2/cert2 --html-only . --output-dir /path/to/output
 ```
+
+The output directory will contain:
+- `.html` files with syntax highlighting and hyperlinked symbols
+- `.lisp` source files (copied for reference)
+- Preserved directory structure matching the source layout
 
 ## Status
 

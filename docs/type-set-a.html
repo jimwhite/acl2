@@ -432,18 +432,18 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">type-set-a</h1>
-    <div class="path"><a href="type-set-a.lisp" class="source-link">/workspaces/acl2/type-set-a</a></div>
+    <div class="path"><a href="type-set-a.lisp" class="source-link">type-set-a</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../basis-b.html#def-def-basic-type-sets" data-sym="DEF-BASIC-TYPE-SETS">def-basic-type-sets</a> *ts-zero*
+    <pre class="code" property="text">(<a class="sym-link system" href="basis-b.html#def-def-basic-type-sets" data-sym="DEF-BASIC-TYPE-SETS">def-basic-type-sets</a> *ts-zero*
   *ts-one*
   *ts-integer&gt;1*
   *ts-positive-ratio*
@@ -461,36 +461,36 @@ pre.code {
 
 <div class="form-block constant" id="def-_2Ats-positive-integer_2A" data-defines="*TS-POSITIVE-INTEGER*" data-references="*TS-INTEGER>1*,*TS-ONE*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-*-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*,*TS-POSITIVE-RATIONAL*,*TS-INTEGER*,*TS-NON-NEGATIVE-INTEGER*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-POSITIVE-INTEGER*">*ts-positive-integer*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-one* *ts-integer&gt;1*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-one* *ts-integer&gt;1*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-non-negative-integer_2A" data-defines="*TS-NON-NEGATIVE-INTEGER*" data-references="*TS-POSITIVE-INTEGER*,*TS-ZERO*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-NON-NEGATIVE-INTEGER*">*ts-non-negative-integer*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-negative-integer_2A" data-sym="*TS-NON-NEGATIVE-INTEGER*" title="(defconst *ts-non-negative-integer* (ts-union0 *ts-zero* *ts-positive-integer*))">*ts-non-negative-integer*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-negative-integer_2A" data-sym="*TS-NON-NEGATIVE-INTEGER*" title="(defconst *ts-non-negative-integer* (ts-union0 *ts-zero* *ts-positive-integer*))">*ts-non-negative-integer*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a>))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-non-positive-integer_2A" data-defines="*TS-NON-POSITIVE-INTEGER*" data-references="*TS-NEGATIVE-INTEGER*,*TS-ZERO*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-+-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-NON-POSITIVE-INTEGER*">*ts-non-positive-integer*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-positive-integer_2A" data-sym="*TS-NON-POSITIVE-INTEGER*" title="(defconst *ts-non-positive-integer* (ts-union0 *ts-zero* *ts-negative-integer*))">*ts-non-positive-integer*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* *ts-negative-integer*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-positive-integer_2A" data-sym="*TS-NON-POSITIVE-INTEGER*" title="(defconst *ts-non-positive-integer* (ts-union0 *ts-zero* *ts-negative-integer*))">*ts-non-positive-integer*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* *ts-negative-integer*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-integer_2A" data-defines="*TS-INTEGER*" data-references="*TS-NEGATIVE-INTEGER*,*TS-ZERO*,*TS-POSITIVE-INTEGER*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-+-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*,*TS-RATIONAL*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-INTEGER*">*ts-integer*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-integer_2A" data-sym="*TS-INTEGER*" title="(defconst *ts-integer*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-integer_2A" data-sym="*TS-INTEGER*" title="(defconst *ts-integer*
           (ts-union0 *ts-positive-integer* *ts-zero* *ts-negative-integer*))">*ts-integer*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a>
     *ts-zero*
     *ts-negative-integer*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-rational_2A" data-defines="*TS-RATIONAL*" data-references="*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIO*,*TS-INTEGER*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-+-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*,*TS-RATIONAL-ACL2-NUMBER*,*TS-ACL2-NUMBER*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-RATIONAL*">*ts-rational*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-rational_2A" data-sym="*TS-RATIONAL*" title="(defconst *ts-rational*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-rational_2A" data-sym="*TS-RATIONAL*" title="(defconst *ts-rational*
           (ts-union0 *ts-integer* *ts-positive-ratio* *ts-negative-ratio*))">*ts-rational*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-integer_2A" data-sym="*TS-INTEGER*" title="(defconst *ts-integer*
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-integer_2A" data-sym="*TS-INTEGER*" title="(defconst *ts-integer*
           (ts-union0 *ts-positive-integer* *ts-zero* *ts-negative-integer*))">*ts-integer*</a>
     *ts-positive-ratio*
     *ts-negative-ratio*))</pre>
@@ -498,138 +498,138 @@ pre.code {
 
 <div class="form-block constant" id="def-_2Ats-acl2-number_2A" data-defines="*TS-ACL2-NUMBER*" data-references="*TS-COMPLEX-RATIONAL*,*TS-RATIONAL*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-ACL2-NUMBER*">*ts-acl2-number*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-acl2-number_2A" data-sym="*TS-ACL2-NUMBER*" title="(defconst *ts-acl2-number* (ts-union0 *ts-rational* *ts-complex-rational*))">*ts-acl2-number*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-rational_2A" data-sym="*TS-RATIONAL*" title="(defconst *ts-rational*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-acl2-number_2A" data-sym="*TS-ACL2-NUMBER*" title="(defconst *ts-acl2-number* (ts-union0 *ts-rational* *ts-complex-rational*))">*ts-acl2-number*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-rational_2A" data-sym="*TS-RATIONAL*" title="(defconst *ts-rational*
           (ts-union0 *ts-integer* *ts-positive-ratio* *ts-negative-ratio*))">*ts-rational*</a> *ts-complex-rational*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-rational-acl2-number_2A" data-defines="*TS-RATIONAL-ACL2-NUMBER*" data-references="*TS-COMPLEX-RATIONAL*,*TS-RATIONAL*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-*-ALIST-ENTRY,TYPE-SET-BINARY-+-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-RATIONAL-ACL2-NUMBER*">*ts-rational-acl2-number*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-rational-acl2-number_2A" data-sym="*TS-RATIONAL-ACL2-NUMBER*" title="(defconst *ts-rational-acl2-number*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-rational-acl2-number_2A" data-sym="*TS-RATIONAL-ACL2-NUMBER*" title="(defconst *ts-rational-acl2-number*
           (ts-union0 *ts-rational* *ts-complex-rational*))">*ts-rational-acl2-number*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-rational_2A" data-sym="*TS-RATIONAL*" title="(defconst *ts-rational*
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-rational_2A" data-sym="*TS-RATIONAL*" title="(defconst *ts-rational*
           (ts-union0 *ts-integer* *ts-positive-ratio* *ts-negative-ratio*))">*ts-rational*</a> *ts-complex-rational*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-negative-rational_2A" data-defines="*TS-NEGATIVE-RATIONAL*" data-references="*TS-NEGATIVE-RATIO*,*TS-NEGATIVE-INTEGER*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-*-ALIST-ENTRY,TYPE-SET-BINARY-+-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*,*TS-NON-POSITIVE-RATIONAL*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-NEGATIVE-RATIONAL*">*ts-negative-rational*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
           (ts-union0 *ts-negative-integer* *ts-negative-ratio*))">*ts-negative-rational*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-negative-integer* *ts-negative-ratio*))</pre>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-negative-integer* *ts-negative-ratio*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-positive-rational_2A" data-defines="*TS-POSITIVE-RATIONAL*" data-references="*TS-POSITIVE-RATIO*,*TS-POSITIVE-INTEGER*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-*-ALIST-ENTRY,TYPE-SET-BINARY-+-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*,*TS-NON-NEGATIVE-RATIONAL*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-POSITIVE-RATIONAL*">*ts-positive-rational*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-positive-rational_2A" data-sym="*TS-POSITIVE-RATIONAL*" title="(defconst *ts-positive-rational*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-positive-rational_2A" data-sym="*TS-POSITIVE-RATIONAL*" title="(defconst *ts-positive-rational*
           (ts-union0 *ts-positive-integer* *ts-positive-ratio*))">*ts-positive-rational*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a> *ts-positive-ratio*))</pre>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-positive-integer_2A" data-sym="*TS-POSITIVE-INTEGER*" title="(defconst *ts-positive-integer* (ts-union0 *ts-one* *ts-integer&gt;1*))">*ts-positive-integer*</a> *ts-positive-ratio*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-non-positive-rational_2A" data-defines="*TS-NON-POSITIVE-RATIONAL*" data-references="*TS-NEGATIVE-RATIONAL*,*TS-ZERO*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-NON-POSITIVE-RATIONAL*">*ts-non-positive-rational*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-positive-rational_2A" data-sym="*TS-NON-POSITIVE-RATIONAL*" title="(defconst *ts-non-positive-rational*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-positive-rational_2A" data-sym="*TS-NON-POSITIVE-RATIONAL*" title="(defconst *ts-non-positive-rational*
           (ts-union0 *ts-zero* *ts-negative-rational*))">*ts-non-positive-rational*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
           (ts-union0 *ts-negative-integer* *ts-negative-ratio*))">*ts-negative-rational*</a>))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-non-negative-rational_2A" data-defines="*TS-NON-NEGATIVE-RATIONAL*" data-references="*TS-POSITIVE-RATIONAL*,*TS-ZERO*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-NON-NEGATIVE-RATIONAL*">*ts-non-negative-rational*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-negative-rational_2A" data-sym="*TS-NON-NEGATIVE-RATIONAL*" title="(defconst *ts-non-negative-rational*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-negative-rational_2A" data-sym="*TS-NON-NEGATIVE-RATIONAL*" title="(defconst *ts-non-negative-rational*
           (ts-union0 *ts-zero* *ts-positive-rational*))">*ts-non-negative-rational*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* <a class="sym-link local-def" href="#def-_2Ats-positive-rational_2A" data-sym="*TS-POSITIVE-RATIONAL*" title="(defconst *ts-positive-rational*
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* <a class="sym-link local-def" href="#def-_2Ats-positive-rational_2A" data-sym="*TS-POSITIVE-RATIONAL*" title="(defconst *ts-positive-rational*
           (ts-union0 *ts-positive-integer* *ts-positive-ratio*))">*ts-positive-rational*</a>))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-ratio_2A" data-defines="*TS-RATIO*" data-references="*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIO*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-BINARY-+-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-RATIO*">*ts-ratio*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-ratio_2A" data-sym="*TS-RATIO*" title="(defconst *ts-ratio* (ts-union0 *ts-positive-ratio* *ts-negative-ratio*))">*ts-ratio*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-positive-ratio* *ts-negative-ratio*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-ratio_2A" data-sym="*TS-RATIO*" title="(defconst *ts-ratio* (ts-union0 *ts-positive-ratio* *ts-negative-ratio*))">*ts-ratio*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-positive-ratio* *ts-negative-ratio*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-bit_2A" data-defines="*TS-BIT*" data-references="*TS-ONE*,*TS-ZERO*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-BIT*">*ts-bit*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-bit_2A" data-sym="*TS-BIT*" title="(defconst *ts-bit* (ts-union0 *ts-zero* *ts-one*))">*ts-bit*</a> (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* *ts-one*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-bit_2A" data-sym="*TS-BIT*" title="(defconst *ts-bit* (ts-union0 *ts-zero* *ts-one*))">*ts-bit*</a> (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-zero* *ts-one*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-cons_2A" data-defines="*TS-CONS*" data-references="*TS-IMPROPER-CONS*,*TS-PROPER-CONS*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-CONS*">*ts-cons*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-cons_2A" data-sym="*TS-CONS*" title="(defconst *ts-cons* (ts-union0 *ts-proper-cons* *ts-improper-cons*))">*ts-cons*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-proper-cons* *ts-improper-cons*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-cons_2A" data-sym="*TS-CONS*" title="(defconst *ts-cons* (ts-union0 *ts-proper-cons* *ts-improper-cons*))">*ts-cons*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-proper-cons* *ts-improper-cons*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-boolean_2A" data-defines="*TS-BOOLEAN*" data-references="*TS-T*,*TS-NIL*,TS-UNION0,DEFCONST" data-used-by="TYPE-SET-<-ALIST-ENTRY,*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-BOOLEAN*">*ts-boolean*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a> (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-nil* *ts-t*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a> (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-nil* *ts-t*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-true-list_2A" data-defines="*TS-TRUE-LIST*" data-references="*TS-PROPER-CONS*,*TS-NIL*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*,*TS-TRUE-LIST-OR-STRING*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-TRUE-LIST*">*ts-true-list*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-true-list_2A" data-sym="*TS-TRUE-LIST*" title="(defconst *ts-true-list* (ts-union0 *ts-nil* *ts-proper-cons*))">*ts-true-list*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-nil* *ts-proper-cons*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-true-list_2A" data-sym="*TS-TRUE-LIST*" title="(defconst *ts-true-list* (ts-union0 *ts-nil* *ts-proper-cons*))">*ts-true-list*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-nil* *ts-proper-cons*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-non-nil_2A" data-defines="*TS-NON-NIL*" data-references="*TS-NIL*,TS-COMPLEMENT0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-NON-NIL*">*ts-non-nil*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-nil_2A" data-sym="*TS-NON-NIL*" title="(defconst *ts-non-nil* (ts-complement0 *ts-nil*))">*ts-non-nil*</a> (<a class="sym-link system" href="../../../basis-b.html#def-ts-complement0" data-sym="TS-COMPLEMENT0">ts-complement0</a> *ts-nil*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-non-nil_2A" data-sym="*TS-NON-NIL*" title="(defconst *ts-non-nil* (ts-complement0 *ts-nil*))">*ts-non-nil*</a> (<a class="sym-link system" href="basis-b.html#def-ts-complement0" data-sym="TS-COMPLEMENT0">ts-complement0</a> *ts-nil*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-symbol_2A" data-defines="*TS-SYMBOL*" data-references="*TS-NON-T-NON-NIL-SYMBOL*,*TS-T*,*TS-NIL*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-SYMBOL*">*ts-symbol*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-symbol_2A" data-sym="*TS-SYMBOL*" title="(defconst *ts-symbol* (ts-union0 *ts-nil* *ts-t* *ts-non-t-non-nil-symbol*))">*ts-symbol*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-nil* *ts-t* *ts-non-t-non-nil-symbol*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-symbol_2A" data-sym="*TS-SYMBOL*" title="(defconst *ts-symbol* (ts-union0 *ts-nil* *ts-t* *ts-non-t-non-nil-symbol*))">*ts-symbol*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> *ts-nil* *ts-t* *ts-non-t-non-nil-symbol*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-true-list-or-string_2A" data-defines="*TS-TRUE-LIST-OR-STRING*" data-references="*TS-STRING*,*TS-TRUE-LIST*,TS-UNION0,DEFCONST" data-used-by="*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-TRUE-LIST-OR-STRING*">*ts-true-list-or-string*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-true-list-or-string_2A" data-sym="*TS-TRUE-LIST-OR-STRING*" title="(defconst *ts-true-list-or-string* (ts-union0 *ts-true-list* *ts-string*))">*ts-true-list-or-string*</a>
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-true-list_2A" data-sym="*TS-TRUE-LIST*" title="(defconst *ts-true-list* (ts-union0 *ts-nil* *ts-proper-cons*))">*ts-true-list*</a> *ts-string*))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-true-list-or-string_2A" data-sym="*TS-TRUE-LIST-OR-STRING*" title="(defconst *ts-true-list-or-string* (ts-union0 *ts-true-list* *ts-string*))">*ts-true-list-or-string*</a>
+  (<a class="sym-link system" href="basis-b.html#def-ts-union0" data-sym="TS-UNION0">ts-union0</a> <a class="sym-link local-def" href="#def-_2Ats-true-list_2A" data-sym="*TS-TRUE-LIST*" title="(defconst *ts-true-list* (ts-union0 *ts-nil* *ts-proper-cons*))">*ts-true-list*</a> *ts-string*))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-empty_2A" data-defines="*TS-EMPTY*" data-references="DEFCONST" data-used-by="TS-COMPLEMENT-FN,*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-EMPTY*">*ts-empty*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-empty_2A" data-sym="*TS-EMPTY*" title="(defconst *ts-empty* 0)">*ts-empty*</a> <span class="number">0</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-empty_2A" data-sym="*TS-EMPTY*" title="(defconst *ts-empty* 0)">*ts-empty*</a> <span class="number">0</span>)</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Ats-unknown_2A" data-defines="*TS-UNKNOWN*" data-references="DEFCONST" data-used-by="TYPE-SET-<-ALIST1,TYPE-SET-BINARY-*-ALIST1,TYPE-SET-BINARY-+-ALIST1,TS-COMPLEMENT-FN,*CODE-TYPE-SET-ALIST*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*TS-UNKNOWN*">*ts-unknown*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a> <span class="number">-1</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a> <span class="number">-1</span>)</pre>
   </div>
 
 <div class="form-block function" id="def-one-bit-type-setp" data-defines="ONE-BIT-TYPE-SETP" data-references="*TS-CHARACTER*,*TS-STRING*,*TS-IMPROPER-CONS*,*TS-PROPER-CONS*,*TS-NON-T-NON-NIL-SYMBOL*,*TS-T*,*TS-NIL*,*TS-COMPLEX-RATIONAL*,*TS-NEGATIVE-RATIO*,*TS-NEGATIVE-INTEGER*,*TS-POSITIVE-RATIO*,*TS-INTEGER>1*,*TS-ONE*,*TS-ZERO*,THE-TYPE-SET,=,OR,TS,DEFUN" data-part-name="ONE-BIT-TYPE-SETP" data-part-args="TS" data-part-body="*TS-CHARACTER*,*TS-STRING*,*TS-IMPROPER-CONS*,*TS-PROPER-CONS*,*TS-NON-T-NON-NIL-SYMBOL*,*TS-T*,*TS-NIL*,*TS-COMPLEX-RATIONAL*,*TS-NEGATIVE-RATIO*,*TS-NEGATIVE-INTEGER*,*TS-POSITIVE-RATIO*,*TS-INTEGER>1*,*TS-ONE*,*TS-ZERO*,TS,THE-TYPE-SET,=,OR" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="ONE-BIT-TYPE-SETP">one-bit-type-setp</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-one-bit-type-setp" data-sym="ONE-BIT-TYPE-SETP" title="(defun one-bit-type-setp (ts)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-one-bit-type-setp" data-sym="ONE-BIT-TYPE-SETP" title="(defun one-bit-type-setp (ts)
   (or (= (the-type-set ts) *ts-zero*) (= (the-type-set ts) *ts-one*)
       (= (the-type-set ts) *ts-integer&gt;1*)
       (= (the-type-set ts) *ts-positive-ratio*)
       (= (the-type-set ts) *ts-negative-integer*)
 ...">one-bit-type-setp</a>
   (ts)
-  (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-zero*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-one*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-integer&gt;1*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-positive-ratio*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-negative-integer*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-negative-ratio*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-complex-rational*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-nil*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-t*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-non-t-non-nil-symbol*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-proper-cons*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-improper-cons*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-string*)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-character*)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-zero*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-one*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-integer&gt;1*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-positive-ratio*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-negative-integer*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-negative-ratio*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-complex-rational*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-nil*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-t*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-non-t-non-nil-symbol*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-proper-cons*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-improper-cons*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-string*)
+    (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (the-type-set ts) *ts-character*)))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Acode-type-set-alist_2A" data-defines="*CODE-TYPE-SET-ALIST*" data-references="*TS-EMPTY*,*TS-CHARACTER*,*TS-STRING*,*TS-IMPROPER-CONS*,*TS-PROPER-CONS*,*TS-NON-T-NON-NIL-SYMBOL*,*TS-T*,*TS-NIL*,*TS-COMPLEX-RATIONAL*,*TS-NEGATIVE-RATIO*,*TS-NEGATIVE-INTEGER*,*TS-POSITIVE-RATIO*,*TS-ONE*,*TS-ZERO*,*TS-INTEGER>1*,*TS-TRUE-LIST*,*TS-BOOLEAN*,*TS-CONS*,*TS-RATIO*,*TS-BIT*,*TS-POSITIVE-INTEGER*,*TS-NON-POSITIVE-INTEGER*,*TS-NON-NEGATIVE-INTEGER*,*TS-POSITIVE-RATIONAL*,*TS-NEGATIVE-RATIONAL*,*TS-NON-NEGATIVE-RATIONAL*,*TS-NON-POSITIVE-RATIONAL*,*TS-INTEGER*,*TS-SYMBOL*,*TS-TRUE-LIST-OR-STRING*,*TS-RATIONAL*,*TS-RATIONAL-ACL2-NUMBER*,*TS-ACL2-NUMBER*,*TS-NON-NIL*,*TS-UNKNOWN*,QUOTE,CONS,LIST,DEFCONST" data-used-by="TS-COMPLEMENT-FN" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*CODE-TYPE-SET-ALIST*">*code-type-set-alist*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Acode-type-set-alist_2A" data-sym="*CODE-TYPE-SET-ALIST*" title="(defconst *code-type-set-alist*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Acode-type-set-alist_2A" data-sym="*CODE-TYPE-SET-ALIST*" title="(defconst *code-type-set-alist*
           (list (cons &#39;*ts-unknown* *ts-unknown*)
                 (cons &#39;*ts-non-nil* *ts-non-nil*)
                 (cons &#39;*ts-acl2-number* *ts-acl2-number*)
                 (cons &#39;*ts-rational-acl2-number* *ts-rational-acl2-number*)
 ...">*code-type-set-alist*</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (cons '<a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a> <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>)
+  (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (cons '<a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a> <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>)
     (cons '<a class="sym-link local-def" href="#def-_2Ats-non-nil_2A" data-sym="*TS-NON-NIL*" title="(defconst *ts-non-nil* (ts-complement0 *ts-nil*))">*ts-non-nil*</a> <a class="sym-link local-def" href="#def-_2Ats-non-nil_2A" data-sym="*TS-NON-NIL*" title="(defconst *ts-non-nil* (ts-complement0 *ts-nil*))">*ts-non-nil*</a>)
     (cons '<a class="sym-link local-def" href="#def-_2Ats-acl2-number_2A" data-sym="*TS-ACL2-NUMBER*" title="(defconst *ts-acl2-number* (ts-union0 *ts-rational* *ts-complex-rational*))">*ts-acl2-number*</a> <a class="sym-link local-def" href="#def-_2Ats-acl2-number_2A" data-sym="*TS-ACL2-NUMBER*" title="(defconst *ts-acl2-number* (ts-union0 *ts-rational* *ts-complex-rational*))">*ts-acl2-number*</a>)
     (cons '<a class="sym-link local-def" href="#def-_2Ats-rational-acl2-number_2A" data-sym="*TS-RATIONAL-ACL2-NUMBER*" title="(defconst *ts-rational-acl2-number*
@@ -684,27 +684,27 @@ pre.code {
 
 <div class="form-block function" id="def-logior-lst" data-defines="LOGIOR-LST" data-references="CAR,LOGIOR,CDR,T,NULL,COND,ANS,LST,DEFUN" data-used-by="TS-COMPLEMENT-FN" data-part-name="LOGIOR-LST" data-part-args="ANS,LST" data-part-body="CAR,LOGIOR,CDR,LOGIOR-LST,T,ANS,LST,NULL,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="LOGIOR-LST">logior-lst</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-logior-lst" data-sym="LOGIOR-LST" title="(defun logior-lst (lst ans)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-logior-lst" data-sym="LOGIOR-LST" title="(defun logior-lst (lst ans)
   (cond ((null lst) ans) (t (logior-lst (cdr lst) (logior (car lst) ans)))))">logior-lst</a>
   (lst ans)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> lst) ans)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-logior-lst" data-sym="LOGIOR-LST" title="(defun logior-lst (lst ans)
-  (cond ((null lst) ans) (t (logior-lst (cdr lst) (logior (car lst) ans)))))">logior-lst</a> (cdr lst) (<a class="sym-link system" href="../../../axioms.html#def-logior" data-sym="LOGIOR">logior</a> (car lst) ans)))))</pre>
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> lst) ans)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-logior-lst" data-sym="LOGIOR-LST" title="(defun logior-lst (lst ans)
+  (cond ((null lst) ans) (t (logior-lst (cdr lst) (logior (car lst) ans)))))">logior-lst</a> (cdr lst) (<a class="sym-link system" href="axioms.html#def-logior" data-sym="LOGIOR">logior</a> (car lst) ans)))))</pre>
   </div>
 
 <div class="form-block function" id="def-logand-lst" data-defines="LOGAND-LST" data-references="CAR,LOGAND,CDR,T,NULL,COND,ANS,LST,DEFUN" data-used-by="TS-COMPLEMENT-FN" data-part-name="LOGAND-LST" data-part-args="ANS,LST" data-part-body="CAR,LOGAND,CDR,LOGAND-LST,T,ANS,LST,NULL,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="LOGAND-LST">logand-lst</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-logand-lst" data-sym="LOGAND-LST" title="(defun logand-lst (lst ans)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-logand-lst" data-sym="LOGAND-LST" title="(defun logand-lst (lst ans)
   (cond ((null lst) ans) (t (logand-lst (cdr lst) (logand (car lst) ans)))))">logand-lst</a>
   (lst ans)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> lst) ans)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-logand-lst" data-sym="LOGAND-LST" title="(defun logand-lst (lst ans)
-  (cond ((null lst) ans) (t (logand-lst (cdr lst) (logand (car lst) ans)))))">logand-lst</a> (cdr lst) (<a class="sym-link system" href="../../../axioms.html#def-logand" data-sym="LOGAND">logand</a> (car lst) ans)))))</pre>
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> lst) ans)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-logand-lst" data-sym="LOGAND-LST" title="(defun logand-lst (lst ans)
+  (cond ((null lst) ans) (t (logand-lst (cdr lst) (logand (car lst) ans)))))">logand-lst</a> (cdr lst) (<a class="sym-link system" href="axioms.html#def-logand" data-sym="LOGAND">logand</a> (car lst) ans)))))</pre>
   </div>
 
 <div class="form-block mutual-recursion" id="def-ts-complement-fn" data-defines="TS-COMPLEMENT-FN" data-references="CONS,CONSP,TS-COMPLEMENT,TS-INTERSECTION,TS-UNION,CADR,CASE,ATOM,HARD,ER,*CODE-TYPE-SET-ALIST*,ASSOC-EQ,OR,LEGAL-CONSTANTP1,SYMBOLP,AND,LOGAND,LOGAND-LST,*TS-UNKNOWN*,TS-INTERSECTION-FN,LOGIOR,XXXJOIN,LOGIOR-LST,INTEGER-LISTP,EVAL-TYPE-SET-LST,LST,T,CAR,CDR,*TS-EMPTY*,NULL,COND,TS-UNION-FN,THE-TYPE-SET,QUOTE,LIST,LOGNOT,INTEGERP,IF,EVAL-TYPE-SET,Y,LET,X,DEFUN,MUTUAL-RECURSION" data-used-by="TS-COMPLEMENT" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="TS-COMPLEMENT-FN">ts-complement-fn</span><span class="form-type">mutual-recursion</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-mutual-recursion" data-sym="MUTUAL-RECURSION">mutual-recursion</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-ts-complement-fn" data-sym="TS-COMPLEMENT-FN" title="(mutual-recursion
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-mutual-recursion" data-sym="MUTUAL-RECURSION">mutual-recursion</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-ts-complement-fn" data-sym="TS-COMPLEMENT-FN" title="(mutual-recursion
  (defun ts-complement-fn (x)
    (let ((y (eval-type-set x)))
      (if (integerp y)
@@ -714,32 +714,32 @@ pre.code {
     (let ((y (eval-type-set x)))
       (if (integerp y)
         (lognot y)
-        (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'lognot (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set y)))))
-  (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> ts-union-fn
+        (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'lognot (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set y)))))
+  (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> ts-union-fn
     (x)
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> x) '<a class="sym-link local-def" href="#def-_2Ats-empty_2A" data-sym="*TS-EMPTY*" title="(defconst *ts-empty* 0)">*ts-empty*</a>)
-      ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (cdr x)) (eval-type-set (car x)))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((lst (eval-type-set-lst x)))
-          (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-integer-listp" data-sym="INTEGER-LISTP">integer-listp</a> lst) (<a class="sym-link local-def" href="#def-logior-lst" data-sym="LOGIOR-LST" title="(defun logior-lst (lst ans)
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> x) '<a class="sym-link local-def" href="#def-_2Ats-empty_2A" data-sym="*TS-EMPTY*" title="(defconst *ts-empty* 0)">*ts-empty*</a>)
+      ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (cdr x)) (eval-type-set (car x)))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((lst (eval-type-set-lst x)))
+          (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-integer-listp" data-sym="INTEGER-LISTP">integer-listp</a> lst) (<a class="sym-link local-def" href="#def-logior-lst" data-sym="LOGIOR-LST" title="(defun logior-lst (lst ans)
   (cond ((null lst) ans) (t (logior-lst (cdr lst) (logior (car lst) ans)))))">logior-lst</a> lst <a class="sym-link local-def" href="#def-_2Ats-empty_2A" data-sym="*TS-EMPTY*" title="(defconst *ts-empty* 0)">*ts-empty*</a>))
-            (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> '<a class="sym-link system" href="../../../axioms.html#def-logior" data-sym="LOGIOR">logior</a> lst)))))))
-  (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> ts-intersection-fn
+            (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> '<a class="sym-link system" href="axioms.html#def-logior" data-sym="LOGIOR">logior</a> lst)))))))
+  (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> ts-intersection-fn
     (x)
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> x) '<a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>)
-      ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (cdr x)) (eval-type-set (car x)))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((lst (eval-type-set-lst x)))
-          (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-integer-listp" data-sym="INTEGER-LISTP">integer-listp</a> lst) (<a class="sym-link local-def" href="#def-logand-lst" data-sym="LOGAND-LST" title="(defun logand-lst (lst ans)
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> x) '<a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>)
+      ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (cdr x)) (eval-type-set (car x)))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((lst (eval-type-set-lst x)))
+          (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-integer-listp" data-sym="INTEGER-LISTP">integer-listp</a> lst) (<a class="sym-link local-def" href="#def-logand-lst" data-sym="LOGAND-LST" title="(defun logand-lst (lst ans)
   (cond ((null lst) ans) (t (logand-lst (cdr lst) (logand (car lst) ans)))))">logand-lst</a> lst <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>))
-            (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> '<a class="sym-link system" href="../../../axioms.html#def-logand" data-sym="LOGAND">logand</a> lst)))))))
-  (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> eval-type-set
+            (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> '<a class="sym-link system" href="axioms.html#def-logand" data-sym="LOGAND">logand</a> lst)))))))
+  (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> eval-type-set
     (x)
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (symbolp x) (<a class="sym-link system" href="../../../axioms.html#def-legal-constantp1" data-sym="LEGAL-CONSTANTP1">legal-constantp1</a> x)) (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (cdr (<a class="sym-link system" href="../../../axioms.html#def-assoc-eq" data-sym="ASSOC-EQ">assoc-eq</a> x <a class="sym-link local-def" href="#def-_2Acode-type-set-alist_2A" data-sym="*CODE-TYPE-SET-ALIST*" title="(defconst *code-type-set-alist*
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (symbolp x) (<a class="sym-link system" href="axioms.html#def-legal-constantp1" data-sym="LEGAL-CONSTANTP1">legal-constantp1</a> x)) (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (cdr (<a class="sym-link system" href="axioms.html#def-assoc-eq" data-sym="ASSOC-EQ">assoc-eq</a> x <a class="sym-link local-def" href="#def-_2Acode-type-set-alist_2A" data-sym="*CODE-TYPE-SET-ALIST*" title="(defconst *code-type-set-alist*
           (list (cons &#39;*ts-unknown* *ts-unknown*)
                 (cons &#39;*ts-non-nil* *ts-non-nil*)
                 (cons &#39;*ts-acl2-number* *ts-acl2-number*)
                 (cons &#39;*ts-rational-acl2-number* *ts-rational-acl2-number*)
 ...">*code-type-set-alist*</a>))
-          (<a class="sym-link system" href="../../../axioms.html#def-er" data-sym="ER">er</a> hard
+          (<a class="sym-link system" href="axioms.html#def-er" data-sym="ER">er</a> hard
             'eval-type-set
             <span class="string">"The constant ~x0 appears as an argument to a ts- function but is ~
              not known to *code-type-set-alist*, whose current value ~
@@ -752,10 +752,10 @@ pre.code {
                 (cons &#39;*ts-acl2-number* *ts-acl2-number*)
                 (cons &#39;*ts-rational-acl2-number* *ts-rational-acl2-number*)
 ...">*code-type-set-alist*</a>)))
-      ((<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> x) x)
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-case" data-sym="CASE">case</a> (car x)
-          '(if (integerp (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> x))
-            (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> x)
+      ((<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> x) x)
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-case" data-sym="CASE">case</a> (car x)
+          '(if (integerp (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> x))
+            (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> x)
             x)
           (<a class="sym-link local-def" href="#def-ts-union" data-sym="TS-UNION" title="(defmacro ts-union (&amp;rest x) (list &#39;the-type-set (ts-union-fn x)))">ts-union</a> (ts-union-fn (cdr x)))
           (<a class="sym-link local-def" href="#def-ts-intersection" data-sym="TS-INTERSECTION" title="(defmacro ts-intersection (&amp;rest x) (list &#39;the-type-set (ts-intersection-fn x)))">ts-intersection</a> (ts-intersection-fn (cdr x)))
@@ -764,23 +764,23 @@ pre.code {
    (let ((y (eval-type-set x)))
      (if (integerp y)
          (lognot y)
-...">ts-complement-fn</a> (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> x)))
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> x)))))
-  (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> eval-type-set-lst
+...">ts-complement-fn</a> (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> x)))
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> x)))))
+  (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> eval-type-set-lst
     (x)
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((consp x) (let ((y (eval-type-set (car x))))
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((consp x) (let ((y (eval-type-set (car x))))
           (cons (if (integerp y)
               y
-              (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set y))
+              (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set y))
             (eval-type-set-lst (cdr x)))))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))</pre>
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))</pre>
   </div>
 
 <div class="form-block macro" id="def-ts-complement" data-defines="TS-COMPLEMENT" data-references="TS-COMPLEMENT-FN,THE-TYPE-SET,QUOTE,LIST,X,DEFMACRO" data-used-by="TS-COMPLEMENT-FN" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="TS-COMPLEMENT">ts-complement</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-complement" data-sym="TS-COMPLEMENT" title="(defmacro ts-complement (x) (list &#39;the-type-set (ts-complement-fn x)))">ts-complement</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-complement" data-sym="TS-COMPLEMENT" title="(defmacro ts-complement (x) (list &#39;the-type-set (ts-complement-fn x)))">ts-complement</a>
   (x)
-  (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set (<a class="sym-link local-def" href="#def-ts-complement-fn" data-sym="TS-COMPLEMENT-FN" title="(mutual-recursion
+  (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set (<a class="sym-link local-def" href="#def-ts-complement-fn" data-sym="TS-COMPLEMENT-FN" title="(mutual-recursion
  (defun ts-complement-fn (x)
    (let ((y (eval-type-set x)))
      (if (integerp y)
@@ -790,43 +790,43 @@ pre.code {
 
 <div class="form-block macro" id="def-ts-intersection" data-defines="TS-INTERSECTION" data-references="TS-INTERSECTION-FN,THE-TYPE-SET,QUOTE,LIST,X,&REST,DEFMACRO" data-used-by="TS-SUBSETP,TS-COMPLEMENT-FN" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="TS-INTERSECTION">ts-intersection</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-intersection" data-sym="TS-INTERSECTION" title="(defmacro ts-intersection (&amp;rest x) (list &#39;the-type-set (ts-intersection-fn x)))">ts-intersection</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-intersection" data-sym="TS-INTERSECTION" title="(defmacro ts-intersection (&amp;rest x) (list &#39;the-type-set (ts-intersection-fn x)))">ts-intersection</a>
   (&amp;rest x)
-  (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set (ts-intersection-fn x)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set (ts-intersection-fn x)))</pre>
   </div>
 
 <div class="form-block macro" id="def-ts-union" data-defines="TS-UNION" data-references="TS-UNION-FN,THE-TYPE-SET,QUOTE,LIST,X,&REST,DEFMACRO" data-used-by="TS-COMPLEMENT-FN" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="TS-UNION">ts-union</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-union" data-sym="TS-UNION" title="(defmacro ts-union (&amp;rest x) (list &#39;the-type-set (ts-union-fn x)))">ts-union</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-union" data-sym="TS-UNION" title="(defmacro ts-union (&amp;rest x) (list &#39;the-type-set (ts-union-fn x)))">ts-union</a>
   (&amp;rest x)
-  (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set (ts-union-fn x)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'the-type-set (ts-union-fn x)))</pre>
   </div>
 
 <div class="form-block macro" id="def-ts-subsetp" data-defines="TS-SUBSETP" data-references="TS-INTERSECTION,TS=,INTEGER,TYPE,DECLARE,QUASIQUOTE,LET,QUOTE,LIST,TS2,TS1,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="TS-SUBSETP">ts-subsetp</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-subsetp" data-sym="TS-SUBSETP" title="(defmacro ts-subsetp (ts1 ts2)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-ts-subsetp" data-sym="TS-SUBSETP" title="(defmacro ts-subsetp (ts1 ts2)
   (list &#39;let (list (list &#39;ts1 ts1) (list &#39;ts2 ts2))
         `(declare (type (integer ,*min-type-set* ,*max-type-set*) ts1 ts2))
         &#39;(ts= (ts-intersection ts1 ts2) ts1)))">ts-subsetp</a>
   (ts1 ts2)
-  (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'let
-    (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'ts1 ts1) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'ts2 ts2))
+  (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'let
+    (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'ts1 ts1) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'ts2 ts2))
     `(declare (type (integer ,*MIN-TYPE-SET* ,*MAX-TYPE-SET*) ts1 ts2))
-    '(<a class="sym-link system" href="../../../basis-b.html#def-ts_3D" data-sym="TS=">ts=</a> (<a class="sym-link local-def" href="#def-ts-intersection" data-sym="TS-INTERSECTION" title="(defmacro ts-intersection (&amp;rest x) (list &#39;the-type-set (ts-intersection-fn x)))">ts-intersection</a> ts1 ts2) ts1)))</pre>
+    '(<a class="sym-link system" href="basis-b.html#def-ts_3D" data-sym="TS=">ts=</a> (<a class="sym-link local-def" href="#def-ts-intersection" data-sym="TS-INTERSECTION" title="(defmacro ts-intersection (&amp;rest x) (list &#39;the-type-set (ts-intersection-fn x)))">ts-intersection</a> ts1 ts2) ts1)))</pre>
   </div>
 
 <div class="form-block function" id="def-type-set-binary-_2B-alist-entry" data-defines="TYPE-SET-BINARY-+-ALIST-ENTRY" data-references="*TS-RATIONAL-ACL2-NUMBER*,*TS-NEGATIVE-RATIONAL*,*TS-RATIONAL*,*TS-POSITIVE-RATIONAL*,*TS-INTEGER*,*TS-COMPLEX-RATIONAL*,*TS-RATIO*,*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIO*,*TS-NON-POSITIVE-INTEGER*,*TS-NEGATIVE-INTEGER*,*TS-INTEGER>1*,*TS-ONE*,*TS-ZERO*,TS-BUILDER,TS2,TS1,DEFUN" data-used-by="TYPE-SET-BINARY-+-ALIST1" data-part-name="TYPE-SET-BINARY-+-ALIST-ENTRY" data-part-args="TS2,TS1" data-part-body="*TS-RATIONAL-ACL2-NUMBER*,*TS-NEGATIVE-RATIONAL*,*TS-RATIONAL*,*TS-POSITIVE-RATIONAL*,*TS-INTEGER*,*TS-COMPLEX-RATIONAL*,*TS-RATIO*,*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIO*,*TS-NON-POSITIVE-INTEGER*,*TS-NEGATIVE-INTEGER*,*TS-INTEGER>1*,*TS-ONE*,TS2,*TS-ZERO*,TS1,TS-BUILDER" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-BINARY-+-ALIST-ENTRY">type-set-binary-+-alist-entry</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2B-alist-entry" data-sym="TYPE-SET-BINARY-+-ALIST-ENTRY" title="(defun type-set-binary-+-alist-entry (ts1 ts2)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2B-alist-entry" data-sym="TYPE-SET-BINARY-+-ALIST-ENTRY" title="(defun type-set-binary-+-alist-entry (ts1 ts2)
   (ts-builder ts1 (*ts-zero* ts2)
               (*ts-one*
                (ts-builder ts2 (*ts-zero* ts1) (*ts-one* *ts-integer&gt;1*)
                            (*ts-integer&gt;1* *ts-integer&gt;1*)
 ...">type-set-binary-+-alist-entry</a>
   (ts1 ts2)
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts1
+  (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts1
     (*ts-zero* ts2)
-    (*ts-one* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-one* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* ts1)
         (*ts-one* *ts-integer&gt;1*)
         (*ts-integer&gt;1* *ts-integer&gt;1*)
@@ -834,7 +834,7 @@ pre.code {
         (*ts-positive-ratio* *ts-positive-ratio*)
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-ratio_2A" data-sym="*TS-RATIO*" title="(defconst *ts-ratio* (ts-union0 *ts-positive-ratio* *ts-negative-ratio*))">*ts-ratio*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-integer&gt;1* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-integer&gt;1* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* ts1)
         (*ts-one* *ts-integer&gt;1*)
         (*ts-integer&gt;1* *ts-integer&gt;1*)
@@ -843,7 +843,7 @@ pre.code {
         (*ts-positive-ratio* *ts-positive-ratio*)
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-ratio_2A" data-sym="*TS-RATIO*" title="(defconst *ts-ratio* (ts-union0 *ts-positive-ratio* *ts-negative-ratio*))">*ts-ratio*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-negative-integer* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-negative-integer* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* ts1)
         (*ts-one* <a class="sym-link local-def" href="#def-_2Ats-non-positive-integer_2A" data-sym="*TS-NON-POSITIVE-INTEGER*" title="(defconst *ts-non-positive-integer* (ts-union0 *ts-zero* *ts-negative-integer*))">*ts-non-positive-integer*</a>)
         (*ts-integer&gt;1* <a class="sym-link local-def" href="#def-_2Ats-integer_2A" data-sym="*TS-INTEGER*" title="(defconst *ts-integer*
@@ -852,7 +852,7 @@ pre.code {
         (*ts-positive-ratio* <a class="sym-link local-def" href="#def-_2Ats-ratio_2A" data-sym="*TS-RATIO*" title="(defconst *ts-ratio* (ts-union0 *ts-positive-ratio* *ts-negative-ratio*))">*ts-ratio*</a>)
         (*ts-negative-ratio* *ts-negative-ratio*)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-positive-ratio* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-positive-ratio* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* ts1)
         (*ts-one* *ts-positive-ratio*)
         (*ts-integer&gt;1* *ts-positive-ratio*)
@@ -862,7 +862,7 @@ pre.code {
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-rational_2A" data-sym="*TS-RATIONAL*" title="(defconst *ts-rational*
           (ts-union0 *ts-integer* *ts-positive-ratio* *ts-negative-ratio*))">*ts-rational*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-negative-ratio* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-negative-ratio* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* ts1)
         (*ts-one* <a class="sym-link local-def" href="#def-_2Ats-ratio_2A" data-sym="*TS-RATIO*" title="(defconst *ts-ratio* (ts-union0 *ts-positive-ratio* *ts-negative-ratio*))">*ts-ratio*</a>)
         (*ts-integer&gt;1* <a class="sym-link local-def" href="#def-_2Ats-ratio_2A" data-sym="*TS-RATIO*" title="(defconst *ts-ratio* (ts-union0 *ts-positive-ratio* *ts-negative-ratio*))">*ts-ratio*</a>)
@@ -872,7 +872,7 @@ pre.code {
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
           (ts-union0 *ts-negative-integer* *ts-negative-ratio*))">*ts-negative-rational*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-complex-rational* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-complex-rational* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* ts1)
         (*ts-one* *ts-complex-rational*)
         (*ts-integer&gt;1* *ts-complex-rational*)
@@ -885,50 +885,50 @@ pre.code {
 
 <div class="form-block function" id="def-type-set-binary-_2B-alist1" data-defines="TYPE-SET-BINARY-+-ALIST1" data-references="CONS,1-,*TS-UNKNOWN*,=,TYPE-SET-BINARY-+-ALIST-ENTRY,X,LET,T,<,COND,LST,J,I,DEFUN" data-used-by="TYPE-SET-BINARY-+-ALIST" data-part-name="TYPE-SET-BINARY-+-ALIST1" data-part-args="LST,J,I" data-part-body="CONS,1-,TYPE-SET-BINARY-+-ALIST1,*TS-UNKNOWN*,=,I,TYPE-SET-BINARY-+-ALIST-ENTRY,X,LET,T,LST,J,<,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-BINARY-+-ALIST1">type-set-binary-+-alist1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2B-alist1" data-sym="TYPE-SET-BINARY-+-ALIST1" title="(defun type-set-binary-+-alist1 (i j lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2B-alist1" data-sym="TYPE-SET-BINARY-+-ALIST1" title="(defun type-set-binary-+-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-binary-+-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-binary-+-alist1 i (1- j) lst))
 ...">type-set-binary-+-alist1</a>
   (i j lst)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; j <span class="number">0</span>) lst)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((x (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist-entry" data-sym="TYPE-SET-BINARY-+-ALIST-ENTRY" title="(defun type-set-binary-+-alist-entry (ts1 ts2)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; j <span class="number">0</span>) lst)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((x (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist-entry" data-sym="TYPE-SET-BINARY-+-ALIST-ENTRY" title="(defun type-set-binary-+-alist-entry (ts1 ts2)
   (ts-builder ts1 (*ts-zero* ts2)
               (*ts-one*
                (ts-builder ts2 (*ts-zero* ts1) (*ts-one* *ts-integer&gt;1*)
                            (*ts-integer&gt;1* *ts-integer&gt;1*)
 ...">type-set-binary-+-alist-entry</a> i j)))
-        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> x <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>) (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist1" data-sym="TYPE-SET-BINARY-+-ALIST1" title="(defun type-set-binary-+-alist1 (i j lst)
+        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> x <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>) (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist1" data-sym="TYPE-SET-BINARY-+-ALIST1" title="(defun type-set-binary-+-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-binary-+-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-binary-+-alist1 i (1- j) lst))
-...">type-set-binary-+-alist1</a> i (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> j) lst))
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist1" data-sym="TYPE-SET-BINARY-+-ALIST1" title="(defun type-set-binary-+-alist1 (i j lst)
+...">type-set-binary-+-alist1</a> i (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> j) lst))
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist1" data-sym="TYPE-SET-BINARY-+-ALIST1" title="(defun type-set-binary-+-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-binary-+-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-binary-+-alist1 i (1- j) lst))
 ...">type-set-binary-+-alist1</a> i
-              (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> j)
+              (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> j)
               (cons (cons (cons i j) x) lst))))))))</pre>
   </div>
 
 <div class="form-block function" id="def-type-set-binary-_2B-alist" data-defines="TYPE-SET-BINARY-+-ALIST" data-references="TYPE-SET-BINARY-+-ALIST1,1-,T,<,COND,LST,J,I,DEFUN" data-part-name="TYPE-SET-BINARY-+-ALIST" data-part-args="LST,J,I" data-part-body="TYPE-SET-BINARY-+-ALIST1,J,1-,TYPE-SET-BINARY-+-ALIST,T,LST,I,<,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-BINARY-+-ALIST">type-set-binary-+-alist</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2B-alist" data-sym="TYPE-SET-BINARY-+-ALIST" title="(defun type-set-binary-+-alist (i j lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2B-alist" data-sym="TYPE-SET-BINARY-+-ALIST" title="(defun type-set-binary-+-alist (i j lst)
   (cond ((&lt; i 0) lst)
         (t
          (type-set-binary-+-alist (1- i) j
                                   (type-set-binary-+-alist1 i j lst)))))">type-set-binary-+-alist</a>
   (i j lst)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; i <span class="number">0</span>) lst)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist" data-sym="TYPE-SET-BINARY-+-ALIST" title="(defun type-set-binary-+-alist (i j lst)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; i <span class="number">0</span>) lst)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist" data-sym="TYPE-SET-BINARY-+-ALIST" title="(defun type-set-binary-+-alist (i j lst)
   (cond ((&lt; i 0) lst)
         (t
          (type-set-binary-+-alist (1- i) j
-                                  (type-set-binary-+-alist1 i j lst)))))">type-set-binary-+-alist</a> (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> i)
+                                  (type-set-binary-+-alist1 i j lst)))))">type-set-binary-+-alist</a> (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> i)
         j
         (<a class="sym-link local-def" href="#def-type-set-binary-_2B-alist1" data-sym="TYPE-SET-BINARY-+-ALIST1" title="(defun type-set-binary-+-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
@@ -940,17 +940,17 @@ pre.code {
 
 <div class="form-block function" id="def-type-set-binary-_2A-alist-entry" data-defines="TYPE-SET-BINARY-*-ALIST-ENTRY" data-references="TS-COMPLEMENT0,*TS-RATIONAL-ACL2-NUMBER*,TS-INTERSECTION0,*TS-POSITIVE-INTEGER*,*TS-COMPLEX-RATIONAL*,*TS-NEGATIVE-RATIONAL*,*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIONAL*,*TS-POSITIVE-RATIO*,*TS-NEGATIVE-INTEGER*,*TS-INTEGER>1*,*TS-ONE*,*TS-ZERO*,TS-BUILDER,TS2,TS1,DEFUN" data-used-by="TYPE-SET-BINARY-*-ALIST1" data-part-name="TYPE-SET-BINARY-*-ALIST-ENTRY" data-part-args="TS2,TS1" data-part-body="TS-COMPLEMENT0,*TS-RATIONAL-ACL2-NUMBER*,TS-INTERSECTION0,*TS-POSITIVE-INTEGER*,*TS-COMPLEX-RATIONAL*,*TS-NEGATIVE-RATIONAL*,*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIONAL*,*TS-POSITIVE-RATIO*,*TS-NEGATIVE-INTEGER*,*TS-INTEGER>1*,TS2,*TS-ONE*,*TS-ZERO*,TS1,TS-BUILDER" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-BINARY-*-ALIST-ENTRY">type-set-binary-*-alist-entry</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2A-alist-entry" data-sym="TYPE-SET-BINARY-*-ALIST-ENTRY" title="(defun type-set-binary-*-alist-entry (ts1 ts2)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2A-alist-entry" data-sym="TYPE-SET-BINARY-*-ALIST-ENTRY" title="(defun type-set-binary-*-alist-entry (ts1 ts2)
   (ts-builder ts1 (*ts-zero* *ts-zero*) (*ts-one* ts2)
               (*ts-integer&gt;1*
                (ts-builder ts2 (*ts-zero* *ts-zero*) (*ts-one* ts1)
                            (*ts-integer&gt;1* *ts-integer&gt;1*)
 ...">type-set-binary-*-alist-entry</a>
   (ts1 ts2)
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts1
+  (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts1
     (*ts-zero* *ts-zero*)
     (*ts-one* ts2)
-    (*ts-integer&gt;1* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-integer&gt;1* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-zero*)
         (*ts-one* ts1)
         (*ts-integer&gt;1* *ts-integer&gt;1*)
@@ -960,7 +960,7 @@ pre.code {
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
           (ts-union0 *ts-negative-integer* *ts-negative-ratio*))">*ts-negative-rational*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-negative-integer* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-negative-integer* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-zero*)
         (*ts-one* ts1)
         (*ts-integer&gt;1* *ts-negative-integer*)
@@ -970,7 +970,7 @@ pre.code {
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-positive-rational_2A" data-sym="*TS-POSITIVE-RATIONAL*" title="(defconst *ts-positive-rational*
           (ts-union0 *ts-positive-integer* *ts-positive-ratio*))">*ts-positive-rational*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-positive-ratio* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-positive-ratio* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-zero*)
         (*ts-one* ts1)
         (*ts-integer&gt;1* <a class="sym-link local-def" href="#def-_2Ats-positive-rational_2A" data-sym="*TS-POSITIVE-RATIONAL*" title="(defconst *ts-positive-rational*
@@ -982,7 +982,7 @@ pre.code {
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
           (ts-union0 *ts-negative-integer* *ts-negative-ratio*))">*ts-negative-rational*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-negative-ratio* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-negative-ratio* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-zero*)
         (*ts-one* ts1)
         (*ts-integer&gt;1* <a class="sym-link local-def" href="#def-_2Ats-negative-rational_2A" data-sym="*TS-NEGATIVE-RATIONAL*" title="(defconst *ts-negative-rational*
@@ -994,64 +994,64 @@ pre.code {
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-positive-rational_2A" data-sym="*TS-POSITIVE-RATIONAL*" title="(defconst *ts-positive-rational*
           (ts-union0 *ts-positive-integer* *ts-positive-ratio*))">*ts-positive-rational*</a>)
         (*ts-complex-rational* *ts-complex-rational*)))
-    (*ts-complex-rational* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-complex-rational* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-zero*)
         (*ts-one* ts1)
         (*ts-integer&gt;1* *ts-complex-rational*)
         (*ts-negative-integer* *ts-complex-rational*)
         (*ts-positive-ratio* *ts-complex-rational*)
         (*ts-negative-ratio* *ts-complex-rational*)
-        (*ts-complex-rational* (<a class="sym-link system" href="../../../basis-b.html#def-ts-intersection0" data-sym="TS-INTERSECTION0">ts-intersection0</a> <a class="sym-link local-def" href="#def-_2Ats-rational-acl2-number_2A" data-sym="*TS-RATIONAL-ACL2-NUMBER*" title="(defconst *ts-rational-acl2-number*
+        (*ts-complex-rational* (<a class="sym-link system" href="basis-b.html#def-ts-intersection0" data-sym="TS-INTERSECTION0">ts-intersection0</a> <a class="sym-link local-def" href="#def-_2Ats-rational-acl2-number_2A" data-sym="*TS-RATIONAL-ACL2-NUMBER*" title="(defconst *ts-rational-acl2-number*
           (ts-union0 *ts-rational* *ts-complex-rational*))">*ts-rational-acl2-number*</a>
-            (<a class="sym-link system" href="../../../basis-b.html#def-ts-complement0" data-sym="TS-COMPLEMENT0">ts-complement0</a> *ts-zero*)))))))</pre>
+            (<a class="sym-link system" href="basis-b.html#def-ts-complement0" data-sym="TS-COMPLEMENT0">ts-complement0</a> *ts-zero*)))))))</pre>
   </div>
 
 <div class="form-block function" id="def-type-set-binary-_2A-alist1" data-defines="TYPE-SET-BINARY-*-ALIST1" data-references="CONS,1-,*TS-UNKNOWN*,=,TYPE-SET-BINARY-*-ALIST-ENTRY,X,LET,T,<,COND,LST,J,I,DEFUN" data-used-by="TYPE-SET-BINARY-*-ALIST" data-part-name="TYPE-SET-BINARY-*-ALIST1" data-part-args="LST,J,I" data-part-body="CONS,1-,TYPE-SET-BINARY-*-ALIST1,*TS-UNKNOWN*,=,I,TYPE-SET-BINARY-*-ALIST-ENTRY,X,LET,T,LST,J,<,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-BINARY-*-ALIST1">type-set-binary-*-alist1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2A-alist1" data-sym="TYPE-SET-BINARY-*-ALIST1" title="(defun type-set-binary-*-alist1 (i j lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2A-alist1" data-sym="TYPE-SET-BINARY-*-ALIST1" title="(defun type-set-binary-*-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-binary-*-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-binary-*-alist1 i (1- j) lst))
 ...">type-set-binary-*-alist1</a>
   (i j lst)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; j <span class="number">0</span>) lst)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((x (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist-entry" data-sym="TYPE-SET-BINARY-*-ALIST-ENTRY" title="(defun type-set-binary-*-alist-entry (ts1 ts2)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; j <span class="number">0</span>) lst)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((x (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist-entry" data-sym="TYPE-SET-BINARY-*-ALIST-ENTRY" title="(defun type-set-binary-*-alist-entry (ts1 ts2)
   (ts-builder ts1 (*ts-zero* *ts-zero*) (*ts-one* ts2)
               (*ts-integer&gt;1*
                (ts-builder ts2 (*ts-zero* *ts-zero*) (*ts-one* ts1)
                            (*ts-integer&gt;1* *ts-integer&gt;1*)
 ...">type-set-binary-*-alist-entry</a> i j)))
-        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> x <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>) (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist1" data-sym="TYPE-SET-BINARY-*-ALIST1" title="(defun type-set-binary-*-alist1 (i j lst)
+        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> x <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>) (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist1" data-sym="TYPE-SET-BINARY-*-ALIST1" title="(defun type-set-binary-*-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-binary-*-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-binary-*-alist1 i (1- j) lst))
-...">type-set-binary-*-alist1</a> i (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> j) lst))
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist1" data-sym="TYPE-SET-BINARY-*-ALIST1" title="(defun type-set-binary-*-alist1 (i j lst)
+...">type-set-binary-*-alist1</a> i (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> j) lst))
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist1" data-sym="TYPE-SET-BINARY-*-ALIST1" title="(defun type-set-binary-*-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-binary-*-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-binary-*-alist1 i (1- j) lst))
 ...">type-set-binary-*-alist1</a> i
-              (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> j)
+              (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> j)
               (cons (cons (cons i j) x) lst))))))))</pre>
   </div>
 
 <div class="form-block function" id="def-type-set-binary-_2A-alist" data-defines="TYPE-SET-BINARY-*-ALIST" data-references="TYPE-SET-BINARY-*-ALIST1,1-,T,<,COND,LST,J,I,DEFUN" data-part-name="TYPE-SET-BINARY-*-ALIST" data-part-args="LST,J,I" data-part-body="TYPE-SET-BINARY-*-ALIST1,J,1-,TYPE-SET-BINARY-*-ALIST,T,LST,I,<,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-BINARY-*-ALIST">type-set-binary-*-alist</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2A-alist" data-sym="TYPE-SET-BINARY-*-ALIST" title="(defun type-set-binary-*-alist (i j lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-binary-_2A-alist" data-sym="TYPE-SET-BINARY-*-ALIST" title="(defun type-set-binary-*-alist (i j lst)
   (cond ((&lt; i 0) lst)
         (t
          (type-set-binary-*-alist (1- i) j
                                   (type-set-binary-*-alist1 i j lst)))))">type-set-binary-*-alist</a>
   (i j lst)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; i <span class="number">0</span>) lst)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist" data-sym="TYPE-SET-BINARY-*-ALIST" title="(defun type-set-binary-*-alist (i j lst)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; i <span class="number">0</span>) lst)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist" data-sym="TYPE-SET-BINARY-*-ALIST" title="(defun type-set-binary-*-alist (i j lst)
   (cond ((&lt; i 0) lst)
         (t
          (type-set-binary-*-alist (1- i) j
-                                  (type-set-binary-*-alist1 i j lst)))))">type-set-binary-*-alist</a> (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> i)
+                                  (type-set-binary-*-alist1 i j lst)))))">type-set-binary-*-alist</a> (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> i)
         j
         (<a class="sym-link local-def" href="#def-type-set-binary-_2A-alist1" data-sym="TYPE-SET-BINARY-*-ALIST1" title="(defun type-set-binary-*-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
@@ -1063,50 +1063,50 @@ pre.code {
 
 <div class="form-block function" id="def-type-set-_3C-alist-entry" data-defines="TYPE-SET-<-ALIST-ENTRY" data-references="*TS-BOOLEAN*,*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIO*,*TS-NEGATIVE-INTEGER*,*TS-INTEGER>1*,*TS-T*,*TS-ONE*,*TS-NIL*,*TS-ZERO*,TS-BUILDER,TS2,TS1,DEFUN" data-used-by="TYPE-SET-<-ALIST1" data-part-name="TYPE-SET-<-ALIST-ENTRY" data-part-args="TS2,TS1" data-part-body="*TS-BOOLEAN*,*TS-NEGATIVE-RATIO*,*TS-POSITIVE-RATIO*,*TS-NEGATIVE-INTEGER*,*TS-INTEGER>1*,*TS-T*,*TS-ONE*,*TS-NIL*,TS2,*TS-ZERO*,TS1,TS-BUILDER" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-<-ALIST-ENTRY">type-set-&lt;-alist-entry</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-_3C-alist-entry" data-sym="TYPE-SET-&lt;-ALIST-ENTRY" title="(defun type-set-&lt;-alist-entry (ts1 ts2)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-_3C-alist-entry" data-sym="TYPE-SET-&lt;-ALIST-ENTRY" title="(defun type-set-&lt;-alist-entry (ts1 ts2)
   (ts-builder ts1
               (*ts-zero*
                (ts-builder ts2 (*ts-zero* *ts-nil*) (*ts-one* *ts-t*)
                            (*ts-integer&gt;1* *ts-t*)
 ...">type-set-&lt;-alist-entry</a>
   (ts1 ts2)
-  (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts1
-    (*ts-zero* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+  (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts1
+    (*ts-zero* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-nil*)
         (*ts-one* *ts-t*)
         (*ts-integer&gt;1* *ts-t*)
         (*ts-negative-integer* *ts-nil*)
         (*ts-positive-ratio* *ts-t*)
         (*ts-negative-ratio* *ts-nil*)))
-    (*ts-one* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-one* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-nil*)
         (*ts-one* *ts-nil*)
         (*ts-integer&gt;1* *ts-t*)
         (*ts-negative-integer* *ts-nil*)
         (*ts-positive-ratio* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)
         (*ts-negative-ratio* *ts-nil*)))
-    (*ts-integer&gt;1* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-integer&gt;1* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-nil*)
         (*ts-one* *ts-nil*)
         (*ts-integer&gt;1* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)
         (*ts-negative-integer* *ts-nil*)
         (*ts-positive-ratio* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)
         (*ts-negative-ratio* *ts-nil*)))
-    (*ts-negative-integer* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-negative-integer* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-t*)
         (*ts-one* *ts-t*)
         (*ts-integer&gt;1* *ts-t*)
         (*ts-negative-integer* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)
         (*ts-positive-ratio* *ts-t*)
         (*ts-negative-ratio* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)))
-    (*ts-positive-ratio* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-positive-ratio* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-nil*)
         (*ts-one* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)
         (*ts-integer&gt;1* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)
         (*ts-negative-integer* *ts-nil*)
         (*ts-positive-ratio* <a class="sym-link local-def" href="#def-_2Ats-boolean_2A" data-sym="*TS-BOOLEAN*" title="(defconst *ts-boolean* (ts-union0 *ts-nil* *ts-t*))">*ts-boolean*</a>)
         (*ts-negative-ratio* *ts-nil*)))
-    (*ts-negative-ratio* (<a class="sym-link system" href="../../../basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
+    (*ts-negative-ratio* (<a class="sym-link system" href="basis-b.html#def-ts-builder" data-sym="TS-BUILDER">ts-builder</a> ts2
         (*ts-zero* *ts-t*)
         (*ts-one* *ts-t*)
         (*ts-integer&gt;1* *ts-t*)
@@ -1117,44 +1117,44 @@ pre.code {
 
 <div class="form-block function" id="def-type-set-_3C-alist1" data-defines="TYPE-SET-<-ALIST1" data-references="CONS,1-,*TS-UNKNOWN*,=,TYPE-SET-<-ALIST-ENTRY,X,LET,T,<,COND,LST,J,I,DEFUN" data-used-by="TYPE-SET-<-ALIST" data-part-name="TYPE-SET-<-ALIST1" data-part-args="LST,J,I" data-part-body="CONS,1-,TYPE-SET-<-ALIST1,*TS-UNKNOWN*,=,I,TYPE-SET-<-ALIST-ENTRY,X,LET,T,LST,J,<,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-<-ALIST1">type-set-&lt;-alist1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-&lt;-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-&lt;-alist1 i (1- j) lst))
 ...">type-set-&lt;-alist1</a>
   (i j lst)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; j <span class="number">0</span>) lst)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((x (<a class="sym-link local-def" href="#def-type-set-_3C-alist-entry" data-sym="TYPE-SET-&lt;-ALIST-ENTRY" title="(defun type-set-&lt;-alist-entry (ts1 ts2)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; j <span class="number">0</span>) lst)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((x (<a class="sym-link local-def" href="#def-type-set-_3C-alist-entry" data-sym="TYPE-SET-&lt;-ALIST-ENTRY" title="(defun type-set-&lt;-alist-entry (ts1 ts2)
   (ts-builder ts1
               (*ts-zero*
                (ts-builder ts2 (*ts-zero* *ts-nil*) (*ts-one* *ts-t*)
                            (*ts-integer&gt;1* *ts-t*)
 ...">type-set-&lt;-alist-entry</a> i j)))
-        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> x <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>) (<a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
+        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> x <a class="sym-link local-def" href="#def-_2Ats-unknown_2A" data-sym="*TS-UNKNOWN*" title="(defconst *ts-unknown* -1)">*ts-unknown*</a>) (<a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-&lt;-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-&lt;-alist1 i (1- j) lst))
-...">type-set-&lt;-alist1</a> i (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> j) lst))
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
+...">type-set-&lt;-alist1</a> i (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> j) lst))
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-&lt;-alist-entry i j)))
            (cond ((= x *ts-unknown*) (type-set-&lt;-alist1 i (1- j) lst))
-...">type-set-&lt;-alist1</a> i (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> j) (cons (cons (cons i j) x) lst))))))))</pre>
+...">type-set-&lt;-alist1</a> i (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> j) (cons (cons (cons i j) x) lst))))))))</pre>
   </div>
 
 <div class="form-block function" id="def-type-set-_3C-alist" data-defines="TYPE-SET-<-ALIST" data-references="TYPE-SET-<-ALIST1,1-,T,<,COND,LST,J,I,DEFUN" data-part-name="TYPE-SET-<-ALIST" data-part-args="LST,J,I" data-part-body="TYPE-SET-<-ALIST1,J,1-,TYPE-SET-<-ALIST,T,LST,I,<,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TYPE-SET-<-ALIST">type-set-&lt;-alist</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-_3C-alist" data-sym="TYPE-SET-&lt;-ALIST" title="(defun type-set-&lt;-alist (i j lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-type-set-_3C-alist" data-sym="TYPE-SET-&lt;-ALIST" title="(defun type-set-&lt;-alist (i j lst)
   (cond ((&lt; i 0) lst)
         (t (type-set-&lt;-alist (1- i) j (type-set-&lt;-alist1 i j lst)))))">type-set-&lt;-alist</a>
   (i j lst)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; i <span class="number">0</span>) lst)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-_3C-alist" data-sym="TYPE-SET-&lt;-ALIST" title="(defun type-set-&lt;-alist (i j lst)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((&lt; i <span class="number">0</span>) lst)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-type-set-_3C-alist" data-sym="TYPE-SET-&lt;-ALIST" title="(defun type-set-&lt;-alist (i j lst)
   (cond ((&lt; i 0) lst)
-        (t (type-set-&lt;-alist (1- i) j (type-set-&lt;-alist1 i j lst)))))">type-set-&lt;-alist</a> (<a class="sym-link system" href="../../../axioms.html#def-1-" data-sym="1-">1-</a> i) j (<a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
+        (t (type-set-&lt;-alist (1- i) j (type-set-&lt;-alist1 i j lst)))))">type-set-&lt;-alist</a> (<a class="sym-link system" href="axioms.html#def-1-" data-sym="1-">1-</a> i) j (<a class="sym-link local-def" href="#def-type-set-_3C-alist1" data-sym="TYPE-SET-&lt;-ALIST1" title="(defun type-set-&lt;-alist1 (i j lst)
   (cond ((&lt; j 0) lst)
         (t
          (let ((x (type-set-&lt;-alist-entry i j)))

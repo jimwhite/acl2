@@ -432,124 +432,124 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">boot-strap-pass-2-b</h1>
-    <div class="path"><a href="boot-strap-pass-2-b.lisp" class="source-link">/workspaces/acl2/boot-strap-pass-2-b</a></div>
+    <div class="path"><a href="boot-strap-pass-2-b.lisp" class="source-link">boot-strap-pass-2-b</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> +f!-fn2$inline)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> +f!-fn2$inline)</pre>
   </div>
 
 <div class="form-block other" id="form-2" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> +f!-fn3$inline)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> +f!-fn3$inline)</pre>
   </div>
 
 <div class="form-block other" id="form-3" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> safe-access-command-tuple-form)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> safe-access-command-tuple-form)</pre>
   </div>
 
 <div class="form-block other" id="form-4" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> acl2-system-namep)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> acl2-system-namep)</pre>
   </div>
 
 <div class="form-block mutual-recursion" id="def-system-pseudo-termp" data-defines="SYSTEM-PSEUDO-TERMP" data-references="EQUAL,PSEUDO-TERM-LISTP,LST,CADDR,ACL2-SYSTEM-NAMEP,IF,T,SYSTEM-PSEUDO-TERM-LISTP,TRUE-LISTP,NOT,NULL,CDR,CONSP,QUOTE,CAR,EQ,SYMBOLP,ATOM,COND,PLIST-WORLDP,PSEUDO-TERMP,AND,XARGS,DECLARE,W,X,DEFUN,MUTUAL-RECURSION" data-used-by="PAIR-FNS-WITH-MEASURED-SUBSETS" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SYSTEM-PSEUDO-TERMP">system-pseudo-termp</span><span class="form-type">mutual-recursion</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-mutual-recursion" data-sym="MUTUAL-RECURSION">mutual-recursion</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-system-pseudo-termp" data-sym="SYSTEM-PSEUDO-TERMP" title="(mutual-recursion
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-mutual-recursion" data-sym="MUTUAL-RECURSION">mutual-recursion</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-system-pseudo-termp" data-sym="SYSTEM-PSEUDO-TERMP" title="(mutual-recursion
  (defun system-pseudo-termp (x w)
    (declare
     (xargs :guard (and (pseudo-termp x) (plist-worldp w)) :mode :logic))
    (cond ((atom x) (symbolp x))
 ...">system-pseudo-termp</a>
-    (x <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>)
-    (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> x) (<a class="sym-link system" href="../../../axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>))
+    (x <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>)
+    (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> x) (<a class="sym-link system" href="axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>))
         <span class="keyword">:mode</span> <span class="keyword">:logic</span>))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> x) (symbolp x))
-      ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (car x) 'quote) (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (consp (cdr x)) (<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (cdr (cdr x)))))
-      ((<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> x)) nil)
-      ((<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (system-pseudo-term-listp (cdr x) <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>)) nil)
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (if (symbolp (car x))
-          (acl2-system-namep (car x) <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>)
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> x) (symbolp x))
+      ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (car x) 'quote) (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (consp (cdr x)) (<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (cdr (cdr x)))))
+      ((<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> x)) nil)
+      ((<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (system-pseudo-term-listp (cdr x) <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>)) nil)
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (if (symbolp (car x))
+          (acl2-system-namep (car x) <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>)
           (<a class="sym-link local-def" href="#def-system-pseudo-termp" data-sym="SYSTEM-PSEUDO-TERMP" title="(mutual-recursion
  (defun system-pseudo-termp (x w)
    (declare
     (xargs :guard (and (pseudo-termp x) (plist-worldp w)) :mode :logic))
    (cond ((atom x) (symbolp x))
-...">system-pseudo-termp</a> (<a class="sym-link system" href="../../../axioms.html#def-caddr" data-sym="CADDR">caddr</a> (car x)) <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>)))))
-  (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> system-pseudo-term-listp
-    (lst <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>)
-    (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (pseudo-term-listp lst) (<a class="sym-link system" href="../../../axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>))
+...">system-pseudo-termp</a> (<a class="sym-link system" href="axioms.html#def-caddr" data-sym="CADDR">caddr</a> (car x)) <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>)))))
+  (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> system-pseudo-term-listp
+    (lst <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>)
+    (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (pseudo-term-listp lst) (<a class="sym-link system" href="axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>))
         <span class="keyword">:mode</span> <span class="keyword">:logic</span>))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> lst) (equal lst nil))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-system-pseudo-termp" data-sym="SYSTEM-PSEUDO-TERMP" title="(mutual-recursion
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> lst) (equal lst nil))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-system-pseudo-termp" data-sym="SYSTEM-PSEUDO-TERMP" title="(mutual-recursion
  (defun system-pseudo-termp (x w)
    (declare
     (xargs :guard (and (pseudo-termp x) (plist-worldp w)) :mode :logic))
    (cond ((atom x) (symbolp x))
-...">system-pseudo-termp</a> (car lst) <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>)
-          (system-pseudo-term-listp (cdr lst) <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>))))))</pre>
+...">system-pseudo-termp</a> (car lst) <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>)
+          (system-pseudo-term-listp (cdr lst) <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>))))))</pre>
   </div>
 
 <div class="form-block function" id="def-pair-fns-with-measured-subsets" data-defines="PAIR-FNS-WITH-MEASURED-SUBSETS" data-references="SYSTEM-PSEUDO-TERMP,PSEUDO-TERMP,IF,MS,ACCESS,WEAK-JUSTIFICATION-P,MS0,QUOTE,GETPROPC,JUSTIFICATION,CAR,FN,LET*,CONS,CDR,T,REVERSE,ENDP,COND,TRUE-LISTP,PLIST-WORLDP,SYMBOL-LISTP,AND,XARGS,DECLARE,ACC,WRLD,FNS,DEFUN" data-used-by="NEW-VERIFY-GUARDS-FNS1" data-part-name="PAIR-FNS-WITH-MEASURED-SUBSETS" data-part-args="ACC,WRLD,FNS" data-part-declare="ACC,TRUE-LISTP,WRLD,PLIST-WORLDP,FNS,SYMBOL-LISTP,AND,XARGS,DECLARE" data-part-body="SYSTEM-PSEUDO-TERMP,PSEUDO-TERMP,IF,MS,ACCESS,WEAK-JUSTIFICATION-P,AND,MS0,QUOTE,GETPROPC,JUSTIFICATION,CAR,FN,LET*,CONS,WRLD,CDR,PAIR-FNS-WITH-MEASURED-SUBSETS,T,ACC,REVERSE,FNS,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="PAIR-FNS-WITH-MEASURED-SUBSETS">pair-fns-with-measured-subsets</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-pair-fns-with-measured-subsets" data-sym="PAIR-FNS-WITH-MEASURED-SUBSETS" title="(defun pair-fns-with-measured-subsets (fns wrld acc)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-pair-fns-with-measured-subsets" data-sym="PAIR-FNS-WITH-MEASURED-SUBSETS" title="(defun pair-fns-with-measured-subsets (fns wrld acc)
   (declare
    (xargs :guard
     (and (symbol-listp fns) (plist-worldp wrld) (true-listp acc))))
   (cond ((endp fns) (reverse acc))
 ...">pair-fns-with-measured-subsets</a>
   (fns wrld acc)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-symbol-listp" data-sym="SYMBOL-LISTP">symbol-listp</a> fns)
-        (<a class="sym-link system" href="../../../axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> wrld)
-        (<a class="sym-link system" href="../../../axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> acc))))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> fns) (<a class="sym-link system" href="../../../axioms.html#def-reverse" data-sym="REVERSE">reverse</a> acc))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-pair-fns-with-measured-subsets" data-sym="PAIR-FNS-WITH-MEASURED-SUBSETS" title="(defun pair-fns-with-measured-subsets (fns wrld acc)
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-symbol-listp" data-sym="SYMBOL-LISTP">symbol-listp</a> fns)
+        (<a class="sym-link system" href="axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> wrld)
+        (<a class="sym-link system" href="axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> acc))))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> fns) (<a class="sym-link system" href="axioms.html#def-reverse" data-sym="REVERSE">reverse</a> acc))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-pair-fns-with-measured-subsets" data-sym="PAIR-FNS-WITH-MEASURED-SUBSETS" title="(defun pair-fns-with-measured-subsets (fns wrld acc)
   (declare
    (xargs :guard
     (and (symbol-listp fns) (plist-worldp wrld) (true-listp acc))))
   (cond ((endp fns) (reverse acc))
 ...">pair-fns-with-measured-subsets</a> (cdr fns)
         wrld
-        (cons (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((fn (car fns)) (justification (<a class="sym-link system" href="../../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn 'justification nil wrld))
-              (ms0 (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (weak-justification-p justification)
-                  (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> justification justification <span class="keyword">:measure</span>)))
-              (ms (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> ms0
-                  (if (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> ms0) (<a class="sym-link local-def" href="#def-system-pseudo-termp" data-sym="SYSTEM-PSEUDO-TERMP" title="(mutual-recursion
+        (cons (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((fn (car fns)) (justification (<a class="sym-link system" href="axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> fn 'justification nil wrld))
+              (ms0 (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (weak-justification-p justification)
+                  (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> justification justification <span class="keyword">:measure</span>)))
+              (ms (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> ms0
+                  (if (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> ms0) (<a class="sym-link local-def" href="#def-system-pseudo-termp" data-sym="SYSTEM-PSEUDO-TERMP" title="(mutual-recursion
  (defun system-pseudo-termp (x w)
    (declare
     (xargs :guard (and (pseudo-termp x) (plist-worldp w)) :mode :logic))
    (cond ((atom x) (symbolp x))
 ...">system-pseudo-termp</a> ms0 wrld))
                     ms0
-                    (cons <span class="keyword">:?</span> (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> justification justification <span class="keyword">:subset</span>))))))
+                    (cons <span class="keyword">:?</span> (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> justification justification <span class="keyword">:subset</span>))))))
             (cons fn ms))
           acc)))))</pre>
   </div>
 
 <div class="form-block function" id="def-new-verify-guards-fns1" data-defines="NEW-VERIFY-GUARDS-FNS1" data-references="T,CONS,CDR,PREDEFINED,GETPROPC,DO$,NOT,SYMBOL-CLASS,STRICT-MERGE-SORT-SYMBOL<,PAIR-FNS-WITH-MEASURED-SUBSETS,EXIT-BOOT-STRAP-MODE,CDDAR,SAFE-ACCESS-COMMAND-TUPLE-FORM,EQUAL,GLOBAL-VALUE,CADAR,COMMAND-LANDMARK,QUOTE,CAAR,EQ,ENDP,OR,COND,SYMBOL-LISTP,PLIST-WORLDP,AND,XARGS,DECLARE,ACC,INSTALLED-WRLD,WRLD,DEFUN" data-used-by="NEW-VERIFY-GUARDS-FNS" data-part-name="NEW-VERIFY-GUARDS-FNS1" data-part-args="ACC,INSTALLED-WRLD,WRLD" data-part-declare="ACC,SYMBOL-LISTP,INSTALLED-WRLD,WRLD,PLIST-WORLDP,AND,XARGS,DECLARE" data-part-body="T,CONS,CDR,NEW-VERIFY-GUARDS-FNS1,PREDEFINED,GETPROPC,DO$,NOT,SYMBOL-CLASS,INSTALLED-WRLD,ACC,STRICT-MERGE-SORT-SYMBOL<,PAIR-FNS-WITH-MEASURED-SUBSETS,EXIT-BOOT-STRAP-MODE,CDDAR,SAFE-ACCESS-COMMAND-TUPLE-FORM,EQUAL,GLOBAL-VALUE,CADAR,COMMAND-LANDMARK,QUOTE,CAAR,EQ,AND,WRLD,ENDP,OR,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="NEW-VERIFY-GUARDS-FNS1">new-verify-guards-fns1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-new-verify-guards-fns1" data-sym="NEW-VERIFY-GUARDS-FNS1" title="(defun new-verify-guards-fns1 (wrld installed-wrld acc)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-new-verify-guards-fns1" data-sym="NEW-VERIFY-GUARDS-FNS1" title="(defun new-verify-guards-fns1 (wrld installed-wrld acc)
   (declare
    (xargs :guard
     (and (plist-worldp wrld) (plist-worldp installed-wrld)
          (symbol-listp acc))))
 ...">new-verify-guards-fns1</a>
   (wrld installed-wrld acc)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> wrld)
-        (<a class="sym-link system" href="../../../axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> installed-wrld)
-        (<a class="sym-link system" href="../../../axioms.html#def-symbol-listp" data-sym="SYMBOL-LISTP">symbol-listp</a> acc))))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> wrld)
-       (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="../../../axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) 'command-landmark)
-         (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="../../../axioms.html#def-cadar" data-sym="CADAR">cadar</a> wrld) 'global-value)
-         (equal (safe-access-command-tuple-form (<a class="sym-link system" href="../../../axioms.html#def-cddar" data-sym="CDDAR">cddar</a> wrld))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> wrld)
+        (<a class="sym-link system" href="axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> installed-wrld)
+        (<a class="sym-link system" href="axioms.html#def-symbol-listp" data-sym="SYMBOL-LISTP">symbol-listp</a> acc))))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> wrld)
+       (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) 'command-landmark)
+         (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="axioms.html#def-cadar" data-sym="CADAR">cadar</a> wrld) 'global-value)
+         (equal (safe-access-command-tuple-form (<a class="sym-link system" href="axioms.html#def-cddar" data-sym="CDDAR">cddar</a> wrld))
            '(exit-boot-strap-mode)))) (<a class="sym-link local-def" href="#def-pair-fns-with-measured-subsets" data-sym="PAIR-FNS-WITH-MEASURED-SUBSETS" title="(defun pair-fns-with-measured-subsets (fns wrld acc)
   (declare
    (xargs :guard
@@ -558,18 +558,18 @@ pre.code {
 ...">pair-fns-with-measured-subsets</a> (strict-merge-sort-symbol&lt; acc)
         installed-wrld
         nil))
-    ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="../../../axioms.html#def-cadar" data-sym="CADAR">cadar</a> wrld) '<a class="sym-link system" href="../../../basis-b.html#def-symbol-class" data-sym="SYMBOL-CLASS">symbol-class</a>)
-       (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="../../../axioms.html#def-cddar" data-sym="CDDAR">cddar</a> wrld) <span class="keyword">:common-lisp-compliant</span>)
-       (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="../../../axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) 'do$))
-       (<a class="sym-link system" href="../../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> (<a class="sym-link system" href="../../../axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) 'predefined nil installed-wrld)) (<a class="sym-link local-def" href="#def-new-verify-guards-fns1" data-sym="NEW-VERIFY-GUARDS-FNS1" title="(defun new-verify-guards-fns1 (wrld installed-wrld acc)
+    ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="axioms.html#def-cadar" data-sym="CADAR">cadar</a> wrld) '<a class="sym-link system" href="basis-b.html#def-symbol-class" data-sym="SYMBOL-CLASS">symbol-class</a>)
+       (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="axioms.html#def-cddar" data-sym="CDDAR">cddar</a> wrld) <span class="keyword">:common-lisp-compliant</span>)
+       (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) 'do$))
+       (<a class="sym-link system" href="axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> (<a class="sym-link system" href="axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) 'predefined nil installed-wrld)) (<a class="sym-link local-def" href="#def-new-verify-guards-fns1" data-sym="NEW-VERIFY-GUARDS-FNS1" title="(defun new-verify-guards-fns1 (wrld installed-wrld acc)
   (declare
    (xargs :guard
     (and (plist-worldp wrld) (plist-worldp installed-wrld)
          (symbol-listp acc))))
 ...">new-verify-guards-fns1</a> (cdr wrld)
         installed-wrld
-        (cons (<a class="sym-link system" href="../../../axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) acc)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-new-verify-guards-fns1" data-sym="NEW-VERIFY-GUARDS-FNS1" title="(defun new-verify-guards-fns1 (wrld installed-wrld acc)
+        (cons (<a class="sym-link system" href="axioms.html#def-caar" data-sym="CAAR">caar</a> wrld) acc)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-new-verify-guards-fns1" data-sym="NEW-VERIFY-GUARDS-FNS1" title="(defun new-verify-guards-fns1 (wrld installed-wrld acc)
   (declare
    (xargs :guard
     (and (plist-worldp wrld) (plist-worldp installed-wrld)
@@ -579,13 +579,13 @@ pre.code {
 
 <div class="form-block function" id="def-new-verify-guards-fns" data-defines="NEW-VERIFY-GUARDS-FNS" data-references="NEW-VERIFY-GUARDS-FNS1,W,WRLD,LET,XARGS,DECLARE,STATE,DEFUN" data-used-by="CHK-NEW-VERIFIED-GUARDS" data-part-name="NEW-VERIFY-GUARDS-FNS" data-part-args="STATE" data-part-declare="STATE,XARGS,DECLARE" data-part-body="NEW-VERIFY-GUARDS-FNS1,STATE,W,WRLD,LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="NEW-VERIFY-GUARDS-FNS">new-verify-guards-fns</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-new-verify-guards-fns" data-sym="NEW-VERIFY-GUARDS-FNS" title="(defun new-verify-guards-fns (state)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-new-verify-guards-fns" data-sym="NEW-VERIFY-GUARDS-FNS" title="(defun new-verify-guards-fns (state)
   (declare (xargs :stobjs state))
   (let ((wrld (w state)))
     (new-verify-guards-fns1 wrld wrld nil)))">new-verify-guards-fns</a>
   (state)
   (declare (xargs <span class="keyword">:stobjs</span> state))
-  (let ((wrld (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state)))
+  (let ((wrld (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state)))
     (<a class="sym-link local-def" href="#def-new-verify-guards-fns1" data-sym="NEW-VERIFY-GUARDS-FNS1" title="(defun new-verify-guards-fns1 (wrld installed-wrld acc)
   (declare
    (xargs :guard
@@ -596,30 +596,30 @@ pre.code {
 
 <div class="form-block other" id="form-9" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="../../../axioms.html#def-logicp" data-sym="LOGICP">logicp</a>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="axioms.html#def-logicp" data-sym="LOGICP">logicp</a>)</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Adevel-check-book_2A" data-defines="*DEVEL-CHECK-BOOK*" data-references="DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*DEVEL-CHECK-BOOK*">*devel-check-book*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adevel-check-book_2A" data-sym="*DEVEL-CHECK-BOOK*" title="(defconst *devel-check-book* &quot;system/devel-check&quot;)">*devel-check-book*</a> <span class="string">"system/devel-check"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adevel-check-book_2A" data-sym="*DEVEL-CHECK-BOOK*" title="(defconst *devel-check-book* &quot;system/devel-check&quot;)">*devel-check-book*</a> <span class="string">"system/devel-check"</span>)</pre>
   </div>
 
 <div class="form-block macro" id="def-chk-new-verified-guards" data-defines="CHK-NEW-VERIFIED-GUARDS" data-references="VALUE-TRIPLE,MSG,STATE,NEW-VERIFY-GUARDS-FNS,*SYSTEM-VERIFY-GUARDS-ALIST*,EQUAL,ASSERT-EVENT,INCLUDE-BOOK,PROGN,QUASIQUOTE,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="CHK-NEW-VERIFIED-GUARDS">chk-new-verified-guards</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-chk-new-verified-guards" data-sym="CHK-NEW-VERIFIED-GUARDS" title="(defmacro chk-new-verified-guards ()
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-chk-new-verified-guards" data-sym="CHK-NEW-VERIFIED-GUARDS" title="(defmacro chk-new-verified-guards ()
   `(progn
     (include-book ,*devel-check-book* :dir :system :uncertified-okp nil
                   :defaxioms-okp nil :ttags nil)
     (assert-event
 ...">chk-new-verified-guards</a>
   nil
-  `(<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> ,*DEVEL-CHECK-BOOK* <span class="keyword">:dir</span> <span class="keyword">:system</span> <span class="keyword">:uncertified-okp</span> nil <span class="keyword">:defaxioms-okp</span> nil <span class="keyword">:ttags</span> nil)
-    (<a class="sym-link system" href="../../../axioms.html#def-assert-event" data-sym="ASSERT-EVENT">assert-event</a> (equal *system-verify-guards-alist*
+  `(<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> ,*DEVEL-CHECK-BOOK* <span class="keyword">:dir</span> <span class="keyword">:system</span> <span class="keyword">:uncertified-okp</span> nil <span class="keyword">:defaxioms-okp</span> nil <span class="keyword">:ttags</span> nil)
+    (<a class="sym-link system" href="axioms.html#def-assert-event" data-sym="ASSERT-EVENT">assert-event</a> (equal *system-verify-guards-alist*
         (<a class="sym-link local-def" href="#def-new-verify-guards-fns" data-sym="NEW-VERIFY-GUARDS-FNS" title="(defun new-verify-guards-fns (state)
   (declare (xargs :stobjs state))
   (let ((wrld (w state)))
     (new-verify-guards-fns1 wrld wrld nil)))">new-verify-guards-fns</a> state))
-      <span class="keyword">:msg</span> (<a class="sym-link system" href="../../../axioms.html#def-msg" data-sym="MSG">msg</a> <span class="string">"ERROR: The set of newly guard-verified functions from ~
+      <span class="keyword">:msg</span> (<a class="sym-link system" href="axioms.html#def-msg" data-sym="MSG">msg</a> <span class="string">"ERROR: The set of newly guard-verified functions from ~
                       the ACL2 community book ~x0 does not match the expected ~
                       set from the constant ~
                       *system-verify-guards-alist*.~|~%From the ~
@@ -632,36 +632,36 @@ pre.code {
     (new-verify-guards-fns1 wrld wrld nil)))">new-verify-guards-fns</a> state)
         *system-verify-guards-alist*
         nil))
-    (<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> <span class="keyword">:chk-new-verified-guards-success</span>)))</pre>
+    (<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> <span class="keyword">:chk-new-verified-guards-success</span>)))</pre>
   </div>
 
 <div class="form-block function" id="def-system-verify-guards-aux" data-defines="SYSTEM-VERIFY-GUARDS-AUX" data-references="LIST,CONS,T,ENDP,COND,VERIFY-GUARDS,VERIFY-TERMINATION-BOOT-STRAP,SKIP-PROOFS,LIST*,NULL,OR,IF,EQL,SAME-NUM-P,QUASIQUOTE,NEXT,CDR,ENTRY,NUM,CAR,NUM/PAIR,LET*,TRUE-LIST-LISTP,STRIP-CDRS,SYMBOL-ALISTP,STRIP-CARS,NAT-LISTP,ALISTP,AND,XARGS,DECLARE,OLD-NUM,ACC1,ACC,FNS-ALIST,DEFUN" data-used-by="SYSTEM-VERIFY-GUARDS" data-part-name="SYSTEM-VERIFY-GUARDS-AUX" data-part-args="OLD-NUM,ACC1,ACC,FNS-ALIST" data-part-declare="ACC1,TRUE-LIST-LISTP,STRIP-CDRS,SYMBOL-ALISTP,STRIP-CARS,NAT-LISTP,FNS-ALIST,ALISTP,AND,XARGS,DECLARE" data-part-body="LIST,CONS,SYSTEM-VERIFY-GUARDS-AUX,T,ENDP,COND,VERIFY-GUARDS,VERIFY-TERMINATION-BOOT-STRAP,SKIP-PROOFS,LIST*,ACC1,NULL,OR,IF,ACC,OLD-NUM,EQL,SAME-NUM-P,QUASIQUOTE,AND,NEXT,CDR,ENTRY,NUM,FNS-ALIST,CAR,NUM/PAIR,LET*" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="SYSTEM-VERIFY-GUARDS-AUX">system-verify-guards-aux</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-system-verify-guards-aux" data-sym="SYSTEM-VERIFY-GUARDS-AUX" title="(defun system-verify-guards-aux (fns-alist acc acc1 old-num)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-system-verify-guards-aux" data-sym="SYSTEM-VERIFY-GUARDS-AUX" title="(defun system-verify-guards-aux (fns-alist acc acc1 old-num)
   (declare
    (xargs :guard
     (and (alistp fns-alist) (nat-listp (strip-cars fns-alist))
          (symbol-alistp (strip-cdrs fns-alist)) (true-list-listp acc1))
 ...">system-verify-guards-aux</a>
   (fns-alist acc acc1 old-num)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-alistp" data-sym="ALISTP">alistp</a> fns-alist)
-        (<a class="sym-link system" href="../../../axioms.html#def-nat-listp" data-sym="NAT-LISTP">nat-listp</a> (<a class="sym-link system" href="../../../axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> fns-alist))
-        (<a class="sym-link system" href="../../../axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> (<a class="sym-link system" href="../../../axioms.html#def-strip-cdrs" data-sym="STRIP-CDRS">strip-cdrs</a> fns-alist))
-        (<a class="sym-link system" href="../../../axioms.html#def-true-list-listp" data-sym="TRUE-LIST-LISTP">true-list-listp</a> acc1))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-alistp" data-sym="ALISTP">alistp</a> fns-alist)
+        (<a class="sym-link system" href="axioms.html#def-nat-listp" data-sym="NAT-LISTP">nat-listp</a> (<a class="sym-link system" href="axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> fns-alist))
+        (<a class="sym-link system" href="axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> (<a class="sym-link system" href="axioms.html#def-strip-cdrs" data-sym="STRIP-CDRS">strip-cdrs</a> fns-alist))
+        (<a class="sym-link system" href="axioms.html#def-true-list-listp" data-sym="TRUE-LIST-LISTP">true-list-listp</a> acc1))
       <span class="keyword">:ruler-extenders</span> <span class="keyword">:lambdas</span>))
-  (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((num/pair (car fns-alist)) (num (car num/pair))
+  (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((num/pair (car fns-alist)) (num (car num/pair))
       (entry (cdr num/pair))
-      (next (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> fns-alist
+      (next (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> fns-alist
           `(,(CAR ENTRY) ,@(LET ((MEASURE (CDR ENTRY)))
     (AND MEASURE `((DECLARE (XARGS :MEASURE ,MEASURE))))))))
-      (same-num-p (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> fns-alist (<a class="sym-link system" href="../../../axioms.html#def-eql" data-sym="EQL">eql</a> num old-num)))
-      (acc (if (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> acc1) same-num-p)
+      (same-num-p (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> fns-alist (<a class="sym-link system" href="axioms.html#def-eql" data-sym="EQL">eql</a> num old-num)))
+      (acc (if (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> acc1) same-num-p)
           acc
-          (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> `(<a class="sym-link system" href="../../../axioms.html#def-skip-proofs" data-sym="SKIP-PROOFS">skip-proofs</a> (<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> ,@ACC1))
-            `(<a class="sym-link system" href="../../../axioms.html#def-skip-proofs" data-sym="SKIP-PROOFS">skip-proofs</a> (<a class="sym-link system" href="../../../axioms.html#def-verify-guards" data-sym="VERIFY-GUARDS">verify-guards</a> ,(CAAR ACC1)))
+          (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> `(<a class="sym-link system" href="axioms.html#def-skip-proofs" data-sym="SKIP-PROOFS">skip-proofs</a> (<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> ,@ACC1))
+            `(<a class="sym-link system" href="axioms.html#def-skip-proofs" data-sym="SKIP-PROOFS">skip-proofs</a> (<a class="sym-link system" href="axioms.html#def-verify-guards" data-sym="VERIFY-GUARDS">verify-guards</a> ,(CAAR ACC1)))
             acc))))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> fns-alist) acc)
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-system-verify-guards-aux" data-sym="SYSTEM-VERIFY-GUARDS-AUX" title="(defun system-verify-guards-aux (fns-alist acc acc1 old-num)
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> fns-alist) acc)
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-system-verify-guards-aux" data-sym="SYSTEM-VERIFY-GUARDS-AUX" title="(defun system-verify-guards-aux (fns-alist acc acc1 old-num)
   (declare
    (xargs :guard
     (and (alistp fns-alist) (nat-listp (strip-cars fns-alist))
@@ -670,32 +670,32 @@ pre.code {
           acc
           (if same-num-p
             (cons next acc1)
-            (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> next))
+            (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> next))
           num)))))</pre>
   </div>
 
 <div class="form-block function" id="def-cons-absolute-event-numbers" data-defines="CONS-ABSOLUTE-EVENT-NUMBERS" data-references="CAR,HARD?,ER,ABSOLUTE-EVENT-NUMBER,QUOTE,CAAR,GETPROPC,OR,ACONS,CDR,T,ENDP,COND,ALISTP,PLIST-WORLDP,SYMBOL-ALISTP,AND,XARGS,DECLARE,ACC,WRLD,FNS-ALIST,DEFUN" data-used-by="SORT->-ABSOLUTE-EVENT-NUMBER" data-part-name="CONS-ABSOLUTE-EVENT-NUMBERS" data-part-args="ACC,WRLD,FNS-ALIST" data-part-declare="ACC,ALISTP,WRLD,PLIST-WORLDP,FNS-ALIST,SYMBOL-ALISTP,AND,XARGS,DECLARE" data-part-body="CAR,HARD?,ER,ABSOLUTE-EVENT-NUMBER,QUOTE,CAAR,GETPROPC,OR,ACONS,WRLD,CDR,CONS-ABSOLUTE-EVENT-NUMBERS,T,ACC,FNS-ALIST,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="CONS-ABSOLUTE-EVENT-NUMBERS">cons-absolute-event-numbers</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-cons-absolute-event-numbers" data-sym="CONS-ABSOLUTE-EVENT-NUMBERS" title="(defun cons-absolute-event-numbers (fns-alist wrld acc)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-cons-absolute-event-numbers" data-sym="CONS-ABSOLUTE-EVENT-NUMBERS" title="(defun cons-absolute-event-numbers (fns-alist wrld acc)
   (declare
    (xargs :guard
     (and (symbol-alistp fns-alist) (plist-worldp wrld) (alistp acc))))
   (cond ((endp fns-alist) acc)
 ...">cons-absolute-event-numbers</a>
   (fns-alist wrld acc)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> fns-alist)
-        (<a class="sym-link system" href="../../../axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> wrld)
-        (<a class="sym-link system" href="../../../axioms.html#def-alistp" data-sym="ALISTP">alistp</a> acc))))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> fns-alist) acc)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-cons-absolute-event-numbers" data-sym="CONS-ABSOLUTE-EVENT-NUMBERS" title="(defun cons-absolute-event-numbers (fns-alist wrld acc)
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> fns-alist)
+        (<a class="sym-link system" href="axioms.html#def-plist-worldp" data-sym="PLIST-WORLDP">plist-worldp</a> wrld)
+        (<a class="sym-link system" href="axioms.html#def-alistp" data-sym="ALISTP">alistp</a> acc))))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> fns-alist) acc)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-cons-absolute-event-numbers" data-sym="CONS-ABSOLUTE-EVENT-NUMBERS" title="(defun cons-absolute-event-numbers (fns-alist wrld acc)
   (declare
    (xargs :guard
     (and (symbol-alistp fns-alist) (plist-worldp wrld) (alistp acc))))
   (cond ((endp fns-alist) acc)
 ...">cons-absolute-event-numbers</a> (cdr fns-alist)
         wrld
-        (<a class="sym-link system" href="../../../axioms.html#def-acons" data-sym="ACONS">acons</a> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> (<a class="sym-link system" href="../../../axioms.html#def-caar" data-sym="CAAR">caar</a> fns-alist) 'absolute-event-number nil wrld)
-            (<a class="sym-link system" href="../../../axioms.html#def-er" data-sym="ER">er</a> hard?
+        (<a class="sym-link system" href="axioms.html#def-acons" data-sym="ACONS">acons</a> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> (<a class="sym-link system" href="axioms.html#def-caar" data-sym="CAAR">caar</a> fns-alist) 'absolute-event-number nil wrld)
+            (<a class="sym-link system" href="axioms.html#def-er" data-sym="ER">er</a> hard?
               '<a class="sym-link local-def" href="#def-cons-absolute-event-numbers" data-sym="CONS-ABSOLUTE-EVENT-NUMBERS" title="(defun cons-absolute-event-numbers (fns-alist wrld acc)
   (declare
    (xargs :guard
@@ -704,14 +704,14 @@ pre.code {
 ...">cons-absolute-event-numbers</a>
               <span class="string">"The &#39;absolute-event-number property is missing ~
                             for ~x0."</span>
-              (<a class="sym-link system" href="../../../axioms.html#def-caar" data-sym="CAAR">caar</a> fns-alist)))
+              (<a class="sym-link system" href="axioms.html#def-caar" data-sym="CAAR">caar</a> fns-alist)))
           (car fns-alist)
           acc)))))</pre>
   </div>
 
 <div class="form-block function" id="def-sort-_3E-absolute-event-number" data-defines="SORT->-ABSOLUTE-EVENT-NUMBER" data-references="CONS-ABSOLUTE-EVENT-NUMBERS,MERGE-SORT-CAR->,XARGS,DECLARE,WRLD,FNS-ALIST,DEFUN" data-used-by="SYSTEM-VERIFY-GUARDS" data-part-name="SORT->-ABSOLUTE-EVENT-NUMBER" data-part-args="WRLD,FNS-ALIST" data-part-declare="XARGS,DECLARE" data-part-body="WRLD,FNS-ALIST,CONS-ABSOLUTE-EVENT-NUMBERS,MERGE-SORT-CAR->" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="SORT->-ABSOLUTE-EVENT-NUMBER">sort-&gt;-absolute-event-number</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-sort-_3E-absolute-event-number" data-sym="SORT-&gt;-ABSOLUTE-EVENT-NUMBER" title="(defun sort-&gt;-absolute-event-number (fns-alist wrld)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-sort-_3E-absolute-event-number" data-sym="SORT-&gt;-ABSOLUTE-EVENT-NUMBER" title="(defun sort-&gt;-absolute-event-number (fns-alist wrld)
   (declare (xargs :mode :program))
   (merge-sort-car-&gt; (cons-absolute-event-numbers fns-alist wrld nil)))">sort-&gt;-absolute-event-number</a>
   (fns-alist wrld)
@@ -726,28 +726,28 @@ pre.code {
 
 <div class="form-block macro" id="def-system-verify-guards" data-defines="SYSTEM-VERIFY-GUARDS" data-references="SET-VERIFY-GUARDS-EAGERNESS,SET-INHIBIT-WARNINGS,ENCAPSULATE,QUOTE,LIST*,STATE,W,SORT->-ABSOLUTE-EVENT-NUMBER,SYSTEM-VERIFY-GUARDS-AUX,EVENTS,LET,MAKE-EVENT,QUASIQUOTE,ALIST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SYSTEM-VERIFY-GUARDS">system-verify-guards</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-system-verify-guards" data-sym="SYSTEM-VERIFY-GUARDS" title="(defmacro system-verify-guards (alist)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-system-verify-guards" data-sym="SYSTEM-VERIFY-GUARDS" title="(defmacro system-verify-guards (alist)
   `(make-event
     (let ((events
            (system-verify-guards-aux
             (sort-&gt;-absolute-event-number ,alist (w state)) nil nil nil)))
 ...">system-verify-guards</a>
   (alist)
-  `(<a class="sym-link system" href="../../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (let ((events (<a class="sym-link local-def" href="#def-system-verify-guards-aux" data-sym="SYSTEM-VERIFY-GUARDS-AUX" title="(defun system-verify-guards-aux (fns-alist acc acc1 old-num)
+  `(<a class="sym-link system" href="axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (let ((events (<a class="sym-link local-def" href="#def-system-verify-guards-aux" data-sym="SYSTEM-VERIFY-GUARDS-AUX" title="(defun system-verify-guards-aux (fns-alist acc acc1 old-num)
   (declare
    (xargs :guard
     (and (alistp fns-alist) (nat-listp (strip-cars fns-alist))
          (symbol-alistp (strip-cdrs fns-alist)) (true-list-listp acc1))
 ...">system-verify-guards-aux</a> (<a class="sym-link local-def" href="#def-sort-_3E-absolute-event-number" data-sym="SORT-&gt;-ABSOLUTE-EVENT-NUMBER" title="(defun sort-&gt;-absolute-event-number (fns-alist wrld)
   (declare (xargs :mode :program))
-  (merge-sort-car-&gt; (cons-absolute-event-numbers fns-alist wrld nil)))">sort-&gt;-absolute-event-number</a> ,ALIST (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))
+  (merge-sort-car-&gt; (cons-absolute-event-numbers fns-alist wrld nil)))">sort-&gt;-absolute-event-number</a> ,ALIST (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))
            nil
            nil
            nil)))
-      (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> '<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a>
+      (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> '<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a>
         nil
-        '(<a class="sym-link system" href="../../../axioms.html#def-set-inhibit-warnings" data-sym="SET-INHIBIT-WARNINGS">set-inhibit-warnings</a> <span class="string">"Skip-proofs"</span>)
-        '(<a class="sym-link system" href="../../../axioms.html#def-set-verify-guards-eagerness" data-sym="SET-VERIFY-GUARDS-EAGERNESS">set-verify-guards-eagerness</a> <span class="number">2</span>)
+        '(<a class="sym-link system" href="axioms.html#def-set-inhibit-warnings" data-sym="SET-INHIBIT-WARNINGS">set-inhibit-warnings</a> <span class="string">"Skip-proofs"</span>)
+        '(<a class="sym-link system" href="axioms.html#def-set-verify-guards-eagerness" data-sym="SET-VERIFY-GUARDS-EAGERNESS">set-verify-guards-eagerness</a> <span class="number">2</span>)
         events))))</pre>
   </div>
 
@@ -763,17 +763,17 @@ pre.code {
 
 <div class="form-block other" id="form-17" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> apply$-prim)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> apply$-prim)</pre>
   </div>
 
 <div class="form-block other" id="form-18" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> badge)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> badge)</pre>
   </div>
 
 <div class="form-block in-theory" id="form-19" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable badge (<span class="keyword">:executable-counterpart</span> badge)))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable badge (<span class="keyword">:executable-counterpart</span> badge)))</pre>
   </div>
 
 <div class="form-block other" id="form-20" typeof="Code">
@@ -788,20 +788,20 @@ pre.code {
 
 <div class="form-block macro" id="def-system-event" data-defines="SYSTEM-EVENT" data-references="SKIP-PROOFS,QUASIQUOTE,EVENT,DEFMACRO" data-used-by="SYSTEM-EVENTS-FN" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SYSTEM-EVENT">system-event</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-system-event" data-sym="SYSTEM-EVENT" title="(defmacro system-event (event) `(skip-proofs ,event))">system-event</a> (event) `(<a class="sym-link system" href="../../../axioms.html#def-skip-proofs" data-sym="SKIP-PROOFS">skip-proofs</a> ,EVENT))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-system-event" data-sym="SYSTEM-EVENT" title="(defmacro system-event (event) `(skip-proofs ,event))">system-event</a> (event) `(<a class="sym-link system" href="axioms.html#def-skip-proofs" data-sym="SKIP-PROOFS">skip-proofs</a> ,EVENT))</pre>
   </div>
 
 <div class="form-block function" id="def-system-events-fn" data-defines="SYSTEM-EVENTS-FN" data-references="CDR,SYSTEM-EVENT,QUASIQUOTE,CONS,T,ENDP,COND,TRUE-LISTP,XARGS,DECLARE,EVENTS,DEFUN" data-used-by="SYSTEM-EVENTS" data-part-name="SYSTEM-EVENTS-FN" data-part-args="EVENTS" data-part-declare="EVENTS,TRUE-LISTP,XARGS,DECLARE" data-part-body="CDR,SYSTEM-EVENTS-FN,SYSTEM-EVENT,QUASIQUOTE,CONS,T,EVENTS,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="SYSTEM-EVENTS-FN">system-events-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-system-events-fn" data-sym="SYSTEM-EVENTS-FN" title="(defun system-events-fn (events)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-system-events-fn" data-sym="SYSTEM-EVENTS-FN" title="(defun system-events-fn (events)
   (declare (xargs :guard (true-listp events)))
   (cond ((endp events) nil)
         (t
          (cons `(system-event ,(car events)) (system-events-fn (cdr events))))))">system-events-fn</a>
   (events)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> events)))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> events) nil)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (cons `(<a class="sym-link local-def" href="#def-system-event" data-sym="SYSTEM-EVENT" title="(defmacro system-event (event) `(skip-proofs ,event))">system-event</a> ,(CAR EVENTS))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> events)))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> events) nil)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (cons `(<a class="sym-link local-def" href="#def-system-event" data-sym="SYSTEM-EVENT" title="(defmacro system-event (event) `(skip-proofs ,event))">system-event</a> ,(CAR EVENTS))
         (<a class="sym-link local-def" href="#def-system-events-fn" data-sym="SYSTEM-EVENTS-FN" title="(defun system-events-fn (events)
   (declare (xargs :guard (true-listp events)))
   (cond ((endp events) nil)
@@ -811,12 +811,12 @@ pre.code {
 
 <div class="form-block macro" id="def-system-events" data-defines="SYSTEM-EVENTS" data-references="SYSTEM-EVENTS-FN,PROGN,QUOTE,CONS,T,XARGS,DECLARE,EVENTS,&REST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SYSTEM-EVENTS">system-events</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-system-events" data-sym="SYSTEM-EVENTS" title="(defmacro system-events (&amp;rest events)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-system-events" data-sym="SYSTEM-EVENTS" title="(defmacro system-events (&amp;rest events)
   (declare (xargs :guard t))
   (cons &#39;progn (system-events-fn events)))">system-events</a>
   (&amp;rest events)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-  (cons '<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link local-def" href="#def-system-events-fn" data-sym="SYSTEM-EVENTS-FN" title="(defun system-events-fn (events)
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+  (cons '<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link local-def" href="#def-system-events-fn" data-sym="SYSTEM-EVENTS-FN" title="(defun system-events-fn (events)
   (declare (xargs :guard (true-listp events)))
   (cond ((endp events) nil)
         (t
@@ -825,66 +825,66 @@ pre.code {
 
 <div class="form-block macro" id="def-check-system-events" data-defines="CHECK-SYSTEM-EVENTS" data-references="VALUE-TRIPLE,O<,L<,Y,LTOO,O-P,X,LEXP,IMPLIES,AND,WELL-FOUNDED-L<,DEFTHM,T,SET-ENFORCE-REDUNDANCY,INCLUDE-BOOK,PROGN,QUASIQUOTE,STATE,W,SYSTEM-EVENT-TABLE,TABLE-ALIST,EVENT-BOOK-ALIST,LET,MAKE-EVENT,QUOTE,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="CHECK-SYSTEM-EVENTS">check-system-events</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-check-system-events" data-sym="CHECK-SYSTEM-EVENTS" title="(defmacro check-system-events ()
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-check-system-events" data-sym="CHECK-SYSTEM-EVENTS" title="(defmacro check-system-events ()
   &#39;(make-event
     (let ((event-book-alist (table-alist &#39;system-event-table (w state))))
       `(progn
         (include-book ,*devel-check-book* :dir :system)
 ...">check-system-events</a>
   nil
-  '(<a class="sym-link system" href="../../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (let ((event-book-alist (<a class="sym-link system" href="../../../axioms.html#def-table-alist" data-sym="TABLE-ALIST">table-alist</a> 'system-event-table (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))))
-      `(<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> ,*DEVEL-CHECK-BOOK* <span class="keyword">:dir</span> <span class="keyword">:system</span>)
-        (<a class="sym-link system" href="../../../axioms.html#def-set-enforce-redundancy" data-sym="SET-ENFORCE-REDUNDANCY">set-enforce-redundancy</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
-        (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> well-founded-l&lt;
-          (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (lexp x) (<a class="sym-link system" href="../../../axioms.html#def-o-p" data-sym="O-P">o-p</a> (ltoo x)))
-            (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (lexp x) (lexp y) (l&lt; x y))
-              (<a class="sym-link system" href="../../../axioms.html#def-o_3C" data-sym="O&lt;">o&lt;</a> (ltoo x) (ltoo y))))
+  '(<a class="sym-link system" href="axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (let ((event-book-alist (<a class="sym-link system" href="axioms.html#def-table-alist" data-sym="TABLE-ALIST">table-alist</a> 'system-event-table (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))))
+      `(<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> ,*DEVEL-CHECK-BOOK* <span class="keyword">:dir</span> <span class="keyword">:system</span>)
+        (<a class="sym-link system" href="axioms.html#def-set-enforce-redundancy" data-sym="SET-ENFORCE-REDUNDANCY">set-enforce-redundancy</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
+        (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> well-founded-l&lt;
+          (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (lexp x) (<a class="sym-link system" href="axioms.html#def-o-p" data-sym="O-P">o-p</a> (ltoo x)))
+            (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (lexp x) (lexp y) (l&lt; x y))
+              (<a class="sym-link system" href="axioms.html#def-o_3C" data-sym="O&lt;">o&lt;</a> (ltoo x) (ltoo y))))
           <span class="keyword">:rule-classes</span> <span class="keyword">:well-founded-relation</span>)
         ,@(STRIP-CARS EVENT-BOOK-ALIST)
-        (<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> <span class="keyword">:check-system-events-success</span>)))))</pre>
+        (<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> <span class="keyword">:check-system-events-success</span>)))))</pre>
   </div>
 
 <div class="form-block other" id="form-25" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-system-events" data-sym="SYSTEM-EVENTS" title="(defmacro system-events (&amp;rest events)
   (declare (xargs :guard t))
-  (cons &#39;progn (system-events-fn events)))">system-events</a> (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> legal-variable-or-constant-namep-implies-symbolp
-    (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (symbolp x))
-      (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../basis-a.html#def-legal-variable-or-constant-namep" data-sym="LEGAL-VARIABLE-OR-CONSTANT-NAMEP">legal-variable-or-constant-namep</a> x))))
-  (<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="../../../basis-a.html#def-legal-variable-or-constant-namep" data-sym="LEGAL-VARIABLE-OR-CONSTANT-NAMEP">legal-variable-or-constant-namep</a>))
-  (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> termp-implies-pseudo-termp
-    (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (termp x <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>) (<a class="sym-link system" href="../../../axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> x))
+  (cons &#39;progn (system-events-fn events)))">system-events</a> (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> legal-variable-or-constant-namep-implies-symbolp
+    (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (symbolp x))
+      (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="basis-a.html#def-legal-variable-or-constant-namep" data-sym="LEGAL-VARIABLE-OR-CONSTANT-NAMEP">legal-variable-or-constant-namep</a> x))))
+  (<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="basis-a.html#def-legal-variable-or-constant-namep" data-sym="LEGAL-VARIABLE-OR-CONSTANT-NAMEP">legal-variable-or-constant-namep</a>))
+  (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> termp-implies-pseudo-termp
+    (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (termp x <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>) (<a class="sym-link system" href="axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> x))
     <span class="keyword">:rule-classes</span> (<span class="keyword">:rewrite</span> <span class="keyword">:forward-chaining</span>))
-  (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> term-listp-implies-pseudo-term-listp
-    (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (term-listp x <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>) (pseudo-term-listp x))
+  (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> term-listp-implies-pseudo-term-listp
+    (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (term-listp x <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>) (pseudo-term-listp x))
     <span class="keyword">:rule-classes</span> (<span class="keyword">:rewrite</span> <span class="keyword">:forward-chaining</span>))
-  (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> arities-okp-implies-arity
-    (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../basis-b.html#def-arities-okp" data-sym="ARITIES-OKP">arities-okp</a> user-table <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>) (<a class="sym-link system" href="../../../axioms.html#def-assoc" data-sym="ASSOC">assoc</a> fn user-table))
-      (equal (<a class="sym-link system" href="../../../basis-b.html#def-arity" data-sym="ARITY">arity</a> fn <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>) (cdr (<a class="sym-link system" href="../../../axioms.html#def-assoc" data-sym="ASSOC">assoc</a> fn user-table)))))
-  (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> arities-okp-implies-logicp
-    (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../basis-b.html#def-arities-okp" data-sym="ARITIES-OKP">arities-okp</a> user-table <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>) (<a class="sym-link system" href="../../../axioms.html#def-assoc" data-sym="ASSOC">assoc</a> fn user-table))
-      (<a class="sym-link system" href="../../../axioms.html#def-logicp" data-sym="LOGICP">logicp</a> fn <a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a>)))
-  (<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="../../../basis-b.html#def-arity" data-sym="ARITY">arity</a> <a class="sym-link system" href="../../../basis-b.html#def-arities-okp" data-sym="ARITIES-OKP">arities-okp</a> <a class="sym-link system" href="../../../axioms.html#def-logicp" data-sym="LOGICP">logicp</a>)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> arities-okp-implies-arity
+    (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="basis-b.html#def-arities-okp" data-sym="ARITIES-OKP">arities-okp</a> user-table <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>) (<a class="sym-link system" href="axioms.html#def-assoc" data-sym="ASSOC">assoc</a> fn user-table))
+      (equal (<a class="sym-link system" href="basis-b.html#def-arity" data-sym="ARITY">arity</a> fn <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>) (cdr (<a class="sym-link system" href="axioms.html#def-assoc" data-sym="ASSOC">assoc</a> fn user-table)))))
+  (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> arities-okp-implies-logicp
+    (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="basis-b.html#def-arities-okp" data-sym="ARITIES-OKP">arities-okp</a> user-table <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>) (<a class="sym-link system" href="axioms.html#def-assoc" data-sym="ASSOC">assoc</a> fn user-table))
+      (<a class="sym-link system" href="axioms.html#def-logicp" data-sym="LOGICP">logicp</a> fn <a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a>)))
+  (<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="basis-b.html#def-arity" data-sym="ARITY">arity</a> <a class="sym-link system" href="basis-b.html#def-arities-okp" data-sym="ARITIES-OKP">arities-okp</a> <a class="sym-link system" href="axioms.html#def-logicp" data-sym="LOGICP">logicp</a>)))</pre>
   </div>
 
 <div class="form-block encapsulate" id="form-26" typeof="Code">
     <div class="form-header"><span class="form-type">encapsulate</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> (((brr-near-missp <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
-     <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>
-     <span class="keyword">:formals</span> (<a class="sym-link system" href="../../../axioms.html#def-msgp" data-sym="MSGP">msgp</a> lemma target rcnst criteria-alist)
-     <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (weak-rewrite-rule-p lemma) (weak-linear-lemma-p lemma))
-       (<a class="sym-link system" href="../../../axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> target)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> (((brr-near-missp <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
+     <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>
+     <span class="keyword">:formals</span> (<a class="sym-link system" href="axioms.html#def-msgp" data-sym="MSGP">msgp</a> lemma target rcnst criteria-alist)
+     <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (weak-rewrite-rule-p lemma) (weak-linear-lemma-p lemma))
+       (<a class="sym-link system" href="axioms.html#def-pseudo-termp" data-sym="PSEUDO-TERMP">pseudo-termp</a> target)
        (weak-rewrite-constant-p rcnst)
-       (<a class="sym-link system" href="../../../rewrite.html#def-brr-criteria-alistp" data-sym="BRR-CRITERIA-ALISTP">brr-criteria-alistp</a> criteria-alist))))
-  (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> brr-near-missp
-      (<a class="sym-link system" href="../../../axioms.html#def-msgp" data-sym="MSGP">msgp</a> lemma target rcnst criteria-alist)
-      (declare (ignore <a class="sym-link system" href="../../../axioms.html#def-msgp" data-sym="MSGP">msgp</a> lemma target rcnst criteria-alist))
+       (<a class="sym-link system" href="rewrite.html#def-brr-criteria-alistp" data-sym="BRR-CRITERIA-ALISTP">brr-criteria-alistp</a> criteria-alist))))
+  (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> brr-near-missp
+      (<a class="sym-link system" href="axioms.html#def-msgp" data-sym="MSGP">msgp</a> lemma target rcnst criteria-alist)
+      (declare (ignore <a class="sym-link system" href="axioms.html#def-msgp" data-sym="MSGP">msgp</a> lemma target rcnst criteria-alist))
       nil)))</pre>
   </div>
 
 <div class="form-block in-theory" id="form-27" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:executable-counterpart</span> tamep)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:executable-counterpart</span> tamep)
     (<span class="keyword">:executable-counterpart</span> tamep-functionp)
     (<span class="keyword">:executable-counterpart</span> suitably-tamep-listp)
     ev$
@@ -900,24 +900,24 @@ pre.code {
           (forall (args)
            (equal (ec-call (apply$ fn1 args)) (ec-call (apply$ fn2 args)))))">apply$-equivalence</a>
   (fn1 fn2)
-  (declare (xargs <span class="keyword">:verify-guards</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-  (forall (<a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
-    (equal (<a class="sym-link system" href="../../../axioms.html#def-ec-call" data-sym="EC-CALL">ec-call</a> (apply$ fn1 <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>))
-      (<a class="sym-link system" href="../../../axioms.html#def-ec-call" data-sym="EC-CALL">ec-call</a> (apply$ fn2 <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)))))</pre>
+  (declare (xargs <span class="keyword">:verify-guards</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+  (forall (<a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
+    (equal (<a class="sym-link system" href="axioms.html#def-ec-call" data-sym="EC-CALL">ec-call</a> (apply$ fn1 <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>))
+      (<a class="sym-link system" href="axioms.html#def-ec-call" data-sym="EC-CALL">ec-call</a> (apply$ fn2 <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)))))</pre>
   </div>
 
 <div class="form-block function" id="def-fn-equal" data-defines="FN-EQUAL" data-references="APPLY$-EQUIVALENCE,TAMEP-FUNCTIONP,AND,EQUAL,IF,T,XARGS,DECLARE,FN2,FN1,DEFUN" data-part-name="FN-EQUAL" data-part-args="FN2,FN1" data-part-declare="T,XARGS,DECLARE" data-part-body="APPLY$-EQUIVALENCE,TAMEP-FUNCTIONP,AND,T,FN2,FN1,EQUAL,IF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="FN-EQUAL">fn-equal</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-fn-equal" data-sym="FN-EQUAL" title="(defun fn-equal (fn1 fn2)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-fn-equal" data-sym="FN-EQUAL" title="(defun fn-equal (fn1 fn2)
   (declare (xargs :mode :logic :guard t))
   (if (equal fn1 fn2)
       t
       (and (tamep-functionp fn1) (tamep-functionp fn2)">fn-equal</a>
   (fn1 fn2)
-  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
+  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
   (if (equal fn1 fn2)
-    <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>
-    (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (tamep-functionp fn1)
+    <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>
+    (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (tamep-functionp fn1)
       (tamep-functionp fn2)
       (<a class="sym-link local-def" href="#def-apply_24-equivalence" data-sym="APPLY$-EQUIVALENCE" title="(defun-sk apply$-equivalence (fn1 fn2)
           (declare (xargs :verify-guards t :guard t))
@@ -929,7 +929,7 @@ pre.code {
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-system-events" data-sym="SYSTEM-EVENTS" title="(defmacro system-events (&amp;rest events)
   (declare (xargs :guard t))
-  (cons &#39;progn (system-events-fn events)))">system-events</a> (<a class="sym-link system" href="../../../defthm.html#def-defequiv" data-sym="DEFEQUIV">defequiv</a> <a class="sym-link local-def" href="#def-fn-equal" data-sym="FN-EQUAL" title="(defun fn-equal (fn1 fn2)
+  (cons &#39;progn (system-events-fn events)))">system-events</a> (<a class="sym-link system" href="defthm.html#def-defequiv" data-sym="DEFEQUIV">defequiv</a> <a class="sym-link local-def" href="#def-fn-equal" data-sym="FN-EQUAL" title="(defun fn-equal (fn1 fn2)
   (declare (xargs :mode :logic :guard t))
   (if (equal fn1 fn2)
       t
@@ -940,34 +940,34 @@ pre.code {
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-system-events" data-sym="SYSTEM-EVENTS" title="(defmacro system-events (&amp;rest events)
   (declare (xargs :guard t))
-  (cons &#39;progn (system-events-fn events)))">system-events</a> (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> natp-from-to-by-measure
-    (<a class="sym-link system" href="../../../axioms.html#def-natp" data-sym="NATP">natp</a> (from-to-by-measure i j))
+  (cons &#39;progn (system-events-fn events)))">system-events</a> (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> natp-from-to-by-measure
+    (<a class="sym-link system" href="axioms.html#def-natp" data-sym="NATP">natp</a> (from-to-by-measure i j))
     <span class="keyword">:rule-classes</span> <span class="keyword">:type-prescription</span>))</pre>
   </div>
 
 <div class="form-block function" id="def-mempos" data-defines="MEMPOS" data-references="CDR,+,T,CAR,EQUAL,ENDP,COND,TRUE-LISTP,XARGS,DECLARE,LST,E,DEFUN" data-part-name="MEMPOS" data-part-args="LST,E" data-part-declare="LST,TRUE-LISTP,XARGS,DECLARE" data-part-body="CDR,MEMPOS,+,T,CAR,E,EQUAL,LST,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="MEMPOS">mempos</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-mempos" data-sym="MEMPOS" title="(defun mempos (e lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-mempos" data-sym="MEMPOS" title="(defun mempos (e lst)
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) 0) ((equal e (car lst)) 0) (t (+ 1 (mempos e (cdr lst))))))">mempos</a>
   (e lst)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> lst)))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> lst) <span class="number">0</span>)
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> lst)))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> lst) <span class="number">0</span>)
     ((equal e (car lst)) <span class="number">0</span>)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-_2B" data-sym="+">+</a> <span class="number">1</span> (<a class="sym-link local-def" href="#def-mempos" data-sym="MEMPOS" title="(defun mempos (e lst)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-_2B" data-sym="+">+</a> <span class="number">1</span> (<a class="sym-link local-def" href="#def-mempos" data-sym="MEMPOS" title="(defun mempos (e lst)
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) 0) ((equal e (car lst)) 0) (t (+ 1 (mempos e (cdr lst))))))">mempos</a> e (cdr lst))))))</pre>
   </div>
 
 <div class="form-block encapsulate" id="form-33" typeof="Code">
     <div class="form-header"><span class="form-type">encapsulate</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
-  (<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="../../../basis-b.html#def-stobj-print-name" data-sym="STOBJ-PRINT-NAME">stobj-print-name</a>)
-  (<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> eviscerate-do$-alist)
-  (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> nfix-list-preserves-consp
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (consp x) (consp (nfix-list x)))))
-  (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> nat-listp-nfix-list (<a class="sym-link system" href="../../../axioms.html#def-nat-listp" data-sym="NAT-LISTP">nat-listp</a> (nfix-list x))))
-  (<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> do$))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
+  (<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="basis-b.html#def-stobj-print-name" data-sym="STOBJ-PRINT-NAME">stobj-print-name</a>)
+  (<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> eviscerate-do$-alist)
+  (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> nfix-list-preserves-consp
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (consp x) (consp (nfix-list x)))))
+  (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> nat-listp-nfix-list (<a class="sym-link system" href="axioms.html#def-nat-listp" data-sym="NAT-LISTP">nat-listp</a> (nfix-list x))))
+  (<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> do$))</pre>
   </div>
 
 <div class="form-block other" id="form-34" typeof="Code">
@@ -1014,7 +1014,7 @@ pre.code {
   (defwarrant nfix-list)
   (defwarrant lex-fix)
   (defwarrant lexp)
-  (defwarrant <a class="sym-link system" href="../../../basis-b.html#def-stobj-print-name" data-sym="STOBJ-PRINT-NAME">stobj-print-name</a>)
+  (defwarrant <a class="sym-link system" href="basis-b.html#def-stobj-print-name" data-sym="STOBJ-PRINT-NAME">stobj-print-name</a>)
   (defwarrant eviscerate-do$-alist)
   (defwarrant loop$-default-values1)
   (defwarrant loop$-default-values)
@@ -1023,97 +1023,97 @@ pre.code {
 
 <div class="form-block other" id="form-35" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (memoize 'fchecksum-obj <span class="keyword">:stats</span> nil <span class="keyword">:forget</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
-  (memoize '<a class="sym-link system" href="../../../defthm.html#def-immediate-canonical-ancestors" data-sym="IMMEDIATE-CANONICAL-ANCESTORS">immediate-canonical-ancestors</a> <span class="keyword">:stats</span> nil)
-  (memoize '<a class="sym-link system" href="../../../defthm.html#def-canonical-ancestors-rec" data-sym="CANONICAL-ANCESTORS-REC">canonical-ancestors-rec</a> <span class="keyword">:stats</span> nil)
-  (memoize '<a class="sym-link system" href="../../../defthm.html#def-immediate-canonical-ancestors-tr" data-sym="IMMEDIATE-CANONICAL-ANCESTORS-TR">immediate-canonical-ancestors-tr</a> <span class="keyword">:stats</span> nil)
-  (memoize '<a class="sym-link system" href="../../../defthm.html#def-canonical-ancestors-tr-rec" data-sym="CANONICAL-ANCESTORS-TR-REC">canonical-ancestors-tr-rec</a> <span class="keyword">:stats</span> nil)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (memoize 'fchecksum-obj <span class="keyword">:stats</span> nil <span class="keyword">:forget</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
+  (memoize '<a class="sym-link system" href="defthm.html#def-immediate-canonical-ancestors" data-sym="IMMEDIATE-CANONICAL-ANCESTORS">immediate-canonical-ancestors</a> <span class="keyword">:stats</span> nil)
+  (memoize '<a class="sym-link system" href="defthm.html#def-canonical-ancestors-rec" data-sym="CANONICAL-ANCESTORS-REC">canonical-ancestors-rec</a> <span class="keyword">:stats</span> nil)
+  (memoize '<a class="sym-link system" href="defthm.html#def-immediate-canonical-ancestors-tr" data-sym="IMMEDIATE-CANONICAL-ANCESTORS-TR">immediate-canonical-ancestors-tr</a> <span class="keyword">:stats</span> nil)
+  (memoize '<a class="sym-link system" href="defthm.html#def-canonical-ancestors-tr-rec" data-sym="CANONICAL-ANCESTORS-TR-REC">canonical-ancestors-tr-rec</a> <span class="keyword">:stats</span> nil)
   (memoize 'canonical-ancestors-path <span class="keyword">:stats</span> nil)
   (memoize 'canonical-ancestors-tr-path <span class="keyword">:stats</span> nil))</pre>
   </div>
 
 <div class="form-block macro" id="def-defdeprecate" data-defines="DEFDEPRECATE" data-references="VALUE-TRIPLE,ADD-MACRO-ALIAS,CONS,QUOTE,CW,PROG2$,ARGS,&REST,PROGN,QUASIQUOTE,STRING,TYPE,DECLARE,VERSION,NEW,OLD,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DEFDEPRECATE">defdeprecate</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defdeprecate" data-sym="DEFDEPRECATE" title="(defmacro defdeprecate (old new version)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defdeprecate" data-sym="DEFDEPRECATE" title="(defmacro defdeprecate (old new version)
   (declare (type string version))
   `(progn
     (defmacro ,old (&amp;rest args)
       (prog2$
 ...">defdeprecate</a>
   (old new version)
-  (declare (type <a class="sym-link system" href="../../../axioms.html#def-string" data-sym="STRING">string</a> version))
-  `(<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> ,OLD
-      (&amp;rest <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
-      (<a class="sym-link system" href="../../../axioms.html#def-prog2_24" data-sym="PROG2$">prog2$</a> (<a class="sym-link system" href="../../../axioms.html#def-cw" data-sym="CW">cw</a> <span class="string">"~%**DEPRECATED** after ACL2 Version ~s0: ~x1.  Use ~x2 instead.~|"</span>
+  (declare (type <a class="sym-link system" href="axioms.html#def-string" data-sym="STRING">string</a> version))
+  `(<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> ,OLD
+      (&amp;rest <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
+      (<a class="sym-link system" href="axioms.html#def-prog2_24" data-sym="PROG2$">prog2$</a> (<a class="sym-link system" href="axioms.html#def-cw" data-sym="CW">cw</a> <span class="string">"~%**DEPRECATED** after ACL2 Version ~s0: ~x1.  Use ~x2 instead.~|"</span>
           ,VERSION
           ',OLD
           ',NEW)
-        (cons ',NEW <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)))
-    (<a class="sym-link system" href="../../../axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> ,OLD ,NEW)
-    (<a class="sym-link system" href="../../../axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> ',OLD)))</pre>
+        (cons ',NEW <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)))
+    (<a class="sym-link system" href="axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> ,OLD ,NEW)
+    (<a class="sym-link system" href="axioms.html#def-value-triple" data-sym="VALUE-TRIPLE">value-triple</a> ',OLD)))</pre>
   </div>
 
 <div class="form-block in-theory" id="form-37" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="../../../axioms.html#def-all-boundp-initial-global-table" data-sym="ALL-BOUNDP-INITIAL-GLOBAL-TABLE">all-boundp-initial-global-table</a>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="axioms.html#def-all-boundp-initial-global-table" data-sym="ALL-BOUNDP-INITIAL-GLOBAL-TABLE">all-boundp-initial-global-table</a>))</pre>
   </div>
 
 <div class="form-block other" id="form-38" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="../../../rewrite.html#def-clear-brr-data-lst" data-sym="CLEAR-BRR-DATA-LST">clear-brr-data-lst</a>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="rewrite.html#def-clear-brr-data-lst" data-sym="CLEAR-BRR-DATA-LST">clear-brr-data-lst</a>)</pre>
   </div>
 
 <div class="form-block in-theory" id="form-39" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="../../../axioms.html#def-iprint-oracle-updates" data-sym="IPRINT-ORACLE-UPDATES">iprint-oracle-updates</a>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="axioms.html#def-iprint-oracle-updates" data-sym="IPRINT-ORACLE-UPDATES">iprint-oracle-updates</a>))</pre>
   </div>
 
 <div class="form-block in-theory" id="form-40" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="../../../axioms.html#def-array-order" data-sym="ARRAY-ORDER">array-order</a>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="axioms.html#def-array-order" data-sym="ARRAY-ORDER">array-order</a>))</pre>
   </div>
 
 <div class="form-block in-theory" id="form-41" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="../../../basis-a.html#def-error-fms" data-sym="ERROR-FMS">error-fms</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-error-fms-channel" data-sym="ERROR-FMS-CHANNEL">error-fms-channel</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-error1" data-sym="ERROR1">error1</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-error1-state-p" data-sym="ERROR1-STATE-P">error1-state-p</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-fms" data-sym="FMS">fms</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-fmt" data-sym="FMT">fmt</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-fmt-abbrev1" data-sym="FMT-ABBREV1">fmt-abbrev1</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-fmt-ppr" data-sym="FMT-PPR">fmt-ppr</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link system" href="basis-a.html#def-error-fms" data-sym="ERROR-FMS">error-fms</a>
+    <a class="sym-link system" href="basis-a.html#def-error-fms-channel" data-sym="ERROR-FMS-CHANNEL">error-fms-channel</a>
+    <a class="sym-link system" href="basis-a.html#def-error1" data-sym="ERROR1">error1</a>
+    <a class="sym-link system" href="basis-a.html#def-error1-state-p" data-sym="ERROR1-STATE-P">error1-state-p</a>
+    <a class="sym-link system" href="basis-a.html#def-fms" data-sym="FMS">fms</a>
+    <a class="sym-link system" href="basis-a.html#def-fmt" data-sym="FMT">fmt</a>
+    <a class="sym-link system" href="basis-a.html#def-fmt-abbrev1" data-sym="FMT-ABBREV1">fmt-abbrev1</a>
+    <a class="sym-link system" href="basis-a.html#def-fmt-ppr" data-sym="FMT-PPR">fmt-ppr</a>
     fmt0
-    <a class="sym-link system" href="../../../basis-a.html#def-fmt1" data-sym="FMT1">fmt1</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-fmt1_21" data-sym="FMT1!">fmt1!</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-ppr" data-sym="PPR">ppr</a>
-    <a class="sym-link system" href="../../../basis-a.html#def-ppr1" data-sym="PPR1">ppr1</a>
+    <a class="sym-link system" href="basis-a.html#def-fmt1" data-sym="FMT1">fmt1</a>
+    <a class="sym-link system" href="basis-a.html#def-fmt1_21" data-sym="FMT1!">fmt1!</a>
+    <a class="sym-link system" href="basis-a.html#def-ppr" data-sym="PPR">ppr</a>
+    <a class="sym-link system" href="basis-a.html#def-ppr1" data-sym="PPR1">ppr1</a>
     ppr2))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Adf-pi_2A" data-defines="*DF-PI*" data-references="DF-PI,FROM-DF,DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*DF-PI*">*df-pi*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-pi_2A" data-sym="*DF-PI*" title="(defconst *df-pi* (from-df (df-pi)))">*df-pi*</a> (from-df (df-pi)))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-pi_2A" data-sym="*DF-PI*" title="(defconst *df-pi* (from-df (df-pi)))">*df-pi*</a> (from-df (df-pi)))</pre>
   </div>
 
 <div class="form-block other" id="form-43" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> +f!-fn2 +f!-fn2$inline)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> +f!-fn2 +f!-fn2$inline)</pre>
   </div>
 
 <div class="form-block other" id="form-44" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> +f!-fn3 +f!-fn3$inline)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> +f!-fn3 +f!-fn3$inline)</pre>
   </div>
 
 <div class="form-block other" id="form-45" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-deftheory" data-sym="DEFTHEORY">deftheory</a> ground-zero (current-theory <span class="keyword">:here</span>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-deftheory" data-sym="DEFTHEORY">deftheory</a> ground-zero (current-theory <span class="keyword">:here</span>))</pre>
   </div>
 
 <div class="form-block other" id="form-46" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-deflabel" data-sym="DEFLABEL">deflabel</a> end-of-pass-2)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-deflabel" data-sym="DEFLABEL">deflabel</a> end-of-pass-2)</pre>
   </div>
 
 

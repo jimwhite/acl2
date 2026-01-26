@@ -432,13 +432,13 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">akcl-acl2-trace</h1>
-    <div class="path"><a href="akcl-acl2-trace.lisp" class="source-link">/workspaces/acl2/akcl-acl2-trace</a></div>
+    <div class="path"><a href="akcl-acl2-trace.lisp" class="source-link">akcl-acl2-trace</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (macro-function 'old-trace)) (setf (macro-function 'old-trace) (macro-function '<a class="sym-link local-def" href="#def-trace" data-sym="TRACE" title="(defmacro trace (&amp;rest fns)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (macro-function 'old-trace)) (setf (macro-function 'old-trace) (macro-function '<a class="sym-link local-def" href="#def-trace" data-sym="TRACE" title="(defmacro trace (&amp;rest fns)
   (let (acl2-fns non-acl2-fns all-fns)
     (loop for fn in fns
           do (if (function-symbolp
@@ -448,7 +448,7 @@ pre.code {
 
 <div class="form-block other" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (macro-function 'old-untrace)) (setf (macro-function 'old-untrace)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (macro-function 'old-untrace)) (setf (macro-function 'old-untrace)
       (macro-function '<a class="sym-link local-def" href="#def-untrace" data-sym="UNTRACE" title="(defmacro untrace (&amp;rest fns)
   (cons &#39;old-untrace
         (let ((ans fns))
@@ -458,7 +458,7 @@ pre.code {
 
 <div class="form-block macro" id="def-trace" data-defines="TRACE" data-references="TRACE-FIX-EXIT-RAW,TRACE-FIX-ENTRY-RAW,SPEC,LET*,CDDR,CADR,TRACE-FIX-EXIT,TRACE-FIX-ENTRY,TRACE-FIX-COND,INTERFACE-ER,MEMBER,*1*-SYMBOL,DOLIST,CDR,LIST*,LIST,COLLECT,X,SETQ,PROGN,OLD-TRACE,QUOTE,CONS,PUSH,*THE-LIVE-STATE*,W,ERROR,T,CAR,CONSP,AND,SYMBOLP,COND,FUNCTION-SYMBOLP,IF,DO,IN,FN,FOR,LOOP,ALL-FNS,NON-ACL2-FNS,ACL2-FNS,LET,FNS,&REST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE">trace</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-trace" data-sym="TRACE" title="(defmacro trace (&amp;rest fns)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-trace" data-sym="TRACE" title="(defmacro trace (&amp;rest fns)
   (let (acl2-fns non-acl2-fns all-fns)
     (loop for fn in fns
           do (if (function-symbolp
@@ -471,25 +471,25 @@ pre.code {
       in
       fns
       do
-      (if (<a class="sym-link system" href="../../../axioms.html#def-function-symbolp" data-sym="FUNCTION-SYMBOLP">function-symbolp</a> (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((symbolp fn) fn)
-            ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (consp fn) (symbolp (car fn))) (car fn))
-            (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (error <span class="string">"Not a symbol or a cons of a symbol: ~s"</span> fn)))
-          (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> *the-live-state*))
+      (if (<a class="sym-link system" href="axioms.html#def-function-symbolp" data-sym="FUNCTION-SYMBOLP">function-symbolp</a> (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((symbolp fn) fn)
+            ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (consp fn) (symbolp (car fn))) (car fn))
+            (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (error <span class="string">"Not a symbol or a cons of a symbol: ~s"</span> fn)))
+          (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> *the-live-state*))
         (push fn acl2-fns)
         (push fn non-acl2-fns)))
     (cons 'old-trace
-      (<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (setq acl2-fns
+      (<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (setq acl2-fns
           (loop for
             x
             in
             acl2-fns
             collect
-            (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((symbolp x) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> x x))
-              (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car x) (car x) (cdr x))))))
+            (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((symbolp x) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> x x))
+              (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car x) (car x) (cdr x))))))
         (dolist (x acl2-fns)
           (push (cons (*1*-symbol (car x)) (cdr x)) acl2-fns))
         (dolist (fn acl2-fns)
-          (push (<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-member" data-sym="MEMBER">member</a> <span class="keyword">:break</span> (cdr fn)) (interface-er <span class="string">"Use of :break is not permitted in ~
+          (push (<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-member" data-sym="MEMBER">member</a> <span class="keyword">:break</span> (cdr fn)) (interface-er <span class="string">"Use of :break is not permitted in ~
                                             TRACE.  Consider :entry (progn ~
                                             (break$) arglist) instead."</span>)))
               (cons (car fn)
@@ -509,11 +509,11 @@ pre.code {
    ((endp l)
     (list :exit
           (protect-mv
-...">trace-fix-exit</a> (car fn) (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> fn) (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> fn))))))
+...">trace-fix-exit</a> (car fn) (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> fn) (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> fn))))))
             all-fns))
         (dolist (fn non-acl2-fns)
-          (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((spec (if (symbolp fn)
-                 (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> fn)
+          (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((spec (if (symbolp fn)
+                 (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> fn)
                  fn)) (fn (car spec)))
             (push (cons fn
                 (<a class="sym-link local-def" href="#def-trace-fix-entry-raw" data-sym="TRACE-FIX-ENTRY-RAW" title="(defun trace-fix-entry-raw (name l)
@@ -533,7 +533,7 @@ pre.code {
 
 <div class="form-block macro" id="def-untrace" data-defines="UNTRACE" data-references="*1*-SYMBOL,PUSH,FN,DOLIST,ANS,LET,OLD-UNTRACE,QUOTE,CONS,FNS,&REST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="UNTRACE">untrace</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-untrace" data-sym="UNTRACE" title="(defmacro untrace (&amp;rest fns)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-untrace" data-sym="UNTRACE" title="(defmacro untrace (&amp;rest fns)
   (cons &#39;old-untrace
         (let ((ans fns))
           (dolist (fn fns) (push (*1*-symbol fn) ans))
@@ -547,72 +547,72 @@ pre.code {
 
 <div class="form-block function" id="def-trace-ppr-gcl" data-defines="TRACE-PPR-GCL" data-references=">,DECF,TRACE-CO,F-GET-GLOBAL,FIRST-TRACE-PRINTING-COLUMN,+,CDDDDR,W,EVISC-TABLE,QUOTE,TABLE-ALIST,CAR,CADDR,CADR,EVISCERATE-TOP,PPR,TRACE-HIDE-WORLD-AND-STATE,TRACE-EVISC-TUPLE,INCF,EQ,COND,*TRACE-LEVEL*,SPECIAL,DECLARE,T,*INSIDE-TRACE$*,LET,*THE-LIVE-STATE*,STATE,&AUX,X,DIRECTION,DEFUN" data-used-by="TRACE-FIX-EXIT,TRACE-FIX-ENTRY" data-part-name="TRACE-PPR-GCL" data-part-args="*THE-LIVE-STATE*,STATE,&AUX,X,DIRECTION" data-part-body=">,DECF,TRACE-CO,F-GET-GLOBAL,FIRST-TRACE-PRINTING-COLUMN,+,CDDDDR,STATE,W,EVISC-TABLE,QUOTE,TABLE-ALIST,CAR,CADDR,CADR,EVISCERATE-TOP,PPR,TRACE-HIDE-WORLD-AND-STATE,X,TRACE-EVISC-TUPLE,INCF,DIRECTION,EQ,COND,*TRACE-LEVEL*,SPECIAL,DECLARE,T,*INSIDE-TRACE$*,LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE-PPR-GCL">trace-ppr-gcl</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
   (let ((*inside-trace$* t))
     (declare (special *inside-trace$* *trace-level*))
     (cond ((eq direction :in) (incf *trace-level*)))
     (let ((trace-evisc-tuple (trace-evisc-tuple))
 ...">trace-ppr-gcl</a>
   (direction x &amp;aux (state *the-live-state*))
-  (let ((*inside-trace$* <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
+  (let ((*inside-trace$* <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
     (declare (special *inside-trace$* *trace-level*))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> direction <span class="keyword">:in</span>) (incf *trace-level*)))
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> direction <span class="keyword">:in</span>) (incf *trace-level*)))
     (let ((trace-evisc-tuple (trace-evisc-tuple)) (x (trace-hide-world-and-state x)))
-      (<a class="sym-link system" href="../../../basis-a.html#def-ppr" data-sym="PPR">ppr</a> (<a class="sym-link system" href="../../../basis-a.html#def-eviscerate-top" data-sym="EVISCERATE-TOP">eviscerate-top</a> x
-          (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> trace-evisc-tuple)
-          (<a class="sym-link system" href="../../../axioms.html#def-caddr" data-sym="CADDR">caddr</a> trace-evisc-tuple)
+      (<a class="sym-link system" href="basis-a.html#def-ppr" data-sym="PPR">ppr</a> (<a class="sym-link system" href="basis-a.html#def-eviscerate-top" data-sym="EVISCERATE-TOP">eviscerate-top</a> x
+          (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> trace-evisc-tuple)
+          (<a class="sym-link system" href="axioms.html#def-caddr" data-sym="CADDR">caddr</a> trace-evisc-tuple)
           (car trace-evisc-tuple)
-          (<a class="sym-link system" href="../../../axioms.html#def-table-alist" data-sym="TABLE-ALIST">table-alist</a> 'evisc-table (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))
-          (car (<a class="sym-link system" href="../../../axioms.html#def-cddddr" data-sym="CDDDDR">cddddr</a> trace-evisc-tuple))
+          (<a class="sym-link system" href="axioms.html#def-table-alist" data-sym="TABLE-ALIST">table-alist</a> 'evisc-table (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))
+          (car (<a class="sym-link system" href="axioms.html#def-cddddr" data-sym="CDDDDR">cddddr</a> trace-evisc-tuple))
           state)
-        (<a class="sym-link system" href="../../../axioms.html#def-_2B" data-sym="+">+</a> <span class="number">2</span> (first-trace-printing-column))
-        (<a class="sym-link system" href="../../../axioms.html#def-f-get-global" data-sym="F-GET-GLOBAL">f-get-global</a> 'trace-co state)
+        (<a class="sym-link system" href="axioms.html#def-_2B" data-sym="+">+</a> <span class="number">2</span> (first-trace-printing-column))
+        (<a class="sym-link system" href="axioms.html#def-f-get-global" data-sym="F-GET-GLOBAL">f-get-global</a> 'trace-co state)
         state
-        <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> direction <span class="keyword">:out</span>) (decf *trace-level*)))
-    '<a class="sym-link system" href="../../../axioms.html#def-_3E" data-sym="&gt;">&gt;</a>))</pre>
+        <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> direction <span class="keyword">:out</span>) (decf *trace-level*)))
+    '<a class="sym-link system" href="axioms.html#def-_3E" data-sym="&gt;">&gt;</a>))</pre>
   </div>
 
 <div class="form-block function" id="def-trace-fix-entry-raw" data-defines="TRACE-FIX-ENTRY-RAW" data-references="CADR,T,CDDR,ARGLIST,LET,LIST*,CAR,EQ,ERROR,CDR,AND,ATOM,OR,ARGLIST,TRACE-HIDE-WORLD-AND-STATE,QUOTE,CONS,QUASIQUOTE,LIST,NULL,COND,L,NAME,DEFUN" data-used-by="TRACE" data-part-name="TRACE-FIX-ENTRY-RAW" data-part-args="L,NAME" data-part-body="NAME,TRACE-FIX-ENTRY-RAW,CADR,T,CDDR,ARGLIST,LET,LIST*,CAR,EQ,ERROR,CDR,AND,ATOM,OR,ARGLIST,TRACE-HIDE-WORLD-AND-STATE,QUOTE,CONS,QUASIQUOTE,LIST,L,NULL,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE-FIX-ENTRY-RAW">trace-fix-entry-raw</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-entry-raw" data-sym="TRACE-FIX-ENTRY-RAW" title="(defun trace-fix-entry-raw (name l)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-entry-raw" data-sym="TRACE-FIX-ENTRY-RAW" title="(defun trace-fix-entry-raw (name l)
   (cond
    ((null l)
     (list :entry `(cons &#39;,name (trace-hide-world-and-state si::arglist))))
    ((or (atom l) (and (cdr l) (atom (cdr l))))
 ...">trace-fix-entry-raw</a>
   (name l)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> l) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:entry</span> `(cons ',NAME (trace-hide-world-and-state arglist))))
-    ((<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> l) (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (cdr l) (<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> (cdr l)))) (error <span class="string">"A trace spec must be a true-list, but yours ends in ~s."</span>
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> l) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:entry</span> `(cons ',NAME (trace-hide-world-and-state arglist))))
+    ((<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> l) (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (cdr l) (<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> (cdr l)))) (error <span class="string">"A trace spec must be a true-list, but yours ends in ~s."</span>
         l))
-    ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:entry</span>) (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:entry</span> `(cons ',NAME
+    ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:entry</span>) (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:entry</span> `(cons ',NAME
           (trace-hide-world-and-state (let ((arglist arglist))
               ,(CADR L))))
-        (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-trace-fix-entry-raw" data-sym="TRACE-FIX-ENTRY-RAW" title="(defun trace-fix-entry-raw (name l)
+        (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-trace-fix-entry-raw" data-sym="TRACE-FIX-ENTRY-RAW" title="(defun trace-fix-entry-raw (name l)
   (cond
    ((null l)
     (list :entry `(cons &#39;,name (trace-hide-world-and-state si::arglist))))
    ((or (atom l) (and (cdr l) (atom (cdr l))))
-...">trace-fix-entry-raw</a> name (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
+...">trace-fix-entry-raw</a> name (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
   </div>
 
 <div class="form-block function" id="def-trace-fix-entry" data-defines="TRACE-FIX-ENTRY" data-references="CADR,T,CDDR,ARGLIST,LET,LIST*,CAR,EQ,ARGLIST,QUOTE,CONS,TRACE-PPR-GCL,QUASIQUOTE,LIST,ENDP,COND,L,NAME,DEFUN" data-used-by="TRACE" data-part-name="TRACE-FIX-ENTRY" data-part-args="L,NAME" data-part-body="NAME,TRACE-FIX-ENTRY,CADR,T,CDDR,ARGLIST,LET,LIST*,CAR,EQ,ARGLIST,QUOTE,CONS,TRACE-PPR-GCL,QUASIQUOTE,LIST,L,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE-FIX-ENTRY">trace-fix-entry</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-entry" data-sym="TRACE-FIX-ENTRY" title="(defun trace-fix-entry (name l)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-entry" data-sym="TRACE-FIX-ENTRY" title="(defun trace-fix-entry (name l)
   (cond ((endp l) (list :entry `(trace-ppr-gcl :in (cons &#39;,name si::arglist))))
         ((eq (car l) :entry)
          (list* :entry
                 `(trace-ppr-gcl :in
 ...">trace-fix-entry</a>
   (name l)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> l) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:entry</span> `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> l) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:entry</span> `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
   (let ((*inside-trace$* t))
     (declare (special *inside-trace$* *trace-level*))
     (cond ((eq direction :in) (incf *trace-level*)))
     (let ((trace-evisc-tuple (trace-evisc-tuple))
 ...">trace-ppr-gcl</a> <span class="keyword">:in</span> (cons ',NAME arglist))))
-    ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:entry</span>) (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:entry</span> `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
+    ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:entry</span>) (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:entry</span> `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
   (let ((*inside-trace$* t))
     (declare (special *inside-trace$* *trace-level*))
     (cond ((eq direction :in) (incf *trace-level*)))
@@ -620,101 +620,101 @@ pre.code {
 ...">trace-ppr-gcl</a> <span class="keyword">:in</span> (cons ',NAME
             (let ((arglist arglist))
               ,(CADR L))))
-        (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-trace-fix-entry" data-sym="TRACE-FIX-ENTRY" title="(defun trace-fix-entry (name l)
+        (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-trace-fix-entry" data-sym="TRACE-FIX-ENTRY" title="(defun trace-fix-entry (name l)
   (cond ((endp l) (list :entry `(trace-ppr-gcl :in (cons &#39;,name si::arglist))))
         ((eq (car l) :entry)
          (list* :entry
                 `(trace-ppr-gcl :in
-...">trace-fix-entry</a> name (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
+...">trace-fix-entry</a> name (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
   </div>
 
 <div class="form-block function" id="def-trace-values" data-defines="TRACE-VALUES" data-references="VALUES,QUOTE,IGNORE,DECLARE,NAME,DEFUN" data-part-name="TRACE-VALUES" data-part-args="NAME" data-part-declare="NAME,IGNORE,DECLARE" data-part-body="VALUES,QUOTE" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE-VALUES">trace-values</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-values" data-sym="TRACE-VALUES" title="(defun trace-values (name) (declare (ignore name)) &#39;values)">trace-values</a> (name) (declare (ignore name)) 'values)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-values" data-sym="TRACE-VALUES" title="(defun trace-values (name) (declare (ignore name)) &#39;values)">trace-values</a> (name) (declare (ignore name)) 'values)</pre>
   </div>
 
 <div class="form-block function" id="def-trace-fix-exit-raw" data-defines="TRACE-FIX-EXIT-RAW" data-references="CADR,T,CDDR,IGNORABLE,DECLARE,ARGLIST,ARGLIST,LET,LIST*,CAR,EQ,TRACE-HIDE-WORLD-AND-STATE,QUOTE,CONS,QUASIQUOTE,LIST,ENDP,COND,L,NAME,DEFUN" data-used-by="TRACE" data-part-name="TRACE-FIX-EXIT-RAW" data-part-args="L,NAME" data-part-body="NAME,TRACE-FIX-EXIT-RAW,CADR,T,CDDR,IGNORABLE,DECLARE,ARGLIST,ARGLIST,LET,LIST*,CAR,EQ,TRACE-HIDE-WORLD-AND-STATE,QUOTE,CONS,QUASIQUOTE,LIST,L,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE-FIX-EXIT-RAW">trace-fix-exit-raw</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-exit-raw" data-sym="TRACE-FIX-EXIT-RAW" title="(defun trace-fix-exit-raw (name l)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-exit-raw" data-sym="TRACE-FIX-EXIT-RAW" title="(defun trace-fix-exit-raw (name l)
   (cond
    ((endp l)
     (list :exit
           `(cons &#39;,name (trace-hide-world-and-state ,(trace-values name)))))
 ...">trace-fix-exit-raw</a>
   (name l)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> l) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:exit</span> `(cons ',NAME
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> l) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:exit</span> `(cons ',NAME
           (trace-hide-world-and-state ,(TRACE-VALUES NAME)))))
-    ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:exit</span>) (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:exit</span> `(cons ',NAME
+    ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:exit</span>) (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:exit</span> `(cons ',NAME
           (trace-hide-world-and-state (let ((arglist arglist))
               (declare (ignorable arglist))
               ,(CADR L))))
-        (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-trace-fix-exit-raw" data-sym="TRACE-FIX-EXIT-RAW" title="(defun trace-fix-exit-raw (name l)
+        (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-trace-fix-exit-raw" data-sym="TRACE-FIX-EXIT-RAW" title="(defun trace-fix-exit-raw (name l)
   (cond
    ((endp l)
     (list :exit
           `(cons &#39;,name (trace-hide-world-and-state ,(trace-values name)))))
-...">trace-fix-exit-raw</a> name (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
+...">trace-fix-exit-raw</a> name (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
   </div>
 
 <div class="form-block function" id="def-trace-fix-exit" data-defines="TRACE-FIX-EXIT" data-references="CADR,T,CDDR,IGNORABLE,DECLARE,ARGLIST,ARGLIST,VALUES,LET*,LIST*,CAR,EQ,TRACE-MULTIPLICITY,QUOTE,CONS,TRACE-PPR-GCL,QUASIQUOTE,PROTECT-MV,LIST,ENDP,COND,*THE-LIVE-STATE*,STATE,&AUX,L,ORIGINAL-NAME,NAME,DEFUN" data-used-by="TRACE" data-part-name="TRACE-FIX-EXIT" data-part-args="*THE-LIVE-STATE*,STATE,&AUX,L,ORIGINAL-NAME,NAME" data-part-body="NAME,TRACE-FIX-EXIT,CADR,T,CDDR,IGNORABLE,DECLARE,ARGLIST,ARGLIST,VALUES,LET*,LIST*,CAR,EQ,STATE,ORIGINAL-NAME,TRACE-MULTIPLICITY,QUOTE,CONS,TRACE-PPR-GCL,QUASIQUOTE,PROTECT-MV,LIST,L,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE-FIX-EXIT">trace-fix-exit</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-exit" data-sym="TRACE-FIX-EXIT" title="(defun trace-fix-exit (name original-name l &amp;aux (state *the-live-state*))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-exit" data-sym="TRACE-FIX-EXIT" title="(defun trace-fix-exit (name original-name l &amp;aux (state *the-live-state*))
   (cond
    ((endp l)
     (list :exit
           (protect-mv
 ...">trace-fix-exit</a>
   (name original-name l &amp;aux (state *the-live-state*))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> l) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:exit</span> (protect-mv `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> l) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:exit</span> (protect-mv `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
   (let ((*inside-trace$* t))
     (declare (special *inside-trace$* *trace-level*))
     (cond ((eq direction :in) (incf *trace-level*)))
     (let ((trace-evisc-tuple (trace-evisc-tuple))
 ...">trace-ppr-gcl</a> <span class="keyword">:out</span> (cons ',NAME ,(TRACE-VALUES ORIGINAL-NAME)))
           (trace-multiplicity original-name state))))
-    ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:exit</span>) (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:exit</span> (protect-mv `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
+    ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (car l) <span class="keyword">:exit</span>) (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> <span class="keyword">:exit</span> (protect-mv `(<a class="sym-link local-def" href="#def-trace-ppr-gcl" data-sym="TRACE-PPR-GCL" title="(defun trace-ppr-gcl (direction x &amp;aux (state *the-live-state*))
   (let ((*inside-trace$* t))
     (declare (special *inside-trace$* *trace-level*))
     (cond ((eq direction :in) (incf *trace-level*)))
     (let ((trace-evisc-tuple (trace-evisc-tuple))
 ...">trace-ppr-gcl</a> <span class="keyword">:out</span> (cons ',NAME
-              (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((values ,(TRACE-VALUES ORIGINAL-NAME)) (arglist arglist))
+              (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((values ,(TRACE-VALUES ORIGINAL-NAME)) (arglist arglist))
                 (declare (ignorable values arglist))
                 ,(CADR L))))
           (trace-multiplicity original-name state))
-        (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l)
-        (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> l)
+        (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l)
+        (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> l)
         (<a class="sym-link local-def" href="#def-trace-fix-exit" data-sym="TRACE-FIX-EXIT" title="(defun trace-fix-exit (name original-name l &amp;aux (state *the-live-state*))
   (cond
    ((endp l)
     (list :exit
           (protect-mv
-...">trace-fix-exit</a> name original-name (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
+...">trace-fix-exit</a> name original-name (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
   </div>
 
 <div class="form-block function" id="def-trace-fix-cond" data-defines="TRACE-FIX-COND" data-references="CDR,SETQ,ARGLIST,ARGLIST,LET,QUASIQUOTE,LIST,PROG1,CAR,EQ,APPEND,ON,TAIL,FOR,LOOP,MEMBER-EQ,IF,TRACE-SPEC,DEFUN" data-used-by="TRACE" data-part-name="TRACE-FIX-COND" data-part-args="TRACE-SPEC" data-part-body="CDR,SETQ,ARGLIST,ARGLIST,LET,QUASIQUOTE,LIST,PROG1,CAR,EQ,APPEND,ON,TAIL,FOR,LOOP,TRACE-SPEC,MEMBER-EQ,IF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TRACE-FIX-COND">trace-fix-cond</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-cond" data-sym="TRACE-FIX-COND" title="(defun trace-fix-cond (trace-spec)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-trace-fix-cond" data-sym="TRACE-FIX-COND" title="(defun trace-fix-cond (trace-spec)
   (if (member-eq :cond trace-spec)
       (loop for tail on trace-spec
             append (if (eq (car tail) :cond)
                        (prog1
 ...">trace-fix-cond</a>
   (trace-spec)
-  (if (<a class="sym-link system" href="../../../axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> <span class="keyword">:cond</span> trace-spec)
+  (if (<a class="sym-link system" href="axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> <span class="keyword">:cond</span> trace-spec)
     (loop for
       tail
       on
       trace-spec
-      <a class="sym-link system" href="../../../axioms.html#def-append" data-sym="APPEND">append</a>
-      (if (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (car tail) <span class="keyword">:cond</span>)
-        (prog1 (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:cond</span> `(let ((arglist arglist))
+      <a class="sym-link system" href="axioms.html#def-append" data-sym="APPEND">append</a>
+      (if (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (car tail) <span class="keyword">:cond</span>)
+        (prog1 (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> <span class="keyword">:cond</span> `(let ((arglist arglist))
               ,(CADR TAIL)))
           (setq tail (cdr tail)))
-        (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (car tail))))
+        (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (car tail))))
     trace-spec))</pre>
   </div>
 

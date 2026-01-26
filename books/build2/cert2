@@ -11,26 +11,41 @@ set -e
 # Find the directory containing this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Determine ACL2 home directory (source directory)
+# Priority: ACL2_HOME > parent of ACL2_SYSTEM_BOOKS > inferred from script location
+if [ -n "$ACL2_HOME" ]; then
+    ACL2_SOURCE_DIR="$(cd "$ACL2_HOME" && pwd)"
+elif [ -n "$ACL2_SYSTEM_BOOKS" ]; then
+    ACL2_SOURCE_DIR="$(cd "$ACL2_SYSTEM_BOOKS/.." && pwd)"
+else
+    # Infer from script location (we're in books/build2)
+    ACL2_SOURCE_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+fi
+
 # Determine ACL2 executable
 if [ -z "$ACL2" ]; then
     # Try to find ACL2 in common locations
-    if [ -x "$SCRIPT_DIR/../../saved_acl2" ]; then
+    if [ -x "$ACL2_SOURCE_DIR/saved_acl2" ]; then
+        ACL2="$ACL2_SOURCE_DIR/saved_acl2"
+    elif [ -x "$SCRIPT_DIR/../../saved_acl2" ]; then
         ACL2="$SCRIPT_DIR/../../saved_acl2"
     elif command -v acl2 &> /dev/null; then
         ACL2="acl2"
     else
         echo "Error: Cannot find ACL2 executable." >&2
-        echo "Set the ACL2 environment variable or add acl2 to your PATH." >&2
+        echo "Set the ACL2 or ACL2_HOME environment variable." >&2
         exit 1
     fi
 fi
 
 # Determine system books directory
 if [ -z "$ACL2_SYSTEM_BOOKS" ]; then
-    # Assume we're in books/build2
-    ACL2_SYSTEM_BOOKS="$(cd "$SCRIPT_DIR/.." && pwd)"
+    ACL2_SYSTEM_BOOKS="$ACL2_SOURCE_DIR/books"
 fi
 export ACL2_SYSTEM_BOOKS
+
+# Export ACL2 source directory for the Lisp code
+export ACL2_SOURCE_DIR="$ACL2_SOURCE_DIR"
 
 # Disable ACL2 customization
 export ACL2_CUSTOMIZATION=NONE
@@ -50,7 +65,7 @@ read -r -d '' ACL2_SCRIPT << 'ENDSCRIPT' || true
 :q
 (defpackage "BUILD2" (:use "COMMON-LISP"))
 (cl:load "SCRIPT_DIR/cert2.lsp")
-(let ((exit-code (build2::build2-cli-fn 'ARGS_PLACEHOLDER "ACL2_PATH" "BOOKS_DIR")))
+(let ((exit-code (build2::build2-cli-fn 'ARGS_PLACEHOLDER "ACL2_PATH" "BOOKS_DIR" "SOURCE_DIR")))
   (sb-ext:exit :code (or exit-code 1)))
 ENDSCRIPT
 
@@ -59,6 +74,7 @@ ACL2_SCRIPT="${ACL2_SCRIPT//SCRIPT_DIR/$SCRIPT_DIR}"
 ACL2_SCRIPT="${ACL2_SCRIPT//ARGS_PLACEHOLDER/$LISP_ARGS}"
 ACL2_SCRIPT="${ACL2_SCRIPT//ACL2_PATH/$ACL2}"
 ACL2_SCRIPT="${ACL2_SCRIPT//BOOKS_DIR/$ACL2_SYSTEM_BOOKS}"
+ACL2_SCRIPT="${ACL2_SCRIPT//SOURCE_DIR/$ACL2_SOURCE_DIR}"
 
 # Run ACL2 with the script on stdin
 echo "$ACL2_SCRIPT" | exec "$ACL2"

@@ -432,27 +432,27 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">hons</h1>
-    <div class="path"><a href="hons.lisp" class="source-link">/workspaces/acl2/hons</a></div>
+    <div class="path"><a href="hons.lisp" class="source-link">hons</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block macro" id="def-defn" data-defines="DEFN" data-references="T,XARGS,DECLARE,DEFUN,QUASIQUOTE,R,&REST,A,F,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DEFN">defn</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defn" data-sym="DEFN" title="(defmacro defn (f a &amp;rest r) `(defun ,f ,a (declare (xargs :guard t)) ,@r))">defn</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defn" data-sym="DEFN" title="(defmacro defn (f a &amp;rest r) `(defun ,f ,a (declare (xargs :guard t)) ,@r))">defn</a>
   (f a &amp;rest r)
-  `(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> ,F ,A (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)) ,@R))</pre>
+  `(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> ,F ,A (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)) ,@R))</pre>
   </div>
 
 <div class="form-block macro" id="def-defnd" data-defines="DEFND" data-references="T,XARGS,DECLARE,DEFUND,QUASIQUOTE,R,&REST,A,F,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DEFND">defnd</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defnd" data-sym="DEFND" title="(defmacro defnd (f a &amp;rest r) `(defund ,f ,a (declare (xargs :guard t)) ,@r))">defnd</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defnd" data-sym="DEFND" title="(defmacro defnd (f a &amp;rest r) `(defund ,f ,a (declare (xargs :guard t)) ,@r))">defnd</a>
   (f a &amp;rest r)
-  `(defund ,F ,A (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)) ,@R))</pre>
+  `(defund ,F ,A (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)) ,@R))</pre>
   </div>
 
 <div class="form-block other" id="form-3" typeof="Code">
@@ -468,9 +468,9 @@ pre.code {
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-defn" data-sym="DEFN" title="(defmacro defn (f a &amp;rest r) `(defun ,f ,a (declare (xargs :guard t)) ,@r))">defn</a> hons-assoc-equal
   (key alist)
   (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span>))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> alist) nil)
-    ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (consp (car alist)) (hons-equal key (<a class="sym-link system" href="../../../axioms.html#def-caar" data-sym="CAAR">caar</a> alist))) (car alist))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (hons-assoc-equal key (cdr alist)))))</pre>
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> alist) nil)
+    ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (consp (car alist)) (hons-equal key (<a class="sym-link system" href="axioms.html#def-caar" data-sym="CAAR">caar</a> alist))) (car alist))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (hons-assoc-equal key (cdr alist)))))</pre>
   </div>
 
 <div class="form-block other" id="form-5" typeof="Code">
@@ -491,7 +491,7 @@ pre.code {
 
 <div class="form-block macro" id="def-fast-alist-free-on-exit-raw" data-defines="FAST-ALIST-FREE-ON-EXIT-RAW" data-references="IGNORE,DECLARE,FORM,ALIST,DEFMACRO" data-used-by="FAST-ALIST-FREE-ON-EXIT" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="FAST-ALIST-FREE-ON-EXIT-RAW">fast-alist-free-on-exit-raw</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-fast-alist-free-on-exit-raw" data-sym="FAST-ALIST-FREE-ON-EXIT-RAW" title="(defmacro fast-alist-free-on-exit-raw (alist form)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-fast-alist-free-on-exit-raw" data-sym="FAST-ALIST-FREE-ON-EXIT-RAW" title="(defmacro fast-alist-free-on-exit-raw (alist form)
   (declare (ignore alist))
   form)">fast-alist-free-on-exit-raw</a>
   (alist form)
@@ -509,10 +509,10 @@ pre.code {
 
 <div class="form-block macro" id="def-fast-alist-free-on-exit" data-defines="FAST-ALIST-FREE-ON-EXIT" data-references="FAST-ALIST-FREE-ON-EXIT-RAW,QUOTE,RETURN-LAST,QUASIQUOTE,FORM,ALIST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="FAST-ALIST-FREE-ON-EXIT">fast-alist-free-on-exit</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-fast-alist-free-on-exit" data-sym="FAST-ALIST-FREE-ON-EXIT" title="(defmacro fast-alist-free-on-exit (alist form)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-fast-alist-free-on-exit" data-sym="FAST-ALIST-FREE-ON-EXIT" title="(defmacro fast-alist-free-on-exit (alist form)
   `(return-last &#39;fast-alist-free-on-exit-raw ,alist ,form))">fast-alist-free-on-exit</a>
   (alist form)
-  `(<a class="sym-link system" href="../../../axioms.html#def-return-last" data-sym="RETURN-LAST">return-last</a> '<a class="sym-link local-def" href="#def-fast-alist-free-on-exit-raw" data-sym="FAST-ALIST-FREE-ON-EXIT-RAW" title="(defmacro fast-alist-free-on-exit-raw (alist form)
+  `(<a class="sym-link system" href="axioms.html#def-return-last" data-sym="RETURN-LAST">return-last</a> '<a class="sym-link local-def" href="#def-fast-alist-free-on-exit-raw" data-sym="FAST-ALIST-FREE-ON-EXIT-RAW" title="(defmacro fast-alist-free-on-exit-raw (alist form)
   (declare (ignore alist))
   form)">fast-alist-free-on-exit-raw</a> ,ALIST ,FORM))</pre>
   </div>
@@ -564,7 +564,7 @@ pre.code {
 
 <div class="form-block macro" id="def-hons-resize" data-defines="HONS-RESIZE" data-references="HONS-RESIZE-FN,QUASIQUOTE,PERSIST-HT,FAL-HT,SBITS,OTHER-HT,ADDR-HT,CDR-HT-EQL,CDR-HT,NIL-HT,STR-HT,&KEY,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="HONS-RESIZE">hons-resize</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-hons-resize" data-sym="HONS-RESIZE" title="(defmacro hons-resize
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-hons-resize" data-sym="HONS-RESIZE" title="(defmacro hons-resize
           (
            &amp;key str-ht nil-ht cdr-ht cdr-ht-eql addr-ht other-ht sbits fal-ht
            persist-ht)
@@ -614,18 +614,18 @@ pre.code {
 
 <div class="form-block other" id="form-21" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> hons 'slow-alist-warning <span class="keyword">:break</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> hons 'slow-alist-warning <span class="keyword">:break</span>)</pre>
   </div>
 
 <div class="form-block macro" id="def-set-slow-alist-action" data-defines="SET-SLOW-ALIST-ACTION" data-references="SLOW-ALIST-WARNING,QUOTE,HONS,TABLE,QUASIQUOTE,NOT,EQ,OR,XARGS,DECLARE,ACTION,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SET-SLOW-ALIST-ACTION">set-slow-alist-action</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-set-slow-alist-action" data-sym="SET-SLOW-ALIST-ACTION" title="(defmacro set-slow-alist-action (action)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-set-slow-alist-action" data-sym="SET-SLOW-ALIST-ACTION" title="(defmacro set-slow-alist-action (action)
   (declare
    (xargs :guard (or (eq action :warning) (eq action :break) (not action))))
   `(table hons &#39;slow-alist-warning ,action))">set-slow-alist-action</a>
   (action)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> action <span class="keyword">:warning</span>) (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> action <span class="keyword">:break</span>) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> action))))
-  `(<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> hons 'slow-alist-warning ,ACTION))</pre>
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> action <span class="keyword">:warning</span>) (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> action <span class="keyword">:break</span>) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> action))))
+  `(<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> hons 'slow-alist-warning ,ACTION))</pre>
   </div>
 
 <div class="form-block other" id="form-23" typeof="Code">
@@ -644,10 +644,10 @@ pre.code {
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-defn" data-sym="DEFN" title="(defmacro defn (f a &amp;rest r) `(defun ,f ,a (declare (xargs :guard t)) ,@r))">defn</a> fast-alist-fork
   (alist ans)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> alist) ans)
-    ((<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> (car alist)) (fast-alist-fork (cdr alist) ans))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> alist) ans)
+    ((<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> (car alist)) (fast-alist-fork (cdr alist) ans))
     ((hons-assoc-equal (car (car alist)) ans) (fast-alist-fork (cdr alist) ans))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (fast-alist-fork (cdr alist) (cons (car alist) ans)))))</pre>
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (fast-alist-fork (cdr alist) (cons (car alist) ans)))))</pre>
   </div>
 
 <div class="form-block other" id="form-26" typeof="Code">
@@ -659,26 +659,26 @@ pre.code {
 
 <div class="form-block macro" id="def-hons-shrink-alist" data-defines="HONS-SHRINK-ALIST" data-references="FAST-ALIST-FORK,QUASIQUOTE,ANS,ALIST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="HONS-SHRINK-ALIST">hons-shrink-alist</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-hons-shrink-alist" data-sym="HONS-SHRINK-ALIST" title="(defmacro hons-shrink-alist (alist ans) `(fast-alist-fork ,alist ,ans))">hons-shrink-alist</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-hons-shrink-alist" data-sym="HONS-SHRINK-ALIST" title="(defmacro hons-shrink-alist (alist ans) `(fast-alist-fork ,alist ,ans))">hons-shrink-alist</a>
   (alist ans)
   `(fast-alist-fork ,ALIST ,ANS))</pre>
   </div>
 
 <div class="form-block macro" id="def-hons-shrink-alist_21" data-defines="HONS-SHRINK-ALIST!" data-references="FAST-ALIST-FORK!,QUASIQUOTE,ANS,ALIST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="HONS-SHRINK-ALIST!">hons-shrink-alist!</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-hons-shrink-alist_21" data-sym="HONS-SHRINK-ALIST!" title="(defmacro hons-shrink-alist! (alist ans) `(fast-alist-fork! ,alist ,ans))">hons-shrink-alist!</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-hons-shrink-alist_21" data-sym="HONS-SHRINK-ALIST!" title="(defmacro hons-shrink-alist! (alist ans) `(fast-alist-fork! ,alist ,ans))">hons-shrink-alist!</a>
   (alist ans)
   `(fast-alist-fork! ,ALIST ,ANS))</pre>
   </div>
 
 <div class="form-block other" id="form-29" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> <a class="sym-link local-def" href="#def-hons-shrink-alist" data-sym="HONS-SHRINK-ALIST" title="(defmacro hons-shrink-alist (alist ans) `(fast-alist-fork ,alist ,ans))">hons-shrink-alist</a> fast-alist-fork)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> <a class="sym-link local-def" href="#def-hons-shrink-alist" data-sym="HONS-SHRINK-ALIST" title="(defmacro hons-shrink-alist (alist ans) `(fast-alist-fork ,alist ,ans))">hons-shrink-alist</a> fast-alist-fork)</pre>
   </div>
 
 <div class="form-block other" id="form-30" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> <a class="sym-link local-def" href="#def-hons-shrink-alist_21" data-sym="HONS-SHRINK-ALIST!" title="(defmacro hons-shrink-alist! (alist ans) `(fast-alist-fork! ,alist ,ans))">hons-shrink-alist!</a> fast-alist-fork!)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-alias" data-sym="ADD-MACRO-ALIAS">add-macro-alias</a> <a class="sym-link local-def" href="#def-hons-shrink-alist_21" data-sym="HONS-SHRINK-ALIST!" title="(defmacro hons-shrink-alist! (alist ans) `(fast-alist-fork! ,alist ,ans))">hons-shrink-alist!</a> fast-alist-fork!)</pre>
   </div>
 
 <div class="form-block other" id="form-31" typeof="Code">
@@ -687,7 +687,7 @@ pre.code {
   (alist)
   (fast-alist-fork alist
     (if (consp alist)
-      (cdr (<a class="sym-link system" href="../../../axioms.html#def-last" data-sym="LAST">last</a> alist))
+      (cdr (<a class="sym-link system" href="axioms.html#def-last" data-sym="LAST">last</a> alist))
       alist)))</pre>
   </div>
 
@@ -700,7 +700,7 @@ pre.code {
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-defn" data-sym="DEFN" title="(defmacro defn (f a &amp;rest r) `(defun ,f ,a (declare (xargs :guard t)) ,@r))">defn</a> fast-alist-len
   (alist)
-  (<a class="sym-link system" href="../../../axioms.html#def-len" data-sym="LEN">len</a> (fast-alist-fork alist nil)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-len" data-sym="LEN">len</a> (fast-alist-fork alist nil)))</pre>
   </div>
 
 <div class="form-block other" id="form-34" typeof="Code">
@@ -710,7 +710,7 @@ pre.code {
 
 <div class="form-block macro" id="def-with-fast-alist-raw" data-defines="WITH-FAST-ALIST-RAW" data-references="IGNORE,DECLARE,FORM,ALIST,DEFMACRO" data-used-by="WITH-FAST-ALIST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="WITH-FAST-ALIST-RAW">with-fast-alist-raw</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-fast-alist-raw" data-sym="WITH-FAST-ALIST-RAW" title="(defmacro with-fast-alist-raw (alist form) (declare (ignore alist)) form)">with-fast-alist-raw</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-fast-alist-raw" data-sym="WITH-FAST-ALIST-RAW" title="(defmacro with-fast-alist-raw (alist form) (declare (ignore alist)) form)">with-fast-alist-raw</a>
   (alist form)
   (declare (ignore alist))
   form)</pre>
@@ -718,15 +718,15 @@ pre.code {
 
 <div class="form-block macro" id="def-with-fast-alist" data-defines="WITH-FAST-ALIST" data-references="WITH-FAST-ALIST-RAW,QUOTE,RETURN-LAST,QUASIQUOTE,FORM,ALIST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="WITH-FAST-ALIST">with-fast-alist</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-fast-alist" data-sym="WITH-FAST-ALIST" title="(defmacro with-fast-alist (alist form)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-fast-alist" data-sym="WITH-FAST-ALIST" title="(defmacro with-fast-alist (alist form)
   `(return-last &#39;with-fast-alist-raw ,alist ,form))">with-fast-alist</a>
   (alist form)
-  `(<a class="sym-link system" href="../../../axioms.html#def-return-last" data-sym="RETURN-LAST">return-last</a> '<a class="sym-link local-def" href="#def-with-fast-alist-raw" data-sym="WITH-FAST-ALIST-RAW" title="(defmacro with-fast-alist-raw (alist form) (declare (ignore alist)) form)">with-fast-alist-raw</a> ,ALIST ,FORM))</pre>
+  `(<a class="sym-link system" href="axioms.html#def-return-last" data-sym="RETURN-LAST">return-last</a> '<a class="sym-link local-def" href="#def-with-fast-alist-raw" data-sym="WITH-FAST-ALIST-RAW" title="(defmacro with-fast-alist-raw (alist form) (declare (ignore alist)) form)">with-fast-alist-raw</a> ,ALIST ,FORM))</pre>
   </div>
 
 <div class="form-block macro" id="def-with-stolen-alist-raw" data-defines="WITH-STOLEN-ALIST-RAW" data-references="IGNORE,DECLARE,FORM,ALIST,DEFMACRO" data-used-by="WITH-STOLEN-ALIST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="WITH-STOLEN-ALIST-RAW">with-stolen-alist-raw</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-stolen-alist-raw" data-sym="WITH-STOLEN-ALIST-RAW" title="(defmacro with-stolen-alist-raw (alist form) (declare (ignore alist)) form)">with-stolen-alist-raw</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-stolen-alist-raw" data-sym="WITH-STOLEN-ALIST-RAW" title="(defmacro with-stolen-alist-raw (alist form) (declare (ignore alist)) form)">with-stolen-alist-raw</a>
   (alist form)
   (declare (ignore alist))
   form)</pre>
@@ -734,27 +734,27 @@ pre.code {
 
 <div class="form-block macro" id="def-with-stolen-alist" data-defines="WITH-STOLEN-ALIST" data-references="WITH-STOLEN-ALIST-RAW,QUOTE,RETURN-LAST,QUASIQUOTE,FORM,ALIST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="WITH-STOLEN-ALIST">with-stolen-alist</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-stolen-alist" data-sym="WITH-STOLEN-ALIST" title="(defmacro with-stolen-alist (alist form)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-stolen-alist" data-sym="WITH-STOLEN-ALIST" title="(defmacro with-stolen-alist (alist form)
   `(return-last &#39;with-stolen-alist-raw ,alist ,form))">with-stolen-alist</a>
   (alist form)
-  `(<a class="sym-link system" href="../../../axioms.html#def-return-last" data-sym="RETURN-LAST">return-last</a> '<a class="sym-link local-def" href="#def-with-stolen-alist-raw" data-sym="WITH-STOLEN-ALIST-RAW" title="(defmacro with-stolen-alist-raw (alist form) (declare (ignore alist)) form)">with-stolen-alist-raw</a> ,ALIST ,FORM))</pre>
+  `(<a class="sym-link system" href="axioms.html#def-return-last" data-sym="RETURN-LAST">return-last</a> '<a class="sym-link local-def" href="#def-with-stolen-alist-raw" data-sym="WITH-STOLEN-ALIST-RAW" title="(defmacro with-stolen-alist-raw (alist form) (declare (ignore alist)) form)">with-stolen-alist-raw</a> ,ALIST ,FORM))</pre>
   </div>
 
 <div class="form-block other" id="form-39" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-defn" data-sym="DEFN" title="(defmacro defn (f a &amp;rest r) `(defun ,f ,a (declare (xargs :guard t)) ,@r))">defn</a> cons-subtrees
   (x al)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-atom" data-sym="ATOM">atom</a> x) al)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-atom" data-sym="ATOM">atom</a> x) al)
     ((hons-get x al) al)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (cons-subtrees (car x)
-        (cons-subtrees (cdr x) (hons-acons x <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> al))))))</pre>
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (cons-subtrees (car x)
+        (cons-subtrees (cdr x) (hons-acons x <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> al))))))</pre>
   </div>
 
 <div class="form-block other" id="form-40" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(<a class="sym-link local-def" href="#def-defn" data-sym="DEFN" title="(defmacro defn (f a &amp;rest r) `(defun ,f ,a (declare (xargs :guard t)) ,@r))">defn</a> number-subtrees
   (x)
-  (<a class="sym-link system" href="../../../axioms.html#def-len" data-sym="LEN">len</a> (cons-subtrees x 'number-subtrees)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-len" data-sym="LEN">len</a> (cons-subtrees x 'number-subtrees)))</pre>
   </div>
 
 <div class="form-block other" id="form-41" typeof="Code">
@@ -766,7 +766,7 @@ pre.code {
 
 <div class="form-block in-theory" id="form-42" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:executable-counterpart</span> hons)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:executable-counterpart</span> hons)
     (<span class="keyword">:executable-counterpart</span> hons-copy)
     (<span class="keyword">:executable-counterpart</span> hons-copy-persistent)
     (<span class="keyword">:executable-counterpart</span> hons-summary)
@@ -790,21 +790,21 @@ pre.code {
 
 <div class="form-block function" id="def-remove-keyword" data-defines="REMOVE-KEYWORD" data-references="CADR,LIST*,T,CDDR,CAR,EQ,ENDP,COND,KEYWORD-VALUE-LISTP,KEYWORDP,AND,XARGS,DECLARE,L,WORD,DEFUN" data-part-name="REMOVE-KEYWORD" data-part-args="L,WORD" data-part-declare="L,KEYWORD-VALUE-LISTP,WORD,KEYWORDP,AND,XARGS,DECLARE" data-part-body="CADR,LIST*,T,CDDR,REMOVE-KEYWORD,CAR,WORD,EQ,L,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="REMOVE-KEYWORD">remove-keyword</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-remove-keyword" data-sym="REMOVE-KEYWORD" title="(defun remove-keyword (word l)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-remove-keyword" data-sym="REMOVE-KEYWORD" title="(defun remove-keyword (word l)
   (declare (xargs :guard (and (keywordp word) (keyword-value-listp l))))
   (cond ((endp l) nil) ((eq word (car l)) (remove-keyword word (cddr l)))
         (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))">remove-keyword</a>
   (word l)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-keywordp" data-sym="KEYWORDP">keywordp</a> word) (<a class="sym-link system" href="../../../axioms.html#def-keyword-value-listp" data-sym="KEYWORD-VALUE-LISTP">keyword-value-listp</a> l))))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> l) nil)
-    ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> word (car l)) (<a class="sym-link local-def" href="#def-remove-keyword" data-sym="REMOVE-KEYWORD" title="(defun remove-keyword (word l)
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-keywordp" data-sym="KEYWORDP">keywordp</a> word) (<a class="sym-link system" href="axioms.html#def-keyword-value-listp" data-sym="KEYWORD-VALUE-LISTP">keyword-value-listp</a> l))))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> l) nil)
+    ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> word (car l)) (<a class="sym-link local-def" href="#def-remove-keyword" data-sym="REMOVE-KEYWORD" title="(defun remove-keyword (word l)
   (declare (xargs :guard (and (keywordp word) (keyword-value-listp l))))
   (cond ((endp l) nil) ((eq word (car l)) (remove-keyword word (cddr l)))
-        (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))">remove-keyword</a> word (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-remove-keyword" data-sym="REMOVE-KEYWORD" title="(defun remove-keyword (word l)
+        (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))">remove-keyword</a> word (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list_2A" data-sym="LIST*">list*</a> (car l) (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> l) (<a class="sym-link local-def" href="#def-remove-keyword" data-sym="REMOVE-KEYWORD" title="(defun remove-keyword (word l)
   (declare (xargs :guard (and (keywordp word) (keyword-value-listp l))))
   (cond ((endp l) nil) ((eq word (car l)) (remove-keyword word (cddr l)))
-        (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))">remove-keyword</a> word (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
+        (t (list* (car l) (cadr l) (remove-keyword word (cddr l))))))">remove-keyword</a> word (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> l))))))</pre>
   </div>
 
 
