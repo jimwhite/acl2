@@ -27,77 +27,53 @@
   "Hash table of books already certified this session.")
 
 ;;; ============================================================================
-;;; File I/O utilities
+;;; Dependency scanning using proper Lisp reader
 ;;; ============================================================================
 
-(defun read-file-lines (filename)
-  "Read all lines from FILENAME, return as list of strings."
+(defun read-forms-from-file (filename)
+  "Read all Lisp forms from FILENAME using the standard reader.
+   Returns list of forms, or NIL on error."
   (handler-case
       (with-open-file (stream filename :direction :input
                                        :if-does-not-exist nil)
         (when stream
-          (loop for line = (read-line stream nil nil)
-                while line
-                collect line)))
+          (let ((*package* (find-package "ACL2"))
+                (*read-eval* nil))  ; Safety: don't evaluate during read
+            (loop for form = (read stream nil :eof)
+                  until (eq form :eof)
+                  collect form))))
     (error () nil)))
 
-;;; ============================================================================
-;;; Dependency scanning (mirrors scan.lisp logic)
-;;; ============================================================================
-
-(defun find-unescaped-quote (s start)
-  "Find the position of an unescaped double-quote in S starting at START.
-   Returns NIL if not found."
-  (loop for i from start below (length s)
-        when (and (char= (char s i) #\")
-                  (or (zerop i)
-                      (char/= (char s (1- i)) #\\)))
-        return i))
-
-(defun extract-quoted-string-raw (s i)
-  "Extract quoted string from S starting at position I (should be at opening quote).
-   Handles escaped quotes properly."
-  (when (and (< i (length s))
-             (char= (char s i) #\")
-             ;; Make sure it's not an escaped quote
-             (or (zerop i)
-                 (char/= (char s (1- i)) #\\)))
-    (let ((end (find-unescaped-quote s (1+ i))))
-      (when end
-        ;; Return the string contents, handling escape sequences
-        (subseq s (1+ i) end)))))
-
-(defun parse-include-book-raw (line)
-  "Parse an include-book line, return (path localp dir-keyword) or NIL."
-  (let* ((trimmed (string-trim '(#\Space #\Tab) line))
-         (localp (and (>= (length trimmed) 6)
-                      (string-equal "(local" (subseq trimmed 0 6))))
-         (work (if localp
-                   (string-trim '(#\Space #\Tab) 
-                                (subseq trimmed 6 (length trimmed)))
-                 trimmed)))
-    ;; Check for (include-book
-    (when (and (>= (length work) 13)
-               (string-equal "(include-book" (subseq work 0 13)))
-      (let ((quote-pos (find-unescaped-quote work 0)))
-        (when quote-pos
-          (let ((name (extract-quoted-string-raw work quote-pos)))
-            (when name
-              ;; Check for :dir keyword
-              (let* ((after-name (+ quote-pos 2 (length name)))
-                     (rest (if (< after-name (length work))
-                               (subseq work after-name)
-                             ""))
-                     (dir-system (search ":dir :system" rest :test #'char-equal)))
-                (list name localp (if dir-system :system nil))))))))))))
+(defun extract-include-books (form)
+  "Extract include-book info from FORM. Returns list of (path localp dir-keyword)."
+  (when (consp form)
+    (case (car form)
+      ;; Direct include-book
+      (acl2::include-book
+       (when (and (cdr form) (stringp (cadr form)))
+         (let* ((path (cadr form))
+                (rest (cddr form))
+                (dir-pos (position :dir rest))
+                (dir-val (and dir-pos (nth (1+ dir-pos) rest))))
+           (list (list path nil (when (eq dir-val :system) :system))))))
+      ;; Local wrapper
+      (acl2::local
+       (when (cdr form)
+         (let ((inner-results (extract-include-books (cadr form))))
+           ;; Mark all as local
+           (mapcar (lambda (r) (list (first r) t (third r))) inner-results))))
+      ;; Recurse into progn, encapsulate, etc.
+      ((acl2::progn acl2::encapsulate)
+       (loop for subform in (cdr form)
+             append (extract-include-books subform)))
+      (otherwise nil))))
 
 (defun scan-file-for-deps (filename)
-  "Scan FILENAME for include-book dependencies.
+  "Scan FILENAME for include-book dependencies using Lisp reader.
    Returns list of (path localp dir-keyword)."
-  (let ((lines (read-file-lines filename)))
-    (loop for line in lines
-          for parsed = (parse-include-book-raw line)
-          when parsed collect parsed)))
+  (let ((forms (read-forms-from-file filename)))
+    (loop for form in forms
+          append (extract-include-books form))))
 
 ;;; ============================================================================
 ;;; Path resolution
