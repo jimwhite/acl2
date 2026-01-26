@@ -1,0 +1,64 @@
+#!/bin/bash
+# cert2 - ACL2 Book Certification System
+# Copyright (C) 2026
+#
+# License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+
+# This script invokes ACL2 with the build2 system to certify books.
+
+set -e
+
+# Find the directory containing this script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Determine ACL2 executable
+if [ -z "$ACL2" ]; then
+    # Try to find ACL2 in common locations
+    if [ -x "$SCRIPT_DIR/../../saved_acl2" ]; then
+        ACL2="$SCRIPT_DIR/../../saved_acl2"
+    elif command -v acl2 &> /dev/null; then
+        ACL2="acl2"
+    else
+        echo "Error: Cannot find ACL2 executable." >&2
+        echo "Set the ACL2 environment variable or add acl2 to your PATH." >&2
+        exit 1
+    fi
+fi
+
+# Determine system books directory
+if [ -z "$ACL2_SYSTEM_BOOKS" ]; then
+    # Assume we're in books/build2
+    ACL2_SYSTEM_BOOKS="$(cd "$SCRIPT_DIR/.." && pwd)"
+fi
+export ACL2_SYSTEM_BOOKS
+
+# Disable ACL2 customization
+export ACL2_CUSTOMIZATION=NONE
+
+# Build the argument list as a Lisp list
+LISP_ARGS="("
+for arg in "$@"; do
+    # Escape double quotes in arguments
+    escaped_arg=$(printf '%s' "$arg" | sed 's/"/\\"/g')
+    LISP_ARGS="$LISP_ARGS\"$escaped_arg\" "
+done
+LISP_ARGS="$LISP_ARGS)"
+
+# Create the ACL2 script that runs in raw Lisp mode
+# We use :q to drop into raw Lisp, then load our code
+read -r -d '' ACL2_SCRIPT << 'ENDSCRIPT' || true
+:q
+(defpackage "BUILD2" (:use "COMMON-LISP"))
+(cl:load "SCRIPT_DIR/cert2.lsp")
+(let ((exit-code (build2::build2-cli-fn 'ARGS_PLACEHOLDER "ACL2_PATH" "BOOKS_DIR")))
+  (sb-ext:exit :code (or exit-code 1)))
+ENDSCRIPT
+
+# Replace placeholders
+ACL2_SCRIPT="${ACL2_SCRIPT//SCRIPT_DIR/$SCRIPT_DIR}"
+ACL2_SCRIPT="${ACL2_SCRIPT//ARGS_PLACEHOLDER/$LISP_ARGS}"
+ACL2_SCRIPT="${ACL2_SCRIPT//ACL2_PATH/$ACL2}"
+ACL2_SCRIPT="${ACL2_SCRIPT//BOOKS_DIR/$ACL2_SYSTEM_BOOKS}"
+
+# Run ACL2 with the script on stdin
+echo "$ACL2_SCRIPT" | exec "$ACL2"

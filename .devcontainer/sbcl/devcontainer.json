@@ -1,0 +1,13 @@
+{
+    "image": "mcr.microsoft.com/devcontainers/base:alpine",
+    "features": {
+        "ghcr.io/egao1980/features/roswell:1": {
+            "version": "latest"
+        }
+    },
+    "containerEnv": {
+        "ACL2_LISP": "sbcl",
+        "ACL2_HOME": "/workspaces/acl2",
+        "ACL2_SYSTEM_BOOKS": "/workspaces/acl2/books"
+    }
+}

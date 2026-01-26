@@ -1,0 +1,27 @@
+{
+    "name": "ACL2 Dev in Jupyter",
+    // "image": "quay.io/jupyter/minimal-notebook:latest",
+    // "image": "ghcr.io/jimwhite/acl2:latest",
+    "build": {
+        "dockerfile": "../../Dockerfile",
+        "context": "../.."
+    },
+    "forwardPorts": [
+        8888
+    ],
+    "portsAttributes": {
+        "8888": {
+            "label": "Jupyter",
+            "requireLocalPort": true
+        }
+    },
+    "containerEnv": {
+        "USER": "jovyan",
+        "JUPYTER_PORT": "8888",
+        "RESTARTABLE": "yes",
+        "ACL2_LISP": "sbcl",
+        "ACL2": "/workspaces/acl2/saved_acl2",
+        "ACL2_HOME": "/workspaces/acl2",
+        "ACL2_SYSTEM_BOOKS": "/workspaces/acl2/books"
+    }
+}

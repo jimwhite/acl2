@@ -1,0 +1,8 @@
+; Portcullis.lisp certification customization
+; Copyright (C) 2026
+
+; Load std's package first
+(ld "std/package.lsp" :dir :system)
+
+; Then load our package
+(ld "package.lsp")

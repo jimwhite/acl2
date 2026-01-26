@@ -1,0 +1,1571 @@
+; ACL2 Build2 System - CLI Entry Point
+; Copyright (C) 2026
+;
+; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
+;
+; This file is loaded directly by the cert2 shell script in raw Lisp mode.
+
+(in-package "BUILD2")
+
+;;; ============================================================================
+;;; HTML Documentation Generation
+;;; ============================================================================
+;;;
+;;; Generates interactive HTML documentation for ACL2 books with:
+;;; - Syntax highlighting and hyperlinked names
+;;; - Semantic Web annotations (RDFa)
+;;; - Interactive filtering: click on parts of defthm to see only referenced items
+;;; - Cross-file navigation via relative links
+;;;
+
+;;; ============================================================================
+;;; Global configuration
+;;; ============================================================================
+
+(defvar *acl2-executable* nil
+  "Path to ACL2 executable, set by shell script.")
+
+(defvar *system-books-dir* nil
+  "Path to ACL2 system books directory.")
+
+(defvar *acl2-source-dir* nil
+  "Path to ACL2 source directory (parent of books).")
+
+(defvar *verbose* nil
+  "Verbose output flag.")
+
+(defvar *certifying* (make-hash-table :test 'equal)
+  "Hash table tracking books currently being certified (cycle detection).")
+
+(defvar *certified* (make-hash-table :test 'equal)
+  "Hash table of books already certified this session.")
+
+(defvar *generate-html* t
+  "Whether to generate HTML documentation during certification.")
+
+(defvar *acl2-system-index* nil
+  "Hash table of ACL2 system definitions (from axioms.lisp, etc.).
+   Maps symbol-name -> file-basename (e.g., 'axioms').")
+
+;;; ============================================================================
+;;; Symbol extraction from forms
+;;; ============================================================================
+
+(defun symbolp-acl2 (x)
+  "Check if X is a symbol in any package (not a keyword)."
+  (and (symbolp x) (not (keywordp x))))
+
+(defun collect-symbols (form &optional acc)
+  "Recursively collect all non-keyword symbols from FORM."
+  (cond
+    ((null form) acc)
+    ((symbolp-acl2 form) 
+     (if (member form acc) acc (cons form acc)))
+    ((consp form)
+     (collect-symbols (cdr form) (collect-symbols (car form) acc)))
+    (t acc)))
+
+(defun get-defthm-section (keyword rest)
+  "Get the value associated with KEYWORD from property list REST."
+  (let ((pos (position keyword rest)))
+    (when pos (nth (1+ pos) rest))))
+
+(defun parse-defthm-parts (form)
+  "Parse a defthm FORM into its constituent parts.
+   Returns alist: ((name . sym) (term . form) (hints . form) ...)"
+  (when (and (consp form) 
+             (member (car form) '(acl2::defthm acl2::defthmd)))
+    (let* ((name (cadr form))
+           (term (caddr form))
+           (rest (cdddr form))
+           (hints (get-defthm-section :hints rest))
+           (rule-classes (get-defthm-section :rule-classes rest))
+           (instructions (get-defthm-section :instructions rest))
+           (otf-flg (get-defthm-section :otf-flg rest)))
+      (list (cons :name name)
+            (cons :term term)
+            (cons :hints hints)
+            (cons :rule-classes rule-classes)
+            (cons :instructions instructions)
+            (cons :otf-flg otf-flg)))))
+
+(defun parse-defun-parts (form)
+  "Parse a defun/defund FORM into its constituent parts."
+  (when (and (consp form)
+             (member (car form) '(acl2::defun acl2::defund acl2::defun-sk)))
+    (let* ((name (cadr form))
+           (args (caddr form))
+           (rest (cdddr form))
+           ;; Skip docstrings and declarations to find body
+           (body-rest rest)
+           (decls nil))
+      ;; Collect declares
+      (loop while (and (consp body-rest)
+                       (consp (car body-rest))
+                       (member (caar body-rest) '(declare acl2::declare)))
+            do (push (car body-rest) decls)
+               (setf body-rest (cdr body-rest)))
+      (list (cons :name name)
+            (cons :args args)
+            (cons :declare (nreverse decls))
+            (cons :body (car body-rest))))))
+
+(defun get-form-name (form)
+  "Extract the defined name from a top-level FORM, if any."
+  (when (consp form)
+    (case (car form)
+      ((acl2::defthm acl2::defthmd acl2::defun acl2::defund 
+        acl2::defmacro acl2::defconst acl2::defun-sk
+        acl2::defrule acl2::defabbrev acl2::defaxiom)
+       (cadr form))
+      (acl2::mutual-recursion
+       ;; Return first function name
+       (when (and (cdr form) (consp (cadr form)))
+         (cadadr form)))
+      (acl2::encapsulate
+       ;; Look for first internal defun/defthm
+       (loop for sub in (cddr form)
+             when (and (consp sub) 
+                       (member (car sub) '(acl2::defun acl2::defthm)))
+             return (cadr sub)))
+      (otherwise nil))))
+
+(defun get-form-type (form)
+  "Get the type of definition FORM."
+  (when (consp form)
+    (case (car form)
+      ((acl2::defthm acl2::defthmd acl2::defrule) :theorem)
+      (acl2::defaxiom :axiom)
+      ((acl2::defun acl2::defund acl2::defun-sk) :function)
+      (acl2::defmacro :macro)
+      (acl2::defconst :constant)
+      (acl2::encapsulate :encapsulate)
+      (acl2::mutual-recursion :mutual-recursion)
+      (acl2::include-book :include-book)
+      (acl2::local :local)
+      (acl2::in-theory :in-theory)
+      (otherwise :other))))
+
+;;; ============================================================================
+;;; HTML escaping and formatting
+;;; ============================================================================
+
+(defun html-escape (string)
+  "Escape special HTML characters in STRING."
+  (with-output-to-string (out)
+    (loop for char across string do
+          (case char
+            (#\& (write-string "&amp;" out))
+            (#\< (write-string "&lt;" out))
+            (#\> (write-string "&gt;" out))
+            (#\" (write-string "&quot;" out))
+            (#\' (write-string "&#39;" out))
+            (otherwise (write-char char out))))))
+
+(defun symbol-to-id (sym)
+  "Convert SYMBOL to a valid HTML id string."
+  (let ((name (symbol-name sym)))
+    (with-output-to-string (out)
+      (loop for char across name do
+            (cond
+              ((alphanumericp char) (write-char (char-downcase char) out))
+              ((char= char #\-) (write-char #\- out))
+              ((char= char #\_) (write-char #\_ out))
+              (t (format out "_~2,'0X" (char-code char))))))))
+
+(defun form-to-string (form)
+  "Convert FORM to a pretty-printed string."
+  (let ((*print-case* :downcase)
+        (*print-pretty* t)
+        (*print-right-margin* 80))
+    (with-output-to-string (out)
+      (write form :stream out))))
+
+;;; ============================================================================
+;;; Cross-reference index building  
+;;; ============================================================================
+
+(defstruct xref-entry
+  "Cross-reference entry for a defined name."
+  name           ; The symbol
+  form-type      ; :theorem, :function, etc.
+  file           ; Source file (relative)
+  defined-by     ; List of symbols this definition uses
+  used-by        ; List of symbols that use this definition
+  parts          ; Alist of parts and their symbols for defthm
+  )
+
+(defun clean-relative-path (path)
+  "Remove leading ./ from PATH and clean up any double slashes."
+  (let ((str (if (pathnamep path) (namestring path) path)))
+    ;; Remove leading ./
+    (loop while (and (>= (length str) 2)
+                     (string= (subseq str 0 2) "./"))
+          do (setf str (subseq str 2)))
+    ;; Remove any double slashes
+    (loop for pos = (search "//" str)
+          while pos
+          do (setf str (concatenate 'string
+                                    (subseq str 0 pos)
+                                    (subseq str (1+ pos)))))
+    str))
+
+(defun build-xref-index (forms filename)
+  "Build cross-reference index from FORMS read from FILENAME.
+   Returns hash table: symbol -> xref-entry"
+  (let ((index (make-hash-table :test 'equal)))
+    (dolist (form forms)
+      (let ((name (get-form-name form))
+            (form-type (get-form-type form)))
+        (when name
+          (let* ((all-syms (collect-symbols form))
+                 (parts (or (parse-defthm-parts form)
+                           (parse-defun-parts form)))
+                 (entry (make-xref-entry 
+                         :name name
+                         :form-type form-type
+                         :file filename
+                         :defined-by (remove name all-syms)
+                         :parts (when parts
+                                  (mapcar (lambda (p)
+                                            (cons (car p) (collect-symbols (cdr p))))
+                                          parts)))))
+            (setf (gethash (symbol-name name) index) entry)))))
+    ;; Build used-by relationships
+    (maphash (lambda (name entry)
+               (declare (ignore name))
+               (dolist (sym (xref-entry-defined-by entry))
+                 (let ((target (gethash (symbol-name sym) index)))
+                   (when target
+                     (pushnew (xref-entry-name entry) 
+                              (xref-entry-used-by target))))))
+             index)
+    index))
+
+(defvar *scanned-books* nil
+  "Hash table tracking books already scanned for cross-references to avoid cycles.")
+
+(defun get-book-definitions (book-path)
+  "Read BOOK-PATH.lisp and return list of (symbol-name . relative-path) for definitions."
+  (let ((lisp-file (concatenate 'string (namestring book-path) ".lisp"))
+        (sys-dir (pathname (ensure-trailing-slash *system-books-dir*))))
+    (when (probe-file lisp-file)
+      (let ((forms (read-forms-from-file lisp-file))
+            (relative-path (clean-relative-path (enough-namestring book-path sys-dir))))
+        (when forms
+          (loop for form in forms
+                for name = (get-form-name form)
+                when name
+                collect (cons (symbol-name name) relative-path)))))))
+
+(defun scan-included-books-for-defs (forms book-path index &optional (depth 0))
+  "Scan books included by FORMS for their definitions and add to INDEX.
+   BOOK-PATH is the current book being processed.
+   DEPTH limits recursion to avoid excessive scanning."
+  (when (< depth 3)  ; Limit recursion depth
+    (let* ((book-dir (make-pathname :directory (pathname-directory book-path)))
+           (includes (loop for form in forms append (extract-include-books form))))
+      (dolist (inc includes)
+        (let* ((inc-path (first inc))
+               (dir-kw (third inc))
+               (resolved (resolve-book-path book-dir inc-path dir-kw))
+               (resolved-str (namestring resolved)))
+          ;; Skip if already scanned
+          (unless (gethash resolved-str *scanned-books*)
+            (setf (gethash resolved-str *scanned-books*) t)
+            ;; Get definitions from this book
+            (let ((defs (get-book-definitions resolved)))
+              (dolist (def defs)
+                (let ((sym-name (car def))
+                      (file-path (cdr def)))
+                  ;; Only add if not already in index (local definitions take precedence)
+                  (unless (gethash sym-name index)
+                    (setf (gethash sym-name index)
+                          (make-xref-entry :name (intern sym-name "ACL2")
+                                          :form-type :external
+                                          :file file-path))))))))))))
+
+(defun build-xref-index-with-includes (forms filename book-path)
+  "Build cross-reference index from FORMS, including definitions from included books.
+   Returns hash table: symbol -> xref-entry"
+  (let ((*scanned-books* (make-hash-table :test 'equal))
+        (index (make-hash-table :test 'equal)))
+    ;; First, index local definitions
+    (dolist (form forms)
+      (let ((name (get-form-name form))
+            (form-type (get-form-type form)))
+        (when name
+          (let* ((all-syms (collect-symbols form))
+                 (parts (or (parse-defthm-parts form)
+                           (parse-defun-parts form)))
+                 (entry (make-xref-entry 
+                         :name name
+                         :form-type form-type
+                         :file filename
+                         :defined-by (remove name all-syms)
+                         :parts (when parts
+                                  (mapcar (lambda (p)
+                                            (cons (car p) (collect-symbols (cdr p))))
+                                          parts)))))
+            (setf (gethash (symbol-name name) index) entry)))))
+    ;; Mark current book as scanned
+    (setf (gethash (namestring book-path) *scanned-books*) t)
+    ;; Scan included books for their definitions
+    (scan-included-books-for-defs forms book-path index 0)
+    ;; Build used-by relationships (only for local definitions)
+    (maphash (lambda (name entry)
+               (declare (ignore name))
+               (when (not (eq (xref-entry-form-type entry) :external))
+                 (dolist (sym (xref-entry-defined-by entry))
+                   (let ((target (gethash (symbol-name sym) index)))
+                     (when (and target 
+                                (not (eq (xref-entry-form-type target) :external)))
+                       (pushnew (xref-entry-name entry) 
+                                (xref-entry-used-by target)))))))
+             index)
+    index))
+
+;;; ============================================================================
+;;; HTML generation - Template loading
+;;; ============================================================================
+
+(defvar *build2-dir* nil
+  "Directory containing cert2.lsp and template files.")
+
+(defun read-file-contents (filepath)
+  "Read entire contents of FILEPATH as a string."
+  (with-open-file (stream filepath :direction :input)
+    (let ((contents (make-string (file-length stream))))
+      (read-sequence contents stream)
+      contents)))
+
+(defun get-template-path (filename)
+  "Get path to template file FILENAME in build2 directory."
+  (let ((dir-str (namestring *build2-dir*)))
+    ;; Ensure directory ends with /
+    (unless (and (> (length dir-str) 0)
+                 (char= (char dir-str (1- (length dir-str))) #\/))
+      (setf dir-str (concatenate 'string dir-str "/")))
+    (pathname (concatenate 'string dir-str filename))))
+
+(defun generate-css ()
+  "Load CSS from external file."
+  (let ((css-file (get-template-path "cert2.css")))
+    (if (probe-file css-file)
+        (format nil "~%<style>~%~A~%</style>~%" (read-file-contents css-file))
+      ;; Fallback minimal CSS if file not found
+      "<style>body{font-family:monospace;}</style>")))
+
+(defun generate-javascript ()
+  "Load JavaScript from external file."
+  (let ((js-file (get-template-path "cert2.js")))
+    (if (probe-file js-file)
+        (format nil "~%<script>~%~A~%</script>~%" (read-file-contents js-file))
+      ;; Fallback: no JS if file not found
+      "")))
+
+(defun generate-html-header (book-name relative-path)
+  "Generate HTML header for a book."
+  (format nil "<!DOCTYPE html>
+<html lang=\"en\" vocab=\"http://schema.org/\" typeof=\"SoftwareSourceCode\">
+<head>
+  <meta charset=\"UTF-8\">
+  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
+  <title>~A - ACL2 Book</title>
+  <meta property=\"name\" content=\"~A\">
+  <meta property=\"programmingLanguage\" content=\"ACL2\">
+  ~A
+</head>
+<body>
+  <div class=\"controls-left\">
+    <input type=\"text\" id=\"name-filter\" class=\"name-filter\" placeholder=\"Filter by name...\" title=\"Filter definitions by name\">
+    <label class=\"regex-label\"><input type=\"checkbox\" id=\"regex-toggle\"> regex</label>
+  </div>
+
+  <div class=\"controls-right\">
+    <button class=\"control-btn\" id=\"theme-toggle\" title=\"Toggle light/dark theme\">☀️</button>
+    <button class=\"control-btn\" id=\"font-smaller\" title=\"Decrease font size\">A-</button>
+    <button class=\"control-btn\" id=\"font-larger\" title=\"Increase font size\">A+</button>
+  </div>
+
+  <div class=\"filter-status\">
+    <span class=\"filter-text\">Filtering...</span>
+    <button class=\"clear-filter\">Clear Filter</button>
+  </div>
+  
+  <div class=\"book-header\">
+    <h1 property=\"name\">~A</h1>
+    <div class=\"path\"><a href=\"~A.lisp\" class=\"source-link\">~A</a></div>
+  </div>
+  
+  <main property=\"text\">
+" (html-escape book-name) (html-escape book-name)
+  (generate-css)
+  (html-escape book-name)
+  (html-escape (pathname-name (pathname relative-path)))
+  (html-escape relative-path)))
+
+(defun generate-html-footer ()
+  "Generate HTML footer."
+  (format nil "
+  </main>
+  ~A
+</body>
+</html>" (generate-javascript)))
+
+(defun get-definition-snippet (entry &optional (max-lines 5))
+  "Get the first MAX-LINES lines of a definition for tooltip.
+   Returns HTML-escaped string."
+  (declare (ignore entry max-lines))
+  ;; We'll compute this when generating form HTML and store it
+  nil)
+
+(defvar *definition-snippets* nil
+  "Hash table mapping symbol names to their definition snippets for tooltips.")
+
+(defun get-first-n-lines (str max-lines)
+  "Get first MAX-LINES lines from STR."
+  (handler-case
+    (let ((lines nil)
+          (start 0)
+          (count 0))
+      (loop while (and (< count max-lines) (< start (length str)))
+            for end = (position #\Newline str :start start)
+            do (push (subseq str start (or end (length str))) lines)
+               (incf count)
+               (setf start (if end (1+ end) (length str))))
+      (let ((result (nreverse lines)))
+        (if (and (< count (count #\Newline str)) (> (length result) 0))
+            (format nil "~{~A~^~%~}~%..." result)
+          (format nil "~{~A~^~%~}" result))))
+    (error () "")))
+
+(defun build-system-index-from-file (lisp-file file-basename)
+  "Extract definition names from LISP-FILE and add to *acl2-system-index*.
+   FILE-BASENAME is the name without extension (e.g., 'axioms')."
+  (let ((forms (read-forms-from-file lisp-file)))
+    (when forms
+      (dolist (form forms)
+        (handler-case
+          (let ((name (get-form-name form)))
+            (when name
+              (setf (gethash (symbol-name name) *acl2-system-index*) file-basename)))
+          (error () nil))))))
+
+(defun build-acl2-system-index ()
+  "Build index of ACL2 system definitions from source files.
+   Should be called before generating HTML for books."
+  (when (and *acl2-source-dir* (null *acl2-system-index*))
+    (setf *acl2-system-index* (make-hash-table :test 'equal))
+    (let* ((src-dir (namestring *acl2-source-dir*))
+           (src-dir-slash (if (char= (char src-dir (1- (length src-dir))) #\/)
+                              src-dir
+                            (concatenate 'string src-dir "/"))))
+      ;; Key files with definitions
+      (dolist (basename '("axioms" "basis-a" "basis-b" "defthm" "defuns" 
+                          "rewrite" "prove" "history-management"))
+        (let ((lisp-file (concatenate 'string src-dir-slash basename ".lisp")))
+          (when (probe-file lisp-file)
+            (when *verbose*
+              (format t "  Indexing system file: ~A~%" basename))
+            (build-system-index-from-file lisp-file basename))))
+      (when *verbose*
+        (format t "  System index: ~A definitions~%" (hash-table-count *acl2-system-index*))))))
+
+(defun compute-definition-snippets (forms &optional (max-lines 5))
+  "Compute tooltip snippets for all definitions in FORMS.
+   Returns hash table: symbol-name -> snippet string."
+  (let ((snippets (make-hash-table :test 'equal)))
+    (dolist (form forms)
+      (handler-case
+        (let ((name (get-form-name form)))
+          (when name
+            (let* ((form-str (form-to-string form))
+                   (snippet (get-first-n-lines form-str max-lines)))
+              (setf (gethash (symbol-name name) snippets) snippet))))
+        (error () nil)))
+    snippets))
+
+(defun compute-relative-path (from-file to-file)
+  "Compute relative path from FROM-FILE to TO-FILE.
+   Both should be relative paths from the same base (e.g., system books dir)."
+  (let* ((from-parts (remove "" (split-string from-file #\/) :test #'equal))
+         (to-parts (remove "" (split-string to-file #\/) :test #'equal))
+         ;; Remove filename from from-parts to get directory
+         (from-dir (butlast from-parts))
+         ;; Find common prefix
+         (common-len 0))
+    (loop for f-part in from-dir
+          for t-part in to-parts
+          while (equal f-part t-part)
+          do (incf common-len))
+    ;; Build relative path: go up from from-dir, then down to to-file
+    (let* ((ups (- (length from-dir) common-len))
+           (downs (nthcdr common-len to-parts))
+           (parts (append (make-list ups :initial-element "..") downs)))
+      (if parts
+          (format nil "~{~A~^/~}" parts)
+          (car (last to-parts))))))  ; Same directory
+
+(defun split-string (string char)
+  "Split STRING by CHAR into a list of substrings."
+  (loop for start = 0 then (1+ end)
+        for end = (position char string :start start)
+        collect (subseq string start (or end (length string)))
+        while end))
+
+(defun needs-escape-p (char)
+  "Return T if CHAR needs escaping in a symbol name for display."
+  (or (char<= char #\Space)           ; Control chars and space
+      (member char '(#\( #\) #\' #\` #\" #\; #\, #\: #\\ #\|
+                     #\[ #\] #\{ #\} #\# #\Newline #\Tab))))
+
+(defun symbol-needs-escaping-p (name)
+  "Return T if symbol NAME needs escaping for display.
+   Also returns T if it contains lowercase (since CL reader upcases)."
+  (loop for char across name
+        thereis (or (needs-escape-p char)
+                    (lower-case-p char))))
+
+(defun format-symbol-for-display (name)
+  "Format a symbol NAME for display with proper CL escaping.
+   Uses | | for multiple special chars, \\ for single."
+  (let ((escape-count 0)
+        (has-lowercase nil))
+    ;; Count chars needing escape and check for lowercase
+    (loop for char across name do
+          (when (needs-escape-p char) (incf escape-count))
+          (when (lower-case-p char) (setf has-lowercase t)))
+    (cond
+      ;; No escaping needed - just downcase for display
+      ((and (= escape-count 0) (not has-lowercase))
+       (string-downcase name))
+      ;; Multiple escapes or lowercase - use |...|
+      ((or (> escape-count 1) has-lowercase)
+       (with-output-to-string (out)
+         (write-char #\| out)
+         (loop for char across name do
+               ;; Inside |...|, only | and \ need escaping
+               (when (member char '(#\| #\\))
+                 (write-char #\\ out))
+               (write-char char out))
+         (write-char #\| out)))
+      ;; Single escape - use \ before that character
+      ((= escape-count 1)
+       (with-output-to-string (out)
+         (loop for char across name do
+               (cond
+                 ((needs-escape-p char)
+                  (write-char #\\ out)
+                  (write-char (char-downcase char) out))
+                 (t
+                  (write-char (char-downcase char) out))))))
+      ;; Fallback
+      (t (string-downcase name)))))
+
+(defun make-sym-link (sym index local-file)
+  "Generate HTML anchor for a symbol reference.
+   INDEX is the xref-index, LOCAL-FILE is current file.
+   Also checks *acl2-system-index* for ACL2 system definitions."
+  (let* ((sym-name (symbol-name sym))
+         (entry (gethash sym-name index))
+         (target-file (and entry (xref-entry-file entry)))
+         ;; Check system index if not found locally
+         (system-file (and (null entry) 
+                           *acl2-system-index*
+                           (gethash sym-name *acl2-system-index*)))
+         (is-local-def (and entry (equal target-file local-file)))
+         (is-external (and target-file (not (equal target-file local-file))))
+         (is-system (not (null system-file)))
+         (has-definition (or entry system-file))
+         (snippet (when *definition-snippets*
+                    (gethash sym-name *definition-snippets*)))
+         (class (cond
+                  (is-local-def "sym-link local-def")
+                  (is-external "sym-link external")
+                  (is-system "sym-link system")
+                  (has-definition "sym-link")
+                  (t nil)))  ; No class for unknown symbols
+         (id-name (symbol-to-id sym)))
+    (if has-definition
+        ;; Symbol has a known definition - make it a link
+        (let* ((href (cond
+                       ;; System definition - need to go up from books to ACL2 source dir
+                       (is-system
+                        (let* ((local-parts (remove "" (split-string local-file #\/) :test #'equal))
+                               (depth (length (butlast local-parts)))  ; Directory depth
+                               (ups (make-list (1+ depth) :initial-element ".."))  ; +1 to go above books/
+                               (sys-rel (format nil "~{~A/~}~A.html#def-~A" ups system-file id-name)))
+                          sys-rel))
+                       ;; External book definition
+                       (is-external
+                        (let ((relative-target (compute-relative-path local-file target-file)))
+                          (concatenate 'string relative-target ".html#def-" id-name)))
+                       ;; Local definition
+                       (t (concatenate 'string "#def-" id-name))))
+               (tooltip-attr (if snippet
+                                (format nil " title=\"~A\"" (html-escape snippet))
+                              "")))
+          (format nil "<a class=\"~A\" href=\"~A\" data-sym=\"~A\"~A>~A</a>"
+                  class
+                  (html-escape href)
+                  (html-escape sym-name)
+                  tooltip-attr
+                  (html-escape (format-symbol-for-display sym-name))))
+      ;; Unknown symbol - just output as text
+      (html-escape (format-symbol-for-display sym-name)))))
+
+(defun format-atom (atom index local-file)
+  "Format a single atom as HTML."
+  (handler-case
+    (cond
+      ;; Symbol that might have a definition
+      ((symbolp-acl2 atom)
+       (make-sym-link atom index local-file))
+      ;; Keyword
+      ((keywordp atom)
+       (format nil "<span class=\"keyword\">:~A</span>"
+               (html-escape (format-symbol-for-display (symbol-name atom)))))
+      ;; String
+      ((stringp atom)
+       (format nil "<span class=\"string\">\"~A\"</span>"
+               (html-escape atom)))
+      ;; Number
+      ((numberp atom)
+       (format nil "<span class=\"number\">~A</span>" atom))
+      ;; Character
+      ((characterp atom)
+       (format nil "#\\~A" (html-escape (string atom))))
+      ;; Nil
+      ((null atom) "nil")
+      ;; Anything else
+      (t (html-escape (prin1-to-string atom))))
+    (error (e)
+      (declare (ignore e))
+      "&lt;unprintable&gt;")))
+
+(defun get-include-book-dir (form)
+  "Extract :dir value from include-book form if present."
+  (when (and (consp form) (> (length form) 2))
+    (let ((rest (cddr form)))
+      (loop while rest
+            when (and (eq (car rest) :dir) (cdr rest))
+            return (cadr rest)
+            do (setf rest (cddr rest))))))
+
+(defun format-include-book-path (path-str dir-keyword local-file)
+  "Format an include-book path as a clickable link.
+   PATH-STR is the book path string, DIR-KEYWORD is :system or nil.
+   LOCAL-FILE is the current file's relative path for computing relative URLs."
+  (let* ((target-path (if (eq dir-keyword :system)
+                          path-str  ; :dir :system - path relative to books root
+                        ;; Relative path - resolve against current file's directory
+                        (let* ((local-dir-parts (butlast (split-string local-file #\/)))
+                               (resolved (append local-dir-parts (split-string path-str #\/))))
+                          (format nil "~{~A~^/~}" resolved))))
+         (relative-url (compute-relative-path local-file target-path))
+         (html-path (concatenate 'string relative-url ".html"))
+         (display (html-escape path-str)))
+    (format nil "<a class=\"include-path\" href=\"~A\" title=\"Open ~A\">\"~A\"</a>"
+            (html-escape html-path)
+            (html-escape path-str)
+            display)))
+
+(defun format-include-book-form (form index local-file indent)
+  "Format an include-book form with clickable path."
+  (with-output-to-string (out)
+    (write-char #\( out)
+    ;; include-book symbol
+    (write-string (format-form-with-links-internal (car form) index local-file (+ indent 1) t) out)
+    (write-char #\Space out)
+    ;; Path - make it a link
+    (let ((path (cadr form))
+          (dir-keyword (get-include-book-dir form)))
+      (if (stringp path)
+          (write-string (format-include-book-path path dir-keyword local-file) out)
+        (write-string (format-form-with-links-internal path index local-file (+ indent 2) t) out)))
+    ;; Rest of the arguments (keywords like :dir :system)
+    (let ((rest (cddr form)))
+      (loop while rest do
+        (write-char #\Space out)
+        (write-string (format-form-with-links-internal (car rest) index local-file (+ indent 2) t) out)
+        (setf rest (cdr rest))))
+    (write-char #\) out)))
+
+(defun include-book-form-p (form)
+  "Check if FORM is an include-book form."
+  (and (consp form)
+       (symbolp (car form))
+       (let ((name (symbol-name (car form))))
+         (string-equal name "INCLUDE-BOOK"))))
+
+(defun local-form-p (form)
+  "Check if FORM is a local form."
+  (and (consp form)
+       (symbolp (car form))
+       (let ((name (symbol-name (car form))))
+         (string-equal name "LOCAL"))))
+
+(defun format-form-with-links-internal (form index local-file &optional (indent 0) (in-list nil))
+  "Internal implementation of format-form-with-links."
+  (cond
+    ;; Nil
+    ((null form)
+     (if in-list "nil" "()"))
+    ;; Atom
+    ((atom form)
+     (format-atom form index local-file))
+    ;; Quote shorthand
+    ((and (consp form) (eq (car form) 'quote) (cdr form) (null (cddr form)))
+     (concatenate 'string "'" (format-form-with-links-internal (cadr form) index local-file indent t)))
+    ;; Backquote shorthand (quasiquote)
+    ((and (consp form) (member (car form) '(acl2::backquote sb-int:quasiquote)))
+     (concatenate 'string "`" (format-form-with-links-internal (cadr form) index local-file indent t)))
+    ;; Comma (unquote)
+    ((and (consp form) (member (car form) '(acl2::comma sb-impl::comma)))
+     (concatenate 'string "," (format-form-with-links-internal (cadr form) index local-file indent t)))
+    ;; Include-book form - special handling for clickable path
+    ((include-book-form-p form)
+     (format-include-book-form form index local-file indent))
+    ;; Local form wrapping include-book
+    ((and (local-form-p form) (cdr form) (include-book-form-p (cadr form)))
+     (with-output-to-string (out)
+       (write-char #\( out)
+       (write-string (format-form-with-links-internal (car form) index local-file (+ indent 1) t) out)
+       (write-char #\Space out)
+       (write-string (format-include-book-form (cadr form) index local-file (+ indent 2)) out)
+       (write-char #\) out)))
+    ;; Regular list
+    ((consp form)
+     (with-output-to-string (out)
+       (write-char #\( out)
+       ;; First element
+       (write-string (format-form-with-links-internal (car form) index local-file (+ indent 1) t) out)
+       ;; Rest of elements
+       (let ((rest (cdr form))
+             (new-indent (+ indent 2))
+             (elem-count 1)
+             (prev-elem (car form)))
+         ;; Determine if we should use multi-line format
+         (let* ((form-str (handler-case (form-to-string form) (error () "")))
+                (form-len (length form-str))
+                (multi-line (or (> form-len 60)
+                               (position #\Newline form-str))))
+           (loop while rest do
+             (cond
+               ;; Dotted pair ending
+               ((atom rest)
+                (write-string " . " out)
+                (write-string (format-form-with-links-internal rest index local-file new-indent t) out)
+                (setf rest nil))
+               ;; Normal list element
+               (t
+                (incf elem-count)
+                ;; Keep first 2 elements on same line (e.g., defthm name)
+                ;; Also keep keyword and its value on the same line
+                ;; Then use multi-line for rest
+                (if (and multi-line (> elem-count 2) (not (keywordp prev-elem)))
+                    (format out "~%~A" (make-string new-indent :initial-element #\Space))
+                  (write-char #\Space out))
+                (write-string (format-form-with-links-internal (car rest) index local-file new-indent t) out)
+                (setf prev-elem (car rest))
+                (setf rest (cdr rest)))))))
+       (write-char #\) out)))
+    ;; Fallback
+    (t (handler-case (html-escape (prin1-to-string form)) (error () "&lt;unprintable&gt;")))))
+
+(defun format-form-with-links (form index local-file &optional (indent 0) (in-list nil))
+  "Format FORM as HTML with hyperlinked symbols.
+   INDEX is the xref-index, LOCAL-FILE is the current file.
+   INDENT is the current indentation level."
+  (handler-case
+    (format-form-with-links-internal form index local-file indent in-list)
+    (error (e)
+      ;; Log error and fallback to simple escaped form
+      (when *verbose*
+        (format *error-output* "  Warning: Error formatting form: ~A~%" e))
+      (handler-case
+        (html-escape (form-to-string form))
+        (error ()
+          "&lt;error formatting form&gt;")))))
+
+(defun generate-form-html (form index local-file form-idx)
+  "Generate HTML for a single FORM."
+  (let* ((name (get-form-name form))
+         (form-type (get-form-type form))
+         (type-str (string-downcase (symbol-name (or form-type :other))))
+         (id (if name 
+                 (format nil "def-~A" (symbol-to-id name))
+               (format nil "form-~A" form-idx)))
+         (entry (and name (gethash (symbol-name name) index)))
+         (defined-by (if entry 
+                        (mapcar #'symbol-name (xref-entry-defined-by entry))
+                       nil))
+         (used-by (if entry
+                     (mapcar #'symbol-name (xref-entry-used-by entry))
+                    nil))
+         (parts (and entry (xref-entry-parts entry)))
+         ;; Use format-form-with-links instead of html-escape
+         (form-str (format-form-with-links form index local-file 0 nil)))
+    (with-output-to-string (out)
+      ;; Form block with RDFa and data attributes
+      (format out "<div class=\"form-block ~A\" id=\"~A\"" type-str id)
+      (when name
+        (format out " data-defines=\"~A\"" (symbol-name name)))
+      (when defined-by
+        (format out " data-references=\"~{~A~^,~}\"" defined-by))
+      (when used-by
+        (format out " data-used-by=\"~{~A~^,~}\"" used-by))
+      ;; Add part data for defthm
+      (dolist (part parts)
+        (let ((part-name (car part))
+              (part-syms (cdr part)))
+          (when (and part-name part-syms (keywordp part-name))
+            (format out " data-part-~A=\"~{~A~^,~}\""
+                    (string-downcase (symbol-name part-name))
+                    (mapcar #'symbol-name part-syms)))))
+      (format out " typeof=\"~A\">" 
+              (case form-type
+                (:theorem "SoftwareSourceCode")
+                (:function "SoftwareSourceCode")
+                (otherwise "Code")))
+      
+      ;; Header with name and type
+      (format out "~%    <div class=\"form-header\">")
+      (when name
+        (format out "<span class=\"form-name\" property=\"name\" data-sym=\"~A\">~A</span>"
+                (symbol-name name)
+                (html-escape (format-symbol-for-display (symbol-name name)))))
+      (format out "<span class=\"form-type\">~A</span>" type-str)
+      (format out "</div>~%")
+      
+      ;; Part buttons for defthm
+      (when (member form-type '(:theorem))
+        (format out "    <div class=\"part-buttons\">")
+        (dolist (part '(:term :hints :rule-classes :instructions))
+          (let ((part-data (assoc part parts)))
+            (when (and part-data (cdr part-data))
+              (format out "<button class=\"part-btn\" data-part=\"~A\">~A</button>"
+                      (string-downcase (symbol-name part))
+                      (string-downcase (symbol-name part))))))
+        (format out "</div>~%"))
+      
+      ;; Code
+      (format out "    <pre class=\"code\" property=\"text\">~A</pre>~%" form-str)
+      
+      (format out "  </div>~%~%"))))
+
+(defun extract-all-include-books (forms)
+  "Extract all include-book paths from FORMS. Returns list of (path localp dir-keyword)."
+  (loop for form in forms
+        append (extract-include-books form)))
+
+(defun resolve-include-path (include-info book-path)
+  "Resolve INCLUDE-INFO (path localp dir-keyword) relative to BOOK-PATH.
+   Returns the relative path for the HTML link (relative to the current HTML file)."
+  (destructuring-bind (inc-path localp dir-keyword) include-info
+    (declare (ignore localp))
+    (let* ((book-str (namestring book-path))
+           (book-dir (let ((last-slash (position #\/ book-str :from-end t)))
+                       (if last-slash
+                           (subseq book-str 0 (1+ last-slash))
+                         "")))
+           (sys-str (namestring *system-books-dir*)))
+      ;; Ensure sys-str ends with /
+      (unless (and (> (length sys-str) 0)
+                   (char= (char sys-str (1- (length sys-str))) #\/))
+        (setf sys-str (concatenate 'string sys-str "/")))
+      (cond
+        ;; :dir :system - need to compute relative path from current file to system books
+        ((eq dir-keyword :system)
+         ;; Count directory levels from system books to book-dir
+         (let* ((rel-book-dir (if (and (>= (length book-dir) (length sys-str))
+                                       (string= sys-str (subseq book-dir 0 (length sys-str))))
+                                  (subseq book-dir (length sys-str))
+                                ""))
+                (depth (count #\/ rel-book-dir))
+                (up-dirs (with-output-to-string (s)
+                           (dotimes (i depth) (write-string "../" s)))))
+           (concatenate 'string up-dirs inc-path)))
+        ;; Relative path - just use it directly (it's already relative to current file)
+        (t inc-path)))))
+
+(defun generate-includes-section (forms book-path)
+  "Generate HTML for the included books section."
+  (let* ((includes (extract-all-include-books forms))
+         ;; Remove duplicates (keep first occurrence)
+         (seen (make-hash-table :test 'equal))
+         (unique-includes 
+          (loop for inc in includes
+                for path = (first inc)
+                unless (gethash path seen)
+                collect inc
+                do (setf (gethash path seen) t))))
+    (when unique-includes
+      (with-output-to-string (out)
+        (format out "  <div class=\"includes-section\">~%")
+        (format out "    <h2>Included Books</h2>~%")
+        (format out "    <div class=\"includes-list\">~%")
+        (dolist (inc unique-includes)
+          (destructuring-bind (inc-path localp dir-keyword) inc
+            (let* ((resolved (resolve-include-path inc book-path))
+                   (html-path (concatenate 'string resolved ".html"))
+                   (display-name (let ((last-slash (position #\/ inc-path :from-end t)))
+                                   (if last-slash
+                                       (subseq inc-path (1+ last-slash))
+                                     inc-path)))
+                   (class (if localp "include-link local" "include-link")))
+              (format out "      <a class=\"~A\" href=\"~A\" title=\"~A\">~A</a>~%"
+                      class
+                      (html-escape html-path)
+                      (html-escape inc-path)
+                      (html-escape display-name)))))
+        (format out "    </div>~%")
+        (format out "  </div>~%~%")))))
+
+(defun ensure-trailing-slash (path)
+  "Ensure PATH string ends with a slash."
+  (let ((str (if (pathnamep path) (namestring path) path)))
+    (if (and (> (length str) 0)
+             (char= (char str (1- (length str))) #\/))
+        str
+        (concatenate 'string str "/"))))
+
+(defun generate-book-html (forms book-path)
+  "Generate complete HTML for a book from its FORMS.
+   Returns HTML string."
+  (let* ((book-str (namestring book-path))
+         (book-name (car (last (pathname-directory book-path))))
+         ;; Ensure system-books-dir has trailing slash for enough-namestring
+         (sys-dir (pathname (ensure-trailing-slash *system-books-dir*)))
+         (relative-path (clean-relative-path (enough-namestring book-path sys-dir)))
+         (index (build-xref-index-with-includes forms relative-path book-path))
+         ;; Compute definition snippets for tooltips
+         (*definition-snippets* (compute-definition-snippets forms 5)))
+    (with-output-to-string (out)
+      (write-string (generate-html-header 
+                     (or (pathname-name book-path) book-name)
+                     relative-path) out)
+      ;; Add includes section
+      (let ((includes-html (generate-includes-section forms book-path)))
+        (when includes-html
+          (write-string includes-html out)))
+      (loop for form in forms
+            for idx from 0
+            do (write-string (generate-form-html form index relative-path idx) out))
+      (write-string (generate-html-footer) out))))
+
+(defun write-book-html (book-path)
+  "Generate and write HTML documentation for BOOK-PATH."
+  (let* ((book-str (namestring book-path))
+         (lisp-file (concatenate 'string book-str ".lisp"))
+         (html-file (concatenate 'string book-str ".html"))
+         (forms (read-forms-from-file lisp-file)))
+    (when forms
+      (let ((html (generate-book-html forms book-path)))
+        (with-open-file (out html-file :direction :output
+                                       :if-exists :supersede
+                                       :if-does-not-exist :create)
+          (write-string html out))
+        (when *verbose*
+          (format t "  Generated: ~A~%" html-file))
+        t))))
+
+;;; ============================================================================
+;;; Dependency scanning using proper Lisp reader
+;;; ============================================================================
+
+(defun ensure-package-exists (name)
+  "Create package NAME if it doesn't exist. Returns the package."
+  (let ((name-str (string name)))
+    (or (find-package name-str)
+        (make-package name-str :use '("COMMON-LISP")))))
+
+(defun read-forms-from-file (filename)
+  "Read all Lisp forms from FILENAME using the standard reader.
+   Creates packages on-the-fly as needed, restarting from beginning if necessary.
+   Returns list of forms, or NIL on error."
+  (let ((max-retries 20)
+        ;; Add :acl2-loop-only to *features* for reading ACL2 source files
+        (*features* (cons :acl2-loop-only *features*)))
+    (loop for attempt from 1 to max-retries do
+      (handler-case
+          (with-open-file (stream filename :direction :input
+                                           :if-does-not-exist nil)
+            (when stream
+              (let ((*package* (find-package "ACL2"))
+                    ;; Allow #. for reading ACL2 source files that use read-time eval
+                    (*read-eval* t)
+                    (forms nil))
+                (loop
+                  (let ((form (read stream nil :eof)))
+                    (if (eq form :eof)
+                        (return-from read-forms-from-file (nreverse forms))
+                        (progn
+                          (push form forms)
+                          ;; Handle in-package
+                          (when (and (consp form)
+                                     (member (car form) '(in-package acl2::in-package cl:in-package)))
+                            (let ((pkg-name (string (cadr form))))
+                              (ensure-package-exists pkg-name)
+                              (setf *package* (find-package pkg-name)))))))))))
+        (sb-int:simple-reader-package-error (c)
+          ;; Create the missing package and retry from the beginning
+          (let ((pkg-name (sb-kernel::package-error-package c)))
+            (when *verbose*
+              (format t "  Creating package ~A...~%" pkg-name))
+            (ensure-package-exists pkg-name)))
+        (error (c)
+          (when *verbose*
+            (format t "  Read error: ~A~%" c))
+          (return-from read-forms-from-file nil))))
+    ;; Exceeded max retries
+    nil))
+
+(defun extract-include-books (form)
+  "Extract include-book info from FORM. Returns list of (path localp dir-keyword)."
+  (when (consp form)
+    (case (car form)
+      ;; Direct include-book
+      (acl2::include-book
+       (when (and (cdr form) (stringp (cadr form)))
+         (let* ((path (cadr form))
+                (rest (cddr form))
+                (dir-pos (position :dir rest))
+                (dir-val (and dir-pos (nth (1+ dir-pos) rest))))
+           (list (list path nil (when (eq dir-val :system) :system))))))
+      ;; Local wrapper
+      (acl2::local
+       (when (cdr form)
+         (let ((inner-results (extract-include-books (cadr form))))
+           ;; Mark all as local
+           (mapcar (lambda (r) (list (first r) t (third r))) inner-results))))
+      ;; Recurse into progn, encapsulate, etc.
+      ((acl2::progn acl2::encapsulate)
+       (loop for subform in (cdr form)
+             append (extract-include-books subform)))
+      (otherwise nil))))
+
+(defun scan-file-for-deps (filename)
+  "Scan FILENAME for include-book dependencies using Lisp reader.
+   Returns list of (path localp dir-keyword)."
+  (let ((forms (read-forms-from-file filename)))
+    (loop for form in forms
+          append (extract-include-books form))))
+
+;;; ============================================================================
+;;; Path resolution
+;;; ============================================================================
+
+(defun resolve-book-path (base-dir book-name dir-keyword)
+  "Resolve BOOK-NAME relative to BASE-DIR.
+   If DIR-KEYWORD is :SYSTEM, resolve relative to system books.
+   Returns absolute path without extension."
+  (let* ((name (if (and (> (length book-name) 5)
+                        (string-equal ".lisp" (subseq book-name (- (length book-name) 5))))
+                   (subseq book-name 0 (- (length book-name) 5))
+                 book-name))
+         (base-str (namestring (or base-dir *system-books-dir*)))
+         (sys-str (namestring *system-books-dir*)))
+    ;; Ensure base-str ends with /
+    (unless (char= (char base-str (1- (length base-str))) #\/)
+      (setf base-str (concatenate 'string base-str "/")))
+    (unless (char= (char sys-str (1- (length sys-str))) #\/)
+      (setf sys-str (concatenate 'string sys-str "/")))
+    (cond
+      ;; :dir :system - relative to system books
+      ((eq dir-keyword :system)
+       (pathname (concatenate 'string sys-str name)))
+      ;; Absolute path
+      ((and (> (length name) 0) (char= (char name 0) #\/))
+       (pathname name))
+      ;; Relative path - resolve relative to base-dir
+      (t
+       (pathname (concatenate 'string base-str name))))))
+
+;;; ============================================================================
+;;; HTML-only mode - generate docs for already certified books
+;;; ============================================================================
+
+(defun file-write-date-safe (path)
+  "Get file write date, or NIL if file doesn't exist."
+  (handler-case
+    (file-write-date path)
+    (error () nil)))
+
+(defun html-needs-update-p (cert-file html-file)
+  "Check if HTML needs to be (re)generated.
+   Returns T if .html is missing or older than .cert."
+  (let ((cert-date (file-write-date-safe cert-file))
+        (html-date (file-write-date-safe html-file)))
+    (or (null html-date)                    ; HTML missing
+        (and cert-date                       ; .cert exists
+             (> cert-date html-date)))))     ; .cert is newer (strict)
+
+(defun find-cert-files (directory)
+  "Find all .cert files under DIRECTORY recursively.
+   Returns list of absolute pathnames (without .cert extension)."
+  (let ((results nil)
+        (dir-str (namestring directory)))
+    ;; Ensure dir ends with /
+    (unless (and (> (length dir-str) 0)
+                 (char= (char dir-str (1- (length dir-str))) #\/))
+      (setf dir-str (concatenate 'string dir-str "/")))
+    ;; Use find command to get all .cert files
+    (let* ((cmd (format nil "find ~A -name '*.cert' -type f 2>/dev/null" dir-str))
+           (output (with-output-to-string (s)
+                     (sb-ext:run-program "/bin/sh" (list "-c" cmd)
+                                         :output s
+                                         :error nil))))
+      (with-input-from-string (in output)
+        (loop for line = (read-line in nil nil)
+              while line
+              when (and (> (length line) 5)
+                       (string= ".cert" (subseq line (- (length line) 5))))
+              do (push (pathname (subseq line 0 (- (length line) 5))) results))))
+    results))
+
+(defun generate-html-for-cert (book-path)
+  "Generate HTML for a book that has a .cert file.
+   Returns T if HTML was generated, NIL otherwise."
+  (let* ((book-str (namestring book-path))
+         (cert-file (concatenate 'string book-str ".cert"))
+         (html-file (concatenate 'string book-str ".html"))
+         (lisp-file (concatenate 'string book-str ".lisp")))
+    (cond
+      ((not (probe-file lisp-file))
+       (when *verbose*
+         (format t "  Skipping ~A (no .lisp file)~%" book-str))
+       nil)
+      ((not (html-needs-update-p cert-file html-file))
+       (when *verbose*
+         (format t "  ~A (up to date)~%" book-str))
+       nil)
+      (t
+       (format t "Generating HTML: ~A~%" book-str)
+       (handler-case
+         (let ((*verbose* nil))  ; Suppress duplicate message from write-book-html
+           (if (write-book-html book-path)
+               (progn
+                 (format t "  Generated: ~A~%" html-file)
+                 t)
+             (progn
+               (format t "  Skipped: ~A (could not read forms)~%" book-str)
+               nil)))
+         (error (e)
+           (format t "  Error: ~A~%" e)
+           nil))))))
+
+(defun process-html-only (args)
+  "Generate HTML for certified books specified in ARGS.
+   ARGS can be directories (searched recursively) or individual book paths.
+   If ARGS is empty, process current directory.
+   Returns count of HTML files generated."
+  (let ((items (if args args (list ".")))
+        (generated 0)
+        (skipped 0)
+        (errors 0))
+    (dolist (item items)
+      (let* ((item-str (if (pathnamep item) (namestring item) item))
+             (sys-str (namestring *system-books-dir*))
+             (_ (unless (char= (char sys-str (1- (length sys-str))) #\/)
+                  (setf sys-str (concatenate 'string sys-str "/"))))
+             (full-path (if (and (> (length item-str) 0)
+                                 (char= (char item-str 0) #\/))
+                            item-str
+                          (concatenate 'string sys-str item-str)))
+             ;; Check if this is a book (has .cert file) or a directory
+             (cert-file (concatenate 'string full-path ".cert"))
+             (is-book (probe-file cert-file))
+             (is-dir (and (not is-book) 
+                          (probe-file full-path)
+                          (sb-posix:s-isdir (sb-posix:stat-mode (sb-posix:stat full-path))))))
+        (declare (ignore _))
+        (cond
+          ;; Single book with .cert file
+          (is-book
+           (format t "~%Processing book: ~A~%" item)
+           (let ((result (generate-html-for-cert (pathname full-path))))
+             (cond
+               ((eq result t) (incf generated))
+               ((eq result nil) (incf skipped))
+               (t (incf errors)))))
+          ;; Directory - find all .cert files
+          (is-dir
+           (let ((cert-files (find-cert-files (pathname full-path))))
+             (format t "~%Found ~A certified books in ~A~%" (length cert-files) item)
+             (dolist (book-path cert-files)
+               (let ((result (generate-html-for-cert book-path)))
+                 (cond
+                   ((eq result t) (incf generated))
+                   ((eq result nil) (incf skipped))
+                   (t (incf errors)))))))
+          ;; Neither - try as directory anyway (might be relative)
+          (t
+           (let ((cert-files (find-cert-files (pathname full-path))))
+             (if cert-files
+                 (progn
+                   (format t "~%Found ~A certified books in ~A~%" (length cert-files) item)
+                   (dolist (book-path cert-files)
+                     (let ((result (generate-html-for-cert book-path)))
+                       (cond
+                         ((eq result t) (incf generated))
+                         ((eq result nil) (incf skipped))
+                         (t (incf errors))))))
+               (format t "~%No certified books found for: ~A~%" item)))))))
+    (format t "~%HTML generation complete: ~A generated, ~A up-to-date, ~A errors~%"
+            generated skipped errors)
+    generated))
+
+(defun write-raw-lisp-html (lisp-file)
+  "Generate HTML for a raw .lisp file (no .cert required).
+   Output goes next to the input file with .html extension."
+  (let* ((lisp-str (namestring lisp-file))
+         ;; Strip .lisp extension if present to get base path
+         (base-str (if (and (> (length lisp-str) 5)
+                            (string-equal ".lisp" (subseq lisp-str (- (length lisp-str) 5))))
+                       (subseq lisp-str 0 (- (length lisp-str) 5))
+                     lisp-str))
+         (html-file (concatenate 'string base-str ".html"))
+         (forms (read-forms-from-file lisp-str)))
+    (when forms
+      (let ((html (generate-book-html forms (pathname base-str))))
+        (with-open-file (out html-file :direction :output
+                                       :if-exists :supersede
+                                       :if-does-not-exist :create)
+          (write-string html out))
+        (format t "  Generated: ~A~%" html-file)
+        t))))
+
+(defun raw-lisp-file-p (filename)
+  "Check if FILENAME is a .lisp file we should process (not *-raw.lisp)."
+  (let ((name (if (pathnamep filename) (namestring filename) filename)))
+    (and (> (length name) 5)
+         (string-equal ".lisp" (subseq name (- (length name) 5)))
+         (not (and (> (length name) 9)
+                   (string-equal "-raw.lisp" (subseq name (- (length name) 9))))))))
+
+(defun find-raw-lisp-files (dir)
+  "Find all .lisp files in DIR (non-recursive), excluding *-raw.lisp files."
+  (let ((results nil)
+        (dir-str (namestring dir)))
+    (unless (char= (char dir-str (1- (length dir-str))) #\/)
+      (setf dir-str (concatenate 'string dir-str "/")))
+    ;; Use shell find to get .lisp files (non-recursive)
+    (let ((cmd (format nil "find ~A -maxdepth 1 -name '*.lisp' -type f 2>/dev/null | sort" 
+                       (sb-ext:native-namestring (truename dir-str)))))
+      (let ((output (with-output-to-string (s)
+                      (sb-ext:run-program "/bin/sh" (list "-c" cmd)
+                                          :output s
+                                          :error nil))))
+        (with-input-from-string (in output)
+          (loop for line = (read-line in nil nil)
+                while line
+                when (raw-lisp-file-p line)
+                do (push line results)))))
+    (nreverse results)))
+
+(defun process-raw-lisp (args)
+  "Generate HTML for raw .lisp files (no certification required).
+   ARGS can be .lisp files or directories containing .lisp files.
+   Excludes *-raw.lisp files when processing directories.
+   Returns count of HTML files generated."
+  (let ((generated 0)
+        (errors 0)
+        (files-to-process nil))
+    ;; Collect all files to process
+    (dolist (item args)
+      (let* ((item-str (if (pathnamep item) (namestring item) item))
+             ;; Handle relative vs absolute paths
+             (full-path (if (and (> (length item-str) 0)
+                                 (char= (char item-str 0) #\/))
+                            item-str
+                          ;; Relative to current directory, not books dir
+                          (concatenate 'string (namestring (truename ".")) "/" item-str))))
+        (cond
+          ;; Check if it's a directory
+          ((and (probe-file full-path)
+                (sb-posix:s-isdir (sb-posix:stat-mode (sb-posix:stat full-path))))
+           (let ((lisp-files (find-raw-lisp-files full-path)))
+             (format t "Found ~A .lisp files in ~A~%" (length lisp-files) full-path)
+             (setf files-to-process (append files-to-process lisp-files))))
+          ;; Single file
+          ((probe-file full-path)
+           (push full-path files-to-process))
+          (t
+           (format t "Error: Not found: ~A~%" full-path)
+           (incf errors)))))
+    ;; Process all collected files
+    (dolist (full-path files-to-process)
+      (format t "Processing: ~A~%" full-path)
+      (handler-case
+          (if (write-raw-lisp-html (pathname full-path))
+              (incf generated)
+            (progn
+              (format t "  Skipped: ~A (could not read forms)~%" full-path)
+              (incf errors)))
+        (error (e)
+          (format t "  Error: ~A~%" e)
+          (incf errors))))
+    (format t "~%Raw Lisp HTML generation: ~A generated, ~A errors~%"
+            generated errors)
+    generated))
+
+;;; ============================================================================
+;;; Command-line interface
+;;; ============================================================================
+
+(defun print-usage ()
+  (format t "~%Usage: cert2 [options] book1 [book2 ...]~%")
+  (format t "       cert2 --html-only [directory]~%")
+  (format t "       cert2 --raw file1.lisp [file2.lisp ...]~%")
+  (format t "~%Certify ACL2 books and generate HTML documentation.~%")
+  (format t "~%Options:~%")
+  (format t "  -h, --help      Show this help message~%")
+  (format t "  -j N            Use N parallel jobs (not yet implemented)~%")
+  (format t "  -v, --verbose   Verbose output~%")
+  (format t "  --no-html       Skip HTML documentation generation~%")
+  (format t "  --html-only     Generate HTML only for books with .cert files~%")
+  (format t "                  (does not certify, just generates docs)~%")
+  (format t "  --raw           Generate HTML for raw .lisp files (no certification needed)~%")
+  (format t "                  Use for ACL2 source files like axioms.lisp~%")
+  (format t "~%Books should be specified without the .lisp extension.~%")
+  (format t "~%Example:~%")
+  (format t "  cert2 arithmetic/top std/lists/top~%")
+  (format t "  cert2 --html-only arithmetic-2~%")
+  (format t "  cert2 --raw /path/to/acl2/axioms.lisp~%~%"))
+
+(defun parse-args-helper (args books options)
+  "Helper for parse-args using recursion instead of loop."
+  (if (null args)
+      (values (nreverse books) options)
+    (let ((arg (car args))
+          (rest (cdr args)))
+      (cond
+       ((or (string= arg "-h") (string= arg "--help"))
+        (parse-args-helper rest books (acons :help t options)))
+       ((or (string= arg "-v") (string= arg "--verbose"))
+        (parse-args-helper rest books (acons :verbose t options)))
+       ((string= arg "--no-html")
+        (parse-args-helper rest books (acons :no-html t options)))
+       ((string= arg "--html-only")
+        (parse-args-helper rest books (acons :html-only t options)))
+       ((string= arg "--raw")
+        (parse-args-helper rest books (acons :raw t options)))
+       ((string= arg "-j")
+        (if rest
+            (parse-args-helper (cdr rest) books 
+                               (acons :jobs (parse-integer (car rest) :junk-allowed t) options))
+          (parse-args-helper rest books options)))
+       ((and (> (length arg) 0) (char= (char arg 0) #\-))
+        (format t "Warning: Unknown option: ~A~%" arg)
+        (parse-args-helper rest books options))
+       (t
+        (parse-args-helper rest (cons arg books) options))))))
+
+(defun parse-args (args)
+  "Parse command-line arguments.
+   Returns (values books options) where options is an alist."
+  (parse-args-helper args nil nil))
+
+;;; ============================================================================
+;;; ACL2 invocation for certification
+;;; ============================================================================
+
+(defun make-certify-script (book-path)
+  "Create the ACL2 script to certify BOOK-PATH.
+   Handles .acl2 file if present."
+  (let* ((book-str (namestring book-path))
+         (acl2-file (concatenate 'string book-str ".acl2"))
+         (has-acl2 (probe-file acl2-file)))
+    (with-output-to-string (s)
+      ;; Load .acl2 file if it exists (sets up package, includes, etc.)
+      (when has-acl2
+        (format s "(ld ~S)~%" acl2-file))
+      ;; Certify the book
+      (format s "(certify-book ~S ? t)~%" book-str)
+      ;; Exit  
+      (format s "(good-bye)~%"))))
+
+(defun run-acl2-certify (book-path)
+  "Run ACL2 to certify BOOK-PATH. Returns T on success, NIL on failure."
+  (let* ((script (make-certify-script book-path))
+         (acl2 (or *acl2-executable* "acl2"))
+         (book-str (namestring book-path))
+         (log-file (concatenate 'string book-str ".cert.out")))
+    (when *verbose*
+      (format t "  Running: ~A~%" acl2)
+      (format t "  Log: ~A~%" log-file))
+    ;; Run ACL2 with the script, output to log file
+    (with-open-file (log-stream log-file :direction :output 
+                                         :if-exists :supersede
+                                         :if-does-not-exist :create)
+      (let* ((process (sb-ext:run-program 
+                       acl2
+                       nil
+                       :input (make-string-input-stream script)
+                       :output log-stream
+                       :error :output
+                       :wait t
+                       :environment (list "ACL2_CUSTOMIZATION=NONE")))
+             (exit-code (sb-ext:process-exit-code process)))
+        (zerop exit-code)))))
+
+;;; ============================================================================
+;;; Dependency-aware certification
+;;; ============================================================================
+
+(defun book-up-to-date-p (book-path)
+  "Check if BOOK-PATH.cert exists and is newer than BOOK-PATH.lisp."
+  (let* ((book-str (namestring book-path))
+         (lisp-file (concatenate 'string book-str ".lisp"))
+         (cert-file (concatenate 'string book-str ".cert"))
+         (lisp-date (and (probe-file lisp-file) (file-write-date lisp-file)))
+         (cert-date (and (probe-file cert-file) (file-write-date cert-file))))
+    (and lisp-date cert-date (>= cert-date lisp-date))))
+
+(defun certify-book-with-deps (book-path)
+  "Certify BOOK-PATH after first certifying all its dependencies.
+   Returns T on success, NIL on failure."
+  (let ((book-str (namestring book-path)))
+    ;; Check for cycles
+    (when (gethash book-str *certifying*)
+      (format t "Error: Circular dependency detected involving ~A~%" book-str)
+      (return-from certify-book-with-deps nil))
+    
+    ;; Already done this session?
+    (when (gethash book-str *certified*)
+      (when *verbose*
+        (format t "  ~A (already certified this session)~%" book-str))
+      (return-from certify-book-with-deps t))
+    
+    ;; Check if source exists
+    (let ((lisp-file (concatenate 'string book-str ".lisp")))
+      (unless (probe-file lisp-file)
+        (format t "Error: Source file not found: ~A~%" lisp-file)
+        (return-from certify-book-with-deps nil))
+      
+      ;; Mark as being certified (for cycle detection)
+      (setf (gethash book-str *certifying*) t)
+      
+      (unwind-protect
+          (progn
+            ;; Scan for dependencies
+            (let* ((deps (scan-file-for-deps lisp-file))
+                   ;; Get directory containing this book
+                   (base-dir (let ((last-slash (position #\/ book-str :from-end t)))
+                               (if last-slash
+                                   (pathname (subseq book-str 0 (1+ last-slash)))
+                                 *system-books-dir*))))
+              ;; Certify each dependency first
+              (dolist (dep deps)
+                (destructuring-bind (dep-name localp dir-keyword) dep
+                  (declare (ignore localp))
+                  (let ((dep-path (resolve-book-path base-dir dep-name dir-keyword)))
+                    (unless (certify-book-with-deps dep-path)
+                      (format t "Error: Failed to certify dependency ~A~%" dep-path)
+                      (return-from certify-book-with-deps nil)))))
+              
+              ;; Now certify this book if needed
+              (cond
+                ((book-up-to-date-p book-path)
+                 (when *verbose*
+                   (format t "  ~A (up to date)~%" book-str))
+                 ;; Generate HTML even for up-to-date books if HTML missing
+                 (when *generate-html*
+                   (let ((html-file (concatenate 'string book-str ".html")))
+                     (unless (probe-file html-file)
+                       (write-book-html book-path))))
+                 (setf (gethash book-str *certified*) t)
+                 t)
+                (t
+                 (format t "Certifying ~A...~%" book-str)
+                 (let ((success (run-acl2-certify book-path)))
+                   (if success
+                       (progn
+                         (format t "  Success: ~A~%" book-str)
+                         ;; Generate HTML documentation
+                         (when *generate-html*
+                           (write-book-html book-path))
+                         (setf (gethash book-str *certified*) t)
+                         t)
+                     (progn
+                       (format t "  FAILED: ~A~%" book-str)
+                       nil)))))))
+        ;; Cleanup: remove from certifying set
+        (remhash book-str *certifying*)))))
+
+(defun process-books (books)
+  "Process a list of books, return T if all succeed."
+  (every (lambda (book)
+           (handler-case
+               ;; Ensure we have a proper path relative to books dir
+               (let* ((book-str (if (pathnamep book) (namestring book) book))
+                      (sys-str (namestring *system-books-dir*)))
+                 ;; Ensure sys-str ends with /
+                 (unless (and (> (length sys-str) 0)
+                              (char= (char sys-str (1- (length sys-str))) #\/))
+                   (setf sys-str (concatenate 'string sys-str "/")))
+                 (let ((book-path 
+                        (if (and (> (length book-str) 0)
+                                 (char= (char book-str 0) #\/))
+                            (pathname book-str)
+                          (pathname (concatenate 'string sys-str book-str)))))
+                   (certify-book-with-deps book-path)))
+             (error (e)
+               (format t "Error processing ~A: ~A~%" book e)
+               nil)))
+         books))
+
+(defun build2-cli-fn (args acl2-path books-dir)
+  "Main entry point for the cert2 command-line tool.
+   ARGS is a list of command-line arguments (strings).
+   ACL2-PATH is the path to the ACL2 executable.
+   BOOKS-DIR is the path to the system books directory.
+   Returns 0 on success, non-zero on failure."
+  (handler-case
+      (progn
+        (setf *acl2-executable* acl2-path)
+        (setf *system-books-dir* (pathname books-dir))
+        ;; Set ACL2 source dir (parent of books dir)
+        (let ((dir-str (if (pathnamep books-dir) (namestring books-dir) books-dir)))
+          (unless (char= (char dir-str (1- (length dir-str))) #\/)
+            (setf dir-str (concatenate 'string dir-str "/")))
+          ;; ACL2 source is parent of books
+          (setf *acl2-source-dir* (pathname (concatenate 'string dir-str "../")))
+          (setf *build2-dir* (pathname (concatenate 'string dir-str "build2/"))))
+        (setf *certifying* (make-hash-table :test 'equal))
+        (setf *certified* (make-hash-table :test 'equal))
+        (setf *acl2-system-index* nil)  ; Reset system index
+        (multiple-value-bind (books options)
+            (parse-args args)
+          ;; Handle help
+          (when (cdr (assoc :help options))
+            (print-usage)
+            (return-from build2-cli-fn 0))
+          ;; Set verbose
+          (setf *verbose* (cdr (assoc :verbose options)))
+          ;; Build system index for linking to ACL2 system definitions
+          (build-acl2-system-index)
+          ;; Handle --html-only mode
+          (when (cdr (assoc :html-only options))
+            (process-html-only books)
+            (return-from build2-cli-fn 0))
+          ;; Handle --raw mode (for ACL2 system files)
+          (when (cdr (assoc :raw options))
+            (if books
+                (process-raw-lisp books)
+              (format t "Error: No .lisp files specified for --raw mode.~%"))
+            (return-from build2-cli-fn 0))
+          ;; Set HTML generation (on by default)
+          (setf *generate-html* (not (cdr (assoc :no-html options))))
+          ;; Must have at least one book for normal mode
+          (when (null books)
+            (format t "Error: No books specified.~%")
+            (print-usage)
+            (return-from build2-cli-fn 1))
+          ;; Process books
+          (if (process-books books) 0 1)))
+    (error (e)
+      (format t "~%Fatal error: ~A~%" e)
+      1)))

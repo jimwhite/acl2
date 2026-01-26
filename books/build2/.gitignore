@@ -1,0 +1,18 @@
+# Generated files
+*.cert2
+*.pcert02
+*.pcert12
+*.acl2x2
+*.port2
+*.cert2.out
+*.cert2.time
+*.cert2-script.lsp
+*.fasl
+*.lx64fsl
+*.dx64fsl
+*~
+\#*\#
+.DS_Store
+
+# Cache files  
+.build2-cache

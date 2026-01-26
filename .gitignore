@@ -46,3 +46,7 @@ devel-check.out
 *.certdep
 !universal-dependency.certdep
 gitlog-all.txt
+
+sbcl-sbcl-2.5.11/
+books/**/*.html
+*.html
