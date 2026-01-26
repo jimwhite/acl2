@@ -48,3 +48,4 @@ devel-check.out
 gitlog-all.txt
 
 sbcl-sbcl-2.5.11/
+books/**/*.html
