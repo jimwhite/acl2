@@ -432,18 +432,18 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">acl2-check</h1>
-    <div class="path"><a href="acl2-check.lisp" class="source-link">/workspaces/acl2/acl2-check</a></div>
+    <div class="path"><a href="acl2-check.lisp" class="source-link">acl2-check</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (equal (<a class="sym-link system" href="../../../axioms.html#def-length" data-sym="LENGTH">length</a> <span class="string">"ab
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (equal (<a class="sym-link system" href="axioms.html#def-length" data-sym="LENGTH">length</a> <span class="string">"ab
 cd"</span>)
     <span class="number">5</span>)
   (error <span class="string">"We have tested that the string ab\ncd (where \n denotes
@@ -454,8 +454,8 @@ is using two characters to indicate a new line?"</span>))</pre>
 <div class="form-block other" id="form-2" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(dolist (name lambda-list-keywords)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((let ((s (symbol-name name)))
-       (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (<a class="sym-link system" href="../../../axioms.html#def-length" data-sym="LENGTH">length</a> s) <span class="number">0</span>) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="../../../axioms.html#def-char" data-sym="CHAR">char</a> s <span class="number">0</span>) #\&amp;)))) (error <span class="string">"We assume that all lambda-list-keywords start with the ~
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((let ((s (symbol-name name)))
+       (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (<a class="sym-link system" href="axioms.html#def-length" data-sym="LENGTH">length</a> s) <span class="number">0</span>) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="axioms.html#def-char" data-sym="CHAR">char</a> s <span class="number">0</span>) #\&amp;)))) (error <span class="string">"We assume that all lambda-list-keywords start with the ~
                   character #&amp;.~%However, ~s does not.  ACL2 will not work in ~
                   this Common Lisp."</span>
         name))))</pre>
@@ -463,8 +463,8 @@ is using two characters to indicate a new line?"</span>))</pre>
 
 <div class="form-block other" id="form-3" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (integerp char-code-limit)
-    (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <span class="number">256</span> char-code-limit)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (integerp char-code-limit)
+    (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <span class="number">256</span> char-code-limit)
     (typep <span class="number">256</span> 'fixnum))
   (error <span class="string">"We assume that 256 is a fixnum not exceeding char-code-limit, for ~
             purposes of~%character manipulation.  ACL2 will not work in this ~
@@ -473,7 +473,7 @@ is using two characters to indicate a new line?"</span>))</pre>
 
 <div class="form-block other" id="form-4" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (equal (symbol-name 'a) <span class="string">"A"</span>)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (equal (symbol-name 'a) <span class="string">"A"</span>)
   (error <span class="string">"This Common Lisp image appears to be case-sensitive:~%~
             (equal (symbol-name &#39;a) &quot;A&quot;) evaluates to NIL.~%~
             It is therefore not suitable for ACL2."</span>))</pre>
@@ -491,7 +491,7 @@ is using two characters to indicate a new line?"</span>))</pre>
       <span class="number">255</span>
       do
       (let ((temp (read-char str)))
-        (when (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eql" data-sym="EQL">eql</a> (char-code temp) i))
+        (when (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eql" data-sym="EQL">eql</a> (char-code temp) i))
           (error <span class="string">"Bad character in file ~s: character ~s at position ~s."</span>
             filename
             (char-code temp)
@@ -507,8 +507,8 @@ is using two characters to indicate a new line?"</span>))</pre>
  #\ #\ #\)
     '(<span class="number">32</span> <span class="number">9</span> <span class="number">10</span> <span class="number">12</span> <span class="number">127</span> <span class="number">13</span>))
   do
-  (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((ch (car pair)) (code (cdr pair)) (val (char-code ch)))
-    (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-eql" data-sym="EQL">eql</a> val code)
+  (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((ch (car pair)) (code (cdr pair)) (val (char-code ch)))
+    (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-eql" data-sym="EQL">eql</a> val code)
       (error <span class="string">"(char-code ~s) evaluated to ~s (expected ~s)."</span>
         ch
         val
@@ -519,10 +519,10 @@ is using two characters to indicate a new line?"</span>))</pre>
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(dotimes (i <span class="number">256</span>)
   (let ((ch (code-char i)))
-    (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (equal (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)
-        (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> i <span class="number">10</span>) (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">32</span>) (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">126</span>))))
+    (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (equal (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)
+        (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> i <span class="number">10</span>) (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">32</span>) (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">126</span>))))
       (let ((v (lisp-implementation-version)))
-        (when (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-string_3C_3D" data-sym="STRING&lt;=">string&lt;=</a> <span class="string">"2.4.2"</span> v) (<a class="sym-link system" href="../../../axioms.html#def-string_3C" data-sym="STRING&lt;">string&lt;</a> v <span class="string">"2.4.2.46"</span>))
+        (when (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-string_3C_3D" data-sym="STRING&lt;=">string&lt;=</a> <span class="string">"2.4.2"</span> v) (<a class="sym-link system" href="axioms.html#def-string_3C" data-sym="STRING&lt;">string&lt;</a> v <span class="string">"2.4.2.46"</span>))
           (exit-with-build-error <span class="string">"Please avoid SBCL versions 2.4.2 through ~
                      2.4.2.45.~%Instead use a later SBCL version --~%2.4.3 or ~
                      later or, for example, the latest from GitHub --~%or ~
@@ -534,10 +534,10 @@ is using two characters to indicate a new line?"</span>))</pre>
                  character~%with char-code ~d ~a standard in this Common Lisp ~
                  but should~%~abe."</span>
         i
-        (if (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)
+        (if (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)
           <span class="string">"is"</span>
           <span class="string">"is not"</span>)
-        (if (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)
+        (if (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)
           <span class="string">"not "</span>
           <span class="string">""</span>)))))</pre>
   </div>
@@ -546,17 +546,17 @@ is using two characters to indicate a new line?"</span>))</pre>
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(dotimes (i <span class="number">256</span>)
   (let ((ch (code-char i)))
-    (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
-      (<a class="sym-link system" href="../../../axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)
-        (if (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">65</span>) (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">90</span>))
-          (code-char (<a class="sym-link system" href="../../../axioms.html#def-_2B" data-sym="+">+</a> i <span class="number">32</span>))
+    (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
+      (<a class="sym-link system" href="axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)
+        (if (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">65</span>) (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">90</span>))
+          (code-char (<a class="sym-link system" href="axioms.html#def-_2B" data-sym="+">+</a> i <span class="number">32</span>))
           ch))
       (exit-with-build-error <span class="string">"This Common Lisp is unsuitable for ACL2 because ~
                  (char-downcase ~s)~%is ~s but should be ~s."</span>
         ch
-        (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)
-        (if (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">65</span>) (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">90</span>))
-          (code-char (<a class="sym-link system" href="../../../axioms.html#def-_2B" data-sym="+">+</a> i <span class="number">32</span>))
+        (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)
+        (if (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">65</span>) (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">90</span>))
+          (code-char (<a class="sym-link system" href="axioms.html#def-_2B" data-sym="+">+</a> i <span class="number">32</span>))
           ch)))))</pre>
   </div>
 
@@ -564,17 +564,17 @@ is using two characters to indicate a new line?"</span>))</pre>
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(dotimes (i <span class="number">256</span>)
   (let ((ch (code-char i)))
-    (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
-      (<a class="sym-link system" href="../../../axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)
-        (if (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">97</span>) (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">122</span>))
-          (code-char (<a class="sym-link system" href="../../../axioms.html#def--" data-sym="-">-</a> (char-code ch) <span class="number">32</span>))
+    (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
+      (<a class="sym-link system" href="axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)
+        (if (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">97</span>) (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">122</span>))
+          (code-char (<a class="sym-link system" href="axioms.html#def--" data-sym="-">-</a> (char-code ch) <span class="number">32</span>))
           ch))
       (exit-with-build-error <span class="string">"This Common Lisp is unsuitable for ACL2 because (char-upcase ~
                  ~s)~%is ~s but should be ~s."</span>
         ch
-        (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)
-        (if (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">65</span>) (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">90</span>))
-          (code-char (<a class="sym-link system" href="../../../axioms.html#def--" data-sym="-">-</a> (char-code ch) <span class="number">32</span>))
+        (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)
+        (if (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> i <span class="number">65</span>) (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> i <span class="number">90</span>))
+          (code-char (<a class="sym-link system" href="axioms.html#def--" data-sym="-">-</a> (char-code ch) <span class="number">32</span>))
           ch)))))</pre>
   </div>
 
@@ -582,45 +582,45 @@ is using two characters to indicate a new line?"</span>))</pre>
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(dotimes (i <span class="number">256</span>)
   (let ((ch (code-char i)) bad)
-    (unless (equal (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch))
-        (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
+    (unless (equal (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch))
+        (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
       (setq bad <span class="number">0</span>))
-    (unless (equal (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch))
-        (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
+    (unless (equal (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch))
+        (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch))
       (setq bad <span class="number">1</span>))
-    (unless (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-upper-case-p" data-sym="UPPER-CASE-P">upper-case-p</a> ch))
-        (equal (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)) ch))
+    (unless (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-upper-case-p" data-sym="UPPER-CASE-P">upper-case-p</a> ch))
+        (equal (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)) ch))
       (setq bad <span class="number">2</span>))
-    (unless (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-lower-case-p" data-sym="LOWER-CASE-P">lower-case-p</a> ch))
-        (equal (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)) ch))
+    (unless (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-lower-case-p" data-sym="LOWER-CASE-P">lower-case-p</a> ch))
+        (equal (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)) ch))
       (setq bad <span class="number">3</span>))
     (when bad
       (exit-with-build-error <span class="string">"This Common Lisp is unsuitable for ACL2 because the~%~
         following test failed for the character ch = (code-char ~s):~%~s~a"</span>
         i
-        (<a class="sym-link system" href="../../../axioms.html#def-case" data-sym="CASE">case</a> bad
-          (<span class="number">0</span> '(equal (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch))
-              (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)))
-          (<span class="number">1</span> '(equal (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch))
-              (<a class="sym-link system" href="../../../axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)))
-          (<span class="number">2</span> '(<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-upper-case-p" data-sym="UPPER-CASE-P">upper-case-p</a> ch))
-              (equal (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)) ch)))
-          (<span class="number">3</span> '(<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-lower-case-p" data-sym="LOWER-CASE-P">lower-case-p</a> ch))
-              (equal (<a class="sym-link system" href="../../../axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> (<a class="sym-link system" href="../../../axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)) ch)))
+        (<a class="sym-link system" href="axioms.html#def-case" data-sym="CASE">case</a> bad
+          (<span class="number">0</span> '(equal (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch))
+              (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)))
+          (<span class="number">1</span> '(equal (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch))
+              (<a class="sym-link system" href="axioms.html#def-standard-char-p" data-sym="STANDARD-CHAR-P">standard-char-p</a> ch)))
+          (<span class="number">2</span> '(<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-upper-case-p" data-sym="UPPER-CASE-P">upper-case-p</a> ch))
+              (equal (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> ch)) ch)))
+          (<span class="number">3</span> '(<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-lower-case-p" data-sym="LOWER-CASE-P">lower-case-p</a> ch))
+              (equal (<a class="sym-link system" href="axioms.html#def-char-downcase" data-sym="CHAR-DOWNCASE">char-downcase</a> (<a class="sym-link system" href="axioms.html#def-char-upcase" data-sym="CHAR-UPCASE">char-upcase</a> ch)) ch)))
           (otherwise <span class="string">"Implementation Error!   Please contact the ACL2 implementors."</span>))
         <span class="string">""</span>))))</pre>
   </div>
 
 <div class="form-block other" id="form-11" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (typep array-dimension-limit 'fixnum)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (typep array-dimension-limit 'fixnum)
   (exit-with-build-error <span class="string">"We assume that ARRAY-DIMENSION-LIMIT is a fixnum.  CLTL2 requires ~
       this.~%ACL2 will not work in this Common Lisp."</span>))</pre>
   </div>
 
 <div class="form-block other" id="form-12" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> multiple-values-limit *number-of-return-values*)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-_3E_3D" data-sym="&gt;=">&gt;=</a> multiple-values-limit *number-of-return-values*)
   (exit-with-build-error <span class="string">"We assume that multiple-values-limit is at least ~s, but in this Common ~
       Lisp its value is ~s.  Please contact the ACL2 implementors about ~
       lowering the value of ACL2 constant *NUMBER-OF-RETURN-VALUES*."</span>
@@ -632,13 +632,13 @@ is using two characters to indicate a new line?"</span>))</pre>
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(let ((badvars nil))
   (dolist (var *copy-of-common-lisp-symbols-from-main-lisp-package*)
-    (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-member" data-sym="MEMBER">member</a> var
+    (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-member" data-sym="MEMBER">member</a> var
         *copy-of-common-lisp-specials-and-constants*
-        <span class="keyword">:test</span> (function <a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a>))
-      (if (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (let ((s (symbol-name var)))
-            (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (<a class="sym-link system" href="../../../axioms.html#def-length" data-sym="LENGTH">length</a> s) <span class="number">0</span>) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="../../../axioms.html#def-char" data-sym="CHAR">char</a> s <span class="number">0</span>) #\&amp;))))
+        <span class="keyword">:test</span> (function <a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a>))
+      (if (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (let ((s (symbol-name var)))
+            (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (<a class="sym-link system" href="axioms.html#def-length" data-sym="LENGTH">length</a> s) <span class="number">0</span>) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eql" data-sym="EQL">eql</a> (<a class="sym-link system" href="axioms.html#def-char" data-sym="CHAR">char</a> s <span class="number">0</span>) #\&amp;))))
           (eval `(let ((,VAR (gensym)))
-              (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (boundp ',VAR) (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> ,VAR (symbol-value ',VAR))))))
+              (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (boundp ',VAR) (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> ,VAR (symbol-value ',VAR))))))
         (setq badvars (cons var badvars)))))
   (if badvars
     (exit-with-build-error <span class="string">"The following constants or special variables in the main~%Lisp ~
@@ -649,7 +649,7 @@ is using two characters to indicate a new line?"</span>))</pre>
 
 <div class="form-block other" id="form-14" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(format <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> <span class="string">"Check completed.~%"</span>)</pre>
+    <pre class="code" property="text">(format <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> <span class="string">"Check completed.~%"</span>)</pre>
   </div>
 
 

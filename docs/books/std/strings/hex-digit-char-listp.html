@@ -432,7 +432,7 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">hex-digit-char-listp</h1>
-    <div class="path"><a href="hex-digit-char-listp.lisp" class="source-link">std/strings/hex-digit-char-listp</a></div>
+    <div class="path"><a href="hex-digit-char-listp.lisp" class="source-link">books/std/strings/hex-digit-char-listp</a></div>
   </div>
   
   <main property="text">
@@ -443,45 +443,35 @@ pre.code {
 
 <div class="form-block other" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="hex.html" title="Open std/strings/hex">"std/strings/hex"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../../std/strings/hex.html" title="Open std/strings/hex">"std/strings/hex"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-2" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../util/deflist.html" title="Open std/util/deflist">"std/util/deflist"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../../std/util/deflist.html" title="Open std/util/deflist">"std/util/deflist"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-3" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../util/defrule.html" title="Open std/util/defrule">"std/util/defrule"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../../std/util/defrule.html" title="Open std/util/defrule">"std/util/defrule"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-4" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../xdoc/constructors.html" title="Open xdoc/constructors">"xdoc/constructors"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../../xdoc/constructors.html" title="Open xdoc/constructors">"xdoc/constructors"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-5" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../kestrel/built-ins/disable.html" title="Open kestrel/built-ins/disable">"kestrel/built-ins/disable"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-include-book" data-sym="INCLUDE-BOOK">include-book</a> <a class="include-path" href="../../../std/basic/controlled-configuration.html" title="Open std/basic/controlled-configuration">"std/basic/controlled-configuration"</a> <span class="keyword">:dir</span> <span class="keyword">:system</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-6" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (disable-most-builtin-logic-defuns))</pre>
+    <pre class="code" property="text">(controlled-configuration <span class="keyword">:hooks</span> nil)</pre>
   </div>
 
 <div class="form-block other" id="form-7" typeof="Code">
-    <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (disable-builtin-rewrite-rules-for-defaults))</pre>
-  </div>
-
-<div class="form-block other" id="form-8" typeof="Code">
-    <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-set-induction-depth-limit" data-sym="SET-INDUCTION-DEPTH-LIMIT">set-induction-depth-limit</a> <span class="number">0</span>)</pre>
-  </div>
-
-<div class="form-block other" id="form-9" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(deflist hex-digit-char-listp
   (x)
@@ -492,7 +482,11 @@ pre.code {
     (p <span class="string">"Since there are functions in @(see std/strings)
      that operate on @(tsee hex-digit-char-list*p),
      we provide a bridge theorem between the two recognizers,
-     which we can use to satisfy the guards of those functions."</span>))
+     which we can use to satisfy the guards of those functions."</span>)
+    (p <span class="string">"We also provide a (disabled) theorem to backchain without limit
+     from @(tsee character-listp) to this recognizer,
+     because the one for @(tsee hex-digit-char-list*p)
+     has a backchain limit that doesn&#39;t work with some proofs."</span>))
   (hex-digit-char-p x)
   <span class="keyword">:true-listp</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>
   <span class="keyword">:elementp-of-nil</span> nil
@@ -501,10 +495,13 @@ pre.code {
     (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (hex-digit-char-listp x)
       (hex-digit-char-list*p x))
     <span class="keyword">:hints</span> ((<span class="string">"Goal"</span> <span class="keyword">:induct</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>
-       <span class="keyword">:in-theory</span> (enable hex-digit-char-list*p)))))</pre>
+       <span class="keyword">:in-theory</span> (enable hex-digit-char-list*p))))
+  (<a class="sym-link system" href="../../../axioms.html#def-defthmd" data-sym="DEFTHMD">defthmd</a> character-listp-when-hex-digit-char-listp
+    (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (hex-digit-char-listp x)
+      (<a class="sym-link system" href="../../../axioms.html#def-character-listp" data-sym="CHARACTER-LISTP">character-listp</a> x))))</pre>
   </div>
 
-<div class="form-block other" id="form-10" typeof="Code">
+<div class="form-block other" id="form-8" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
     <pre class="code" property="text">(defsection hex-digit-char-listp-results
   <span class="keyword">:parents</span> (hex-digit-char-listp)

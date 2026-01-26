@@ -432,47 +432,47 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">float-a</h1>
-    <div class="path"><a href="float-a.lisp" class="source-link">/workspaces/acl2/float-a</a></div>
+    <div class="path"><a href="float-a.lisp" class="source-link">float-a</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block encapsulate" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">encapsulate</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
-  (<a class="sym-link system" href="../../../axioms.html#def-logic" data-sym="LOGIC">logic</a>)
-  (<a class="sym-link system" href="../../../axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> (((constrained-to-df <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
-       <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
+  (<a class="sym-link system" href="axioms.html#def-logic" data-sym="LOGIC">logic</a>)
+  (<a class="sym-link system" href="axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> (((constrained-to-df <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
+       <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>
        <span class="keyword">:formals</span> (x)
        <span class="keyword">:guard</span> (rationalp x)))
     nil
-    (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> constrained-to-df (x) (declare (ignore x)) <span class="number">0</span>))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> rationalp-constrained-to-df
+    (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> constrained-to-df (x) (declare (ignore x)) <span class="number">0</span>))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> rationalp-constrained-to-df
       (rationalp (constrained-to-df x))
       <span class="keyword">:rule-classes</span> <span class="keyword">:type-prescription</span>)
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-idempotent
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-idempotent
       (equal (constrained-to-df (constrained-to-df x))
         (constrained-to-df x)))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> to-df-minus
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (rationalp x) (equal (constrained-to-df x) x))
-        (equal (constrained-to-df (<a class="sym-link system" href="../../../axioms.html#def--" data-sym="-">-</a> x)) (<a class="sym-link system" href="../../../axioms.html#def--" data-sym="-">-</a> x))))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-default
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (rationalp x))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> to-df-minus
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (rationalp x) (equal (constrained-to-df x) x))
+        (equal (constrained-to-df (<a class="sym-link system" href="axioms.html#def--" data-sym="-">-</a> x)) (<a class="sym-link system" href="axioms.html#def--" data-sym="-">-</a> x))))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-default
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (rationalp x))
         (equal (constrained-to-df x) <span class="number">0</span>)))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-0 (equal (constrained-to-df <span class="number">0</span>) <span class="number">0</span>))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-monotonicity
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> x y) (rationalp x) (rationalp y))
-        (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> (constrained-to-df x) (constrained-to-df y)))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-0 (equal (constrained-to-df <span class="number">0</span>) <span class="number">0</span>))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> constrained-to-df-monotonicity
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> x y) (rationalp x) (rationalp y))
+        (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> (constrained-to-df x) (constrained-to-df y)))
       <span class="keyword">:rule-classes</span> (<span class="keyword">:linear</span> <span class="keyword">:rewrite</span>))))</pre>
   </div>
 
 <div class="form-block function" id="def-to-df" data-defines="TO-DF" data-references="CONSTRAINED-TO-DF,RATIONALP,XARGS,DECLARE,X,DEFUN" data-used-by="*DF-BASIC-PRIMITIVES*,DFP-MINUS,DFP-IMPLIES-TO-DF-IS-IDENTITY,DFP-TO-DF,TO-DFP,DFP,TO-DF-MONOTONICITY,TO-DF-DEFAULT,TO-DF-IDEMPOTENT,RATIONALP-TO-DF" data-part-name="TO-DF" data-part-args="X" data-part-declare="X,RATIONALP,XARGS,DECLARE" data-part-body="X,CONSTRAINED-TO-DF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DF">to-df</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (constrained-to-df x))">to-df</a>
   (x)
@@ -483,7 +483,7 @@ pre.code {
 <div class="form-block theorem" id="def-rationalp-to-df" data-defines="RATIONALP-TO-DF" data-references="X,TO-DF,RATIONALP,DEFTHM" data-part-name="RATIONALP-TO-DF" data-part-term="X,TO-DF,RATIONALP" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="RATIONALP-TO-DF">rationalp-to-df</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-rationalp-to-df" data-sym="RATIONALP-TO-DF" title="(defthm rationalp-to-df (rationalp (to-df x)) :rule-classes :type-prescription)">rationalp-to-df</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-rationalp-to-df" data-sym="RATIONALP-TO-DF" title="(defthm rationalp-to-df (rationalp (to-df x)) :rule-classes :type-prescription)">rationalp-to-df</a>
   (rationalp (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (constrained-to-df x))">to-df</a> x))
@@ -493,7 +493,7 @@ pre.code {
 <div class="form-block theorem" id="def-to-df-idempotent" data-defines="TO-DF-IDEMPOTENT" data-references="X,TO-DF,EQUAL,DEFTHM" data-part-name="TO-DF-IDEMPOTENT" data-part-term="X,TO-DF,EQUAL" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DF-IDEMPOTENT">to-df-idempotent</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-idempotent" data-sym="TO-DF-IDEMPOTENT" title="(defthm to-df-idempotent (equal (to-df (to-df x)) (to-df x)))">to-df-idempotent</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-idempotent" data-sym="TO-DF-IDEMPOTENT" title="(defthm to-df-idempotent (equal (to-df (to-df x)) (to-df x)))">to-df-idempotent</a>
   (equal (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (constrained-to-df x))">to-df</a> (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
@@ -506,8 +506,8 @@ pre.code {
 <div class="form-block theorem" id="def-to-df-default" data-defines="TO-DF-DEFAULT" data-references="TO-DF,EQUAL,X,RATIONALP,NOT,IMPLIES,DEFTHM" data-part-name="TO-DF-DEFAULT" data-part-term="TO-DF,EQUAL,X,RATIONALP,NOT,IMPLIES" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DF-DEFAULT">to-df-default</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-default" data-sym="TO-DF-DEFAULT" title="(defthm to-df-default (implies (not (rationalp x)) (equal (to-df x) 0)))">to-df-default</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (rationalp x)) (equal (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-default" data-sym="TO-DF-DEFAULT" title="(defthm to-df-default (implies (not (rationalp x)) (equal (to-df x) 0)))">to-df-default</a>
+  (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (rationalp x)) (equal (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (constrained-to-df x))">to-df</a> x) <span class="number">0</span>)))</pre>
   </div>
@@ -515,12 +515,12 @@ pre.code {
 <div class="form-block theorem" id="def-to-df-monotonicity" data-defines="TO-DF-MONOTONICITY" data-references="TO-DF,RATIONALP,Y,X,<=,AND,IMPLIES,DEFTHM" data-part-name="TO-DF-MONOTONICITY" data-part-term="TO-DF,RATIONALP,Y,X,<=,AND,IMPLIES" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DF-MONOTONICITY">to-df-monotonicity</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-monotonicity" data-sym="TO-DF-MONOTONICITY" title="(defthm to-df-monotonicity
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-monotonicity" data-sym="TO-DF-MONOTONICITY" title="(defthm to-df-monotonicity
         (implies (and (&lt;= x y) (rationalp x) (rationalp y))
                  (&lt;= (to-df x) (to-df y)))
         :rule-classes (:linear :rewrite))">to-df-monotonicity</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> x y) (rationalp x) (rationalp y))
-    (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
+  (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> x y) (rationalp x) (rationalp y))
+    (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (constrained-to-df x))">to-df</a> x) (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
@@ -530,19 +530,19 @@ pre.code {
 
 <div class="form-block function" id="def-dfp" data-defines="DFP" data-references="TO-DF,=,RATIONALP,AND,T,XARGS,DECLARE,X,DEFUN" data-used-by="BINARY-DF/,BINARY-DF*,UNARY-DF/,DFP-MINUS,UNARY-DF-,BINARY-DF+,DFP-IMPLIES-TO-DF-IS-IDENTITY,DFP-IMPLIES-RATIONALP,DFP-TO-DF,FROM-DF" data-part-name="DFP" data-part-args="X" data-part-declare="T,XARGS,DECLARE" data-part-body="TO-DF,=,X,RATIONALP,AND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DFP">dfp</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a>
   (x)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> <span class="keyword">:mode</span> <span class="keyword">:logic</span>))
-  (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (rationalp x) (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> <span class="keyword">:mode</span> <span class="keyword">:logic</span>))
+  (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (rationalp x) (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (constrained-to-df x))">to-df</a> x) x)))</pre>
   </div>
 
 <div class="form-block function" id="def-from-df" data-defines="FROM-DF" data-references="DFP,XARGS,DECLARE,X,DEFUN" data-used-by="*DF-BASIC-PRIMITIVES*,TO-DFP" data-part-name="FROM-DF" data-part-args="X" data-part-declare="X,DFP,XARGS,DECLARE" data-part-body="X" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="FROM-DF">from-df</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-from-df" data-sym="FROM-DF" title="(defun from-df (x) (declare (xargs :guard (dfp x) :mode :logic)) x)">from-df</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-from-df" data-sym="FROM-DF" title="(defun from-df (x) (declare (xargs :guard (dfp x) :mode :logic)) x)">from-df</a>
   (x)
   (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
@@ -552,7 +552,7 @@ pre.code {
 
 <div class="form-block function" id="def-to-dfp" data-defines="TO-DFP" data-references="TO-DF,FROM-DF,RATIONALP,XARGS,DECLARE,X,DEFUN" data-part-name="TO-DFP" data-part-args="X" data-part-declare="X,RATIONALP,XARGS,DECLARE" data-part-body="X,TO-DF,FROM-DF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DFP">to-dfp</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-dfp" data-sym="TO-DFP" title="(defun to-dfp (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-dfp" data-sym="TO-DFP" title="(defun to-dfp (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (from-df (to-df x)))">to-dfp</a>
   (x)
@@ -565,7 +565,7 @@ pre.code {
 <div class="form-block theorem" id="def-dfp-to-df" data-defines="DFP-TO-DF" data-references="X,TO-DF,DFP,DEFTHM" data-part-name="DFP-TO-DF" data-part-term="X,TO-DF,DFP" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DFP-TO-DF">dfp-to-df</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-to-df" data-sym="DFP-TO-DF" title="(defthm dfp-to-df (dfp (to-df x)))">dfp-to-df</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-to-df" data-sym="DFP-TO-DF" title="(defthm dfp-to-df (dfp (to-df x)))">dfp-to-df</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
@@ -575,9 +575,9 @@ pre.code {
 <div class="form-block theorem" id="def-dfp-implies-rationalp" data-defines="DFP-IMPLIES-RATIONALP" data-references="RATIONALP,X,DFP,IMPLIES,DEFTHM" data-part-name="DFP-IMPLIES-RATIONALP" data-part-term="RATIONALP,X,DFP,IMPLIES" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DFP-IMPLIES-RATIONALP">dfp-implies-rationalp</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-implies-rationalp" data-sym="DFP-IMPLIES-RATIONALP" title="(defthm dfp-implies-rationalp (implies (dfp x) (rationalp x)) :rule-classes
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-implies-rationalp" data-sym="DFP-IMPLIES-RATIONALP" title="(defthm dfp-implies-rationalp (implies (dfp x) (rationalp x)) :rule-classes
         :compound-recognizer)">dfp-implies-rationalp</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+  (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (rationalp x))
   <span class="keyword">:rule-classes</span> <span class="keyword">:compound-recognizer</span>)</pre>
@@ -586,9 +586,9 @@ pre.code {
 <div class="form-block theorem" id="def-dfp-implies-to-df-is-identity" data-defines="DFP-IMPLIES-TO-DF-IS-IDENTITY" data-references="TO-DF,EQUAL,X,DFP,IMPLIES,DEFTHM" data-part-name="DFP-IMPLIES-TO-DF-IS-IDENTITY" data-part-term="TO-DF,EQUAL,X,DFP,IMPLIES" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DFP-IMPLIES-TO-DF-IS-IDENTITY">dfp-implies-to-df-is-identity</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-implies-to-df-is-identity" data-sym="DFP-IMPLIES-TO-DF-IS-IDENTITY" title="(defthm dfp-implies-to-df-is-identity (implies (dfp x) (equal (to-df x) x))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-implies-to-df-is-identity" data-sym="DFP-IMPLIES-TO-DF-IS-IDENTITY" title="(defthm dfp-implies-to-df-is-identity (implies (dfp x) (equal (to-df x) x))
         :rule-classes (:forward-chaining :rewrite))">dfp-implies-to-df-is-identity</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+  (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (equal (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
@@ -598,7 +598,7 @@ pre.code {
 
 <div class="form-block in-theory" id="form-13" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable <a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> <a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
@@ -607,57 +607,57 @@ pre.code {
 
 <div class="form-block encapsulate" id="form-14" typeof="Code">
     <div class="form-header"><span class="form-type">encapsulate</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
-  (<a class="sym-link system" href="../../../axioms.html#def-logic" data-sym="LOGIC">logic</a>)
-  (<a class="sym-link system" href="../../../axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> (((df-round <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>) =&gt; <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a> <span class="keyword">:formals</span> (x) <span class="keyword">:guard</span> (rationalp x)))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
+  (<a class="sym-link system" href="axioms.html#def-logic" data-sym="LOGIC">logic</a>)
+  (<a class="sym-link system" href="axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> (((df-round <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>) =&gt; <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a> <span class="keyword">:formals</span> (x) <span class="keyword">:guard</span> (rationalp x)))
     nil
-    (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> df-round (x) (constrained-to-df x)))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> rationalp-df-round
+    (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> df-round (x) (constrained-to-df x)))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> rationalp-df-round
       (rationalp (df-round x))
       <span class="keyword">:rule-classes</span> <span class="keyword">:type-prescription</span>)
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> dfp-df-round (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> dfp-df-round (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> (df-round r)))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> df-round-is-identity-for-dfp
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> df-round-is-identity-for-dfp
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> r) (equal (df-round r) r)))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> df-round-monotonicity
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> x y) (rationalp x) (rationalp y))
-        (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> (df-round x) (df-round y)))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> df-round-monotonicity
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> x y) (rationalp x) (rationalp y))
+        (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> (df-round x) (df-round y)))
       <span class="keyword">:rule-classes</span> (<span class="keyword">:linear</span> <span class="keyword">:rewrite</span>))))</pre>
   </div>
 
 <div class="form-block theorem" id="def-df-round-idempotent" data-defines="DF-ROUND-IDEMPOTENT" data-references="X,DF-ROUND,EQUAL,DEFTHM" data-part-name="DF-ROUND-IDEMPOTENT" data-part-term="X,DF-ROUND,EQUAL" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-ROUND-IDEMPOTENT">df-round-idempotent</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-df-round-idempotent" data-sym="DF-ROUND-IDEMPOTENT" title="(defthm df-round-idempotent (equal (df-round (df-round x)) (df-round x)))">df-round-idempotent</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-df-round-idempotent" data-sym="DF-ROUND-IDEMPOTENT" title="(defthm df-round-idempotent (equal (df-round (df-round x)) (df-round x)))">df-round-idempotent</a>
   (equal (df-round (df-round x)) (df-round x)))</pre>
   </div>
 
 <div class="form-block encapsulate" id="form-16" typeof="Code">
     <div class="form-header"><span class="form-type">encapsulate</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
-  (<a class="sym-link system" href="../../../axioms.html#def-logic" data-sym="LOGIC">logic</a>)
-  (<a class="sym-link system" href="../../../axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> (((constrained-df-rationalize <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
-       <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
+  (<a class="sym-link system" href="axioms.html#def-logic" data-sym="LOGIC">logic</a>)
+  (<a class="sym-link system" href="axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> (((constrained-df-rationalize <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
+       <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>
        <span class="keyword">:formals</span> (x)
        <span class="keyword">:guard</span> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x)))
     (constrained-to-df)
-    (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> constrained-df-rationalize
+    (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> constrained-df-rationalize
         (x)
         (if (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x)
           x
           <span class="number">0</span>)))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> rationalp-constrained-df-rationalize
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> rationalp-constrained-df-rationalize
       (rationalp (constrained-df-rationalize x))
       <span class="keyword">:rule-classes</span> <span class="keyword">:type-prescription</span>)
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> to-df-of-constrained-df-rationalize
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> to-df-of-constrained-df-rationalize
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x)
         (equal (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
@@ -667,40 +667,40 @@ pre.code {
 
 <div class="form-block function" id="def-binary-df_2B" data-defines="BINARY-DF+" data-references="+,DF-ROUND,DFP,AND,XARGS,DECLARE,Y,X,DEFUN" data-used-by="*DF-BASIC-PRIMITIVES*" data-part-name="BINARY-DF+" data-part-args="Y,X" data-part-declare="Y,X,DFP,AND,XARGS,DECLARE" data-part-body="Y,X,+,DF-ROUND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="BINARY-DF+">binary-df+</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-binary-df_2B" data-sym="BINARY-DF+" title="(defun binary-df+ (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-binary-df_2B" data-sym="BINARY-DF+" title="(defun binary-df+ (x y)
   (declare (xargs :mode :logic :guard (and (dfp x) (dfp y))))
   (df-round (+ x y)))">binary-df+</a>
   (x y)
-  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> y))))
-  (df-round (<a class="sym-link system" href="../../../axioms.html#def-_2B" data-sym="+">+</a> x y)))</pre>
+  (df-round (<a class="sym-link system" href="axioms.html#def-_2B" data-sym="+">+</a> x y)))</pre>
   </div>
 
 <div class="form-block function" id="def-unary-df-" data-defines="UNARY-DF-" data-references="-,DF-ROUND,DFP,XARGS,DECLARE,X,DEFUN" data-used-by="*DF-BASIC-PRIMITIVES*" data-part-name="UNARY-DF-" data-part-args="X" data-part-declare="X,DFP,XARGS,DECLARE" data-part-body="X,-,DF-ROUND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="UNARY-DF-">unary-df-</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-unary-df-" data-sym="UNARY-DF-" title="(defun unary-df- (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-unary-df-" data-sym="UNARY-DF-" title="(defun unary-df- (x)
   (declare (xargs :mode :logic :guard (dfp x)))
   (df-round (- x)))">unary-df-</a>
   (x)
   (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x)))
-  (df-round (<a class="sym-link system" href="../../../axioms.html#def--" data-sym="-">-</a> x)))</pre>
+  (df-round (<a class="sym-link system" href="axioms.html#def--" data-sym="-">-</a> x)))</pre>
   </div>
 
 <div class="form-block theorem" id="def-dfp-minus" data-defines="DFP-MINUS" data-references="TO-DF,ENABLE,-,X,DFP,IMPLIES,DEFTHM" data-part-name="DFP-MINUS" data-part-term="-,X,DFP,IMPLIES" data-part-hints="TO-DF,DFP,ENABLE" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DFP-MINUS">dfp-minus</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button><button class="part-btn" data-part="hints">hints</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-minus" data-sym="DFP-MINUS" title="(defthm dfp-minus (implies (dfp x) (dfp (- x))) :hints
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-dfp-minus" data-sym="DFP-MINUS" title="(defthm dfp-minus (implies (dfp x) (dfp (- x))) :hints
         ((&quot;Goal&quot; :in-theory (enable dfp to-df))))">dfp-minus</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+  (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
-  (and (rationalp x) (= (to-df x) x)))">dfp</a> (<a class="sym-link system" href="../../../axioms.html#def--" data-sym="-">-</a> x)))
+  (and (rationalp x) (= (to-df x) x)))">dfp</a> (<a class="sym-link system" href="axioms.html#def--" data-sym="-">-</a> x)))
   <span class="keyword">:hints</span> ((<span class="string">"Goal"</span> <span class="keyword">:in-theory</span> (enable <a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> <a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
@@ -710,47 +710,47 @@ pre.code {
 
 <div class="form-block function" id="def-unary-df_2F" data-defines="UNARY-DF/" data-references="/,DF-ROUND,=,NOT,DFP,AND,XARGS,DECLARE,X,DEFUN" data-used-by="*DF-BASIC-PRIMITIVES*" data-part-name="UNARY-DF/" data-part-args="X" data-part-declare="=,NOT,X,DFP,AND,XARGS,DECLARE" data-part-body="X,/,DF-ROUND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="UNARY-DF/">unary-df/</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-unary-df_2F" data-sym="UNARY-DF/" title="(defun unary-df/ (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-unary-df_2F" data-sym="UNARY-DF/" title="(defun unary-df/ (x)
   (declare (xargs :mode :logic :guard (and (dfp x) (not (= x 0)))))
   (df-round (/ x)))">unary-df/</a>
   (x)
-  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
-  (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> x <span class="number">0</span>)))))
-  (df-round (<a class="sym-link system" href="../../../axioms.html#def-_2F" data-sym="/">/</a> x)))</pre>
+  (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> x <span class="number">0</span>)))))
+  (df-round (<a class="sym-link system" href="axioms.html#def-_2F" data-sym="/">/</a> x)))</pre>
   </div>
 
 <div class="form-block function" id="def-binary-df_2A" data-defines="BINARY-DF*" data-references="*,DF-ROUND,DFP,AND,XARGS,DECLARE,Y,X,DEFUN" data-used-by="*DF-BASIC-PRIMITIVES*" data-part-name="BINARY-DF*" data-part-args="Y,X" data-part-declare="Y,X,DFP,AND,XARGS,DECLARE" data-part-body="Y,X,*,DF-ROUND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="BINARY-DF*">binary-df*</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-binary-df_2A" data-sym="BINARY-DF*" title="(defun binary-df* (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-binary-df_2A" data-sym="BINARY-DF*" title="(defun binary-df* (x y)
   (declare (xargs :mode :logic :guard (and (dfp x) (dfp y))))
   (df-round (* x y)))">binary-df*</a>
   (x y)
-  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> y))))
-  (df-round (<a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a> x y)))</pre>
+  (df-round (<a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a> x y)))</pre>
   </div>
 
 <div class="form-block function" id="def-binary-df_2F" data-defines="BINARY-DF/" data-references="/,DF-ROUND,=,NOT,DFP,AND,XARGS,DECLARE,Y,X,DEFUN" data-used-by="*DF-BASIC-PRIMITIVES*" data-part-name="BINARY-DF/" data-part-args="Y,X" data-part-declare="=,NOT,Y,X,DFP,AND,XARGS,DECLARE" data-part-body="Y,X,/,DF-ROUND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="BINARY-DF/">binary-df/</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-binary-df_2F" data-sym="BINARY-DF/" title="(defun binary-df/ (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-binary-df_2F" data-sym="BINARY-DF/" title="(defun binary-df/ (x y)
   (declare (xargs :mode :logic :guard (and (dfp x) (dfp y) (not (= y 0)))))
   (df-round (/ x y)))">binary-df/</a>
   (x y)
-  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
+  (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:logic</span> <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
   (and (rationalp x) (= (to-df x) x)))">dfp</a> x) (<a class="sym-link local-def" href="#def-dfp" data-sym="DFP" title="(defun dfp (x)
   (declare (xargs :guard t :mode :logic))
-  (and (rationalp x) (= (to-df x) x)))">dfp</a> y) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> y <span class="number">0</span>)))))
-  (df-round (<a class="sym-link system" href="../../../axioms.html#def-_2F" data-sym="/">/</a> x y)))</pre>
+  (and (rationalp x) (= (to-df x) x)))">dfp</a> y) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> y <span class="number">0</span>)))))
+  (df-round (<a class="sym-link system" href="axioms.html#def-_2F" data-sym="/">/</a> x y)))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Adf-basic-primitives_2A" data-defines="*DF-BASIC-PRIMITIVES*" data-references="UNARY-DF/,UNARY-DF-,BINARY-DF/,BINARY-DF*,BINARY-DF+,DF-STRING,TO-DF,FROM-DF,QUOTE,DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*DF-BASIC-PRIMITIVES*">*df-basic-primitives*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-basic-primitives_2A" data-sym="*DF-BASIC-PRIMITIVES*" title="(defconst *df-basic-primitives*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-basic-primitives_2A" data-sym="*DF-BASIC-PRIMITIVES*" title="(defconst *df-basic-primitives*
           &#39;((from-df (:df) (nil)) (to-df (nil) (:df)) (df-string (:df) (nil))
             (binary-df+ (:df :df) (:df)) (binary-df* (:df :df) (:df))
             (binary-df/ (:df :df) (:df)) (unary-df- (:df) (:df))
@@ -758,7 +758,7 @@ pre.code {
   '((<a class="sym-link local-def" href="#def-from-df" data-sym="FROM-DF" title="(defun from-df (x) (declare (xargs :guard (dfp x) :mode :logic)) x)">from-df</a> (<span class="keyword">:df</span>) (nil)) (<a class="sym-link local-def" href="#def-to-df" data-sym="TO-DF" title="(defun to-df (x)
   (declare (xargs :guard (rationalp x) :mode :logic))
   (constrained-to-df x))">to-df</a> (nil) (<span class="keyword">:df</span>))
-    (<a class="sym-link system" href="../../../basis-b.html#def-df-string" data-sym="DF-STRING">df-string</a> (<span class="keyword">:df</span>) (nil))
+    (<a class="sym-link system" href="basis-b.html#def-df-string" data-sym="DF-STRING">df-string</a> (<span class="keyword">:df</span>) (nil))
     (<a class="sym-link local-def" href="#def-binary-df_2B" data-sym="BINARY-DF+" title="(defun binary-df+ (x y)
   (declare (xargs :mode :logic :guard (and (dfp x) (dfp y))))
   (df-round (+ x y)))">binary-df+</a> (<span class="keyword">:df</span> <span class="keyword">:df</span>) (<span class="keyword">:df</span>))
@@ -778,7 +778,7 @@ pre.code {
 
 <div class="form-block function" id="def-install-df-basic-primitives-1" data-defines="INSTALL-DF-BASIC-PRIMITIVES-1" data-references="QUOTE,PUTPROP,CADDR,STOBJS-OUT,CADR,STOBJS-IN,FN,CAR,TUPLE,LET*,CDR,T,ENDP,COND,XARGS,DECLARE,WRLD,ALIST,DEFUN" data-part-name="INSTALL-DF-BASIC-PRIMITIVES-1" data-part-args="WRLD,ALIST" data-part-declare="XARGS,DECLARE" data-part-body="QUOTE,PUTPROP,CADDR,STOBJS-OUT,CADR,STOBJS-IN,FN,CAR,TUPLE,LET*,CDR,INSTALL-DF-BASIC-PRIMITIVES-1,T,WRLD,ALIST,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="INSTALL-DF-BASIC-PRIMITIVES-1">install-df-basic-primitives-1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-install-df-basic-primitives-1" data-sym="INSTALL-DF-BASIC-PRIMITIVES-1" title="(defun install-df-basic-primitives-1 (alist wrld)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-install-df-basic-primitives-1" data-sym="INSTALL-DF-BASIC-PRIMITIVES-1" title="(defun install-df-basic-primitives-1 (alist wrld)
   (declare (xargs :mode :program))
   (cond ((endp alist) wrld)
         (t
@@ -786,20 +786,20 @@ pre.code {
 ...">install-df-basic-primitives-1</a>
   (alist wrld)
   (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:program</span>))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> alist) wrld)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-install-df-basic-primitives-1" data-sym="INSTALL-DF-BASIC-PRIMITIVES-1" title="(defun install-df-basic-primitives-1 (alist wrld)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> alist) wrld)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-install-df-basic-primitives-1" data-sym="INSTALL-DF-BASIC-PRIMITIVES-1" title="(defun install-df-basic-primitives-1 (alist wrld)
   (declare (xargs :mode :program))
   (cond ((endp alist) wrld)
         (t
          (install-df-basic-primitives-1 (cdr alist)
 ...">install-df-basic-primitives-1</a> (cdr alist)
-        (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((tuple (car alist)) (fn (car tuple))
-            (<a class="sym-link system" href="../../../axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a> (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> tuple))
-            (<a class="sym-link system" href="../../../axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> (<a class="sym-link system" href="../../../axioms.html#def-caddr" data-sym="CADDR">caddr</a> tuple)))
-          (<a class="sym-link system" href="../../../axioms.html#def-putprop" data-sym="PUTPROP">putprop</a> fn
-            '<a class="sym-link system" href="../../../axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a>
-            <a class="sym-link system" href="../../../axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a>
-            (<a class="sym-link system" href="../../../axioms.html#def-putprop" data-sym="PUTPROP">putprop</a> fn '<a class="sym-link system" href="../../../axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> <a class="sym-link system" href="../../../axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> wrld)))))))</pre>
+        (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((tuple (car alist)) (fn (car tuple))
+            (<a class="sym-link system" href="axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a> (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> tuple))
+            (<a class="sym-link system" href="axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> (<a class="sym-link system" href="axioms.html#def-caddr" data-sym="CADDR">caddr</a> tuple)))
+          (<a class="sym-link system" href="axioms.html#def-putprop" data-sym="PUTPROP">putprop</a> fn
+            '<a class="sym-link system" href="axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a>
+            <a class="sym-link system" href="axioms.html#def-stobjs-in" data-sym="STOBJS-IN">stobjs-in</a>
+            (<a class="sym-link system" href="axioms.html#def-putprop" data-sym="PUTPROP">putprop</a> fn '<a class="sym-link system" href="axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> <a class="sym-link system" href="axioms.html#def-stobjs-out" data-sym="STOBJS-OUT">stobjs-out</a> wrld)))))))</pre>
   </div>
 
 

@@ -432,18 +432,18 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">float-b</h1>
-    <div class="path"><a href="float-b.lisp" class="source-link">/workspaces/acl2/float-b</a></div>
+    <div class="path"><a href="float-b.lisp" class="source-link">float-b</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block function" id="def-install-df-basic-primitives" data-defines="INSTALL-DF-BASIC-PRIMITIVES" data-references="*DF-BASIC-PRIMITIVES*,INSTALL-DF-BASIC-PRIMITIVES-1,EXTENSION,SET-W,W,BOOT-STRAP-PASS-2,QUOTE,GLOBAL-VAL,IF,XARGS,DECLARE,STATE,DEFUN" data-part-name="INSTALL-DF-BASIC-PRIMITIVES" data-part-args="STATE" data-part-declare="XARGS,DECLARE" data-part-body="*DF-BASIC-PRIMITIVES*,INSTALL-DF-BASIC-PRIMITIVES-1,EXTENSION,SET-W,STATE,W,BOOT-STRAP-PASS-2,QUOTE,GLOBAL-VAL,IF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="INSTALL-DF-BASIC-PRIMITIVES">install-df-basic-primitives</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-install-df-basic-primitives" data-sym="INSTALL-DF-BASIC-PRIMITIVES" title="(defun install-df-basic-primitives (state)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-install-df-basic-primitives" data-sym="INSTALL-DF-BASIC-PRIMITIVES" title="(defun install-df-basic-primitives (state)
   (declare (xargs :mode :program))
   (if (global-val &#39;boot-strap-pass-2 (w state))
       state
@@ -451,59 +451,59 @@ pre.code {
 ...">install-df-basic-primitives</a>
   (state)
   (declare (xargs <span class="keyword">:mode</span> <span class="keyword">:program</span>))
-  (if (<a class="sym-link system" href="../../../axioms.html#def-global-val" data-sym="GLOBAL-VAL">global-val</a> 'boot-strap-pass-2 (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))
+  (if (<a class="sym-link system" href="axioms.html#def-global-val" data-sym="GLOBAL-VAL">global-val</a> 'boot-strap-pass-2 (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))
     state
-    (<a class="sym-link system" href="../../../history-management.html#def-set-w" data-sym="SET-W">set-w</a> 'extension
+    (<a class="sym-link system" href="history-management.html#def-set-w" data-sym="SET-W">set-w</a> 'extension
       (install-df-basic-primitives-1 *df-basic-primitives*
-        (<a class="sym-link system" href="../../../axioms.html#def-w" data-sym="W">w</a> state))
+        (<a class="sym-link system" href="axioms.html#def-w" data-sym="W">w</a> state))
       state)))</pre>
   </div>
 
 <div class="form-block other" id="form-2" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-pprogn" data-sym="PPROGN">pprogn</a> (<a class="sym-link local-def" href="#def-install-df-basic-primitives" data-sym="INSTALL-DF-BASIC-PRIMITIVES" title="(defun install-df-basic-primitives (state)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-pprogn" data-sym="PPROGN">pprogn</a> (<a class="sym-link local-def" href="#def-install-df-basic-primitives" data-sym="INSTALL-DF-BASIC-PRIMITIVES" title="(defun install-df-basic-primitives (state)
   (declare (xargs :mode :program))
   (if (global-val &#39;boot-strap-pass-2 (w state))
       state
       (set-w &#39;extension
 ...">install-df-basic-primitives</a> state)
-  (<a class="sym-link system" href="../../../axioms.html#def-deflabel" data-sym="DEFLABEL">deflabel</a> df-basic-primitives-installed))</pre>
+  (<a class="sym-link system" href="axioms.html#def-deflabel" data-sym="DEFLABEL">deflabel</a> df-basic-primitives-installed))</pre>
   </div>
 
 <div class="form-block function" id="def-to-df_3F-fn" data-defines="TO-DF?-FN" data-references="ASSERT$,C,MEMBER-EQ,NOT,LEGAL-CONSTANTP1,SYMBOLP,TO-DF,QUASIQUOTE,DFP,CADR,ACL2-NUMBERP,QUOTE,CAR,EQ,CDDR,NULL,CDR,CONSP,AND,COND,LET,T,XARGS,DECLARE,X,DEFUN" data-used-by="TO-DF?-ARGS" data-part-name="TO-DF?-FN" data-part-args="X" data-part-declare="T,XARGS,DECLARE" data-part-body="ASSERT$,C,MEMBER-EQ,NOT,LEGAL-CONSTANTP1,SYMBOLP,TO-DF,QUASIQUOTE,DFP,T,CADR,ACL2-NUMBERP,QUOTE,CAR,EQ,CDDR,NULL,CDR,CONSP,AND,COND,X,LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DF?-FN">to-df?-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-df_3F-fn" data-sym="TO-DF?-FN" title="(defun to-df?-fn (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-df_3F-fn" data-sym="TO-DF?-FN" title="(defun to-df?-fn (x)
   (declare (xargs :guard t))
   (let ((x
          (cond
           ((and (consp x) (consp (cdr x)) (null (cddr x)) (eq (car x) &#39;quote)
 ...">to-df?-fn</a>
   (x)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-  (let ((x (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (consp x)
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+  (let ((x (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (consp x)
             (consp (cdr x))
-            (<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> x))
-            (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (car x) 'quote)
-            (acl2-numberp (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> x))) (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> x))
-         (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> x))))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((acl2-numberp x) (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((dfp x) `(to-df ,X)) (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> x)))
-      ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (symbolp x)
-         (<a class="sym-link system" href="../../../axioms.html#def-legal-constantp1" data-sym="LEGAL-CONSTANTP1">legal-constantp1</a> x)
-         (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> x '(<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil)))) `(let ((c ,X))
-          (<a class="sym-link system" href="../../../axioms.html#def-assert_24" data-sym="ASSERT$">assert$</a> (dfp c) (to-df c))))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> x))))</pre>
+            (<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> x))
+            (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (car x) 'quote)
+            (acl2-numberp (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> x))) (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> x))
+         (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> x))))
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((acl2-numberp x) (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((dfp x) `(to-df ,X)) (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> x)))
+      ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (symbolp x)
+         (<a class="sym-link system" href="axioms.html#def-legal-constantp1" data-sym="LEGAL-CONSTANTP1">legal-constantp1</a> x)
+         (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> x '(<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil)))) `(let ((c ,X))
+          (<a class="sym-link system" href="axioms.html#def-assert_24" data-sym="ASSERT$">assert$</a> (dfp c) (to-df c))))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> x))))</pre>
   </div>
 
 <div class="form-block function" id="def-to-df_3F-args" data-defines="TO-DF?-ARGS" data-references="CDR,CAR,TO-DF?-FN,CONS,T,ENDP,COND,TRUE-LISTP,XARGS,DECLARE,LST,DEFUN" data-used-by="DF*,DF+" data-part-name="TO-DF?-ARGS" data-part-args="LST" data-part-declare="LST,TRUE-LISTP,XARGS,DECLARE" data-part-body="CDR,TO-DF?-ARGS,CAR,TO-DF?-FN,CONS,T,LST,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DF?-ARGS">to-df?-args</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-df_3F-args" data-sym="TO-DF?-ARGS" title="(defun to-df?-args (lst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-to-df_3F-args" data-sym="TO-DF?-ARGS" title="(defun to-df?-args (lst)
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
         (t (cons (to-df?-fn (car lst)) (to-df?-args (cdr lst))))))">to-df?-args</a>
   (lst)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> lst)))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> lst) nil)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (cons (<a class="sym-link local-def" href="#def-to-df_3F-fn" data-sym="TO-DF?-FN" title="(defun to-df?-fn (x)
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> lst)))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> lst) nil)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (cons (<a class="sym-link local-def" href="#def-to-df_3F-fn" data-sym="TO-DF?-FN" title="(defun to-df?-fn (x)
   (declare (xargs :guard t))
   (let ((x
          (cond
@@ -516,20 +516,20 @@ pre.code {
 
 <div class="form-block function" id="def-defun-df-events" data-defines="DEFUN-DF-EVENTS" data-references="RATIONALP,DFP,DEFTHM,QUASIQUOTE,RATIONALP-,RATIONALP-THM-NAME,DFP-,QUOTE,LIST,PACKN-POS,DFP-THM-NAME,LET,SYMBOLP,AND,XARGS,DECLARE,REST,FORMALS,MACRO-NAME,FN-NAME,DEFUN" data-used-by="DF-EVENTS-1,DEFUN-DF" data-part-name="DEFUN-DF-EVENTS" data-part-args="REST,FORMALS,MACRO-NAME,FN-NAME" data-part-declare="FN-NAME,MACRO-NAME,SYMBOLP,AND,XARGS,DECLARE" data-part-body="RATIONALP,DFP,DEFTHM,DEFUN,QUASIQUOTE,RATIONALP-,RATIONALP-THM-NAME,FN-NAME,DFP-,QUOTE,LIST,PACKN-POS,DFP-THM-NAME,LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DEFUN-DF-EVENTS">defun-df-events</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-defun-df-events" data-sym="DEFUN-DF-EVENTS" title="(defun defun-df-events (fn-name macro-name formals rest)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-defun-df-events" data-sym="DEFUN-DF-EVENTS" title="(defun defun-df-events (fn-name macro-name formals rest)
   (declare (xargs :guard (and (symbolp macro-name) (symbolp fn-name))))
   (let ((dfp-thm-name (packn-pos (list &#39;dfp- fn-name) fn-name))
         (rationalp-thm-name (packn-pos (list &#39;rationalp- fn-name) fn-name)))
     `((defun ,fn-name ,formals
 ...">defun-df-events</a>
-  (fn-name macro-name <a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="../../../axioms.html#def-rest" data-sym="REST">rest</a>)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (symbolp macro-name) (symbolp fn-name))))
-  (let ((dfp-thm-name (<a class="sym-link system" href="../../../basis-a.html#def-packn-pos" data-sym="PACKN-POS">packn-pos</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'dfp- fn-name) fn-name)) (rationalp-thm-name (<a class="sym-link system" href="../../../basis-a.html#def-packn-pos" data-sym="PACKN-POS">packn-pos</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'rationalp- fn-name) fn-name)))
-    `((<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> ,FN-NAME
+  (fn-name macro-name <a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="axioms.html#def-rest" data-sym="REST">rest</a>)
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (symbolp macro-name) (symbolp fn-name))))
+  (let ((dfp-thm-name (<a class="sym-link system" href="basis-a.html#def-packn-pos" data-sym="PACKN-POS">packn-pos</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'dfp- fn-name) fn-name)) (rationalp-thm-name (<a class="sym-link system" href="basis-a.html#def-packn-pos" data-sym="PACKN-POS">packn-pos</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'rationalp- fn-name) fn-name)))
+    `((<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> ,FN-NAME
        ,FORMALS
        ,@(AND FORMALS `((DECLARE (TYPE DOUBLE-FLOAT ,@FORMALS))))
-       ,@REST) (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> ,DFP-THM-NAME (dfp (,FN-NAME ,@FORMALS)))
-      (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> ,RATIONALP-THM-NAME
+       ,@REST) (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> ,DFP-THM-NAME (dfp (,FN-NAME ,@FORMALS)))
+      (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> ,RATIONALP-THM-NAME
         (rationalp (,FN-NAME ,@FORMALS))
         <span class="keyword">:rule-classes</span> <span class="keyword">:type-prescription</span>)
       ,@(AND MACRO-NAME
@@ -543,28 +543,28 @@ pre.code {
 
 <div class="form-block macro" id="def-defun-df" data-defines="DEFUN-DF" data-references="PROGN,ERROR,WITH-OUTPUT,QUASIQUOTE,CDR,REST-EVS,CAR,DEFUN-EV,DEFUN-DF-EVENTS,EVENTS,-FN,QUOTE,LIST,PACKN-POS,FN-FN,LET*,REST,&REST,FORMALS,FN,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DEFUN-DF">defun-df</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defun-df" data-sym="DEFUN-DF" title="(defmacro defun-df (fn formals &amp;rest rest)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-defun-df" data-sym="DEFUN-DF" title="(defmacro defun-df (fn formals &amp;rest rest)
   (let* ((fn-fn (packn-pos (list fn &#39;-fn) fn))
          (events (defun-df-events fn-fn fn formals rest))
          (defun-ev (car events))
          (rest-evs (cdr events)))
 ...">defun-df</a>
-  (fn <a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> &amp;rest <a class="sym-link system" href="../../../axioms.html#def-rest" data-sym="REST">rest</a>)
-  (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((fn-fn (<a class="sym-link system" href="../../../basis-a.html#def-packn-pos" data-sym="PACKN-POS">packn-pos</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> fn '-fn) fn)) (events (<a class="sym-link local-def" href="#def-defun-df-events" data-sym="DEFUN-DF-EVENTS" title="(defun defun-df-events (fn-name macro-name formals rest)
+  (fn <a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> &amp;rest <a class="sym-link system" href="axioms.html#def-rest" data-sym="REST">rest</a>)
+  (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((fn-fn (<a class="sym-link system" href="basis-a.html#def-packn-pos" data-sym="PACKN-POS">packn-pos</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> fn '-fn) fn)) (events (<a class="sym-link local-def" href="#def-defun-df-events" data-sym="DEFUN-DF-EVENTS" title="(defun defun-df-events (fn-name macro-name formals rest)
   (declare (xargs :guard (and (symbolp macro-name) (symbolp fn-name))))
   (let ((dfp-thm-name (packn-pos (list &#39;dfp- fn-name) fn-name))
         (rationalp-thm-name (packn-pos (list &#39;rationalp- fn-name) fn-name)))
     `((defun ,fn-name ,formals
-...">defun-df-events</a> fn-fn fn <a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="../../../axioms.html#def-rest" data-sym="REST">rest</a>))
+...">defun-df-events</a> fn-fn fn <a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="axioms.html#def-rest" data-sym="REST">rest</a>))
       (defun-ev (car events))
       (rest-evs (cdr events)))
-    `(<a class="sym-link system" href="../../../axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:stack</span> <span class="keyword">:push</span> <span class="keyword">:off</span> <span class="keyword">:all</span> <span class="keyword">:on</span> error
-      (<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="../../../axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:stack</span> <span class="keyword">:pop</span> ,DEFUN-EV) ,@REST-EVS))))</pre>
+    `(<a class="sym-link system" href="axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:stack</span> <span class="keyword">:push</span> <span class="keyword">:off</span> <span class="keyword">:all</span> <span class="keyword">:on</span> error
+      (<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link system" href="axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> <span class="keyword">:stack</span> <span class="keyword">:pop</span> ,DEFUN-EV) ,@REST-EVS))))</pre>
   </div>
 
 <div class="form-block function" id="def-df_3C-fn" data-defines="DF<-FN" data-references="FROM-DF,<,DOUBLE-FLOAT,TYPE,DECLARE,Y,X,DEFUN" data-used-by="DF<" data-part-name="DF<-FN" data-part-args="Y,X" data-part-declare="Y,X,DOUBLE-FLOAT,TYPE,DECLARE" data-part-body="Y,X,FROM-DF,<" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF<-FN">df&lt;-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df_3C-fn" data-sym="DF&lt;-FN" title="(defun df&lt;-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df_3C-fn" data-sym="DF&lt;-FN" title="(defun df&lt;-fn (x y)
   (declare (type double-float x y))
   (&lt; (from-df x) (from-df y)))">df&lt;-fn</a>
   (x y)
@@ -574,55 +574,55 @@ pre.code {
 
 <div class="form-block macro" id="def-df_3C" data-defines="DF<" data-references="DF<-FN,QUASIQUOTE,Y,X,DEFMACRO" data-used-by="DF-FUNCTION-SIGS,DF>,DF>=,DF<=" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF<">df&lt;</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> (x y) `(<a class="sym-link local-def" href="#def-df_3C-fn" data-sym="DF&lt;-FN" title="(defun df&lt;-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> (x y) `(<a class="sym-link local-def" href="#def-df_3C-fn" data-sym="DF&lt;-FN" title="(defun df&lt;-fn (x y)
   (declare (type double-float x y))
   (&lt; (from-df x) (from-df y)))">df&lt;-fn</a> ,(TO-DF?-FN X) ,(TO-DF?-FN Y)))</pre>
   </div>
 
 <div class="form-block other" id="form-9" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <a class="sym-link local-def" href="#def-df_3C-fn" data-sym="DF&lt;-FN" title="(defun df&lt;-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <a class="sym-link local-def" href="#def-df_3C-fn" data-sym="DF&lt;-FN" title="(defun df&lt;-fn (x y)
   (declare (type double-float x y))
   (&lt; (from-df x) (from-df y)))">df&lt;-fn</a>)</pre>
   </div>
 
 <div class="form-block function" id="def-df_3D-fn" data-defines="DF=-FN" data-references="FROM-DF,=,DOUBLE-FLOAT,TYPE,DECLARE,Y,X,DEFUN" data-used-by="DF=" data-part-name="DF=-FN" data-part-args="Y,X" data-part-declare="Y,X,DOUBLE-FLOAT,TYPE,DECLARE" data-part-body="Y,X,FROM-DF,=" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF=-FN">df=-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df_3D-fn" data-sym="DF=-FN" title="(defun df=-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df_3D-fn" data-sym="DF=-FN" title="(defun df=-fn (x y)
   (declare (type double-float x y))
   (= (from-df x) (from-df y)))">df=-fn</a>
   (x y)
   (declare (type double-float x y))
-  (<a class="sym-link system" href="../../../axioms.html#def-_3D" data-sym="=">=</a> (from-df x) (from-df y)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-_3D" data-sym="=">=</a> (from-df x) (from-df y)))</pre>
   </div>
 
 <div class="form-block macro" id="def-df_3D" data-defines="DF=" data-references="DF=-FN,QUASIQUOTE,Y,X,DEFMACRO" data-used-by="DF-FUNCTION-SIGS" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF=">df=</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> (x y) `(<a class="sym-link local-def" href="#def-df_3D-fn" data-sym="DF=-FN" title="(defun df=-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> (x y) `(<a class="sym-link local-def" href="#def-df_3D-fn" data-sym="DF=-FN" title="(defun df=-fn (x y)
   (declare (type double-float x y))
   (= (from-df x) (from-df y)))">df=-fn</a> ,(TO-DF?-FN X) ,(TO-DF?-FN Y)))</pre>
   </div>
 
 <div class="form-block other" id="form-12" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> <a class="sym-link local-def" href="#def-df_3D-fn" data-sym="DF=-FN" title="(defun df=-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> <a class="sym-link local-def" href="#def-df_3D-fn" data-sym="DF=-FN" title="(defun df=-fn (x y)
   (declare (type double-float x y))
   (= (from-df x) (from-df y)))">df=-fn</a>)</pre>
   </div>
 
 <div class="form-block function" id="def-df_2F_3D-fn" data-defines="DF/=-FN" data-references="FROM-DF,/=,DOUBLE-FLOAT,TYPE,DECLARE,Y,X,DEFUN" data-used-by="DF/=" data-part-name="DF/=-FN" data-part-args="Y,X" data-part-declare="Y,X,DOUBLE-FLOAT,TYPE,DECLARE" data-part-body="Y,X,FROM-DF,/=" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF/=-FN">df/=-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df_2F_3D-fn" data-sym="DF/=-FN" title="(defun df/=-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df_2F_3D-fn" data-sym="DF/=-FN" title="(defun df/=-fn (x y)
   (declare (type double-float x y))
   (/= (from-df x) (from-df y)))">df/=-fn</a>
   (x y)
   (declare (type double-float x y))
-  (<a class="sym-link system" href="../../../axioms.html#def-_2F_3D" data-sym="/=">/=</a> (from-df x) (from-df y)))</pre>
+  (<a class="sym-link system" href="axioms.html#def-_2F_3D" data-sym="/=">/=</a> (from-df x) (from-df y)))</pre>
   </div>
 
 <div class="form-block macro" id="def-df_2F_3D" data-defines="DF/=" data-references="DF/=-FN,QUASIQUOTE,Y,X,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF/=">df/=</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2F_3D" data-sym="DF/=" title="(defmacro df/= (x y) `(df/=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df/=</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2F_3D" data-sym="DF/=" title="(defmacro df/= (x y) `(df/=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df/=</a>
   (x y)
   `(<a class="sym-link local-def" href="#def-df_2F_3D-fn" data-sym="DF/=-FN" title="(defun df/=-fn (x y)
   (declare (type double-float x y))
@@ -631,60 +631,60 @@ pre.code {
 
 <div class="form-block other" id="form-15" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_2F_3D" data-sym="DF/=" title="(defmacro df/= (x y) `(df/=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df/=</a> <a class="sym-link local-def" href="#def-df_2F_3D-fn" data-sym="DF/=-FN" title="(defun df/=-fn (x y)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_2F_3D" data-sym="DF/=" title="(defmacro df/= (x y) `(df/=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df/=</a> <a class="sym-link local-def" href="#def-df_2F_3D-fn" data-sym="DF/=-FN" title="(defun df/=-fn (x y)
   (declare (type double-float x y))
   (/= (from-df x) (from-df y)))">df/=-fn</a>)</pre>
   </div>
 
 <div class="form-block macro" id="def-df_3C_3D" data-defines="DF<=" data-references="DF<,NOT,QUASIQUOTE,Y,X,DEFMACRO" data-used-by="DF-FUNCTION-SIGS" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF<=">df&lt;=</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3C_3D" data-sym="DF&lt;=" title="(defmacro df&lt;= (x y) `(not (df&lt; ,y ,x)))">df&lt;=</a> (x y) `(<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> ,Y ,X)))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3C_3D" data-sym="DF&lt;=" title="(defmacro df&lt;= (x y) `(not (df&lt; ,y ,x)))">df&lt;=</a> (x y) `(<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> ,Y ,X)))</pre>
   </div>
 
 <div class="form-block macro" id="def-df_3E_3D" data-defines="DF>=" data-references="DF<,NOT,QUASIQUOTE,Y,X,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF>=">df&gt;=</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3E_3D" data-sym="DF&gt;=" title="(defmacro df&gt;= (x y) `(not (df&lt; ,x ,y)))">df&gt;=</a> (x y) `(<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> ,X ,Y)))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3E_3D" data-sym="DF&gt;=" title="(defmacro df&gt;= (x y) `(not (df&lt; ,x ,y)))">df&gt;=</a> (x y) `(<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> ,X ,Y)))</pre>
   </div>
 
 <div class="form-block macro" id="def-df_3E" data-defines="DF>" data-references="DF<,QUASIQUOTE,Y,X,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF>">df&gt;</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3E" data-sym="DF&gt;" title="(defmacro df&gt; (x y) `(df&lt; ,y ,x))">df&gt;</a> (x y) `(<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> ,Y ,X))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_3E" data-sym="DF&gt;" title="(defmacro df&gt; (x y) `(df&lt; ,y ,x))">df&gt;</a> (x y) `(<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> ,Y ,X))</pre>
   </div>
 
 <div class="form-block function" id="def-df0" data-defines="DF0" data-references="TO-DF,T,XARGS,DECLARE,DEFUN" data-used-by="DF+" data-part-name="DF0" data-part-declare="T,XARGS,DECLARE" data-part-body="TO-DF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF0">df0</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df0" data-sym="DF0" title="(defun df0 () (declare (xargs :guard t)) (to-df 0))">df0</a> nil (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)) (to-df <span class="number">0</span>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df0" data-sym="DF0" title="(defun df0 () (declare (xargs :guard t)) (to-df 0))">df0</a> nil (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)) (to-df <span class="number">0</span>))</pre>
   </div>
 
 <div class="form-block function" id="def-df1" data-defines="DF1" data-references="TO-DF,T,XARGS,DECLARE,DEFUN" data-used-by="DF*" data-part-name="DF1" data-part-declare="T,XARGS,DECLARE" data-part-body="TO-DF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF1">df1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df1" data-sym="DF1" title="(defun df1 () (declare (xargs :guard t)) (to-df 1))">df1</a> nil (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)) (to-df <span class="number">1</span>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df1" data-sym="DF1" title="(defun df1 () (declare (xargs :guard t)) (to-df 1))">df1</a> nil (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)) (to-df <span class="number">1</span>))</pre>
   </div>
 
 <div class="form-block function" id="def-df-minus-1" data-defines="DF-MINUS-1" data-references="TO-DF,T,XARGS,DECLARE,DEFUN" data-part-name="DF-MINUS-1" data-part-declare="T,XARGS,DECLARE" data-part-body="TO-DF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-MINUS-1">df-minus-1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-minus-1" data-sym="DF-MINUS-1" title="(defun df-minus-1 () (declare (xargs :guard t)) (to-df -1))">df-minus-1</a> nil (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)) (to-df <span class="number">-1</span>))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-minus-1" data-sym="DF-MINUS-1" title="(defun df-minus-1 () (declare (xargs :guard t)) (to-df -1))">df-minus-1</a> nil (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)) (to-df <span class="number">-1</span>))</pre>
   </div>
 
 <div class="form-block function" id="def-df-function-sigs" data-defines="DF-FUNCTION-SIGS" data-references="DF-PI,DF-ABS,DF-ATANH-FN,DF-ACOSH-FN,DF-ASINH-FN,DF-TANH-FN,DF-COSH-FN,DF-SINH-FN,DF-ATAN-FN,DF-ACOS-FN,DF-ASIN-FN,NOT,DF-TAN-FN,DF-COS-FN,DF-SIN-FN,DF-ABS-FN,UNARY-DF-LOG,BINARY-DF-LOG,DF<=,DF-SQRT-FN,DF-EXP-FN,DF=,AND,DF<,OR,Y,X,DF-EXPT-FN,QUASIQUOTE,T,XARGS,DECLARE,FLG,DEFUN" data-used-by="DF-CONSTRAINED-FUNCTIONS-INTRO,*DF-FUNCTION-SIGS-EXEC*" data-part-name="DF-FUNCTION-SIGS" data-part-args="FLG" data-part-declare="T,XARGS,DECLARE" data-part-body="DF-PI,DF-ABS,DF-ATANH-FN,DF-ACOSH-FN,DF-ASINH-FN,DF-TANH-FN,DF-COSH-FN,DF-SINH-FN,DF-ATAN-FN,DF-ACOS-FN,DF-ASIN-FN,NOT,DF-TAN-FN,DF-COS-FN,DF-SIN-FN,DF-ABS-FN,UNARY-DF-LOG,BINARY-DF-LOG,DF<=,DF-SQRT-FN,DF-EXP-FN,DF=,AND,DF<,OR,Y,X,DF-EXPT-FN,QUASIQUOTE" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-FUNCTION-SIGS">df-function-sigs</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-function-sigs" data-sym="DF-FUNCTION-SIGS" title="(defun df-function-sigs (flg)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-function-sigs" data-sym="DF-FUNCTION-SIGS" title="(defun df-function-sigs (flg)
   (declare (xargs :guard t))
   `((df-expt-fn (x y) (or (df&lt; 0 x) (and (df= 0 x) (df&lt; 0 y)))) (df-exp-fn (x))
     (df-sqrt-fn (x) (df&lt;= 0 x))
     (binary-df-log (x y) (and (df&lt; 0 x) (df&lt;= 0 y)))
 ...">df-function-sigs</a>
   (flg)
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-  `((df-expt-fn (x y) (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <span class="number">0</span> x) (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> <span class="number">0</span> x) (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <span class="number">0</span> y)))) (df-exp-fn (x))
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+  `((df-expt-fn (x y) (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <span class="number">0</span> x) (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> <span class="number">0</span> x) (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <span class="number">0</span> y)))) (df-exp-fn (x))
     (df-sqrt-fn (x) (<a class="sym-link local-def" href="#def-df_3C_3D" data-sym="DF&lt;=" title="(defmacro df&lt;= (x y) `(not (df&lt; ,y ,x)))">df&lt;=</a> <span class="number">0</span> x))
-    (binary-df-log (x y) (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <span class="number">0</span> x) (<a class="sym-link local-def" href="#def-df_3C_3D" data-sym="DF&lt;=" title="(defmacro df&lt;= (x y) `(not (df&lt; ,y ,x)))">df&lt;=</a> <span class="number">0</span> y)))
+    (binary-df-log (x y) (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <span class="number">0</span> x) (<a class="sym-link local-def" href="#def-df_3C_3D" data-sym="DF&lt;=" title="(defmacro df&lt;= (x y) `(not (df&lt; ,y ,x)))">df&lt;=</a> <span class="number">0</span> y)))
     (unary-df-log (x) (<a class="sym-link local-def" href="#def-df_3C" data-sym="DF&lt;" title="(defmacro df&lt; (x y) `(df&lt;-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df&lt;</a> <span class="number">0</span> x))
     (df-abs-fn (x))
     (df-sin-fn (x))
     (df-cos-fn (x))
     (df-tan-fn (x)
-      (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> (,(IF FLG
+      (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> (,(IF FLG
      &#39;CONSTRAINED-DF-COS-FN
      &#39;DF-COS-FN) x)
           <span class="number">0</span>)))
@@ -694,7 +694,7 @@ pre.code {
     (df-sinh-fn (x))
     (df-cosh-fn (x))
     (df-tanh-fn (x)
-      (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> (,(IF FLG
+      (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link local-def" href="#def-df_3D" data-sym="DF=" title="(defmacro df= (x y) `(df=-fn ,(to-df?-fn x) ,(to-df?-fn y)))">df=</a> (,(IF FLG
      &#39;CONSTRAINED-DF-COSH-FN
      &#39;DF-COSH-FN) x)
           <span class="number">0</span>)))
@@ -706,7 +706,7 @@ pre.code {
 
 <div class="form-block constant" id="def-_2Adf-function-sigs-exec_2A" data-defines="*DF-FUNCTION-SIGS-EXEC*" data-references="DF-FUNCTION-SIGS,DEFCONST" data-used-by="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS,*DF-PRIMITIVES*" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*DF-FUNCTION-SIGS-EXEC*">*df-function-sigs-exec*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-function-sigs-exec_2A" data-sym="*DF-FUNCTION-SIGS-EXEC*" title="(defconst *df-function-sigs-exec* (df-function-sigs nil))">*df-function-sigs-exec*</a> (<a class="sym-link local-def" href="#def-df-function-sigs" data-sym="DF-FUNCTION-SIGS" title="(defun df-function-sigs (flg)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-function-sigs-exec_2A" data-sym="*DF-FUNCTION-SIGS-EXEC*" title="(defconst *df-function-sigs-exec* (df-function-sigs nil))">*df-function-sigs-exec*</a> (<a class="sym-link local-def" href="#def-df-function-sigs" data-sym="DF-FUNCTION-SIGS" title="(defun df-function-sigs (flg)
   (declare (xargs :guard t))
   `((df-expt-fn (x y) (or (df&lt; 0 x) (and (df= 0 x) (df&lt; 0 y)))) (df-exp-fn (x))
     (df-sqrt-fn (x) (df&lt;= 0 x))
@@ -716,17 +716,17 @@ pre.code {
 
 <div class="form-block other" id="form-24" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="../../../basis-a.html#def-substring-p" data-sym="SUBSTRING-P">substring-p</a>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="basis-a.html#def-substring-p" data-sym="SUBSTRING-P">substring-p</a>)</pre>
   </div>
 
 <div class="form-block other" id="form-25" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="../../../basis-a.html#def-string-suffixp" data-sym="STRING-SUFFIXP">string-suffixp</a>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-verify-termination-boot-strap" data-sym="VERIFY-TERMINATION-BOOT-STRAP">verify-termination-boot-strap</a> <a class="sym-link system" href="basis-a.html#def-string-suffixp" data-sym="STRING-SUFFIXP">string-suffixp</a>)</pre>
   </div>
 
 <div class="form-block function" id="def-df-macro-name" data-defines="DF-MACRO-NAME" data-references="LENGTH,-,SUBSEQ,INTERN-IN-PACKAGE-OF-SYMBOL,STRING-SUFFIXP,AND,SYMBOL-NAME,NAME,LET,SYMBOL,TYPE,DECLARE,FN,DEFUN" data-used-by="DF-EVENTS-1" data-part-name="DF-MACRO-NAME" data-part-args="FN" data-part-declare="FN,SYMBOL,TYPE,DECLARE" data-part-body="LENGTH,-,SUBSEQ,INTERN-IN-PACKAGE-OF-SYMBOL,STRING-SUFFIXP,AND,FN,SYMBOL-NAME,NAME,LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-MACRO-NAME">df-macro-name</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-macro-name" data-sym="DF-MACRO-NAME" title="(defun df-macro-name (fn)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-macro-name" data-sym="DF-MACRO-NAME" title="(defun df-macro-name (fn)
   (declare (type symbol fn))
   (let ((name (symbol-name fn)))
     (and (string-suffixp &quot;-FN&quot; name)
@@ -734,73 +734,73 @@ pre.code {
   (fn)
   (declare (type symbol fn))
   (let ((name (symbol-name fn)))
-    (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../basis-a.html#def-string-suffixp" data-sym="STRING-SUFFIXP">string-suffixp</a> <span class="string">"-FN"</span> name)
-      (intern-in-package-of-symbol (<a class="sym-link system" href="../../../axioms.html#def-subseq" data-sym="SUBSEQ">subseq</a> name <span class="number">0</span> (<a class="sym-link system" href="../../../axioms.html#def--" data-sym="-">-</a> (<a class="sym-link system" href="../../../axioms.html#def-length" data-sym="LENGTH">length</a> name) <span class="number">3</span>))
+    (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="basis-a.html#def-string-suffixp" data-sym="STRING-SUFFIXP">string-suffixp</a> <span class="string">"-FN"</span> name)
+      (intern-in-package-of-symbol (<a class="sym-link system" href="axioms.html#def-subseq" data-sym="SUBSEQ">subseq</a> name <span class="number">0</span> (<a class="sym-link system" href="axioms.html#def--" data-sym="-">-</a> (<a class="sym-link system" href="axioms.html#def-length" data-sym="LENGTH">length</a> name) <span class="number">3</span>))
         fn))))</pre>
   </div>
 
 <div class="form-block constant" id="def-_2Adf-primitives_2A" data-defines="*DF-PRIMITIVES*" data-references="*DF-FUNCTION-SIGS-EXEC*,STRIP-CARS,*DF-BASIC-PRIMITIVES*,APPEND-STRIP-CARS,DFP,QUOTE,CONS,DEFCONST" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="*DF-PRIMITIVES*">*df-primitives*</span><span class="form-type">constant</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-primitives_2A" data-sym="*DF-PRIMITIVES*" title="(defconst *df-primitives*
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> <a class="sym-link local-def" href="#def-_2Adf-primitives_2A" data-sym="*DF-PRIMITIVES*" title="(defconst *df-primitives*
           (cons &#39;dfp
                 (append-strip-cars *df-basic-primitives*
                                    (strip-cars *df-function-sigs-exec*))))">*df-primitives*</a>
   (cons 'dfp
-    (<a class="sym-link system" href="../../../basis-a.html#def-append-strip-cars" data-sym="APPEND-STRIP-CARS">append-strip-cars</a> *df-basic-primitives*
-      (<a class="sym-link system" href="../../../axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> <a class="sym-link local-def" href="#def-_2Adf-function-sigs-exec_2A" data-sym="*DF-FUNCTION-SIGS-EXEC*" title="(defconst *df-function-sigs-exec* (df-function-sigs nil))">*df-function-sigs-exec*</a>))))</pre>
+    (<a class="sym-link system" href="basis-a.html#def-append-strip-cars" data-sym="APPEND-STRIP-CARS">append-strip-cars</a> *df-basic-primitives*
+      (<a class="sym-link system" href="axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> <a class="sym-link local-def" href="#def-_2Adf-function-sigs-exec_2A" data-sym="*DF-FUNCTION-SIGS-EXEC*" title="(defconst *df-function-sigs-exec* (df-function-sigs nil))">*df-function-sigs-exec*</a>))))</pre>
   </div>
 
 <div class="form-block function" id="def-df-events-1" data-defines="DF-EVENTS-1" data-references="CDR,LOCAL,CONS,DEFUN-DF-EVENTS,EVENTS,NON-EXEC,TO-DF,QUASIQUOTE,REST,DF-MACRO-NAME,NULL,MACRO-NAME,CONSTRAINED-,QUOTE,LIST,PACKN,CONSTRAINED-NAME,T,CADDR,CDDR,CONSP,IF,GUARD,FORMALS,NAME,LET*,CADR,SYMBOL-LISTP,CAR,SYMBOLP,LEN,<=,AND,XARGS,DECLARE,FLG,SIG,DEFUN" data-used-by="DF-EVENTS" data-part-name="DF-EVENTS-1" data-part-args="FLG,SIG" data-part-declare="CADR,SYMBOL-LISTP,CAR,SYMBOLP,SIG,LEN,<=,AND,XARGS,DECLARE" data-part-body="CDR,DEFUN,LOCAL,CONS,DEFUN-DF-EVENTS,EVENTS,NON-EXEC,TO-DF,XARGS,DECLARE,QUASIQUOTE,REST,DF-MACRO-NAME,NULL,AND,MACRO-NAME,FLG,CONSTRAINED-,QUOTE,LIST,PACKN,CONSTRAINED-NAME,T,CADDR,CDDR,CONSP,IF,GUARD,CADR,FORMALS,SIG,CAR,NAME,LET*" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-EVENTS-1">df-events-1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-events-1" data-sym="DF-EVENTS-1" title="(defun df-events-1 (sig flg)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-events-1" data-sym="DF-EVENTS-1" title="(defun df-events-1 (sig flg)
   (declare
    (xargs :guard
     (and (&lt;= 2 (len sig)) (symbolp (car sig)) (symbol-listp (cadr sig)))))
   (let* ((name (car sig))
 ...">df-events-1</a>
   (sig flg)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <span class="number">2</span> (<a class="sym-link system" href="../../../axioms.html#def-len" data-sym="LEN">len</a> sig))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <span class="number">2</span> (<a class="sym-link system" href="axioms.html#def-len" data-sym="LEN">len</a> sig))
         (symbolp (car sig))
-        (<a class="sym-link system" href="../../../axioms.html#def-symbol-listp" data-sym="SYMBOL-LISTP">symbol-listp</a> (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> sig)))))
-  (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((name (car sig)) (<a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> sig))
-      (<a class="sym-link system" href="../../../basis-b.html#def-guard" data-sym="GUARD">guard</a> (if (consp (<a class="sym-link system" href="../../../axioms.html#def-cddr" data-sym="CDDR">cddr</a> sig))
-          (<a class="sym-link system" href="../../../axioms.html#def-caddr" data-sym="CADDR">caddr</a> sig)
-          <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-      (constrained-name (<a class="sym-link system" href="../../../basis-a.html#def-packn" data-sym="PACKN">packn</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'constrained- name)))
+        (<a class="sym-link system" href="axioms.html#def-symbol-listp" data-sym="SYMBOL-LISTP">symbol-listp</a> (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> sig)))))
+  (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((name (car sig)) (<a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> sig))
+      (<a class="sym-link system" href="basis-b.html#def-guard" data-sym="GUARD">guard</a> (if (consp (<a class="sym-link system" href="axioms.html#def-cddr" data-sym="CDDR">cddr</a> sig))
+          (<a class="sym-link system" href="axioms.html#def-caddr" data-sym="CADDR">caddr</a> sig)
+          <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+      (constrained-name (<a class="sym-link system" href="basis-a.html#def-packn" data-sym="PACKN">packn</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'constrained- name)))
       (name (if flg
           constrained-name
           name))
-      (macro-name (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> flg) (<a class="sym-link local-def" href="#def-df-macro-name" data-sym="DF-MACRO-NAME" title="(defun df-macro-name (fn)
+      (macro-name (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> flg) (<a class="sym-link local-def" href="#def-df-macro-name" data-sym="DF-MACRO-NAME" title="(defun df-macro-name (fn)
   (declare (type symbol fn))
   (let ((name (symbol-name fn)))
     (and (string-suffixp &quot;-FN&quot; name)
          (intern-in-package-of-symbol (subseq name 0 (- (length name) 3)) fn))))">df-macro-name</a> name)))
-      (<a class="sym-link system" href="../../../axioms.html#def-rest" data-sym="REST">rest</a> `((declare (xargs <span class="keyword">:guard</span> ,GUARD)) (to-df (<a class="sym-link system" href="../../../axioms.html#def-non-exec" data-sym="NON-EXEC">non-exec</a> (,CONSTRAINED-NAME ,@FORMALS)))))
+      (<a class="sym-link system" href="axioms.html#def-rest" data-sym="REST">rest</a> `((declare (xargs <span class="keyword">:guard</span> ,GUARD)) (to-df (<a class="sym-link system" href="axioms.html#def-non-exec" data-sym="NON-EXEC">non-exec</a> (,CONSTRAINED-NAME ,@FORMALS)))))
       (events (<a class="sym-link local-def" href="#def-defun-df-events" data-sym="DEFUN-DF-EVENTS" title="(defun defun-df-events (fn-name macro-name formals rest)
   (declare (xargs :guard (and (symbolp macro-name) (symbolp fn-name))))
   (let ((dfp-thm-name (packn-pos (list &#39;dfp- fn-name) fn-name))
         (rationalp-thm-name (packn-pos (list &#39;rationalp- fn-name) fn-name)))
     `((defun ,fn-name ,formals
-...">defun-df-events</a> name macro-name <a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="../../../axioms.html#def-rest" data-sym="REST">rest</a>)))
+...">defun-df-events</a> name macro-name <a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="axioms.html#def-rest" data-sym="REST">rest</a>)))
     (if flg
-      (cons `(<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> ,NAME ,FORMALS <span class="number">0</span>)) (cdr events))
+      (cons `(<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> ,NAME ,FORMALS <span class="number">0</span>)) (cdr events))
       events)))</pre>
   </div>
 
 <div class="form-block function" id="def-df-events" data-defines="DF-EVENTS" data-references="CDR,CAR,DF-EVENTS-1,APPEND,T,ENDP,COND,STRIP-CADRS,SYMBOL-LIST-LISTP,ALL->=-LEN,SYMBOL-ALISTP,AND,XARGS,DECLARE,FLG,SIGS,DEFUN" data-used-by="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS" data-part-name="DF-EVENTS" data-part-args="FLG,SIGS" data-part-declare="STRIP-CADRS,SYMBOL-LIST-LISTP,ALL->=-LEN,SIGS,SYMBOL-ALISTP,AND,XARGS,DECLARE" data-part-body="CDR,DF-EVENTS,FLG,CAR,DF-EVENTS-1,APPEND,T,SIGS,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-EVENTS">df-events</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-events" data-sym="DF-EVENTS" title="(defun df-events (sigs flg)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-events" data-sym="DF-EVENTS" title="(defun df-events (sigs flg)
   (declare
    (xargs :guard
     (and (symbol-alistp sigs) (all-&gt;=-len sigs 2)
          (symbol-list-listp (strip-cadrs sigs)))))
 ...">df-events</a>
   (sigs flg)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> sigs)
-        (<a class="sym-link system" href="../../../axioms.html#def-all-_3E_3D-len" data-sym="ALL-&gt;=-LEN">all-&gt;=-len</a> sigs <span class="number">2</span>)
-        (<a class="sym-link system" href="../../../axioms.html#def-symbol-list-listp" data-sym="SYMBOL-LIST-LISTP">symbol-list-listp</a> (<a class="sym-link system" href="../../../axioms.html#def-strip-cadrs" data-sym="STRIP-CADRS">strip-cadrs</a> sigs)))))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> sigs) nil)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-append" data-sym="APPEND">append</a> (<a class="sym-link local-def" href="#def-df-events-1" data-sym="DF-EVENTS-1" title="(defun df-events-1 (sig flg)
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> sigs)
+        (<a class="sym-link system" href="axioms.html#def-all-_3E_3D-len" data-sym="ALL-&gt;=-LEN">all-&gt;=-len</a> sigs <span class="number">2</span>)
+        (<a class="sym-link system" href="axioms.html#def-symbol-list-listp" data-sym="SYMBOL-LIST-LISTP">symbol-list-listp</a> (<a class="sym-link system" href="axioms.html#def-strip-cadrs" data-sym="STRIP-CADRS">strip-cadrs</a> sigs)))))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> sigs) nil)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-append" data-sym="APPEND">append</a> (<a class="sym-link local-def" href="#def-df-events-1" data-sym="DF-EVENTS-1" title="(defun df-events-1 (sig flg)
   (declare
    (xargs :guard
     (and (&lt;= 2 (len sig)) (symbolp (car sig)) (symbol-listp (cadr sig)))))
@@ -816,19 +816,19 @@ pre.code {
 
 <div class="form-block function" id="def-prefix-sigs-with-constrained" data-defines="PREFIX-SIGS-WITH-CONSTRAINED" data-references="CDR,CONSTRAINED-,QUOTE,PACKN,LIST,CADR,FORMALS,FN,CAR,SIG,LET*,CONS,T,ENDP,COND,TRUE-LIST-LISTP,SYMBOL-ALISTP,ALISTP,AND,XARGS,DECLARE,SIGS,DEFUN" data-part-name="PREFIX-SIGS-WITH-CONSTRAINED" data-part-args="SIGS" data-part-declare="TRUE-LIST-LISTP,SYMBOL-ALISTP,SIGS,ALISTP,AND,XARGS,DECLARE" data-part-body="CDR,PREFIX-SIGS-WITH-CONSTRAINED,CONSTRAINED-,QUOTE,PACKN,LIST,CADR,FORMALS,FN,CAR,SIG,LET*,CONS,T,SIGS,ENDP,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="PREFIX-SIGS-WITH-CONSTRAINED">prefix-sigs-with-constrained</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-prefix-sigs-with-constrained" data-sym="PREFIX-SIGS-WITH-CONSTRAINED" title="(defun prefix-sigs-with-constrained (sigs)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-prefix-sigs-with-constrained" data-sym="PREFIX-SIGS-WITH-CONSTRAINED" title="(defun prefix-sigs-with-constrained (sigs)
   (declare
    (xargs :guard
     (and (alistp sigs) (symbol-alistp sigs) (true-list-listp sigs))))
   (cond ((endp sigs) nil)
 ...">prefix-sigs-with-constrained</a>
   (sigs)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-alistp" data-sym="ALISTP">alistp</a> sigs)
-        (<a class="sym-link system" href="../../../axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> sigs)
-        (<a class="sym-link system" href="../../../axioms.html#def-true-list-listp" data-sym="TRUE-LIST-LISTP">true-list-listp</a> sigs))))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-endp" data-sym="ENDP">endp</a> sigs) nil)
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (cons (<a class="sym-link system" href="../../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((sig (car sigs)) (fn (car sig)) (<a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> sig)))
-          (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../basis-a.html#def-packn" data-sym="PACKN">packn</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'constrained- fn)) <a class="sym-link system" href="../../../basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-alistp" data-sym="ALISTP">alistp</a> sigs)
+        (<a class="sym-link system" href="axioms.html#def-symbol-alistp" data-sym="SYMBOL-ALISTP">symbol-alistp</a> sigs)
+        (<a class="sym-link system" href="axioms.html#def-true-list-listp" data-sym="TRUE-LIST-LISTP">true-list-listp</a> sigs))))
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-endp" data-sym="ENDP">endp</a> sigs) nil)
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (cons (<a class="sym-link system" href="axioms.html#def-let_2A" data-sym="LET*">let*</a> ((sig (car sigs)) (fn (car sig)) (<a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> sig)))
+          (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="basis-a.html#def-packn" data-sym="PACKN">packn</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'constrained- fn)) <a class="sym-link system" href="basis-b.html#def-formals" data-sym="FORMALS">formals</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
         (<a class="sym-link local-def" href="#def-prefix-sigs-with-constrained" data-sym="PREFIX-SIGS-WITH-CONSTRAINED" title="(defun prefix-sigs-with-constrained (sigs)
   (declare
    (xargs :guard
@@ -839,7 +839,7 @@ pre.code {
 
 <div class="form-block macro" id="def-df-constrained-functions-intro" data-defines="DF-CONSTRAINED-FUNCTIONS-INTRO" data-references="SET-IRRELEVANT-FORMALS-OK,SET-IGNORE-OK,PARTIAL-ENCAPSULATE,LOGIC,ENCAPSULATE,QUASIQUOTE,T,DF-FUNCTION-SIGS,SIGS,LET,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-CONSTRAINED-FUNCTIONS-INTRO">df-constrained-functions-intro</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-constrained-functions-intro" data-sym="DF-CONSTRAINED-FUNCTIONS-INTRO" title="(defmacro df-constrained-functions-intro ()
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-constrained-functions-intro" data-sym="DF-CONSTRAINED-FUNCTIONS-INTRO" title="(defmacro df-constrained-functions-intro ()
   (let ((sigs (df-function-sigs t)))
     `(encapsulate nil (logic)
                   (partial-encapsulate ,(prefix-sigs-with-constrained sigs) nil
@@ -851,23 +851,23 @@ pre.code {
   `((df-expt-fn (x y) (or (df&lt; 0 x) (and (df= 0 x) (df&lt; 0 y)))) (df-exp-fn (x))
     (df-sqrt-fn (x) (df&lt;= 0 x))
     (binary-df-log (x y) (and (df&lt; 0 x) (df&lt;= 0 y)))
-...">df-function-sigs</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)))
-    `(<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
-      (<a class="sym-link system" href="../../../axioms.html#def-logic" data-sym="LOGIC">logic</a>)
-      (<a class="sym-link system" href="../../../axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> ,(PREFIX-SIGS-WITH-CONSTRAINED SIGS)
+...">df-function-sigs</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)))
+    `(<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
+      (<a class="sym-link system" href="axioms.html#def-logic" data-sym="LOGIC">logic</a>)
+      (<a class="sym-link system" href="axioms.html#def-partial-encapsulate" data-sym="PARTIAL-ENCAPSULATE">partial-encapsulate</a> ,(PREFIX-SIGS-WITH-CONSTRAINED SIGS)
         nil
-        (<a class="sym-link system" href="../../../axioms.html#def-set-ignore-ok" data-sym="SET-IGNORE-OK">set-ignore-ok</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
-        (<a class="sym-link system" href="../../../axioms.html#def-set-irrelevant-formals-ok" data-sym="SET-IRRELEVANT-FORMALS-OK">set-irrelevant-formals-ok</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
+        (<a class="sym-link system" href="axioms.html#def-set-ignore-ok" data-sym="SET-IGNORE-OK">set-ignore-ok</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
+        (<a class="sym-link system" href="axioms.html#def-set-irrelevant-formals-ok" data-sym="SET-IRRELEVANT-FORMALS-OK">set-irrelevant-formals-ok</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
         ,@(DF-EVENTS SIGS T)))))</pre>
   </div>
 
 <div class="form-block function" id="def-df-non-constrained-functions-events" data-defines="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS" data-references="*DF-FUNCTION-SIGS-EXEC*,DF-EVENTS,T,XARGS,DECLARE,DEFUN" data-used-by="DF-NON-CONSTRAINED-FUNCTIONS-INTRO" data-part-name="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS" data-part-declare="T,XARGS,DECLARE" data-part-body="*DF-FUNCTION-SIGS-EXEC*,DF-EVENTS" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS">df-non-constrained-functions-events</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-non-constrained-functions-events" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS" title="(defun df-non-constrained-functions-events ()
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-non-constrained-functions-events" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS" title="(defun df-non-constrained-functions-events ()
   (declare (xargs :guard t))
   (df-events *df-function-sigs-exec* nil))">df-non-constrained-functions-events</a>
   nil
-  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
+  (declare (xargs <span class="keyword">:guard</span> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
   (<a class="sym-link local-def" href="#def-df-events" data-sym="DF-EVENTS" title="(defun df-events (sigs flg)
   (declare
    (xargs :guard
@@ -878,10 +878,10 @@ pre.code {
 
 <div class="form-block macro" id="def-df-non-constrained-functions-intro" data-defines="DF-NON-CONSTRAINED-FUNCTIONS-INTRO" data-references="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS,PROGN,QUOTE,CONS,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-INTRO">df-non-constrained-functions-intro</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-non-constrained-functions-intro" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-INTRO" title="(defmacro df-non-constrained-functions-intro ()
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-non-constrained-functions-intro" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-INTRO" title="(defmacro df-non-constrained-functions-intro ()
   (cons &#39;progn (df-non-constrained-functions-events)))">df-non-constrained-functions-intro</a>
   nil
-  (cons '<a class="sym-link system" href="../../../axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link local-def" href="#def-df-non-constrained-functions-events" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS" title="(defun df-non-constrained-functions-events ()
+  (cons '<a class="sym-link system" href="axioms.html#def-progn" data-sym="PROGN">progn</a> (<a class="sym-link local-def" href="#def-df-non-constrained-functions-events" data-sym="DF-NON-CONSTRAINED-FUNCTIONS-EVENTS" title="(defun df-non-constrained-functions-events ()
   (declare (xargs :guard t))
   (df-events *df-function-sigs-exec* nil))">df-non-constrained-functions-events</a>)))</pre>
   </div>
@@ -904,7 +904,7 @@ pre.code {
 
 <div class="form-block function" id="def-df-rationalize" data-defines="DF-RATIONALIZE" data-references="FROM-DF,CONSTRAINED-DF-RATIONALIZE,DOUBLE-FLOAT,TYPE,XARGS,DECLARE,X,DEFUN" data-used-by="RIZE,TO-DF-OF-DF-RATIONALIZE,RATIONALP-DF-RATIONALIZE" data-part-name="DF-RATIONALIZE" data-part-args="X" data-part-declare="X,DOUBLE-FLOAT,TYPE,XARGS,DECLARE" data-part-body="X,FROM-DF,CONSTRAINED-DF-RATIONALIZE" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-RATIONALIZE">df-rationalize</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
   (declare (xargs :mode :logic)
            (type double-float x))
   (constrained-df-rationalize (from-df x)))">df-rationalize</a>
@@ -917,7 +917,7 @@ pre.code {
 <div class="form-block theorem" id="def-rationalp-df-rationalize" data-defines="RATIONALP-DF-RATIONALIZE" data-references="X,DF-RATIONALIZE,RATIONALP,DEFTHM" data-part-name="RATIONALP-DF-RATIONALIZE" data-part-term="X,DF-RATIONALIZE,RATIONALP" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="RATIONALP-DF-RATIONALIZE">rationalp-df-rationalize</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-rationalp-df-rationalize" data-sym="RATIONALP-DF-RATIONALIZE" title="(defthm rationalp-df-rationalize (rationalp (df-rationalize x)) :rule-classes
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-rationalp-df-rationalize" data-sym="RATIONALP-DF-RATIONALIZE" title="(defthm rationalp-df-rationalize (rationalp (df-rationalize x)) :rule-classes
         :type-prescription)">rationalp-df-rationalize</a>
   (rationalp (<a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
   (declare (xargs :mode :logic)
@@ -929,9 +929,9 @@ pre.code {
 <div class="form-block theorem" id="def-to-df-of-df-rationalize" data-defines="TO-DF-OF-DF-RATIONALIZE" data-references="DF-RATIONALIZE,TO-DF,EQUAL,X,DFP,IMPLIES,DEFTHM" data-part-name="TO-DF-OF-DF-RATIONALIZE" data-part-term="DF-RATIONALIZE,TO-DF,EQUAL,X,DFP,IMPLIES" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DF-OF-DF-RATIONALIZE">to-df-of-df-rationalize</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-of-df-rationalize" data-sym="TO-DF-OF-DF-RATIONALIZE" title="(defthm to-df-of-df-rationalize
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-df-of-df-rationalize" data-sym="TO-DF-OF-DF-RATIONALIZE" title="(defthm to-df-of-df-rationalize
         (implies (dfp x) (equal (to-df (df-rationalize x)) x)))">to-df-of-df-rationalize</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (dfp x) (equal (to-df (<a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
+  (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (dfp x) (equal (to-df (<a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
   (declare (xargs :mode :logic)
            (type double-float x))
   (constrained-df-rationalize (from-df x)))">df-rationalize</a> x)) x)))</pre>
@@ -939,7 +939,7 @@ pre.code {
 
 <div class="form-block in-theory" id="form-39" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:definition</span> <a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:definition</span> <a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
   (declare (xargs :mode :logic)
            (type double-float x))
   (constrained-df-rationalize (from-df x)))">df-rationalize</a>)))</pre>
@@ -947,7 +947,7 @@ pre.code {
 
 <div class="form-block function" id="def-rize" data-defines="RIZE" data-references="TO-DF,DF-RATIONALIZE,RATIONAL,TYPE,DECLARE,X,DEFUN" data-used-by="TO-DFP-OF-RIZE" data-part-name="RIZE" data-part-args="X" data-part-declare="X,RATIONAL,TYPE,DECLARE" data-part-body="X,TO-DF,DF-RATIONALIZE" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="RIZE">rize</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-rize" data-sym="RIZE" title="(defun rize (x) (declare (type rational x)) (df-rationalize (to-df x)))">rize</a>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-rize" data-sym="RIZE" title="(defun rize (x) (declare (type rational x)) (df-rationalize (to-df x)))">rize</a>
   (x)
   (declare (type rational x))
   (<a class="sym-link local-def" href="#def-df-rationalize" data-sym="DF-RATIONALIZE" title="(defun df-rationalize (x)
@@ -959,27 +959,27 @@ pre.code {
 <div class="form-block theorem" id="def-to-dfp-of-rize" data-defines="TO-DFP-OF-RIZE" data-references="RIZE,TO-DFP,EQUAL,X,DFP,IMPLIES,DEFTHM" data-part-name="TO-DFP-OF-RIZE" data-part-term="RIZE,TO-DFP,EQUAL,X,DFP,IMPLIES" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="TO-DFP-OF-RIZE">to-dfp-of-rize</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-dfp-of-rize" data-sym="TO-DFP-OF-RIZE" title="(defthm to-dfp-of-rize (implies (dfp x) (equal (to-dfp (rize x)) x)))">to-dfp-of-rize</a>
-  (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (dfp x) (equal (to-dfp (<a class="sym-link local-def" href="#def-rize" data-sym="RIZE" title="(defun rize (x) (declare (type rational x)) (df-rationalize (to-df x)))">rize</a> x)) x)))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-to-dfp-of-rize" data-sym="TO-DFP-OF-RIZE" title="(defthm to-dfp-of-rize (implies (dfp x) (equal (to-dfp (rize x)) x)))">to-dfp-of-rize</a>
+  (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (dfp x) (equal (to-dfp (<a class="sym-link local-def" href="#def-rize" data-sym="RIZE" title="(defun rize (x) (declare (type rational x)) (df-rationalize (to-df x)))">rize</a> x)) x)))</pre>
   </div>
 
 <div class="form-block theorem" id="def-stringp-df-string" data-defines="STRINGP-DF-STRING" data-references="X,DF-STRING,STRINGP,DEFTHM" data-part-name="STRINGP-DF-STRING" data-part-term="X,DF-STRING,STRINGP" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="STRINGP-DF-STRING">stringp-df-string</span><span class="form-type">theorem</span></div>
     <div class="part-buttons"><button class="part-btn" data-part="term">term</button></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-stringp-df-string" data-sym="STRINGP-DF-STRING" title="(defthm stringp-df-string (stringp (df-string x)) :rule-classes
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> <a class="sym-link local-def" href="#def-stringp-df-string" data-sym="STRINGP-DF-STRING" title="(defthm stringp-df-string (stringp (df-string x)) :rule-classes
         :type-prescription)">stringp-df-string</a>
-  (stringp (<a class="sym-link system" href="../../../basis-b.html#def-df-string" data-sym="DF-STRING">df-string</a> x))
+  (stringp (<a class="sym-link system" href="basis-b.html#def-df-string" data-sym="DF-STRING">df-string</a> x))
   <span class="keyword">:rule-classes</span> <span class="keyword">:type-prescription</span>)</pre>
   </div>
 
 <div class="form-block in-theory" id="form-43" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:definition</span> <a class="sym-link system" href="../../../basis-b.html#def-df-string" data-sym="DF-STRING">df-string</a>)))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (disable (<span class="keyword">:definition</span> <a class="sym-link system" href="basis-b.html#def-df-string" data-sym="DF-STRING">df-string</a>)))</pre>
   </div>
 
 <div class="form-block macro" id="def-df_2B" data-defines="DF+" data-references="CAR,DF0,CONS,BINARY-DF+,QUOTE,XXXJOIN,CDR,IF,TO-DF?-ARGS,LET,RST,&REST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF+">df+</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2B" data-sym="DF+" title="(defmacro df+ (&amp;rest rst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2B" data-sym="DF+" title="(defmacro df+ (&amp;rest rst)
   (let ((rst (to-df?-args rst)))
     (if rst
         (if (cdr rst)
@@ -992,24 +992,24 @@ pre.code {
         (t (cons (to-df?-fn (car lst)) (to-df?-args (cdr lst))))))">to-df?-args</a> rst)))
     (if rst
       (if (cdr rst)
-        (<a class="sym-link system" href="../../../axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> 'binary-df+ rst)
+        (<a class="sym-link system" href="axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> 'binary-df+ rst)
         (cons 'binary-df+ (cons '(<a class="sym-link local-def" href="#def-df0" data-sym="DF0" title="(defun df0 () (declare (xargs :guard t)) (to-df 0))">df0</a>) (cons (car rst) nil))))
       '(<a class="sym-link local-def" href="#def-df0" data-sym="DF0" title="(defun df0 () (declare (xargs :guard t)) (to-df 0))">df0</a>))))</pre>
   </div>
 
 <div class="form-block macro" id="def-df-" data-defines="DF-" data-references="T,UNARY-DF-,BINARY-DF+,QUASIQUOTE,COND,YP,QUOTE,Y,&OPTIONAL,X,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-">df-</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-" data-sym="DF-" title="(defmacro df- (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-" data-sym="DF-" title="(defmacro df- (x &amp;optional (y &#39;nil yp))
   (cond (yp `(binary-df+ ,(to-df?-fn x) (unary-df- ,(to-df?-fn y))))
         (t `(unary-df- ,(to-df?-fn x)))))">df-</a>
   (x &amp;optional (y 'nil yp))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (yp `(binary-df+ ,(TO-DF?-FN X) (unary-df- ,(TO-DF?-FN Y))))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> `(unary-df- ,(TO-DF?-FN X)))))</pre>
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (yp `(binary-df+ ,(TO-DF?-FN X) (unary-df- ,(TO-DF?-FN Y))))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> `(unary-df- ,(TO-DF?-FN X)))))</pre>
   </div>
 
 <div class="form-block macro" id="def-df_2A" data-defines="DF*" data-references="XXXJOIN,T,CAR,BINARY-DF*,LIST,CDR,DF1,QUOTE,NULL,COND,TO-DF?-ARGS,LET,RST,&REST,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF*">df*</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2A" data-sym="DF*" title="(defmacro df* (&amp;rest rst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2A" data-sym="DF*" title="(defmacro df* (&amp;rest rst)
   (let ((rst (to-df?-args rst)))
     (cond ((null rst) &#39;(df1))
           ((null (cdr rst)) (list &#39;binary-df* &#39;(df1) (car rst)))
@@ -1019,24 +1019,24 @@ pre.code {
   (declare (xargs :guard (true-listp lst)))
   (cond ((endp lst) nil)
         (t (cons (to-df?-fn (car lst)) (to-df?-args (cdr lst))))))">to-df?-args</a> rst)))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> rst) '(<a class="sym-link local-def" href="#def-df1" data-sym="DF1" title="(defun df1 () (declare (xargs :guard t)) (to-df 1))">df1</a>))
-      ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (cdr rst)) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> 'binary-df* '(<a class="sym-link local-def" href="#def-df1" data-sym="DF1" title="(defun df1 () (declare (xargs :guard t)) (to-df 1))">df1</a>) (car rst)))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> 'binary-df* rst)))))</pre>
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> rst) '(<a class="sym-link local-def" href="#def-df1" data-sym="DF1" title="(defun df1 () (declare (xargs :guard t)) (to-df 1))">df1</a>))
+      ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (cdr rst)) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> 'binary-df* '(<a class="sym-link local-def" href="#def-df1" data-sym="DF1" title="(defun df1 () (declare (xargs :guard t)) (to-df 1))">df1</a>) (car rst)))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-xxxjoin" data-sym="XXXJOIN">xxxjoin</a> 'binary-df* rst)))))</pre>
   </div>
 
 <div class="form-block macro" id="def-df_2F" data-defines="DF/" data-references="UNARY-DF/,T,BINARY-DF/,QUASIQUOTE,COND,YP,QUOTE,Y,&OPTIONAL,X,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF/">df/</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2F" data-sym="DF/" title="(defmacro df/ (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df_2F" data-sym="DF/" title="(defmacro df/ (x &amp;optional (y &#39;nil yp))
   (cond (yp `(binary-df/ ,(to-df?-fn x) ,(to-df?-fn y)))
         (t `(unary-df/ ,(to-df?-fn x)))))">df/</a>
   (x &amp;optional (y 'nil yp))
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (yp `(binary-df/ ,(TO-DF?-FN X) ,(TO-DF?-FN Y)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> `(unary-df/ ,(TO-DF?-FN X)))))</pre>
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (yp `(binary-df/ ,(TO-DF?-FN X) ,(TO-DF?-FN Y)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> `(unary-df/ ,(TO-DF?-FN X)))))</pre>
   </div>
 
 <div class="form-block macro" id="def-df-log" data-defines="DF-LOG" data-references="UNARY-DF-LOG,BINARY-DF-LOG,QUASIQUOTE,IF,YP,QUOTE,Y,&OPTIONAL,X,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="DF-LOG">df-log</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-log" data-sym="DF-LOG" title="(defmacro df-log (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-df-log" data-sym="DF-LOG" title="(defmacro df-log (x &amp;optional (y &#39;nil yp))
   (if yp
       `(binary-df-log ,(to-df?-fn x) ,(to-df?-fn y))
       `(unary-df-log ,(to-df?-fn x))))">df-log</a>
@@ -1048,47 +1048,47 @@ pre.code {
 
 <div class="form-block other" id="form-49" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_2B" data-sym="DF+" title="(defmacro df+ (&amp;rest rst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_2B" data-sym="DF+" title="(defmacro df+ (&amp;rest rst)
   (let ((rst (to-df?-args rst)))
     (if rst
         (if (cdr rst)
             (xxxjoin &#39;binary-df+ rst)
-...">df+</a> binary-df+ <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)</pre>
+...">df+</a> binary-df+ <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)</pre>
   </div>
 
 <div class="form-block other" id="form-50" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_2A" data-sym="DF*" title="(defmacro df* (&amp;rest rst)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-add-macro-fn" data-sym="ADD-MACRO-FN">add-macro-fn</a> <a class="sym-link local-def" href="#def-df_2A" data-sym="DF*" title="(defmacro df* (&amp;rest rst)
   (let ((rst (to-df?-args rst)))
     (cond ((null rst) &#39;(df1))
           ((null (cdr rst)) (list &#39;binary-df* &#39;(df1) (car rst)))
-          (t (xxxjoin &#39;binary-df* rst)))))">df*</a> binary-df* <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)</pre>
+          (t (xxxjoin &#39;binary-df* rst)))))">df*</a> binary-df* <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)</pre>
   </div>
 
 <div class="form-block other" id="form-51" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="../../../axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'unary-df- '(<a class="sym-link local-def" href="#def-df-" data-sym="DF-" title="(defmacro df- (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'unary-df- '(<a class="sym-link local-def" href="#def-df-" data-sym="DF-" title="(defmacro df- (x &amp;optional (y &#39;nil yp))
   (cond (yp `(binary-df+ ,(to-df?-fn x) (unary-df- ,(to-df?-fn y))))
         (t `(unary-df- ,(to-df?-fn x)))))">df-</a>))</pre>
   </div>
 
 <div class="form-block other" id="form-52" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="../../../axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'unary-df/ '(<a class="sym-link local-def" href="#def-df_2F" data-sym="DF/" title="(defmacro df/ (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'unary-df/ '(<a class="sym-link local-def" href="#def-df_2F" data-sym="DF/" title="(defmacro df/ (x &amp;optional (y &#39;nil yp))
   (cond (yp `(binary-df/ ,(to-df?-fn x) ,(to-df?-fn y)))
         (t `(unary-df/ ,(to-df?-fn x)))))">df/</a>))</pre>
   </div>
 
 <div class="form-block other" id="form-53" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="../../../axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'binary-df/ '(<a class="sym-link local-def" href="#def-df_2F" data-sym="DF/" title="(defmacro df/ (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'binary-df/ '(<a class="sym-link local-def" href="#def-df_2F" data-sym="DF/" title="(defmacro df/ (x &amp;optional (y &#39;nil yp))
   (cond (yp `(binary-df/ ,(to-df?-fn x) ,(to-df?-fn y)))
         (t `(unary-df/ ,(to-df?-fn x)))))">df/</a>))</pre>
   </div>
 
 <div class="form-block other" id="form-54" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="../../../axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'unary-df-log '(<a class="sym-link local-def" href="#def-df-log" data-sym="DF-LOG" title="(defmacro df-log (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'unary-df-log '(<a class="sym-link local-def" href="#def-df-log" data-sym="DF-LOG" title="(defmacro df-log (x &amp;optional (y &#39;nil yp))
   (if yp
       `(binary-df-log ,(to-df?-fn x) ,(to-df?-fn y))
       `(unary-df-log ,(to-df?-fn x))))">df-log</a>))</pre>
@@ -1096,7 +1096,7 @@ pre.code {
 
 <div class="form-block other" id="form-55" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="../../../axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'binary-df-log '(<a class="sym-link local-def" href="#def-df-log" data-sym="DF-LOG" title="(defmacro df-log (x &amp;optional (y &#39;nil yp))
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-table" data-sym="TABLE">table</a> <a class="sym-link system" href="axioms.html#def-untrans-table" data-sym="UNTRANS-TABLE">untrans-table</a> 'binary-df-log '(<a class="sym-link local-def" href="#def-df-log" data-sym="DF-LOG" title="(defmacro df-log (x &amp;optional (y &#39;nil yp))
   (if yp
       `(binary-df-log ,(to-df?-fn x) ,(to-df?-fn y))
       `(unary-df-log ,(to-df?-fn x))))">df-log</a>))</pre>
@@ -1104,8 +1104,8 @@ pre.code {
 
 <div class="form-block in-theory" id="form-56" typeof="Code">
     <div class="form-header"><span class="form-type">in-theory</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (set-difference-theories (current-theory <span class="keyword">:here</span>)
-    (<a class="sym-link system" href="../../../axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> <a class="sym-link local-def" href="#def-_2Adf-function-sigs-exec_2A" data-sym="*DF-FUNCTION-SIGS-EXEC*" title="(defconst *df-function-sigs-exec* (df-function-sigs nil))">*df-function-sigs-exec*</a>)))</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-theory" data-sym="IN-THEORY">in-theory</a> (set-difference-theories (current-theory <span class="keyword">:here</span>)
+    (<a class="sym-link system" href="axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> <a class="sym-link local-def" href="#def-_2Adf-function-sigs-exec_2A" data-sym="*DF-FUNCTION-SIGS-EXEC*" title="(defconst *df-function-sigs-exec* (df-function-sigs nil))">*df-function-sigs-exec*</a>)))</pre>
   </div>
 
 

@@ -432,18 +432,18 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">linear-b</h1>
-    <div class="path"><a href="linear-b.lisp" class="source-link">/workspaces/acl2/linear-b</a></div>
+    <div class="path"><a href="linear-b.lisp" class="source-link">linear-b</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block function" id="def-polys-from-type-set" data-defines="POLYS-FROM-TYPE-SET" data-references="INVERSE-POLYS,HARD,ER,TS-UNION,*TS-NON-POSITIVE-RATIONAL*,*TS-NON-NEGATIVE-RATIONAL*,*TS-NEGATIVE-RATIONAL*,<,*TS-POSITIVE-RATIONAL*,*TS-NEGATIVE-INTEGER*,*TS-POSITIVE-INTEGER*,*2*,*TS-INTEGER>1*,*0*,*TS-BIT*,*1*,*TS-ONE*,T,<=,QUOTE,BASE-POLY,ADD-LINEAR-TERMS,LIST,*TS-ZERO*,TS-SUBSETP,COND,TYPE-SET,TS-TTREE,TS,MV-LET,GOOD-POT-VARP,IF,TTREE,WRLD,ENS,TYPE-ALIST,DWP,FORCE-FLAG,TERM,DEFUN" data-used-by="ADD-TYPE-SET-POLYS" data-part-name="POLYS-FROM-TYPE-SET" data-part-args="TTREE,WRLD,ENS,TYPE-ALIST,DWP,FORCE-FLAG,TERM" data-part-body="INVERSE-POLYS,HARD,ER,TS-UNION,*TS-NON-POSITIVE-RATIONAL*,*TS-NON-NEGATIVE-RATIONAL*,*TS-NEGATIVE-RATIONAL*,<,*TS-POSITIVE-RATIONAL*,*TS-NEGATIVE-INTEGER*,*TS-POSITIVE-INTEGER*,*2*,*TS-INTEGER>1*,*0*,*TS-BIT*,*1*,*TS-ONE*,T,<=,QUOTE,BASE-POLY,ADD-LINEAR-TERMS,LIST,*TS-ZERO*,TS-SUBSETP,COND,TTREE,WRLD,ENS,TYPE-ALIST,DWP,FORCE-FLAG,TYPE-SET,TS-TTREE,TS,MV-LET,TERM,GOOD-POT-VARP,IF" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="POLYS-FROM-TYPE-SET">polys-from-type-set</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-polys-from-type-set" data-sym="POLYS-FROM-TYPE-SET" title="(defun polys-from-type-set (term force-flag dwp type-alist ens wrld ttree)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-polys-from-type-set" data-sym="POLYS-FROM-TYPE-SET" title="(defun polys-from-type-set (term force-flag dwp type-alist ens wrld ttree)
   (if (good-pot-varp term)
       (mv-let (ts ts-ttree)
               (type-set term force-flag dwp type-alist ens wrld ttree nil nil)
@@ -451,7 +451,7 @@ pre.code {
 ...">polys-from-type-set</a>
   (term force-flag dwp type-alist ens wrld ttree)
   (if (good-pot-varp term)
-    (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts ts-ttree)
+    (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts ts-ttree)
       (type-set term
         force-flag
         dwp
@@ -461,39 +461,39 @@ pre.code {
         ttree
         nil
         nil)
-      (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((ts-subsetp ts *ts-zero*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:rhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))
-            (add-linear-terms <span class="keyword">:lhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-one*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+      (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((ts-subsetp ts *ts-zero*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:rhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))
+            (add-linear-terms <span class="keyword">:lhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-one*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
               <span class="keyword">:rhs</span> term
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))
             (add-linear-terms <span class="keyword">:lhs</span> term
-              <span class="keyword">:rhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-bit*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A0_2A" data-sym="*0*">*0*</a>
+              <span class="keyword">:rhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-bit*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="axioms.html#def-_2A0_2A" data-sym="*0*">*0*</a>
               <span class="keyword">:rhs</span> term
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))
             (add-linear-terms <span class="keyword">:lhs</span> term
-              <span class="keyword">:rhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-integer&gt;1*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A2_2A" data-sym="*2*">*2*</a>
+              <span class="keyword">:rhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-integer&gt;1*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="axioms.html#def-_2A2_2A" data-sym="*2*">*2*</a>
               <span class="keyword">:rhs</span> term
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-positive-integer*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-positive-integer*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
               <span class="keyword">:rhs</span> term
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-negative-integer*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-negative-integer*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term
               <span class="keyword">:rhs</span> ''<span class="number">-1</span>
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-positive-rational*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:rhs</span> term (base-poly ts-ttree '&lt; <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-negative-rational*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term (base-poly ts-ttree '&lt; <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-non-negative-rational*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:rhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        ((ts-subsetp ts *ts-non-positive-rational*) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-positive-rational*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:rhs</span> term (base-poly ts-ttree '&lt; <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-negative-rational*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term (base-poly ts-ttree '&lt; <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-non-negative-rational*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:rhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        ((ts-subsetp ts *ts-non-positive-rational*) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
         ((ts-subsetp ts
-           (ts-union *ts-non-positive-rational* *ts-one*)) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term
-              <span class="keyword">:rhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
-              (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-        (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil)))
-    (<a class="sym-link system" href="../../../axioms.html#def-er" data-sym="ER">er</a> hard
+           (ts-union *ts-non-positive-rational* *ts-one*)) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (add-linear-terms <span class="keyword">:lhs</span> term
+              <span class="keyword">:rhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+              (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+        (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil)))
+    (<a class="sym-link system" href="axioms.html#def-er" data-sym="ER">er</a> hard
       'inverse-polys
       <span class="string">"A presumptive pot-label, ~x0,  has turned out to be illegitimate. ~
          If possible, please send a script reproducing this error ~
@@ -503,7 +503,7 @@ pre.code {
 
 <div class="form-block function" id="def-add-type-set-polys" data-defines="ADD-TYPE-SET-POLYS" data-references="CDR,CAR,POLYS-FROM-TYPE-SET,ADD-POLYS0,NEW-NEW-POT-LST,CONTRADICTIONP,MV-LET,T,MV,IF,CHANGED-POT-VARS,NEW-VAR-LST,LET,NULL,COND,WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,ALREADY-NOTED-VARS,OLD-POT-LST,NEW-POT-LST,VAR-LST,DEFUN" data-used-by="ADD-POLYNOMIAL-INEQUALITIES" data-part-name="ADD-TYPE-SET-POLYS" data-part-args="WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,ALREADY-NOTED-VARS,OLD-POT-LST,NEW-POT-LST,VAR-LST" data-part-body="CDR,CAR,POLYS-FROM-TYPE-SET,ADD-POLYS0,NEW-NEW-POT-LST,CONTRADICTIONP,MV-LET,T,MV,WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,ADD-TYPE-SET-POLYS,IF,ALREADY-NOTED-VARS,OLD-POT-LST,NEW-POT-LST,CHANGED-POT-VARS,NEW-VAR-LST,LET,VAR-LST,NULL,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="ADD-TYPE-SET-POLYS">add-type-set-polys</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-add-type-set-polys" data-sym="ADD-TYPE-SET-POLYS" title="(defun add-type-set-polys
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-add-type-set-polys" data-sym="ADD-TYPE-SET-POLYS" title="(defun add-type-set-polys
        (var-lst new-pot-lst old-pot-lst already-noted-vars pt nonlinearp
         type-alist ens force-flg wrld)
   (cond
@@ -518,7 +518,7 @@ pre.code {
     ens
     force-flg
     wrld)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> var-lst) (let ((new-var-lst (changed-pot-vars new-pot-lst
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> var-lst) (let ((new-var-lst (changed-pot-vars new-pot-lst
              old-pot-lst
              already-noted-vars)))
         (if new-var-lst
@@ -537,8 +537,8 @@ pre.code {
             ens
             force-flg
             wrld)
-          (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> nil new-pot-lst))))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (contradictionp new-new-pot-lst)
+          (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> nil new-pot-lst))))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (contradictionp new-new-pot-lst)
         (add-polys0 (<a class="sym-link local-def" href="#def-polys-from-type-set" data-sym="POLYS-FROM-TYPE-SET" title="(defun polys-from-type-set (term force-flag dwp type-alist ens wrld ttree)
   (if (good-pot-varp term)
       (mv-let (ts ts-ttree)
@@ -554,9 +554,9 @@ pre.code {
           new-pot-lst
           pt
           nonlinearp
-          <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
-        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (contradictionp (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> contradictionp nil))
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-add-type-set-polys" data-sym="ADD-TYPE-SET-POLYS" title="(defun add-type-set-polys
+          <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
+        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (contradictionp (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> contradictionp nil))
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-add-type-set-polys" data-sym="ADD-TYPE-SET-POLYS" title="(defun add-type-set-polys
        (var-lst new-pot-lst old-pot-lst already-noted-vars pt nonlinearp
         type-alist ens force-flg wrld)
   (cond
@@ -575,17 +575,17 @@ pre.code {
 
 <div class="form-block function" id="def-add-polynomial-inequalities" data-defines="ADD-POLYNOMIAL-INEQUALITIES" data-references="ADD-TYPE-SET-POLYS,CHANGED-POT-VARS,LET,MV,COND,T,ADD-POLYS0,NEW-POT-LST,CONTRADICTIONP,MV-LET,WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,POT-LST,LST,DEFUN" data-used-by="ADD-POLYS" data-part-name="ADD-POLYNOMIAL-INEQUALITIES" data-part-args="WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,POT-LST,LST" data-part-body="WRLD,FORCE-FLG,ENS,TYPE-ALIST,ADD-TYPE-SET-POLYS,CHANGED-POT-VARS,LET,MV,COND,T,NONLINEARP,PT,POT-LST,LST,ADD-POLYS0,NEW-POT-LST,CONTRADICTIONP,MV-LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="ADD-POLYNOMIAL-INEQUALITIES">add-polynomial-inequalities</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-add-polynomial-inequalities" data-sym="ADD-POLYNOMIAL-INEQUALITIES" title="(defun add-polynomial-inequalities
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-add-polynomial-inequalities" data-sym="ADD-POLYNOMIAL-INEQUALITIES" title="(defun add-polynomial-inequalities
        (lst pot-lst pt nonlinearp type-alist ens force-flg wrld)
   (mv-let (contradictionp new-pot-lst) (add-polys0 lst pot-lst pt nonlinearp t)
           (cond (contradictionp (mv contradictionp nil))
                 (t
 ...">add-polynomial-inequalities</a>
   (lst pot-lst pt nonlinearp type-alist ens force-flg wrld)
-  (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (contradictionp new-pot-lst)
-    (add-polys0 lst pot-lst pt nonlinearp <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (contradictionp (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> contradictionp nil))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((changed-pot-vars (changed-pot-vars new-pot-lst pot-lst nil)))
+  (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (contradictionp new-pot-lst)
+    (add-polys0 lst pot-lst pt nonlinearp <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (contradictionp (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> contradictionp nil))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((changed-pot-vars (changed-pot-vars new-pot-lst pot-lst nil)))
           (<a class="sym-link local-def" href="#def-add-type-set-polys" data-sym="ADD-TYPE-SET-POLYS" title="(defun add-type-set-polys
        (var-lst new-pot-lst old-pot-lst already-noted-vars pt nonlinearp
         type-alist ens force-flg wrld)
@@ -605,7 +605,7 @@ pre.code {
 
 <div class="form-block function" id="def-add-polys" data-defines="ADD-POLYS" data-references="ADD-POLYNOMIAL-INEQUALITIES,WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,POT-LST,LST,DEFUN" data-part-name="ADD-POLYS" data-part-args="WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,POT-LST,LST" data-part-body="WRLD,FORCE-FLG,ENS,TYPE-ALIST,NONLINEARP,PT,POT-LST,LST,ADD-POLYNOMIAL-INEQUALITIES" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="ADD-POLYS">add-polys</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-add-polys" data-sym="ADD-POLYS" title="(defun add-polys (lst pot-lst pt nonlinearp type-alist ens force-flg wrld)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-add-polys" data-sym="ADD-POLYS" title="(defun add-polys (lst pot-lst pt nonlinearp type-alist ens force-flg wrld)
   (add-polynomial-inequalities lst pot-lst pt nonlinearp type-alist ens
                                force-flg wrld))">add-polys</a>
   (lst pot-lst pt nonlinearp type-alist ens force-flg wrld)
@@ -626,19 +626,19 @@ pre.code {
 
 <div class="form-block mutual-recursion" id="def-eval-ground-subexpressions1" data-defines="EVAL-GROUND-SUBEXPRESSIONS1" data-references="Y,CAR,X,NULL,LST,FN-RUNE-NUME,PUSH-LEMMA,KWOTE,KWOTE-VAL,ACONS,CONS-TERM,NEW-TERM,STRIP-CADRS,EV-FNCALL-W,PSTK,ERP,CONSTRAINEDP,GETPROPC,MEMBER-EQ,NOT,ENABLED-XFNP,LOGICP,AND,ASSOC-EQUAL,PAIR,CDR,CONS,FCONS-TERM*,EQUAL,ARG3,FLG3,ARG2,FLG2,CADR,QUOTEP,FARGN,ARG1,FLG1,MAKE-LAMBDA,IF,FCONS-TERM,BODY,FLG-BODY,T,IGNORE,DECLARE,LAMBDA-BODY,LAMBDA-FORMALS,PAIRLIS$,SUBLIS-VAR,VAL,ALL-QUOTEPS,FARGS,EVAL-GROUND-SUBEXPRESSIONS1-LST,ARGS,FLG,MV-LET,LAM,LET,FLAMBDA-APPLICATIONP,MV,HIDE,QUOTE,FFN-SYMB,EQ,FQUOTEP,VARIABLEP,OR,COND,MEMO,HANDS-OFF-FNS,TTREE,GC-OFF,SAFE-MODE,WRLD,ENS,TERM,DEFUN,MUTUAL-RECURSION" data-used-by="EVAL-GROUND-SUBEXPRESSIONS" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="EVAL-GROUND-SUBEXPRESSIONS1">eval-ground-subexpressions1</span><span class="form-type">mutual-recursion</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-mutual-recursion" data-sym="MUTUAL-RECURSION">mutual-recursion</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-mutual-recursion" data-sym="MUTUAL-RECURSION">mutual-recursion</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
 ...">eval-ground-subexpressions1</a>
     (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-variablep" data-sym="VARIABLEP">variablep</a> term)
-         (<a class="sym-link system" href="../../../axioms.html#def-fquotep" data-sym="FQUOTEP">fquotep</a> term)
-         (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) '<a class="sym-link system" href="../../../axioms.html#def-hide" data-sym="HIDE">hide</a>)) (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree memo))
-      ((<a class="sym-link system" href="../../../basis-b.html#def-flambda-applicationp" data-sym="FLAMBDA-APPLICATIONP">flambda-applicationp</a> term) (let ((lam (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term)))
-          (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a> ttree memo)
-            (eval-ground-subexpressions1-lst (<a class="sym-link system" href="../../../axioms.html#def-fargs" data-sym="FARGS">fargs</a> term)
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-variablep" data-sym="VARIABLEP">variablep</a> term)
+         (<a class="sym-link system" href="axioms.html#def-fquotep" data-sym="FQUOTEP">fquotep</a> term)
+         (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) '<a class="sym-link system" href="axioms.html#def-hide" data-sym="HIDE">hide</a>)) (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree memo))
+      ((<a class="sym-link system" href="basis-b.html#def-flambda-applicationp" data-sym="FLAMBDA-APPLICATIONP">flambda-applicationp</a> term) (let ((lam (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term)))
+          (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a> ttree memo)
+            (eval-ground-subexpressions1-lst (<a class="sym-link system" href="axioms.html#def-fargs" data-sym="FARGS">fargs</a> term)
               ens
               wrld
               safe-mode
@@ -646,14 +646,14 @@ pre.code {
               ttree
               hands-off-fns
               memo)
-            (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((all-quoteps <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>) (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg val ttree memo)
+            (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((all-quoteps <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>) (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg val ttree memo)
                   (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
-...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="../../../basis-b.html#def-sublis-var" data-sym="SUBLIS-VAR">sublis-var</a> (<a class="sym-link system" href="../../../axioms.html#def-pairlis_24" data-sym="PAIRLIS$">pairlis$</a> (<a class="sym-link system" href="../../../basis-b.html#def-lambda-formals" data-sym="LAMBDA-FORMALS">lambda-formals</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term)) <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
-                      (<a class="sym-link system" href="../../../basis-b.html#def-lambda-body" data-sym="LAMBDA-BODY">lambda-body</a> lam))
+...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="basis-b.html#def-sublis-var" data-sym="SUBLIS-VAR">sublis-var</a> (<a class="sym-link system" href="axioms.html#def-pairlis_24" data-sym="PAIRLIS$">pairlis$</a> (<a class="sym-link system" href="basis-b.html#def-lambda-formals" data-sym="LAMBDA-FORMALS">lambda-formals</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term)) <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
+                      (<a class="sym-link system" href="basis-b.html#def-lambda-body" data-sym="LAMBDA-BODY">lambda-body</a> lam))
                     ens
                     wrld
                     safe-mode
@@ -662,14 +662,14 @@ pre.code {
                     hands-off-fns
                     memo)
                   (declare (ignore flg))
-                  (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> val ttree memo)))
-              (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg-body <a class="sym-link system" href="../../../basis-b.html#def-body" data-sym="BODY">body</a> ttree memo)
+                  (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> val ttree memo)))
+              (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg-body <a class="sym-link system" href="basis-b.html#def-body" data-sym="BODY">body</a> ttree memo)
                   (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
-...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="../../../basis-b.html#def-lambda-body" data-sym="LAMBDA-BODY">lambda-body</a> lam)
+...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="basis-b.html#def-lambda-body" data-sym="LAMBDA-BODY">lambda-body</a> lam)
                     ens
                     wrld
                     safe-mode
@@ -677,21 +677,21 @@ pre.code {
                     ttree
                     hands-off-fns
                     memo)
-                  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> flg flg-body) (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>
-                        (<a class="sym-link system" href="../../../basis-b.html#def-fcons-term" data-sym="FCONS-TERM">fcons-term</a> (if flg-body
-                            (<a class="sym-link system" href="../../../basis-b.html#def-make-lambda" data-sym="MAKE-LAMBDA">make-lambda</a> (<a class="sym-link system" href="../../../basis-b.html#def-lambda-formals" data-sym="LAMBDA-FORMALS">lambda-formals</a> lam) <a class="sym-link system" href="../../../basis-b.html#def-body" data-sym="BODY">body</a>)
+                  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> flg flg-body) (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>
+                        (<a class="sym-link system" href="basis-b.html#def-fcons-term" data-sym="FCONS-TERM">fcons-term</a> (if flg-body
+                            (<a class="sym-link system" href="basis-b.html#def-make-lambda" data-sym="MAKE-LAMBDA">make-lambda</a> (<a class="sym-link system" href="basis-b.html#def-lambda-formals" data-sym="LAMBDA-FORMALS">lambda-formals</a> lam) <a class="sym-link system" href="basis-b.html#def-body" data-sym="BODY">body</a>)
                             lam)
-                          <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
+                          <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
                         ttree
                         memo))
-                    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree memo)))))))))
-      ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) 'if) (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg1 arg1 ttree memo)
+                    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree memo)))))))))
+      ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) 'if) (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg1 arg1 ttree memo)
           (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
-...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">1</span>)
+...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">1</span>)
             ens
             wrld
             safe-mode
@@ -699,14 +699,14 @@ pre.code {
             ttree
             hands-off-fns
             memo)
-          (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-quotep" data-sym="QUOTEP">quotep</a> arg1) (if (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> arg1)
-                (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg2 arg2 ttree memo)
+          (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-quotep" data-sym="QUOTEP">quotep</a> arg1) (if (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> arg1)
+                (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg2 arg2 ttree memo)
                   (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
-...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">2</span>)
+...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">2</span>)
                     ens
                     wrld
                     safe-mode
@@ -715,14 +715,14 @@ pre.code {
                     hands-off-fns
                     memo)
                   (declare (ignore flg2))
-                  (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> arg2 ttree memo))
-                (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg3 arg3 ttree memo)
+                  (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> arg2 ttree memo))
+                (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg3 arg3 ttree memo)
                   (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
-...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">3</span>)
+...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">3</span>)
                     ens
                     wrld
                     safe-mode
@@ -731,14 +731,14 @@ pre.code {
                     hands-off-fns
                     memo)
                   (declare (ignore flg3))
-                  (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> arg3 ttree memo))))
-            (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg2 arg2 ttree memo)
+                  (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> arg3 ttree memo))))
+            (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg2 arg2 ttree memo)
                 (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
-...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">2</span>)
+...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">2</span>)
                   ens
                   wrld
                   safe-mode
@@ -746,13 +746,13 @@ pre.code {
                   ttree
                   hands-off-fns
                   memo)
-                (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg3 arg3 ttree memo)
+                (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg3 arg3 ttree memo)
                   (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
    (cond
     ((or (variablep term) (fquotep term) (eq (ffn-symb term) &#39;hide))
-...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">3</span>)
+...">eval-ground-subexpressions1</a> (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> term <span class="number">3</span>)
                     ens
                     wrld
                     safe-mode
@@ -760,20 +760,20 @@ pre.code {
                     ttree
                     hands-off-fns
                     memo)
-                  (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> flg1 flg2 flg3)
-                    (if (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> flg2 flg3)
+                  (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> flg1 flg2 flg3)
+                    (if (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> flg2 flg3)
                       (if (equal arg2 arg3)
                         arg2
-                        (<a class="sym-link system" href="../../../axioms.html#def-fcons-term_2A" data-sym="FCONS-TERM*">fcons-term*</a> 'if arg1 arg2 arg3))
+                        (<a class="sym-link system" href="axioms.html#def-fcons-term_2A" data-sym="FCONS-TERM*">fcons-term*</a> 'if arg1 arg2 arg3))
                       (if flg1
-                        (<a class="sym-link system" href="../../../basis-b.html#def-fcons-term" data-sym="FCONS-TERM">fcons-term</a> 'if (cons arg1 (cdr (<a class="sym-link system" href="../../../axioms.html#def-fargs" data-sym="FARGS">fargs</a> term))))
+                        (<a class="sym-link system" href="basis-b.html#def-fcons-term" data-sym="FCONS-TERM">fcons-term</a> 'if (cons arg1 (cdr (<a class="sym-link system" href="axioms.html#def-fargs" data-sym="FARGS">fargs</a> term))))
                         term))
                     ttree
                     memo)))))))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((pair (<a class="sym-link system" href="../../../axioms.html#def-assoc-equal" data-sym="ASSOC-EQUAL">assoc-equal</a> term memo)))
-          (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (pair (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (cdr pair) term) ttree memo))
-            (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a> ttree memo)
-                (eval-ground-subexpressions1-lst (<a class="sym-link system" href="../../../axioms.html#def-fargs" data-sym="FARGS">fargs</a> term)
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((pair (<a class="sym-link system" href="axioms.html#def-assoc-equal" data-sym="ASSOC-EQUAL">assoc-equal</a> term memo)))
+          (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (pair (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (cdr pair) term) ttree memo))
+            (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a> ttree memo)
+                (eval-ground-subexpressions1-lst (<a class="sym-link system" href="axioms.html#def-fargs" data-sym="FARGS">fargs</a> term)
                   ens
                   wrld
                   safe-mode
@@ -781,33 +781,33 @@ pre.code {
                   ttree
                   hands-off-fns
                   memo)
-                (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-logicp" data-sym="LOGICP">logicp</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) wrld)
-                     (all-quoteps <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
-                     (enabled-xfnp (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) ens wrld)
-                     (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) hands-off-fns))
-                     (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) 'constrainedp nil wrld))) (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (erp val)
-                      (<a class="sym-link system" href="../../../basis-b.html#def-pstk" data-sym="PSTK">pstk</a> (ev-fncall-w (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term)
-                          (<a class="sym-link system" href="../../../axioms.html#def-strip-cadrs" data-sym="STRIP-CADRS">strip-cadrs</a> <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
+                (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-logicp" data-sym="LOGICP">logicp</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) wrld)
+                     (all-quoteps <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
+                     (enabled-xfnp (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) ens wrld)
+                     (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-member-eq" data-sym="MEMBER-EQ">member-eq</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) hands-off-fns))
+                     (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) 'constrainedp nil wrld))) (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (erp val)
+                      (<a class="sym-link system" href="basis-b.html#def-pstk" data-sym="PSTK">pstk</a> (ev-fncall-w (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term)
+                          (<a class="sym-link system" href="axioms.html#def-strip-cadrs" data-sym="STRIP-CADRS">strip-cadrs</a> <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
                           wrld
                           nil
                           safe-mode
                           gc-off
-                          <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>
+                          <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>
                           nil))
-                      (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (erp (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> (flg (let ((new-term (<a class="sym-link system" href="../../../basis-b.html#def-cons-term" data-sym="CONS-TERM">cons-term</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)))
-                                (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> new-term ttree (<a class="sym-link system" href="../../../axioms.html#def-acons" data-sym="ACONS">acons</a> term new-term memo))))
-                            (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree (<a class="sym-link system" href="../../../axioms.html#def-acons" data-sym="ACONS">acons</a> term nil memo)))))
-                        (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((kwote-val (<a class="sym-link system" href="../../../axioms.html#def-kwote" data-sym="KWOTE">kwote</a> val)))
-                            (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>
+                      (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (erp (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> (flg (let ((new-term (<a class="sym-link system" href="basis-b.html#def-cons-term" data-sym="CONS-TERM">cons-term</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)))
+                                (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> new-term ttree (<a class="sym-link system" href="axioms.html#def-acons" data-sym="ACONS">acons</a> term new-term memo))))
+                            (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree (<a class="sym-link system" href="axioms.html#def-acons" data-sym="ACONS">acons</a> term nil memo)))))
+                        (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((kwote-val (<a class="sym-link system" href="axioms.html#def-kwote" data-sym="KWOTE">kwote</a> val)))
+                            (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>
                               kwote-val
-                              (push-lemma (fn-rune-nume (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) nil <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> wrld) ttree)
-                              (<a class="sym-link system" href="../../../axioms.html#def-acons" data-sym="ACONS">acons</a> term kwote-val memo)))))))
-                  (flg (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../basis-b.html#def-cons-term" data-sym="CONS-TERM">cons-term</a> (<a class="sym-link system" href="../../../axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>) ttree memo))
-                  (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree memo))))))))))
-  (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> eval-ground-subexpressions1-lst
+                              (push-lemma (fn-rune-nume (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) nil <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> wrld) ttree)
+                              (<a class="sym-link system" href="axioms.html#def-acons" data-sym="ACONS">acons</a> term kwote-val memo)))))))
+                  (flg (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="basis-b.html#def-cons-term" data-sym="CONS-TERM">cons-term</a> (<a class="sym-link system" href="axioms.html#def-ffn-symb" data-sym="FFN-SYMB">ffn-symb</a> term) <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>) ttree memo))
+                  (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> nil term ttree memo))))))))))
+  (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> eval-ground-subexpressions1-lst
     (lst ens wrld safe-mode gc-off ttree hands-off-fns memo)
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> lst) (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> nil nil ttree memo))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg1 x ttree memo)
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> lst) (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> nil nil ttree memo))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg1 x ttree memo)
           (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
@@ -821,7 +821,7 @@ pre.code {
             ttree
             hands-off-fns
             memo)
-          (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg2 y ttree memo)
+          (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg2 y ttree memo)
             (eval-ground-subexpressions1-lst (cdr lst)
               ens
               wrld
@@ -830,8 +830,8 @@ pre.code {
               ttree
               hands-off-fns
               memo)
-            (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> flg1 flg2)
-              (if (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> flg1 flg2)
+            (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> flg1 flg2)
+              (if (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> flg1 flg2)
                 (cons x y)
                 lst)
               ttree
@@ -840,13 +840,13 @@ pre.code {
 
 <div class="form-block function" id="def-eval-ground-subexpressions" data-defines="EVAL-GROUND-SUBEXPRESSIONS" data-references="MV,IGNORE,DECLARE,GC-OFF,SAFE-MODE,QUOTE,F-GET-GLOBAL,EVAL-GROUND-SUBEXPRESSIONS1,MEMO,X,FLG,MV-LET,TTREE,STATE,WRLD,ENS,TERM,DEFUN" data-used-by="LINEARIZE1" data-part-name="EVAL-GROUND-SUBEXPRESSIONS" data-part-args="TTREE,STATE,WRLD,ENS,TERM" data-part-body="MV,IGNORE,DECLARE,GC-OFF,STATE,SAFE-MODE,QUOTE,F-GET-GLOBAL,WRLD,ENS,TERM,EVAL-GROUND-SUBEXPRESSIONS1,MEMO,TTREE,X,FLG,MV-LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="EVAL-GROUND-SUBEXPRESSIONS">eval-ground-subexpressions</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-eval-ground-subexpressions" data-sym="EVAL-GROUND-SUBEXPRESSIONS" title="(defun eval-ground-subexpressions (term ens wrld state ttree)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-eval-ground-subexpressions" data-sym="EVAL-GROUND-SUBEXPRESSIONS" title="(defun eval-ground-subexpressions (term ens wrld state ttree)
   (mv-let (flg x ttree memo)
           (eval-ground-subexpressions1 term ens wrld
                                        (f-get-global &#39;safe-mode state)
                                        (gc-off state) ttree nil nil)">eval-ground-subexpressions</a>
   (term ens wrld state ttree)
-  (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg x ttree memo)
+  (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg x ttree memo)
     (<a class="sym-link local-def" href="#def-eval-ground-subexpressions1" data-sym="EVAL-GROUND-SUBEXPRESSIONS1" title="(mutual-recursion
  (defun eval-ground-subexpressions1
         (term ens wrld safe-mode gc-off ttree hands-off-fns memo)
@@ -855,87 +855,87 @@ pre.code {
 ...">eval-ground-subexpressions1</a> term
       ens
       wrld
-      (<a class="sym-link system" href="../../../axioms.html#def-f-get-global" data-sym="F-GET-GLOBAL">f-get-global</a> 'safe-mode state)
+      (<a class="sym-link system" href="axioms.html#def-f-get-global" data-sym="F-GET-GLOBAL">f-get-global</a> 'safe-mode state)
       (gc-off state)
       ttree
       nil
       nil)
     (declare (ignore memo))
-    (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> flg x ttree)))</pre>
+    (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> flg x ttree)))</pre>
   </div>
 
 <div class="form-block function" id="def-eval-ground-subexpressions-lst" data-defines="EVAL-GROUND-SUBEXPRESSIONS-LST" data-references="MV,IGNORE,DECLARE,GC-OFF,SAFE-MODE,QUOTE,F-GET-GLOBAL,EVAL-GROUND-SUBEXPRESSIONS1-LST,MEMO,X,FLG,MV-LET,TTREE,STATE,WRLD,ENS,LST,DEFUN" data-part-name="EVAL-GROUND-SUBEXPRESSIONS-LST" data-part-args="TTREE,STATE,WRLD,ENS,LST" data-part-body="MV,IGNORE,DECLARE,GC-OFF,STATE,SAFE-MODE,QUOTE,F-GET-GLOBAL,WRLD,ENS,LST,EVAL-GROUND-SUBEXPRESSIONS1-LST,MEMO,TTREE,X,FLG,MV-LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="EVAL-GROUND-SUBEXPRESSIONS-LST">eval-ground-subexpressions-lst</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-eval-ground-subexpressions-lst" data-sym="EVAL-GROUND-SUBEXPRESSIONS-LST" title="(defun eval-ground-subexpressions-lst (lst ens wrld state ttree)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-eval-ground-subexpressions-lst" data-sym="EVAL-GROUND-SUBEXPRESSIONS-LST" title="(defun eval-ground-subexpressions-lst (lst ens wrld state ttree)
   (mv-let (flg x ttree memo)
           (eval-ground-subexpressions1-lst lst ens wrld
                                            (f-get-global &#39;safe-mode state)
                                            (gc-off state) ttree nil nil)">eval-ground-subexpressions-lst</a>
   (lst ens wrld state ttree)
-  (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg x ttree memo)
+  (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg x ttree memo)
     (eval-ground-subexpressions1-lst lst
       ens
       wrld
-      (<a class="sym-link system" href="../../../axioms.html#def-f-get-global" data-sym="F-GET-GLOBAL">f-get-global</a> 'safe-mode state)
+      (<a class="sym-link system" href="axioms.html#def-f-get-global" data-sym="F-GET-GLOBAL">f-get-global</a> 'safe-mode state)
       (gc-off state)
       ttree
       nil
       nil)
     (declare (ignore memo))
-    (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> flg x ttree)))</pre>
+    (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> flg x ttree)))</pre>
   </div>
 
 <div class="form-block function" id="def-poly-set" data-defines="POLY-SET" data-references="MARRY-PARENTS,ACCESS,CONS-TAG-TREES,POLY,CHANGE,IMPOSSIBLE-POLYP,LIST,T,SILLY-POLYP,OR,AND,QUOTE,EQ,COND,POLY2,POLY1,OP,DEFUN" data-used-by="LINEARIZE1" data-part-name="POLY-SET" data-part-args="POLY2,POLY1,OP" data-part-body="MARRY-PARENTS,ACCESS,CONS-TAG-TREES,POLY,CHANGE,IMPOSSIBLE-POLYP,LIST,T,POLY2,SILLY-POLYP,POLY1,OR,AND,QUOTE,OP,EQ,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="POLY-SET">poly-set</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
 ...">poly-set</a>
   (op poly1 poly2)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> op '<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a>) (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> poly1 nil) (silly-polyp poly1)) (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((silly-polyp poly2) nil) (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> poly2)))))
-        ((silly-polyp poly2) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> poly1)))
-        (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> poly1 poly2)))))
-    ((<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (silly-polyp poly1) (silly-polyp poly2)) nil)
-    ((impossible-polyp poly1) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../basis-a.html#def-change" data-sym="CHANGE">change</a> poly
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> op '<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a>) (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> poly1 nil) (silly-polyp poly1)) (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((silly-polyp poly2) nil) (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> poly2)))))
+        ((silly-polyp poly2) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> poly1)))
+        (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> poly1 poly2)))))
+    ((<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (silly-polyp poly1) (silly-polyp poly2)) nil)
+    ((impossible-polyp poly1) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="basis-a.html#def-change" data-sym="CHANGE">change</a> poly
             poly2
-            <span class="keyword">:ttree</span> (cons-tag-trees (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:ttree</span>)
-              (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:ttree</span>))
-            <span class="keyword">:parents</span> (marry-parents (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:parents</span>)
-              (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:parents</span>))))))
-    ((impossible-polyp poly2) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../basis-a.html#def-change" data-sym="CHANGE">change</a> poly
+            <span class="keyword">:ttree</span> (cons-tag-trees (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:ttree</span>)
+              (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:ttree</span>))
+            <span class="keyword">:parents</span> (marry-parents (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:parents</span>)
+              (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:parents</span>))))))
+    ((impossible-polyp poly2) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="basis-a.html#def-change" data-sym="CHANGE">change</a> poly
             poly1
-            <span class="keyword">:ttree</span> (cons-tag-trees (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:ttree</span>)
-              (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:ttree</span>))
-            <span class="keyword">:parents</span> (marry-parents (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:parents</span>)
-              (<a class="sym-link system" href="../../../axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:parents</span>))))))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> poly1) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> poly2)))))</pre>
+            <span class="keyword">:ttree</span> (cons-tag-trees (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:ttree</span>)
+              (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:ttree</span>))
+            <span class="keyword">:parents</span> (marry-parents (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly1 <span class="keyword">:parents</span>)
+              (<a class="sym-link system" href="axioms.html#def-access" data-sym="ACCESS">access</a> poly poly2 <span class="keyword">:parents</span>))))))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> poly1) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> poly2)))))</pre>
   </div>
 
 <div class="form-block function" id="def-linearize1" data-defines="LINEARIZE1" data-references="IMPOSSIBLE-POLY,*NIL*,EQUAL,QUOTEP,EQ,IMMEDIATE-FORCEP,ACL2-NUMBERP,QUASIQUOTE,ADD-LINEAR-ASSUMPTION,NEW-TTREE,TS-INTERSECTP,TS-ACL2-NUMBERP,*TS-ZERO*,OR,*TS-INTEGER*,TS-SUBSETP,*TS-ACL2-NUMBER*,TS-DISJOINTP,EQUALITYP,<,COLLECT-PARENTS,BASE-POLY0,TS-REAL/RATIONALP,RATIONALP-FLG,T,<=,BASE-POLY,*1*,ADD-LINEAR-TERMS,QUOTE,POLY-SET,TS-INTEGERP,AND,TS-RHS,TYPE-SET,TS-TTREE,TS-LHS,RHS,FARGN,LHS,INEQUALITYP,COND,NOT,IF,LET,STRIP-NOT,ATM,NOT-FLG,IGNORE,DECLARE,EVAL-GROUND-SUBEXPRESSIONS,TEMP,FLG,MV-LET,STATE,TTREE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TERM,DEFUN" data-used-by="LINEARIZE" data-part-name="LINEARIZE1" data-part-args="STATE,TTREE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TERM" data-part-body="IMPOSSIBLE-POLY,*NIL*,EQUAL,QUOTEP,EQ,IMMEDIATE-FORCEP,ACL2-NUMBERP,QUASIQUOTE,ADD-LINEAR-ASSUMPTION,NEW-TTREE,TS-INTERSECTP,TS-ACL2-NUMBERP,*TS-ZERO*,OR,*TS-INTEGER*,TS-SUBSETP,*TS-ACL2-NUMBER*,TS-DISJOINTP,EQUALITYP,<,COLLECT-PARENTS,BASE-POLY0,TS-REAL/RATIONALP,RATIONALP-FLG,T,<=,BASE-POLY,*1*,ADD-LINEAR-TERMS,QUOTE,POLY-SET,TS-INTEGERP,AND,TS-RHS,TYPE-ALIST,FORCE-FLG,TYPE-SET,TS-TTREE,TS-LHS,RHS,FARGN,LHS,INEQUALITYP,COND,NOT,IF,POSITIVEP,LET,STRIP-NOT,ATM,NOT-FLG,IGNORE,DECLARE,STATE,WRLD,ENS,TERM,EVAL-GROUND-SUBEXPRESSIONS,TTREE,TEMP,FLG,MV-LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="LINEARIZE1">linearize1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize1" data-sym="LINEARIZE1" title="(defun linearize1 (term positivep type-alist ens force-flg wrld ttree state)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize1" data-sym="LINEARIZE1" title="(defun linearize1 (term positivep type-alist ens force-flg wrld ttree state)
   (mv-let (flg temp ttree)
           (eval-ground-subexpressions term ens wrld state ttree)
           (declare (ignore flg))
           (mv-let (not-flg atm) (strip-not temp)
 ...">linearize1</a>
   (term positivep type-alist ens force-flg wrld ttree state)
-  (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg temp ttree)
+  (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg temp ttree)
     (<a class="sym-link local-def" href="#def-eval-ground-subexpressions" data-sym="EVAL-GROUND-SUBEXPRESSIONS" title="(defun eval-ground-subexpressions (term ens wrld state ttree)
   (mv-let (flg x ttree memo)
           (eval-ground-subexpressions1 term ens wrld
                                        (f-get-global &#39;safe-mode state)
                                        (gc-off state) ttree nil nil)">eval-ground-subexpressions</a> term ens wrld state ttree)
     (declare (ignore flg))
-    (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (not-flg atm)
-      (<a class="sym-link system" href="../../../basis-b.html#def-strip-not" data-sym="STRIP-NOT">strip-not</a> temp)
+    (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (not-flg atm)
+      (<a class="sym-link system" href="basis-b.html#def-strip-not" data-sym="STRIP-NOT">strip-not</a> temp)
       (let ((positivep (if not-flg
-             (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> positivep)
+             (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> positivep)
              positivep)))
-        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../basis-b.html#def-inequalityp" data-sym="INEQUALITYP">inequalityp</a> atm) (let ((lhs (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">1</span>)) (rhs (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">2</span>)))
-              (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-lhs ts-ttree)
+        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="basis-b.html#def-inequalityp" data-sym="INEQUALITYP">inequalityp</a> atm) (let ((lhs (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">1</span>)) (rhs (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">2</span>)))
+              (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-lhs ts-ttree)
                 (type-set lhs
                   force-flg
                   nil
@@ -945,7 +945,7 @@ pre.code {
                   ttree
                   nil
                   nil)
-                (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-rhs ts-ttree)
+                (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-rhs ts-ttree)
                   (type-set rhs
                     force-flg
                     nil
@@ -956,27 +956,27 @@ pre.code {
                     nil
                     nil)
                   (if positivep
-                    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-integerp ts-lhs) (ts-integerp ts-rhs)) (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
+                    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-integerp ts-lhs) (ts-integerp ts-rhs)) (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a>
                           nil
                           (add-linear-terms <span class="keyword">:lhs</span> lhs
-                            <span class="keyword">:lhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+                            <span class="keyword">:lhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
                             <span class="keyword">:rhs</span> rhs
-                            (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-                      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
+                            (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+                      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a>
                           nil
                           (add-linear-terms <span class="keyword">:lhs</span> lhs
                             <span class="keyword">:rhs</span> rhs
-                            (let ((rationalp-flg (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
+                            (let ((rationalp-flg (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
                               (base-poly0 (if rationalp-flg
                                   ts-ttree
                                   ttree)
@@ -989,20 +989,20 @@ pre.code {
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a>
                       nil
                       (add-linear-terms <span class="keyword">:lhs</span> rhs
                         <span class="keyword">:rhs</span> lhs
-                        (let ((rationalp-flg (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
+                        (let ((rationalp-flg (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
                           (base-poly0 (if rationalp-flg
                               ts-ttree
                               ttree)
                             (collect-parents ttree)
-                            '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a>
+                            '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a>
                             rationalp-flg
                             nil)))))))))
-          ((<a class="sym-link system" href="../../../basis-b.html#def-equalityp" data-sym="EQUALITYP">equalityp</a> atm) (let ((lhs (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">1</span>)) (rhs (<a class="sym-link system" href="../../../axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">2</span>)))
-              (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-lhs ts-ttree)
+          ((<a class="sym-link system" href="basis-b.html#def-equalityp" data-sym="EQUALITYP">equalityp</a> atm) (let ((lhs (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">1</span>)) (rhs (<a class="sym-link system" href="axioms.html#def-fargn" data-sym="FARGN">fargn</a> atm <span class="number">2</span>)))
+              (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-lhs ts-ttree)
                 (type-set lhs
                   force-flg
                   nil
@@ -1012,7 +1012,7 @@ pre.code {
                   ttree
                   nil
                   nil)
-                (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-rhs ts-ttree)
+                (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (ts-rhs ts-ttree)
                   (type-set rhs
                     force-flg
                     nil
@@ -1022,68 +1022,68 @@ pre.code {
                     ts-ttree
                     nil
                     nil)
-                  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-lhs *ts-acl2-number*)
-                       (<a class="sym-link system" href="../../../basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-rhs *ts-acl2-number*)) nil)
-                    (positivep (let ((rationalp-flg (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
+                  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-lhs *ts-acl2-number*)
+                       (<a class="sym-link system" href="basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-rhs *ts-acl2-number*)) nil)
+                    (positivep (let ((rationalp-flg (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
                         (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a>
                           (add-linear-terms <span class="keyword">:lhs</span> lhs
                             <span class="keyword">:rhs</span> rhs
                             (base-poly0 (if rationalp-flg
                                 ts-ttree
                                 ttree)
                               (collect-parents ttree)
-                              '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a>
+                              '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a>
                               rationalp-flg
-                              <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
+                              <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
                           (add-linear-terms <span class="keyword">:lhs</span> rhs
                             <span class="keyword">:rhs</span> lhs
                             (base-poly0 (if rationalp-flg
                                 ts-ttree
                                 ttree)
                               (collect-parents ttree)
-                              '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a>
+                              '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a>
                               rationalp-flg
-                              <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)))))
-                    ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-subsetp ts-lhs *ts-integer*)
+                              <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)))))
+                    ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-subsetp ts-lhs *ts-integer*)
                        (ts-subsetp ts-rhs *ts-integer*)) (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a>
                         (add-linear-terms <span class="keyword">:lhs</span> lhs
-                          <span class="keyword">:lhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+                          <span class="keyword">:lhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
                           <span class="keyword">:rhs</span> rhs
-                          (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))
+                          (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))
                         (add-linear-terms <span class="keyword">:lhs</span> rhs
-                          <span class="keyword">:lhs</span> <a class="sym-link system" href="../../../axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
+                          <span class="keyword">:lhs</span> <a class="sym-link system" href="axioms.html#def-_2A1_2A" data-sym="*1*">*1*</a>
                           <span class="keyword">:rhs</span> lhs
-                          (base-poly ts-ttree '<a class="sym-link system" href="../../../axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
+                          (base-poly ts-ttree '<a class="sym-link system" href="axioms.html#def-_3C_3D" data-sym="&lt;=">&lt;=</a> <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
                     ((if (ts-subsetp ts-lhs *ts-acl2-number*)
-                       (<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a> (ts-subsetp ts-rhs *ts-acl2-number*)
-                         (<a class="sym-link system" href="../../../basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-lhs *ts-zero*))
-                       (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-subsetp ts-rhs *ts-acl2-number*)
-                         (<a class="sym-link system" href="../../../basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-rhs *ts-zero*))) (let ((rationalp-flg (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
+                       (<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a> (ts-subsetp ts-rhs *ts-acl2-number*)
+                         (<a class="sym-link system" href="basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-lhs *ts-zero*))
+                       (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-subsetp ts-rhs *ts-acl2-number*)
+                         (<a class="sym-link system" href="basis-b.html#def-ts-disjointp" data-sym="TS-DISJOINTP">ts-disjointp</a> ts-rhs *ts-zero*))) (let ((rationalp-flg (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-real/rationalp ts-lhs) (ts-real/rationalp ts-rhs))))
                         (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a>
                           (add-linear-terms <span class="keyword">:lhs</span> lhs
                             <span class="keyword">:rhs</span> rhs
                             (base-poly ts-ttree '&lt; rationalp-flg nil))
                           (add-linear-terms <span class="keyword">:lhs</span> rhs
                             <span class="keyword">:rhs</span> lhs
                             (base-poly ts-ttree '&lt; rationalp-flg nil)))))
-                    ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-acl2-numberp ts-lhs)
+                    ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-acl2-numberp ts-lhs)
                        force-flg
-                       (<a class="sym-link system" href="../../../basis-b.html#def-ts-intersectp" data-sym="TS-INTERSECTP">ts-intersectp</a> ts-rhs *ts-acl2-number*)) (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg new-ttree)
+                       (<a class="sym-link system" href="basis-b.html#def-ts-intersectp" data-sym="TS-INTERSECTP">ts-intersectp</a> ts-rhs *ts-acl2-number*)) (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg new-ttree)
                         (add-linear-assumption term
                           `(acl2-numberp ,RHS)
                           type-alist
@@ -1092,22 +1092,22 @@ pre.code {
                           force-flg
                           wrld
                           ts-ttree)
-                        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:failed</span>)) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:known-false</span>))) (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
+                        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:failed</span>)) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:known-false</span>))) (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a>
                               (add-linear-terms <span class="keyword">:lhs</span> lhs
                                 <span class="keyword">:rhs</span> rhs
                                 (base-poly new-ttree '&lt; nil nil))
                               (add-linear-terms <span class="keyword">:lhs</span> rhs
                                 <span class="keyword">:rhs</span> lhs
                                 (base-poly new-ttree '&lt; nil nil))))
-                          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-                    ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (ts-acl2-numberp ts-rhs)
+                          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+                    ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (ts-acl2-numberp ts-rhs)
                        force-flg
-                       (<a class="sym-link system" href="../../../basis-b.html#def-ts-intersectp" data-sym="TS-INTERSECTP">ts-intersectp</a> ts-lhs *ts-acl2-number*)) (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg new-ttree)
+                       (<a class="sym-link system" href="basis-b.html#def-ts-intersectp" data-sym="TS-INTERSECTP">ts-intersectp</a> ts-lhs *ts-acl2-number*)) (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (flg new-ttree)
                         (add-linear-assumption term
                           `(acl2-numberp ,LHS)
                           type-alist
@@ -1116,43 +1116,43 @@ pre.code {
                           force-flg
                           wrld
                           ts-ttree)
-                        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:failed</span>)) (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../../axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:known-false</span>))) (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
+                        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:failed</span>)) (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="axioms.html#def-eq" data-sym="EQ">eq</a> flg <span class="keyword">:known-false</span>))) (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-or" data-sym="OR">or</a>
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-or" data-sym="OR">or</a>
                               (add-linear-terms <span class="keyword">:lhs</span> lhs
                                 <span class="keyword">:rhs</span> rhs
                                 (base-poly new-ttree '&lt; nil nil))
                               (add-linear-terms <span class="keyword">:lhs</span> rhs
                                 <span class="keyword">:rhs</span> lhs
                                 (base-poly new-ttree '&lt; nil nil))))
-                          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))
-                    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))))
-          ((<a class="sym-link system" href="../../../axioms.html#def-quotep" data-sym="QUOTEP">quotep</a> atm) (if positivep
-              (if (equal atm <a class="sym-link system" href="../../../axioms.html#def-_2Anil_2A" data-sym="*NIL*">*nil*</a>)
+                          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))
+                    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))))
+          ((<a class="sym-link system" href="axioms.html#def-quotep" data-sym="QUOTEP">quotep</a> atm) (if positivep
+              (if (equal atm <a class="sym-link system" href="axioms.html#def-_2Anil_2A" data-sym="*NIL*">*nil*</a>)
                 (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> nil (impossible-poly ttree))
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> nil (impossible-poly ttree))
                 nil)
-              (if (<a class="sym-link system" href="../../../axioms.html#def-not" data-sym="NOT">not</a> (equal atm <a class="sym-link system" href="../../../axioms.html#def-_2Anil_2A" data-sym="*NIL*">*nil*</a>))
+              (if (<a class="sym-link system" href="axioms.html#def-not" data-sym="NOT">not</a> (equal atm <a class="sym-link system" href="axioms.html#def-_2Anil_2A" data-sym="*NIL*">*nil*</a>))
                 (<a class="sym-link local-def" href="#def-poly-set" data-sym="POLY-SET" title="(defun poly-set (op poly1 poly2)
   (cond
    ((eq op &#39;and)
     (cond
      ((or (eq poly1 nil) (silly-polyp poly1))
-...">poly-set</a> '<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> nil (impossible-poly ttree))
+...">poly-set</a> '<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> nil (impossible-poly ttree))
                 nil)))
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> nil))))))</pre>
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> nil))))))</pre>
   </div>
 
 <div class="form-block function" id="def-linearize" data-defines="LINEARIZE" data-references="CADR,T,CAR,NORMALIZE-POLY-LST,LIST,CDR,NULL,COND,LINEARIZE1,TEMP,LET,STATE,TTREE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TERM,DEFUN" data-used-by="LINEARIZE-LST1" data-part-name="LINEARIZE" data-part-args="STATE,TTREE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TERM" data-part-body="CADR,T,CAR,NORMALIZE-POLY-LST,LIST,CDR,NULL,COND,STATE,TTREE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TERM,LINEARIZE1,TEMP,LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="LINEARIZE">linearize</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize" data-sym="LINEARIZE" title="(defun linearize (term positivep type-alist ens force-flg wrld ttree state)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize" data-sym="LINEARIZE" title="(defun linearize (term positivep type-alist ens force-flg wrld ttree state)
   (let ((temp
          (linearize1 term positivep type-alist ens force-flg wrld ttree state)))
     (cond ((null temp) nil)
@@ -1172,15 +1172,15 @@ pre.code {
          wrld
          ttree
          state)))
-    (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> temp) nil)
-      ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (cdr temp)) (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (normalize-poly-lst (car temp))))
-      (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="../../../axioms.html#def-list" data-sym="LIST">list</a> (normalize-poly-lst (car temp))
-          (normalize-poly-lst (<a class="sym-link system" href="../../../axioms.html#def-cadr" data-sym="CADR">cadr</a> temp)))))))</pre>
+    (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> temp) nil)
+      ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (cdr temp)) (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (normalize-poly-lst (car temp))))
+      (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link system" href="axioms.html#def-list" data-sym="LIST">list</a> (normalize-poly-lst (car temp))
+          (normalize-poly-lst (<a class="sym-link system" href="axioms.html#def-cadr" data-sym="CADR">cadr</a> temp)))))))</pre>
   </div>
 
 <div class="form-block function" id="def-linearize-lst1" data-defines="LINEARIZE-LST1" data-references="CONS,REVAPPEND,CDR,CAR,LINEARIZE,LST,LET,T,REVERSE,MV,NULL,COND,SPLIT-LST,POLY-LST,STATE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TTREES,TERM-LST,DEFUN" data-used-by="LINEARIZE-LST" data-part-name="LINEARIZE-LST1" data-part-args="SPLIT-LST,POLY-LST,STATE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TTREES,TERM-LST" data-part-body="CONS,REVAPPEND,CDR,LINEARIZE-LST1,STATE,TTREES,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,CAR,LINEARIZE,LST,LET,T,SPLIT-LST,POLY-LST,REVERSE,MV,TERM-LST,NULL,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="LINEARIZE-LST1">linearize-lst1</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
        (term-lst ttrees positivep type-alist ens force-flg wrld state poly-lst
         split-lst)
   (cond ((null term-lst) (mv (reverse poly-lst) (reverse split-lst)))
@@ -1195,8 +1195,8 @@ pre.code {
     state
     poly-lst
     split-lst)
-  (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> term-lst) (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> (<a class="sym-link system" href="../../../axioms.html#def-reverse" data-sym="REVERSE">reverse</a> poly-lst) (<a class="sym-link system" href="../../../axioms.html#def-reverse" data-sym="REVERSE">reverse</a> split-lst)))
-    (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (let ((lst (<a class="sym-link local-def" href="#def-linearize" data-sym="LINEARIZE" title="(defun linearize (term positivep type-alist ens force-flg wrld ttree state)
+  (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> term-lst) (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> (<a class="sym-link system" href="axioms.html#def-reverse" data-sym="REVERSE">reverse</a> poly-lst) (<a class="sym-link system" href="axioms.html#def-reverse" data-sym="REVERSE">reverse</a> split-lst)))
+    (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (let ((lst (<a class="sym-link local-def" href="#def-linearize" data-sym="LINEARIZE" title="(defun linearize (term positivep type-alist ens force-flg wrld ttree state)
   (let ((temp
          (linearize1 term positivep type-alist ens force-flg wrld ttree state)))
     (cond ((null temp) nil)
@@ -1209,7 +1209,7 @@ pre.code {
              wrld
              (car ttrees)
              state)))
-        (<a class="sym-link system" href="../../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> lst) (<a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
+        (<a class="sym-link system" href="axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> lst) (<a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
        (term-lst ttrees positivep type-alist ens force-flg wrld state poly-lst
         split-lst)
   (cond ((null term-lst) (mv (reverse poly-lst) (reverse split-lst)))
@@ -1224,7 +1224,7 @@ pre.code {
               state
               poly-lst
               split-lst))
-          ((<a class="sym-link system" href="../../../axioms.html#def-null" data-sym="NULL">null</a> (cdr lst)) (<a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
+          ((<a class="sym-link system" href="axioms.html#def-null" data-sym="NULL">null</a> (cdr lst)) (<a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
        (term-lst ttrees positivep type-alist ens force-flg wrld state poly-lst
         split-lst)
   (cond ((null term-lst) (mv (reverse poly-lst) (reverse split-lst)))
@@ -1237,9 +1237,9 @@ pre.code {
               force-flg
               wrld
               state
-              (<a class="sym-link system" href="../../../axioms.html#def-revappend" data-sym="REVAPPEND">revappend</a> (car lst) poly-lst)
+              (<a class="sym-link system" href="axioms.html#def-revappend" data-sym="REVAPPEND">revappend</a> (car lst) poly-lst)
               split-lst))
-          (<a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
+          (<a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> (<a class="sym-link local-def" href="#def-linearize-lst1" data-sym="LINEARIZE-LST1" title="(defun linearize-lst1
        (term-lst ttrees positivep type-alist ens force-flg wrld state poly-lst
         split-lst)
   (cond ((null term-lst) (mv (reverse poly-lst) (reverse split-lst)))
@@ -1258,7 +1258,7 @@ pre.code {
 
 <div class="form-block function" id="def-linearize-lst" data-defines="LINEARIZE-LST" data-references="LINEARIZE-LST1,STATE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TTREES,TERM-LST,DEFUN" data-part-name="LINEARIZE-LST" data-part-args="STATE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TTREES,TERM-LST" data-part-body="STATE,WRLD,FORCE-FLG,ENS,TYPE-ALIST,POSITIVEP,TTREES,TERM-LST,LINEARIZE-LST1" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="LINEARIZE-LST">linearize-lst</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize-lst" data-sym="LINEARIZE-LST" title="(defun linearize-lst
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-linearize-lst" data-sym="LINEARIZE-LST" title="(defun linearize-lst
        (term-lst ttrees positivep type-alist ens force-flg wrld state)
   (linearize-lst1 term-lst ttrees positivep type-alist ens force-flg wrld state
                   nil nil))">linearize-lst</a>

@@ -432,54 +432,54 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">apply-constraints</h1>
-    <div class="path"><a href="apply-constraints.lisp" class="source-link">/workspaces/acl2/apply-constraints</a></div>
+    <div class="path"><a href="apply-constraints.lisp" class="source-link">apply-constraints</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block other" id="form-1" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(when-pass-2 (<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> ((badge-userfn (fn) <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>))
-    (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> badge-userfn (fn) (declare (ignore fn)) nil))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> badge-userfn-type
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (badge-userfn fn)
+    <pre class="code" property="text">(when-pass-2 (<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> ((badge-userfn (fn) <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>))
+    (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> badge-userfn (fn) (declare (ignore fn)) nil))
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> badge-userfn-type
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (badge-userfn fn)
         (apply$-badgep (badge-userfn fn)))
       <span class="keyword">:rule-classes</span> ((<span class="keyword">:forward-chaining</span>))))
-  (<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> ((apply$-userfn (fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>) <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a> <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)))
-    (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> apply$-userfn
-        (fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
-        (declare (ignore fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>))
+  (<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> ((apply$-userfn (fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>) <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a> <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)))
+    (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> apply$-userfn
+        (fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
+        (declare (ignore fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>))
         nil))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> apply$-userfn-takes-arity-args
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (badge-userfn fn)
-        (equal (apply$-userfn fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> apply$-userfn-takes-arity-args
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (badge-userfn fn)
+        (equal (apply$-userfn fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
           (apply$-userfn fn
-            (<a class="sym-link system" href="../../../axioms.html#def-take" data-sym="TAKE">take</a> (apply$-badge-arity (badge-userfn fn)) <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>))))
+            (<a class="sym-link system" href="axioms.html#def-take" data-sym="TAKE">take</a> (apply$-badge-arity (badge-userfn fn)) <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>))))
       <span class="keyword">:rule-classes</span> nil))
-  (<a class="sym-link system" href="../../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> (((untame-apply$ <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
-       <a class="sym-link system" href="../../../axioms.html#def-_2A" data-sym="*">*</a>
-       <span class="keyword">:formals</span> (fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
-       <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)))
-    (<a class="sym-link system" href="../../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> untame-apply$
-        (fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
-        (declare (ignore fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>))
+  (<a class="sym-link system" href="axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> (((untame-apply$ <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a> <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>) =&gt;
+       <a class="sym-link system" href="axioms.html#def-_2A" data-sym="*">*</a>
+       <span class="keyword">:formals</span> (fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
+       <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-true-listp" data-sym="TRUE-LISTP">true-listp</a> <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)))
+    (<a class="sym-link system" href="axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> untame-apply$
+        (fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
+        (declare (ignore fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>))
         nil))
-    (<a class="sym-link system" href="../../../axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> untame-apply$-takes-arity-args
-      (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (badge-userfn fn)
-        (equal (untame-apply$ fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
+    (<a class="sym-link system" href="axioms.html#def-defthm" data-sym="DEFTHM">defthm</a> untame-apply$-takes-arity-args
+      (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (badge-userfn fn)
+        (equal (untame-apply$ fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
           (untame-apply$ fn
-            (<a class="sym-link system" href="../../../axioms.html#def-take" data-sym="TAKE">take</a> (apply$-badge-arity (badge-userfn fn)) <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>))))
-      <span class="keyword">:rule-classes</span> ((<span class="keyword">:rewrite</span> <span class="keyword">:corollary</span> (<a class="sym-link system" href="../../../axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-syntaxp" data-sym="SYNTAXP">syntaxp</a> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../../axioms.html#def-quotep" data-sym="QUOTEP">quotep</a> fn) (symbolp <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)))
+            (<a class="sym-link system" href="axioms.html#def-take" data-sym="TAKE">take</a> (apply$-badge-arity (badge-userfn fn)) <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>))))
+      <span class="keyword">:rule-classes</span> ((<span class="keyword">:rewrite</span> <span class="keyword">:corollary</span> (<a class="sym-link system" href="axioms.html#def-implies" data-sym="IMPLIES">implies</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-syntaxp" data-sym="SYNTAXP">syntaxp</a> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="axioms.html#def-quotep" data-sym="QUOTEP">quotep</a> fn) (symbolp <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)))
              (badge-userfn fn))
-           (equal (untame-apply$ fn <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>)
+           (equal (untame-apply$ fn <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>)
              (untame-apply$ fn
-               (<a class="sym-link system" href="../../../axioms.html#def-take" data-sym="TAKE">take</a> (apply$-badge-arity (badge-userfn fn)) <a class="sym-link system" href="../../../defuns.html#def-args" data-sym="ARGS">args</a>))))))))
-  (<a class="sym-link system" href="../../../basis-b.html#def-defstub" data-sym="DEFSTUB">defstub</a> untame-ev$ (x a) <a class="sym-link system" href="../../../axioms.html#def-t" data-sym="T">t</a>)
-  (<a class="sym-link system" href="../../../axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> *apply$-boot-fns-badge-alist*
+               (<a class="sym-link system" href="axioms.html#def-take" data-sym="TAKE">take</a> (apply$-badge-arity (badge-userfn fn)) <a class="sym-link system" href="defuns.html#def-args" data-sym="ARGS">args</a>))))))))
+  (<a class="sym-link system" href="basis-b.html#def-defstub" data-sym="DEFSTUB">defstub</a> untame-ev$ (x a) <a class="sym-link system" href="axioms.html#def-t" data-sym="T">t</a>)
+  (<a class="sym-link system" href="axioms.html#def-defconst" data-sym="DEFCONST">defconst</a> *apply$-boot-fns-badge-alist*
     `((badge . ,*GENERIC-TAME-BADGE-1*) (tamep . ,*GENERIC-TAME-BADGE-1*)
       (tamep-functionp . ,*GENERIC-TAME-BADGE-1*)
       (suitably-tamep-listp . ,*GENERIC-TAME-BADGE-2*)

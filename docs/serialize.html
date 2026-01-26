@@ -432,18 +432,18 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">serialize</h1>
-    <div class="path"><a href="serialize.lisp" class="source-link">/workspaces/acl2/serialize</a></div>
+    <div class="path"><a href="serialize.lisp" class="source-link">serialize</a></div>
   </div>
   
   <main property="text">
 <div class="form-block other" id="form-0" typeof="Code">
     <div class="form-header"><span class="form-type">other</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-in-package" data-sym="IN-PACKAGE">in-package</a> <span class="string">"ACL2"</span>)</pre>
   </div>
 
 <div class="form-block macro" id="def-serialize-write" data-defines="SERIALIZE-WRITE" data-references="STATE,SERIALIZE-WRITE-FN,QUASIQUOTE,VERBOSEP,&KEY,OBJ,FILENAME,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SERIALIZE-WRITE">serialize-write</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-serialize-write" data-sym="SERIALIZE-WRITE" title="(defmacro serialize-write (filename obj &amp;key verbosep)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-serialize-write" data-sym="SERIALIZE-WRITE" title="(defmacro serialize-write (filename obj &amp;key verbosep)
   `(serialize-write-fn ,filename ,obj ,verbosep state))">serialize-write</a>
   (filename obj &amp;key verbosep)
   `(<a class="sym-link local-def" href="#def-serialize-write-fn" data-sym="SERIALIZE-WRITE-FN" title="(defun serialize-write-fn (filename obj verbosep state)
@@ -455,24 +455,24 @@ pre.code {
 
 <div class="form-block function" id="def-serialize-write-fn" data-defines="SERIALIZE-WRITE-FN" data-references="IGNORE,READ-ACL2-ORACLE,VAL,ERP,MV-LET,IGNORABLE,BOOLEANP,STRINGP,AND,XARGS,DECLARE,STATE,VERBOSEP,OBJ,FILENAME,DEFUN" data-used-by="SERIALIZE-WRITE" data-part-name="SERIALIZE-WRITE-FN" data-part-args="STATE,VERBOSEP,OBJ,FILENAME" data-part-declare="OBJ,IGNORABLE,STATE,VERBOSEP,BOOLEANP,FILENAME,STRINGP,AND,XARGS,DECLARE" data-part-body="IGNORE,DECLARE,READ-ACL2-ORACLE,STATE,VAL,ERP,MV-LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="SERIALIZE-WRITE-FN">serialize-write-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-serialize-write-fn" data-sym="SERIALIZE-WRITE-FN" title="(defun serialize-write-fn (filename obj verbosep state)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-serialize-write-fn" data-sym="SERIALIZE-WRITE-FN" title="(defun serialize-write-fn (filename obj verbosep state)
   (declare
    (xargs :guard (and (stringp filename) (booleanp verbosep)) :stobjs state)
    (ignorable filename obj verbosep))
   (mv-let (erp val state) (read-acl2-oracle state) (declare (ignore erp val))">serialize-write-fn</a>
   (filename obj verbosep state)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (stringp filename) (<a class="sym-link system" href="../../../axioms.html#def-booleanp" data-sym="BOOLEANP">booleanp</a> verbosep))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (stringp filename) (<a class="sym-link system" href="axioms.html#def-booleanp" data-sym="BOOLEANP">booleanp</a> verbosep))
       <span class="keyword">:stobjs</span> state)
     (ignorable filename obj verbosep))
-  (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (erp val state)
-    (<a class="sym-link system" href="../../../axioms.html#def-read-acl2-oracle" data-sym="READ-ACL2-ORACLE">read-acl2-oracle</a> state)
+  (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (erp val state)
+    (<a class="sym-link system" href="axioms.html#def-read-acl2-oracle" data-sym="READ-ACL2-ORACLE">read-acl2-oracle</a> state)
     (declare (ignore erp val))
     state))</pre>
   </div>
 
 <div class="form-block macro" id="def-serialize-read" data-defines="SERIALIZE-READ" data-references="STATE,SERIALIZE-READ-FN,QUASIQUOTE,VERBOSEP,QUOTE,HONS-MODE,&KEY,FILENAME,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SERIALIZE-READ">serialize-read</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-serialize-read" data-sym="SERIALIZE-READ" title="(defmacro serialize-read (filename &amp;key (hons-mode &#39;:smart) verbosep)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-serialize-read" data-sym="SERIALIZE-READ" title="(defmacro serialize-read (filename &amp;key (hons-mode &#39;:smart) verbosep)
   `(serialize-read-fn ,filename ,hons-mode ,verbosep state))">serialize-read</a>
   (filename &amp;key (hons-mode '<span class="keyword">:smart</span>) verbosep)
   `(<a class="sym-link local-def" href="#def-serialize-read-fn" data-sym="SERIALIZE-READ-FN" title="(defun serialize-read-fn (filename hons-mode verbosep state)
@@ -485,33 +485,33 @@ pre.code {
 
 <div class="form-block function" id="def-serialize-read-fn" data-defines="SERIALIZE-READ-FN" data-references="MV,IGNORE,READ-ACL2-ORACLE,VAL,ERP,MV-LET,IGNORABLE,BOOLEANP,QUOTE,MEMBER,STRINGP,AND,XARGS,DECLARE,STATE,VERBOSEP,HONS-MODE,FILENAME,DEFUN" data-used-by="SERIALIZE-READ" data-part-name="SERIALIZE-READ-FN" data-part-args="STATE,VERBOSEP,HONS-MODE,FILENAME" data-part-declare="IGNORABLE,STATE,VERBOSEP,BOOLEANP,QUOTE,HONS-MODE,MEMBER,FILENAME,STRINGP,AND,XARGS,DECLARE" data-part-body="MV,IGNORE,DECLARE,READ-ACL2-ORACLE,STATE,VAL,ERP,MV-LET" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="SERIALIZE-READ-FN">serialize-read-fn</span><span class="form-type">function</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-serialize-read-fn" data-sym="SERIALIZE-READ-FN" title="(defun serialize-read-fn (filename hons-mode verbosep state)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-serialize-read-fn" data-sym="SERIALIZE-READ-FN" title="(defun serialize-read-fn (filename hons-mode verbosep state)
   (declare
    (xargs :guard
     (and (stringp filename) (member hons-mode (quote (:never :always :smart)))
          (booleanp verbosep))
 ...">serialize-read-fn</a>
   (filename hons-mode verbosep state)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-and" data-sym="AND">and</a> (stringp filename)
-        (<a class="sym-link system" href="../../../axioms.html#def-member" data-sym="MEMBER">member</a> hons-mode '(<span class="keyword">:never</span> <span class="keyword">:always</span> <span class="keyword">:smart</span>))
-        (<a class="sym-link system" href="../../../axioms.html#def-booleanp" data-sym="BOOLEANP">booleanp</a> verbosep))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-and" data-sym="AND">and</a> (stringp filename)
+        (<a class="sym-link system" href="axioms.html#def-member" data-sym="MEMBER">member</a> hons-mode '(<span class="keyword">:never</span> <span class="keyword">:always</span> <span class="keyword">:smart</span>))
+        (<a class="sym-link system" href="axioms.html#def-booleanp" data-sym="BOOLEANP">booleanp</a> verbosep))
       <span class="keyword">:stobjs</span> state)
     (ignorable filename hons-mode verbosep))
-  (<a class="sym-link system" href="../../../axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (erp val state)
-    (<a class="sym-link system" href="../../../axioms.html#def-read-acl2-oracle" data-sym="READ-ACL2-ORACLE">read-acl2-oracle</a> state)
+  (<a class="sym-link system" href="axioms.html#def-mv-let" data-sym="MV-LET">mv-let</a> (erp val state)
+    (<a class="sym-link system" href="axioms.html#def-read-acl2-oracle" data-sym="READ-ACL2-ORACLE">read-acl2-oracle</a> state)
     (declare (ignore erp))
-    (<a class="sym-link system" href="../../../axioms.html#def-mv" data-sym="MV">mv</a> val state)))</pre>
+    (<a class="sym-link system" href="axioms.html#def-mv" data-sym="MV">mv</a> val state)))</pre>
   </div>
 
 <div class="form-block macro" id="def-with-serialize-character" data-defines="WITH-SERIALIZE-CHARACTER" data-references="SET-SERIALIZE-CHARACTER,SERIALIZE-CHARACTER,STATE-GLOBAL-LET*,QUASIQUOTE,QUOTE,MEMBER,XARGS,DECLARE,FORM,VAL,DEFMACRO" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="WITH-SERIALIZE-CHARACTER">with-serialize-character</span><span class="form-type">macro</span></div>
-    <pre class="code" property="text">(<a class="sym-link system" href="../../../axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-serialize-character" data-sym="WITH-SERIALIZE-CHARACTER" title="(defmacro with-serialize-character (val form)
+    <pre class="code" property="text">(<a class="sym-link system" href="axioms.html#def-defmacro" data-sym="DEFMACRO">defmacro</a> <a class="sym-link local-def" href="#def-with-serialize-character" data-sym="WITH-SERIALIZE-CHARACTER" title="(defmacro with-serialize-character (val form)
   (declare (xargs :guard (member val (quote (nil #\Y #\Z)))))
   `(state-global-let* ((serialize-character ,val set-serialize-character))
                       ,form))">with-serialize-character</a>
   (val form)
-  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="../../../axioms.html#def-member" data-sym="MEMBER">member</a> val '(nil #\Y #\Z))))
-  `(<a class="sym-link system" href="../../../axioms.html#def-state-global-let_2A" data-sym="STATE-GLOBAL-LET*">state-global-let*</a> ((serialize-character ,VAL <a class="sym-link system" href="../../../axioms.html#def-set-serialize-character" data-sym="SET-SERIALIZE-CHARACTER">set-serialize-character</a>))
+  (declare (xargs <span class="keyword">:guard</span> (<a class="sym-link system" href="axioms.html#def-member" data-sym="MEMBER">member</a> val '(nil #\Y #\Z))))
+  `(<a class="sym-link system" href="axioms.html#def-state-global-let_2A" data-sym="STATE-GLOBAL-LET*">state-global-let*</a> ((serialize-character ,VAL <a class="sym-link system" href="axioms.html#def-set-serialize-character" data-sym="SET-SERIALIZE-CHARACTER">set-serialize-character</a>))
     ,FORM))</pre>
   </div>
 

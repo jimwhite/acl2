@@ -432,7 +432,7 @@ pre.code {
   
   <div class="book-header">
     <h1 property="name">with-supporters</h1>
-    <div class="path"><a href="with-supporters.lisp" class="source-link">tools/with-supporters</a></div>
+    <div class="path"><a href="with-supporters.lisp" class="source-link">books/tools/with-supporters</a></div>
   </div>
   
   <main property="text">
@@ -901,7 +901,36 @@ pre.code {
         (t (cons (car lst) (filter-out-seen (cdr lst) seen)))))">filter-out-seen</a> (cdr lst) seen)))))</pre>
   </div>
 
-<div class="form-block mutual-recursion" id="def-supporters-of-1-lst" data-defines="SUPPORTERS-OF-1-LST" data-references="ACCUMULATE-MACRO-NAMES-FROM-ALIASES,COLLECT-CONSTANTS-AND-MACROS-EV,COLLECT-CONSTANTS-AND-MACROS-1,NEW-NAMES,FNS-WITH-ABS-EV-BETWEEN-OR-LOCAL,INSTANTIABLE-ANCESTORS-WITH-GUARDS/MEASURES,FILTER-OUT-SEEN,STRIP-CDRS,STRIP-CARS,ALL-FNNAMES1,NEW-FNS,NOT,ATTACHMENT-ALIST,ATTACHMENT-PROP,GUARD,MACRO-BODY,GETPROPC,OR,CONJOIN,*T*,UNKNOWN-CONSTRAINTS-P,IGNORE,DECLARE,CONSTRAINT-INFO,ORIGINS,X,NAME2,FORMULA,NULL,CAAR,SYMBOLP,SIG,LET,IF,NAME,CADR,ENCAPSULATE,NON-TRIVIAL-ENCAPSULATE-P,LET*,QUOTE,EQ,CONSP,AND,EV,APPEND,CDR,LST2,CAR,SUPPORTERS-OF-1,LST1,MV-LET,T,MV,ENDP,COND,SEEN,STATE-VARS,WRLD,MACRO-ALIASES,MAX,MIN,DEFS,DEFUN,MUTUAL-RECURSION" typeof="Code">
+<div class="form-block function" id="def-absstobj-supporters" data-defines="ABSSTOBJ-SUPPORTERS" data-references="CDR,CONS,CDDDR,IF,CADDR,CADR,LIST*,CAR,TUPLE,LET,T,ENDP,COND,ABSSTOBJ-TUPLES,DEFUN" data-used-by="SUPPORTERS-OF-1-LST" data-part-name="ABSSTOBJ-SUPPORTERS" data-part-args="ABSSTOBJ-TUPLES" data-part-body="CDR,ABSSTOBJ-SUPPORTERS,CONS,CDDDR,IF,CADDR,CADR,LIST*,CAR,TUPLE,LET,T,ABSSTOBJ-TUPLES,ENDP,COND" typeof="SoftwareSourceCode">
+    <div class="form-header"><span class="form-name" property="name" data-sym="ABSSTOBJ-SUPPORTERS">absstobj-supporters</span><span class="form-type">function</span></div>
+    <pre class="code" property="text">(<a class="sym-link system" href="../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a>
+  (absstobj-tuples)
+  (<a class="sym-link system" href="../../axioms.html#def-cond" data-sym="COND">cond</a> ((<a class="sym-link system" href="../../axioms.html#def-endp" data-sym="ENDP">endp</a> absstobj-tuples) nil)
+    (<a class="sym-link system" href="../../axioms.html#def-t" data-sym="T">t</a> (let ((tuple (car absstobj-tuples)))
+        (<a class="sym-link system" href="../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> (<a class="sym-link system" href="../../axioms.html#def-cadr" data-sym="CADR">cadr</a> tuple)
+          (<a class="sym-link system" href="../../axioms.html#def-caddr" data-sym="CADDR">caddr</a> tuple)
+          (if (<a class="sym-link system" href="../../axioms.html#def-cdddr" data-sym="CDDDR">cdddr</a> tuple)
+            (cons (<a class="sym-link system" href="../../axioms.html#def-cdddr" data-sym="CDDDR">cdddr</a> tuple)
+              (<a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a> (cdr absstobj-tuples)))
+            (<a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a> (cdr absstobj-tuples))))))))</pre>
+  </div>
+
+<div class="form-block mutual-recursion" id="def-supporters-of-1-lst" data-defines="SUPPORTERS-OF-1-LST" data-references="ACCUMULATE-MACRO-NAMES-FROM-ALIASES,COLLECT-CONSTANTS-AND-MACROS-EV,COLLECT-CONSTANTS-AND-MACROS-1,NEW-NAMES,FNS-WITH-ABS-EV-BETWEEN-OR-LOCAL,INSTANTIABLE-ANCESTORS-WITH-GUARDS/MEASURES,FILTER-OUT-SEEN,STRIP-CDRS,STRIP-CARS,ALL-FNNAMES1,NEW-FNS,ABSSTOBJ-SUPPORTERS,DEFABSSTOBJ,ABSSTOBJ-INFO,NOT,ATTACHMENT-ALIST,ATTACHMENT-PROP,GUARD,MACRO-BODY,GETPROPC,OR,CONJOIN,*T*,UNKNOWN-CONSTRAINTS-P,IGNORE,DECLARE,CONSTRAINT-INFO,ORIGINS,X,NAME2,FORMULA,NULL,CAAR,SYMBOLP,SIG,LET,IF,NAME,CADR,ENCAPSULATE,NON-TRIVIAL-ENCAPSULATE-P,LET*,QUOTE,EQ,CONSP,AND,EV,APPEND,CDR,LST2,CAR,SUPPORTERS-OF-1,LST1,MV-LET,T,MV,ENDP,COND,SEEN,STATE-VARS,WRLD,MACRO-ALIASES,MAX,MIN,DEFS,DEFUN,MUTUAL-RECURSION" typeof="Code">
     <div class="form-header"><span class="form-name" property="name" data-sym="SUPPORTERS-OF-1-LST">supporters-of-1-lst</span><span class="form-type">mutual-recursion</span></div>
     <pre class="code" property="text">(<a class="sym-link system" href="../../axioms.html#def-mutual-recursion" data-sym="MUTUAL-RECURSION">mutual-recursion</a> (<a class="sym-link system" href="../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-supporters-of-1-lst" data-sym="SUPPORTERS-OF-1-LST" title="(mutual-recursion
  (defun supporters-of-1-lst (defs min max macro-aliases wrld state-vars seen)
@@ -969,13 +998,44 @@ pre.code {
                   (attachment-prop (attachment-alist name wrld))
                   (attachment-alist (<a class="sym-link system" href="../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../axioms.html#def-not" data-sym="NOT">not</a> (<a class="sym-link system" href="../../axioms.html#def-eq" data-sym="EQ">eq</a> (car attachment-prop) <span class="keyword">:attachment-disallowed</span>))
                       attachment-prop))
-                  (new-fns (<a class="sym-link system" href="../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../axioms.html#def-or" data-sym="OR">or</a> <a class="sym-link system" href="../../history-management.html#def-formula" data-sym="FORMULA">formula</a> attachment-alist)
+                  (absstobj-info (<a class="sym-link system" href="../../axioms.html#def-and" data-sym="AND">and</a> (consp ev)
+                      (<a class="sym-link system" href="../../axioms.html#def-eq" data-sym="EQ">eq</a> (car ev) 'defabsstobj)
+                      (<a class="sym-link system" href="../../axioms.html#def-getpropc" data-sym="GETPROPC">getpropc</a> (<a class="sym-link system" href="../../axioms.html#def-cadr" data-sym="CADR">cadr</a> ev) 'absstobj-info nil wrld)))
+                  (<a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a> (<a class="sym-link system" href="../../axioms.html#def-and" data-sym="AND">and</a> absstobj-info
+                      (<a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a> (cdr absstobj-info))))
+                  (new-fns (<a class="sym-link system" href="../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../axioms.html#def-or" data-sym="OR">or</a> <a class="sym-link system" href="../../history-management.html#def-formula" data-sym="FORMULA">formula</a> <a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a> attachment-alist)
                       (all-fnnames1 nil
                         <a class="sym-link system" href="../../history-management.html#def-formula" data-sym="FORMULA">formula</a>
-                        (<a class="sym-link system" href="../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../axioms.html#def-or" data-sym="OR">or</a> <a class="sym-link system" href="../../basis-b.html#def-guard" data-sym="GUARD">guard</a> attachment-alist)
+                        (<a class="sym-link system" href="../../axioms.html#def-and" data-sym="AND">and</a> (<a class="sym-link system" href="../../axioms.html#def-or" data-sym="OR">or</a> <a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a> <a class="sym-link system" href="../../basis-b.html#def-guard" data-sym="GUARD">guard</a> attachment-alist)
                           (all-fnnames1 nil
                             <a class="sym-link system" href="../../basis-b.html#def-guard" data-sym="GUARD">guard</a>
-                            (<a class="sym-link system" href="../../axioms.html#def-append" data-sym="APPEND">append</a> (<a class="sym-link system" href="../../axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> attachment-alist)
+                            (<a class="sym-link system" href="../../axioms.html#def-append" data-sym="APPEND">append</a> <a class="sym-link local-def" href="#def-absstobj-supporters" data-sym="ABSSTOBJ-SUPPORTERS" title="(defun absstobj-supporters (absstobj-tuples)
+  (cond ((endp absstobj-tuples) nil)
+        (t
+         (let ((tuple (car absstobj-tuples)))
+           (list* (cadr tuple) (caddr tuple)
+...">absstobj-supporters</a>
+                              (<a class="sym-link system" href="../../axioms.html#def-strip-cars" data-sym="STRIP-CARS">strip-cars</a> attachment-alist)
                               (<a class="sym-link system" href="../../axioms.html#def-strip-cdrs" data-sym="STRIP-CDRS">strip-cdrs</a> attachment-alist)))))))
                   (new-fns (<a class="sym-link local-def" href="#def-filter-out-seen" data-sym="FILTER-OUT-SEEN" title="(defun filter-out-seen (lst seen)
   (cond ((endp lst) nil)
@@ -1577,7 +1637,7 @@ pre.code {
 ...">event-pairs-after</a> k (cdr wrld) acc)))))</pre>
   </div>
 
-<div class="form-block function" id="def-with-supporters-fn" data-defines="WITH-SUPPORTERS-FN" data-references="WITH-OUTPUT!,MAKE-EVENT,IF,CONS,LIST,ELIDE-EVENT-LST,SET-STATE-OK,SET-IGNORE-OK,SET-IRRELEVANT-FORMALS-OK,SET-BOGUS-MUTUAL-RECURSION-OK,SET-BOGUS-DEFUN-HINTS-OK,SET-ENFORCE-REDUNDANCY,ENCAPSULATE,LIST*,EV,ENS,SUPPORTERS-IN-THEORY-EVENT,IN-THEORY-EVENT,FNS,EXTRAS,DEFAULT-STATE-VARS,APPEND,SUPPORTERS-OF,EXTRAS/FNS,EVENT-PAIRS-AFTER,EVENT-PAIRS,PROGN,TABLE-INFO-AFTER-K,FNS1,TABLE-EVS,MAX,WRLD,ER-PROGN,CTX,STATE,W,MAX-ABSOLUTE-EVENT-NUMBER,MIN,LET,QUASIQUOTE,FORM,LET*,WITH-SUPPORTERS-ARGS,EVENTS,WITH-OUTPUT,SHOW,TABLES,NAMES,MV-LET,T,MEMBER-EQ,WITH-SUPPORTERS,HARD,ER,CDDR,NULL,CDR,CONSP,LOCAL,QUOTE,CAR,EQ,TRUE-LISTP,AND,NOT,COND,REST,LOCAL-EVENT,DEFUN" data-used-by="WITH-SUPPORTERS" data-part-name="WITH-SUPPORTERS-FN" data-part-args="REST,LOCAL-EVENT" data-part-body="WITH-OUTPUT!,MAKE-EVENT,IF,CONS,LIST,ELIDE-EVENT-LST,SET-STATE-OK,SET-IGNORE-OK,SET-IRRELEVANT-FORMALS-OK,SET-BOGUS-MUTUAL-RECURSION-OK,SET-BOGUS-DEFUN-HINTS-OK,SET-ENFORCE-REDUNDANCY,ENCAPSULATE,LIST*,EV,ENS,SUPPORTERS-IN-THEORY-EVENT,IN-THEORY-EVENT,FNS,EXTRAS,DEFAULT-STATE-VARS,APPEND,SUPPORTERS-OF,EXTRAS/FNS,EVENT-PAIRS-AFTER,EVENT-PAIRS,PROGN,TABLE-INFO-AFTER-K,FNS1,TABLE-EVS,MAX,WRLD,ER-PROGN,CTX,STATE,W,MAX-ABSOLUTE-EVENT-NUMBER,MIN,LET,QUASIQUOTE,FORM,LET*,WITH-SUPPORTERS-ARGS,EVENTS,WITH-OUTPUT,SHOW,TABLES,NAMES,MV-LET,T,REST,MEMBER-EQ,WITH-SUPPORTERS,HARD,ER,CDDR,NULL,CDR,CONSP,LOCAL,QUOTE,CAR,EQ,LOCAL-EVENT,TRUE-LISTP,AND,NOT,COND" typeof="SoftwareSourceCode">
+<div class="form-block function" id="def-with-supporters-fn" data-defines="WITH-SUPPORTERS-FN" data-references="MAKE-EVENT,WORLD,TABLE,ENCAPSULATE,IF,CONS,LIST,ELIDE-EVENT-LST,SET-STATE-OK,SET-IGNORE-OK,SET-IRRELEVANT-FORMALS-OK,SET-BOGUS-MUTUAL-RECURSION-OK,SET-BOGUS-DEFUN-HINTS-OK,SET-ENFORCE-REDUNDANCY,LIST*,EV,ENS,SUPPORTERS-IN-THEORY-EVENT,IN-THEORY-EVENT,FNS,EXTRAS,DEFAULT-STATE-VARS,APPEND,SUPPORTERS-OF,EXTRAS/FNS,EVENT-PAIRS-AFTER,EVENT-PAIRS,PROGN,TABLE-INFO-AFTER-K,FNS1,TABLE-EVS,MAX-ABSOLUTE-EVENT-NUMBER,MAX,WRLD,ER-PROGN,CTX,STATE,W,WITH-SUPPORTERS-TABLE,TABLE-ALIST,ASSOC-EQ,MIN,LET,QUASIQUOTE,FORM,LET*,WITH-SUPPORTERS-ARGS,EVENTS,WITH-OUTPUT,SHOW,TABLES,NAMES,MV-LET,T,MEMBER-EQ,WITH-SUPPORTERS,HARD,ER,CDDR,NULL,CDR,CONSP,LOCAL,QUOTE,CAR,EQ,TRUE-LISTP,AND,NOT,COND,REST,LOCAL-EVENT,DEFUN" data-used-by="WITH-SUPPORTERS" data-part-name="WITH-SUPPORTERS-FN" data-part-args="REST,LOCAL-EVENT" data-part-body="MAKE-EVENT,WORLD,TABLE,ENCAPSULATE,IF,CONS,LIST,ELIDE-EVENT-LST,SET-STATE-OK,SET-IGNORE-OK,SET-IRRELEVANT-FORMALS-OK,SET-BOGUS-MUTUAL-RECURSION-OK,SET-BOGUS-DEFUN-HINTS-OK,SET-ENFORCE-REDUNDANCY,LIST*,EV,ENS,SUPPORTERS-IN-THEORY-EVENT,IN-THEORY-EVENT,FNS,EXTRAS,DEFAULT-STATE-VARS,APPEND,SUPPORTERS-OF,EXTRAS/FNS,EVENT-PAIRS-AFTER,EVENT-PAIRS,PROGN,TABLE-INFO-AFTER-K,FNS1,TABLE-EVS,MAX-ABSOLUTE-EVENT-NUMBER,MAX,WRLD,ER-PROGN,CTX,STATE,W,WITH-SUPPORTERS-TABLE,TABLE-ALIST,ASSOC-EQ,MIN,LET,QUASIQUOTE,FORM,LET*,WITH-SUPPORTERS-ARGS,EVENTS,WITH-OUTPUT,SHOW,TABLES,NAMES,MV-LET,T,REST,MEMBER-EQ,WITH-SUPPORTERS,HARD,ER,CDDR,NULL,CDR,CONSP,LOCAL,QUOTE,CAR,EQ,LOCAL-EVENT,TRUE-LISTP,AND,NOT,COND" typeof="SoftwareSourceCode">
     <div class="form-header"><span class="form-name" property="name" data-sym="WITH-SUPPORTERS-FN">with-supporters-fn</span><span class="form-type">function</span></div>
     <pre class="code" property="text">(<a class="sym-link system" href="../../axioms.html#def-defun" data-sym="DEFUN">defun</a> <a class="sym-link local-def" href="#def-with-supporters-fn" data-sym="WITH-SUPPORTERS-FN" title="(defun with-supporters-fn (local-event rest)
   (cond
@@ -1610,7 +1670,7 @@ pre.code {
    ((null events)
     (mv names tables show
 ...">with-supporters-args</a> <a class="sym-link system" href="../../axioms.html#def-rest" data-sym="REST">rest</a> nil nil nil nil nil)
-        (<a class="sym-link system" href="../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((form `(let ((min (max-absolute-event-number (<a class="sym-link system" href="../../axioms.html#def-w" data-sym="W">w</a> state))) (ctx '<a class="sym-link local-def" href="#def-with-supporters" data-sym="WITH-SUPPORTERS" title="(defmacro with-supporters (local-event &amp;rest rest)
+        (<a class="sym-link system" href="../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((form `(let ((min (cdr (<a class="sym-link system" href="../../axioms.html#def-assoc-eq" data-sym="ASSOC-EQ">assoc-eq</a> <span class="keyword">:min</span> (<a class="sym-link system" href="../../axioms.html#def-table-alist" data-sym="TABLE-ALIST">table-alist</a> 'with-supporters-table (<a class="sym-link system" href="../../axioms.html#def-w" data-sym="W">w</a> state))))) (ctx '<a class="sym-link local-def" href="#def-with-supporters" data-sym="WITH-SUPPORTERS" title="(defmacro with-supporters (local-event &amp;rest rest)
   (with-supporters-fn local-event rest))">with-supporters</a>))
                (<a class="sym-link system" href="../../axioms.html#def-er-progn" data-sym="ER-PROGN">er-progn</a> ,(CADR LOCAL-EVENT)
                  (<a class="sym-link system" href="../../axioms.html#def-let_2A" data-sym="LET*">let*</a> ((wrld (<a class="sym-link system" href="../../axioms.html#def-w" data-sym="W">w</a> state)) (max (max-absolute-event-number wrld)))
@@ -1647,8 +1707,7 @@ pre.code {
          (supporters-in-theory-event (cdr fns) ens wrld min
           (if (and min
 ...">supporters-in-theory-event</a> fns (ens state) wrld min nil))
-                           (ev (<a class="sym-link system" href="../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> '<a class="sym-link system" href="../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a>
-                               nil
+                           (ev (<a class="sym-link system" href="../../axioms.html#def-list_2A" data-sym="LIST*">list*</a> '<a class="sym-link system" href="../../axioms.html#def-progn" data-sym="PROGN">progn</a>
                                ',LOCAL-EVENT
                                '(<a class="sym-link system" href="../../axioms.html#def-set-enforce-redundancy" data-sym="SET-ENFORCE-REDUNDANCY">set-enforce-redundancy</a> <a class="sym-link system" href="../../axioms.html#def-t" data-sym="T">t</a>)
                                '(<a class="sym-link system" href="../../axioms.html#def-set-bogus-defun-hints-ok" data-sym="SET-BOGUS-DEFUN-HINTS-OK">set-bogus-defun-hints-ok</a> <a class="sym-link system" href="../../axioms.html#def-t" data-sym="T">t</a>)
@@ -1671,8 +1730,17 @@ pre.code {
    ((NIL) &#39;(VALUE EV))
    (OTHERWISE (ER HARD &#39;WITH-SUPPORTERS &quot;Illegal value of :show, ~x0&quot; SHOW)))))))))))
           (if <a class="sym-link system" href="../../axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a>
-            `(<a class="sym-link system" href="../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> (<a class="sym-link system" href="../../axioms.html#def-with-output_21" data-sym="WITH-OUTPUT!">with-output!</a> ,@WITH-OUTPUT ,FORM))
-            `(<a class="sym-link system" href="../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> ,FORM)))))))</pre>
+            `(<a class="sym-link system" href="../../axioms.html#def-with-output" data-sym="WITH-OUTPUT">with-output</a> ,@WITH-OUTPUT
+              (<a class="sym-link system" href="../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
+                (<a class="sym-link system" href="../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../axioms.html#def-table" data-sym="TABLE">table</a> with-supporters-table
+                    <span class="keyword">:min</span> (max-absolute-event-number world)))
+                ,LOCAL-EVENT
+                (<a class="sym-link system" href="../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> ,FORM)))
+            `(<a class="sym-link system" href="../../axioms.html#def-encapsulate" data-sym="ENCAPSULATE">encapsulate</a> nil
+              (<a class="sym-link system" href="../../axioms.html#def-local" data-sym="LOCAL">local</a> (<a class="sym-link system" href="../../axioms.html#def-table" data-sym="TABLE">table</a> with-supporters-table
+                  <span class="keyword">:min</span> (max-absolute-event-number world)))
+              ,LOCAL-EVENT
+              (<a class="sym-link system" href="../../axioms.html#def-make-event" data-sym="MAKE-EVENT">make-event</a> ,FORM))))))))</pre>
   </div>
 
 <div class="form-block macro" id="def-with-supporters" data-defines="WITH-SUPPORTERS" data-references="WITH-SUPPORTERS-FN,REST,&REST,LOCAL-EVENT,DEFMACRO" data-used-by="WITH-SUPPORTERS-AFTER-FN,WITH-SUPPORTERS-FN,WSA-ER" typeof="Code">
