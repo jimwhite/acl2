@@ -50,7 +50,7 @@ read -r -d '' ACL2_SCRIPT << 'ENDSCRIPT' || true
 :q
 (defpackage "BUILD2" (:use "COMMON-LISP"))
 (cl:load "SCRIPT_DIR/cert2.lsp")
-(let ((exit-code (build2::build2-cli-fn 'ARGS_PLACEHOLDER "ACL2_PATH")))
+(let ((exit-code (build2::build2-cli-fn 'ARGS_PLACEHOLDER "ACL2_PATH" "BOOKS_DIR")))
   (sb-ext:exit :code (or exit-code 1)))
 ENDSCRIPT
 
@@ -58,6 +58,7 @@ ENDSCRIPT
 ACL2_SCRIPT="${ACL2_SCRIPT//SCRIPT_DIR/$SCRIPT_DIR}"
 ACL2_SCRIPT="${ACL2_SCRIPT//ARGS_PLACEHOLDER/$LISP_ARGS}"
 ACL2_SCRIPT="${ACL2_SCRIPT//ACL2_PATH/$ACL2}"
+ACL2_SCRIPT="${ACL2_SCRIPT//BOOKS_DIR/$ACL2_SYSTEM_BOOKS}"
 
 # Run ACL2 with the script on stdin
 echo "$ACL2_SCRIPT" | exec "$ACL2"
