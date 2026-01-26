@@ -47,6 +47,11 @@
   "Hash table of ACL2 system definitions (from axioms.lisp, etc.).
    Maps symbol-name -> file-basename (e.g., 'axioms').")
 
+(defvar *output-dir* nil
+  "Output directory for generated HTML and copied source files.
+   When set, HTML and .lisp files are written here instead of next to sources.
+   Defaults to 'docs' subdirectory of the ACL2 source dir.")
+
 ;;; ============================================================================
 ;;; Symbol extraction from forms
 ;;; ============================================================================
@@ -979,6 +984,72 @@
           (format t "  Generated: ~A~%" html-file))
         t))))
 
+(defun ensure-directory-exists (path)
+  "Create directory PATH and all parent directories if they don't exist."
+  (let ((dir (if (pathnamep path) path (pathname path))))
+    (ensure-directories-exist dir)))
+
+(defun compute-output-path (source-path relative-path extension)
+  "Compute output file path given SOURCE-PATH, RELATIVE-PATH, and EXTENSION.
+   If *output-dir* is set, returns path under output dir preserving relative structure.
+   Otherwise returns path next to source file."
+  (if *output-dir*
+      (let* ((out-dir (namestring *output-dir*))
+             (out-dir-slash (if (char= (char out-dir (1- (length out-dir))) #\/)
+                               out-dir
+                             (concatenate 'string out-dir "/")))
+             ;; Use relative-path to maintain directory structure
+             (rel-path (clean-relative-path relative-path))
+             (out-file (concatenate 'string out-dir-slash rel-path extension)))
+        (ensure-directory-exists (directory-namestring out-file))
+        out-file)
+    ;; No output dir - write next to source
+    (concatenate 'string (namestring source-path) extension)))
+
+(defun copy-file-if-newer (source dest)
+  "Copy SOURCE to DEST if SOURCE is newer or DEST doesn't exist.
+   Returns T if copied, NIL if skipped."
+  (let ((source-path (pathname source))
+        (dest-path (pathname dest)))
+    (when (or (not (probe-file dest-path))
+              (> (file-write-date source-path)
+                 (file-write-date dest-path)))
+      (ensure-directory-exists (directory-namestring dest-path))
+      (with-open-file (in source-path :direction :input :element-type '(unsigned-byte 8))
+        (with-open-file (out dest-path :direction :output 
+                                       :element-type '(unsigned-byte 8)
+                                       :if-exists :supersede
+                                       :if-does-not-exist :create)
+          (let ((buf (make-array 8192 :element-type '(unsigned-byte 8))))
+            (loop for n = (read-sequence buf in)
+                  while (> n 0)
+                  do (write-sequence buf out :end n)))))
+      t)))
+
+(defun write-book-html-to-output (book-path relative-path)
+  "Generate and write HTML documentation for BOOK-PATH to output directory.
+   Also copies the .lisp source file if *output-dir* is set.
+   RELATIVE-PATH is the path relative to the repo root."
+  (let* ((book-str (namestring book-path))
+         (lisp-file (concatenate 'string book-str ".lisp"))
+         (html-out (compute-output-path book-path relative-path ".html"))
+         (forms (read-forms-from-file lisp-file)))
+    (when forms
+      (let ((html (generate-book-html forms book-path)))
+        ;; Write HTML file
+        (ensure-directory-exists (directory-namestring html-out))
+        (with-open-file (out html-out :direction :output
+                                      :if-exists :supersede
+                                      :if-does-not-exist :create)
+          (write-string html out))
+        ;; Copy .lisp source if using output dir
+        (when *output-dir*
+          (let ((lisp-out (compute-output-path book-path relative-path ".lisp")))
+            (copy-file-if-newer lisp-file lisp-out)))
+        (when *verbose*
+          (format t "  Generated: ~A~%" html-out))
+        t))))
+
 ;;; ============================================================================
 ;;; Dependency scanning using proper Lisp reader
 ;;; ============================================================================
@@ -1138,8 +1209,13 @@
    Returns T if HTML was generated, NIL otherwise."
   (let* ((book-str (namestring book-path))
          (cert-file (concatenate 'string book-str ".cert"))
-         (html-file (concatenate 'string book-str ".html"))
-         (lisp-file (concatenate 'string book-str ".lisp")))
+         (lisp-file (concatenate 'string book-str ".lisp"))
+         ;; Compute relative path from ACL2 source dir
+         (base-dir (pathname (ensure-trailing-slash 
+                              (or *acl2-source-dir* *system-books-dir*))))
+         (relative-path (clean-relative-path (enough-namestring book-path base-dir)))
+         ;; Compute output HTML path
+         (html-file (compute-output-path book-path relative-path ".html")))
     (cond
       ((not (probe-file lisp-file))
        (when *verbose*
@@ -1152,8 +1228,8 @@
       (t
        (format t "Generating HTML: ~A~%" book-str)
        (handler-case
-         (let ((*verbose* nil))  ; Suppress duplicate message from write-book-html
-           (if (write-book-html book-path)
+         (let ((*verbose* nil))  ; Suppress duplicate message
+           (if (write-book-html-to-output book-path relative-path)
                (progn
                  (format t "  Generated: ~A~%" html-file)
                  t)
@@ -1221,28 +1297,41 @@
                          ((eq result nil) (incf skipped))
                          (t (incf errors))))))
                (format t "~%No certified books found for: ~A~%" item)))))))
+    ;; Generate index.html if using output directory
+    (when *output-dir*
+      (generate-docs-index))
     (format t "~%HTML generation complete: ~A generated, ~A up-to-date, ~A errors~%"
             generated skipped errors)
     generated))
 
 (defun write-raw-lisp-html (lisp-file)
   "Generate HTML for a raw .lisp file (no .cert required).
-   Output goes next to the input file with .html extension."
+   Output goes to *output-dir* if set, otherwise next to the input file."
   (let* ((lisp-str (namestring lisp-file))
          ;; Strip .lisp extension if present to get base path
          (base-str (if (and (> (length lisp-str) 5)
                             (string-equal ".lisp" (subseq lisp-str (- (length lisp-str) 5))))
                        (subseq lisp-str 0 (- (length lisp-str) 5))
                      lisp-str))
-         (html-file (concatenate 'string base-str ".html"))
+         ;; Compute relative path from ACL2 source dir
+         (base-dir (pathname (ensure-trailing-slash 
+                              (or *acl2-source-dir* *system-books-dir*))))
+         (relative-path (clean-relative-path (enough-namestring (pathname base-str) base-dir)))
          (forms (read-forms-from-file lisp-str)))
     (when forms
-      (let ((html (generate-book-html forms (pathname base-str))))
-        (with-open-file (out html-file :direction :output
-                                       :if-exists :supersede
-                                       :if-does-not-exist :create)
+      (let* ((html (generate-book-html forms (pathname base-str)))
+             (html-out (compute-output-path (pathname base-str) relative-path ".html")))
+        ;; Write HTML file
+        (ensure-directory-exists (directory-namestring html-out))
+        (with-open-file (out html-out :direction :output
+                                      :if-exists :supersede
+                                      :if-does-not-exist :create)
           (write-string html out))
-        (format t "  Generated: ~A~%" html-file)
+        ;; Copy .lisp source if using output dir
+        (when *output-dir*
+          (let ((lisp-out (compute-output-path (pathname base-str) relative-path ".lisp")))
+            (copy-file-if-newer lisp-str lisp-out)))
+        (format t "  Generated: ~A~%" html-out)
         t))))
 
 (defun raw-lisp-file-p (filename)
@@ -1315,9 +1404,96 @@
         (error (e)
           (format t "  Error: ~A~%" e)
           (incf errors))))
+    ;; Generate index.html if using output directory
+    (when *output-dir*
+      (generate-docs-index))
     (format t "~%Raw Lisp HTML generation: ~A generated, ~A errors~%"
             generated errors)
     generated))
+
+(defun generate-docs-index ()
+  "Generate an index.html file in the output directory listing all HTML files."
+  (when *output-dir*
+    (let* ((out-dir (namestring *output-dir*))
+           (index-file (concatenate 'string 
+                                    (if (char= (char out-dir (1- (length out-dir))) #\/)
+                                        out-dir
+                                      (concatenate 'string out-dir "/"))
+                                    "index.html"))
+           ;; Find all HTML files
+           (cmd (format nil "find ~A -name '*.html' -type f 2>/dev/null | sort" 
+                        (sb-ext:native-namestring (truename out-dir))))
+           (output (with-output-to-string (s)
+                     (sb-ext:run-program "/bin/sh" (list "-c" cmd)
+                                         :output s
+                                         :error nil)))
+           (html-files nil))
+      ;; Parse the output
+      (with-input-from-string (in output)
+        (loop for line = (read-line in nil nil)
+              while line
+              ;; Skip the index.html itself
+              unless (string= (pathname-name (pathname line)) "index")
+              do (push line html-files)))
+      (setf html-files (nreverse html-files))
+      ;; Generate index HTML
+      (with-open-file (out index-file :direction :output
+                                      :if-exists :supersede
+                                      :if-does-not-exist :create)
+        (format out "<!DOCTYPE html>~%<html lang=\"en\">~%<head>~%")
+        (format out "  <meta charset=\"UTF-8\">~%")
+        (format out "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">~%")
+        (format out "  <title>ACL2 Documentation</title>~%")
+        (format out "  <style>~%")
+        (format out "    :root { --bg: #1e1e2e; --fg: #cdd6f4; --link: #89dceb; --border: #313244; }~%")
+        (format out "    body { font-family: 'JetBrains Mono', monospace; background: var(--bg); color: var(--fg); padding: 20px; }~%")
+        (format out "    h1 { color: #cba6f7; }~%")
+        (format out "    a { color: var(--link); text-decoration: none; }~%")
+        (format out "    a:hover { text-decoration: underline; }~%")
+        (format out "    .section { margin: 20px 0; padding: 15px; background: rgba(49,50,68,0.5); border-radius: 8px; }~%")
+        (format out "    .section h2 { margin-top: 0; color: #89b4fa; font-size: 1.1em; }~%")
+        (format out "    ul { list-style: none; padding: 0; margin: 0; }~%")
+        (format out "    li { padding: 4px 0; }~%")
+        (format out "  </style>~%")
+        (format out "</head>~%<body>~%")
+        (format out "  <h1>ACL2 Documentation</h1>~%")
+        (format out "  <p>Generated by <a href=\"https://github.com/acl2/acl2\">cert2</a></p>~%")
+        ;; Group files by directory
+        (let ((system-files nil)
+              (book-files nil))
+          (dolist (file html-files)
+            (let* ((rel-path (enough-namestring (pathname file) *output-dir*))
+                   (rel-str (clean-relative-path rel-path)))
+              (if (search "books/" rel-str)
+                  (push (cons rel-str file) book-files)
+                (push (cons rel-str file) system-files))))
+          ;; System files section
+          (when system-files
+            (format out "  <div class=\"section\">~%")
+            (format out "    <h2>ACL2 System</h2>~%")
+            (format out "    <ul>~%")
+            (dolist (pair (nreverse system-files))
+              (let ((rel (car pair)))
+                (format out "      <li><a href=\"~A\">~A</a></li>~%" 
+                        (html-escape rel)
+                        (html-escape (pathname-name (pathname rel))))))
+            (format out "    </ul>~%")
+            (format out "  </div>~%"))
+          ;; Books section  
+          (when book-files
+            (format out "  <div class=\"section\">~%")
+            (format out "    <h2>Books</h2>~%")
+            (format out "    <ul>~%")
+            (dolist (pair (nreverse book-files))
+              (let* ((rel (car pair))
+                     (display (subseq rel (length "books/"))))
+                (format out "      <li><a href=\"~A\">~A</a></li>~%" 
+                        (html-escape rel)
+                        (html-escape (pathname-name (pathname display))))))
+            (format out "    </ul>~%")
+            (format out "  </div>~%")))
+        (format out "</body>~%</html>~%"))
+      (format t "Generated index: ~A~%" index-file))))
 
 ;;; ============================================================================
 ;;; Command-line interface
@@ -1329,19 +1505,23 @@
   (format t "       cert2 --raw file1.lisp [file2.lisp ...]~%")
   (format t "~%Certify ACL2 books and generate HTML documentation.~%")
   (format t "~%Options:~%")
-  (format t "  -h, --help      Show this help message~%")
-  (format t "  -j N            Use N parallel jobs (not yet implemented)~%")
-  (format t "  -v, --verbose   Verbose output~%")
-  (format t "  --no-html       Skip HTML documentation generation~%")
-  (format t "  --html-only     Generate HTML only for books with .cert files~%")
-  (format t "                  (does not certify, just generates docs)~%")
-  (format t "  --raw           Generate HTML for raw .lisp files (no certification needed)~%")
-  (format t "                  Use for ACL2 source files like axioms.lisp~%")
+  (format t "  -h, --help        Show this help message~%")
+  (format t "  -j N              Use N parallel jobs (not yet implemented)~%")
+  (format t "  -v, --verbose     Verbose output~%")
+  (format t "  --no-html         Skip HTML documentation generation~%")
+  (format t "  --html-only       Generate HTML only for books with .cert files~%")
+  (format t "                    (does not certify, just generates docs)~%")
+  (format t "  --raw             Generate HTML for raw .lisp files (no certification needed)~%")
+  (format t "                    Use for ACL2 source files like axioms.lisp~%")
+  (format t "  -o, --output-dir DIR~%")
+  (format t "                    Write HTML and source files to DIR (default: docs)~%")
+  (format t "                    Preserves directory structure under DIR~%")
   (format t "~%Books should be specified without the .lisp extension.~%")
   (format t "~%Example:~%")
   (format t "  cert2 arithmetic/top std/lists/top~%")
   (format t "  cert2 --html-only arithmetic-2~%")
-  (format t "  cert2 --raw /path/to/acl2/axioms.lisp~%~%"))
+  (format t "  cert2 --raw /path/to/acl2/axioms.lisp~%")
+  (format t "  cert2 --raw /path/to/acl2 --output-dir docs~%~%"))
 
 (defun parse-args-helper (args books options)
   "Helper for parse-args using recursion instead of loop."
@@ -1360,6 +1540,13 @@
         (parse-args-helper rest books (acons :html-only t options)))
        ((string= arg "--raw")
         (parse-args-helper rest books (acons :raw t options)))
+       ((or (string= arg "-o") (string= arg "--output-dir"))
+        (if rest
+            (parse-args-helper (cdr rest) books 
+                               (acons :output-dir (car rest) options))
+          (progn
+            (format t "Error: ~A requires a directory argument~%" arg)
+            (parse-args-helper rest books options))))
        ((string= arg "-j")
         (if rest
             (parse-args-helper (cdr rest) books 
@@ -1550,6 +1737,7 @@
         (setf *certifying* (make-hash-table :test 'equal))
         (setf *certified* (make-hash-table :test 'equal))
         (setf *acl2-system-index* nil)  ; Reset system index
+        (setf *output-dir* nil)  ; Reset output dir
         (multiple-value-bind (books options)
             (parse-args args)
           ;; Handle help
@@ -1558,6 +1746,21 @@
             (return-from build2-cli-fn 0))
           ;; Set verbose
           (setf *verbose* (cdr (assoc :verbose options)))
+          ;; Set output directory (only when explicitly specified with -o or --output-dir)
+          (let ((out-dir-opt (cdr (assoc :output-dir options))))
+            (when out-dir-opt
+              (let* ((out-dir-str out-dir-opt)
+                     (out-dir-path (if (and (> (length out-dir-str) 0)
+                                            (char= (char out-dir-str 0) #\/))
+                                       (pathname out-dir-str)
+                                     ;; Relative to ACL2 source dir
+                                     (pathname (concatenate 'string 
+                                                           (namestring *acl2-source-dir*)
+                                                           out-dir-str "/")))))
+                ;; Ensure output directory exists before calling truename
+                (ensure-directories-exist out-dir-path)
+                (setf *output-dir* (truename out-dir-path))
+                (format t "Output directory: ~A~%" *output-dir*))))
           ;; Build system index for linking to ACL2 system definitions
           (build-acl2-system-index)
           ;; Handle --html-only mode

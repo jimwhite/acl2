@@ -230,3 +230,148 @@
              "(include-book \"b\")")))
          '("a" "b"))
   :rule-classes nil)
+
+;; ============================================================================
+;; Tests for split-string-by-char
+;; ============================================================================
+
+(defthm test-split-string-basic
+  (equal (split-string-by-char "a/b/c" #\/)
+         '("a" "b" "c"))
+  :rule-classes nil)
+
+(defthm test-split-string-single
+  (equal (split-string-by-char "foo" #\/)
+         '("foo"))
+  :rule-classes nil)
+
+(defthm test-split-string-leading-slash
+  (equal (split-string-by-char "/a/b" #\/)
+         '("" "a" "b"))
+  :rule-classes nil)
+
+(defthm test-split-string-trailing-slash
+  ;; Trailing slash results in only the parts before it
+  ;; (no empty string at end because implementation stops at end of string)
+  (equal (split-string-by-char "a/b/" #\/)
+         '("a" "b"))
+  :rule-classes nil)
+
+(defthm test-split-string-empty
+  (equal (split-string-by-char "" #\/)
+         nil)
+  :rule-classes nil)
+
+;; ============================================================================
+;; Tests for clean-relative-path
+;; ============================================================================
+
+(defthm test-clean-relative-path-leading-dot
+  (equal (clean-relative-path "./foo/bar")
+         "foo/bar")
+  :rule-classes nil)
+
+(defthm test-clean-relative-path-no-dot
+  (equal (clean-relative-path "foo/bar")
+         "foo/bar")
+  :rule-classes nil)
+
+(defthm test-clean-relative-path-double-dot
+  (equal (clean-relative-path "././foo")
+         "foo")
+  :rule-classes nil)
+
+;; ============================================================================
+;; Tests for compute-relative-path
+;; ============================================================================
+
+(defthm test-compute-relative-path-same-dir
+  (equal (compute-relative-path "dir/a.html" "dir/b.html")
+         "b.html")
+  :rule-classes nil)
+
+(defthm test-compute-relative-path-sibling-dirs
+  (equal (compute-relative-path "dir1/a.html" "dir2/b.html")
+         "../dir2/b.html")
+  :rule-classes nil)
+
+(defthm test-compute-relative-path-nested-to-parent
+  (equal (compute-relative-path "dir/sub/a.html" "dir/b.html")
+         "../b.html")
+  :rule-classes nil)
+
+(defthm test-compute-relative-path-parent-to-nested
+  (equal (compute-relative-path "dir/a.html" "dir/sub/b.html")
+         "sub/b.html")
+  :rule-classes nil)
+
+(defthm test-compute-relative-path-deep-to-root
+  (equal (compute-relative-path "a/b/c/d.html" "e.html")
+         "../../../e.html")
+  :rule-classes nil)
+
+(defthm test-compute-relative-path-root-to-deep
+  (equal (compute-relative-path "a.html" "x/y/z.html")
+         "x/y/z.html")
+  :rule-classes nil)
+
+(defthm test-compute-relative-path-books-to-root
+  ;; From books/arithmetic/top.html to axioms.html at root
+  (equal (compute-relative-path "books/arithmetic/top.html" "axioms.html")
+         "../../axioms.html")
+  :rule-classes nil)
+
+(defthm test-compute-relative-path-root-to-books
+  ;; From axioms.html at root to books/arithmetic/top.html
+  (equal (compute-relative-path "axioms.html" "books/arithmetic/top.html")
+         "books/arithmetic/top.html")
+  :rule-classes nil)
+
+;; ============================================================================
+;; Tests for helper functions
+;; ============================================================================
+
+(defthm test-make-ups
+  (equal (make-ups 3)
+         '(".." ".." ".."))
+  :rule-classes nil)
+
+(defthm test-make-ups-zero
+  (equal (make-ups 0)
+         nil)
+  :rule-classes nil)
+
+(defthm test-join-with-slash
+  (equal (join-with-slash '("a" "b" "c"))
+         "a/b/c")
+  :rule-classes nil)
+
+(defthm test-join-with-slash-single
+  (equal (join-with-slash '("foo"))
+         "foo")
+  :rule-classes nil)
+
+(defthm test-join-with-slash-empty
+  (equal (join-with-slash nil)
+         "")
+  :rule-classes nil)
+
+(defthm test-common-prefix-length-full
+  (equal (common-prefix-length '("a" "b" "c") '("a" "b" "c"))
+         3)
+  :rule-classes nil)
+
+(defthm test-common-prefix-length-partial
+  (equal (common-prefix-length '("a" "b" "c") '("a" "b" "d"))
+         2)
+  :rule-classes nil)
+
+(defthm test-common-prefix-length-none
+  (equal (common-prefix-length '("x" "y") '("a" "b"))
+         0)
+  :rule-classes nil)
+
+(defthm test-common-prefix-length-empty
+  (equal (common-prefix-length nil '("a" "b"))
+         0)
+  :rule-classes nil)
