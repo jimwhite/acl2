@@ -586,12 +586,14 @@
 (defun include-book-form-p (form)
   "Check if FORM is an include-book form."
   (and (consp form)
+       (symbolp (car form))
        (let ((name (symbol-name (car form))))
          (string-equal name "INCLUDE-BOOK"))))
 
 (defun local-form-p (form)
   "Check if FORM is a local form."
   (and (consp form)
+       (symbolp (car form))
        (let ((name (symbol-name (car form))))
          (string-equal name "LOCAL"))))
 
@@ -666,8 +668,10 @@
    INDENT is the current indentation level."
   (handler-case
     (format-form-with-links-internal form index local-file indent in-list)
-    (error ()
-      ;; Fallback to simple escaped form
+    (error (e)
+      ;; Log error and fallback to simple escaped form
+      (when *verbose*
+        (format *error-output* "  Warning: Error formatting form: ~A~%" e))
       (handler-case
         (html-escape (form-to-string form))
         (error ()
