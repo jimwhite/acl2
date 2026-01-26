@@ -196,12 +196,18 @@
   )
 
 (defun clean-relative-path (path)
-  "Remove leading ./ from PATH and clean up any double slashes."
+  "Remove ./ components from PATH and clean up any double slashes."
   (let ((str (if (pathnamep path) (namestring path) path)))
     ;; Remove leading ./
     (loop while (and (>= (length str) 2)
                      (string= (subseq str 0 2) "./"))
           do (setf str (subseq str 2)))
+    ;; Remove /./ in the middle of path (replace with /)
+    (loop for pos = (search "/./" str)
+          while pos
+          do (setf str (concatenate 'string
+                                    (subseq str 0 pos)
+                                    (subseq str (+ pos 2)))))
     ;; Remove any double slashes
     (loop for pos = (search "//" str)
           while pos
@@ -248,10 +254,12 @@
 (defun get-book-definitions (book-path)
   "Read BOOK-PATH.lisp and return list of (symbol-name . relative-path) for definitions."
   (let ((lisp-file (concatenate 'string (namestring book-path) ".lisp"))
-        (sys-dir (pathname (ensure-trailing-slash *system-books-dir*))))
+        ;; Use ACL2 source dir (repo root) as base for consistent relative paths
+        (base-dir (pathname (ensure-trailing-slash 
+                             (or *acl2-source-dir* *system-books-dir*)))))
     (when (probe-file lisp-file)
       (let ((forms (read-forms-from-file lisp-file))
-            (relative-path (clean-relative-path (enough-namestring book-path sys-dir))))
+            (relative-path (clean-relative-path (enough-namestring book-path base-dir))))
         (when forms
           (loop for form in forms
                 for name = (get-form-name form)
@@ -590,13 +598,11 @@
     (if has-definition
         ;; Symbol has a known definition - make it a link
         (let* ((href (cond
-                       ;; System definition - need to go up from books to ACL2 source dir
+                       ;; System definition - compute relative path from local file to system file
+                       ;; Both paths are relative to repo root, system files are at root level
                        (is-system
-                        (let* ((local-parts (remove "" (split-string local-file #\/) :test #'equal))
-                               (depth (length (butlast local-parts)))  ; Directory depth
-                               (ups (make-list (1+ depth) :initial-element ".."))  ; +1 to go above books/
-                               (sys-rel (format nil "~{~A/~}~A.html#def-~A" ups system-file id-name)))
-                          sys-rel))
+                        (let ((relative-target (compute-relative-path local-file system-file)))
+                          (concatenate 'string relative-target ".html#def-" id-name)))
                        ;; External book definition
                        (is-external
                         (let ((relative-target (compute-relative-path local-file target-file)))
@@ -936,9 +942,11 @@
    Returns HTML string."
   (let* ((book-str (namestring book-path))
          (book-name (car (last (pathname-directory book-path))))
-         ;; Ensure system-books-dir has trailing slash for enough-namestring
-         (sys-dir (pathname (ensure-trailing-slash *system-books-dir*)))
-         (relative-path (clean-relative-path (enough-namestring book-path sys-dir)))
+         ;; Use ACL2 source dir (repo root) as base for all relative paths
+         ;; This ensures links work correctly for files both at root and in books/
+         (base-dir (pathname (ensure-trailing-slash 
+                              (or *acl2-source-dir* *system-books-dir*))))
+         (relative-path (clean-relative-path (enough-namestring book-path base-dir)))
          (index (build-xref-index-with-includes forms relative-path book-path))
          ;; Compute definition snippets for tooltips
          (*definition-snippets* (compute-definition-snippets forms 5)))
@@ -1517,22 +1525,27 @@
                nil)))
          books))
 
-(defun build2-cli-fn (args acl2-path books-dir)
+(defun build2-cli-fn (args acl2-path books-dir &optional source-dir)
   "Main entry point for the cert2 command-line tool.
    ARGS is a list of command-line arguments (strings).
    ACL2-PATH is the path to the ACL2 executable.
    BOOKS-DIR is the path to the system books directory.
+   SOURCE-DIR is the path to the ACL2 source directory (optional, defaults to parent of books-dir).
    Returns 0 on success, non-zero on failure."
   (handler-case
       (progn
         (setf *acl2-executable* acl2-path)
         (setf *system-books-dir* (pathname books-dir))
-        ;; Set ACL2 source dir (parent of books dir)
+        ;; Set ACL2 source dir - use provided source-dir or compute from books-dir
         (let ((dir-str (if (pathnamep books-dir) (namestring books-dir) books-dir)))
           (unless (char= (char dir-str (1- (length dir-str))) #\/)
             (setf dir-str (concatenate 'string dir-str "/")))
-          ;; ACL2 source is parent of books
-          (setf *acl2-source-dir* (pathname (concatenate 'string dir-str "../")))
+          ;; Use provided source-dir if available, otherwise compute from books-dir
+          (setf *acl2-source-dir* 
+                (if (and source-dir (> (length source-dir) 0))
+                    (truename (pathname source-dir))
+                  ;; ACL2 source is parent of books - use truename to resolve ../ to absolute path
+                  (truename (pathname (concatenate 'string dir-str "../")))))
           (setf *build2-dir* (pathname (concatenate 'string dir-str "build2/"))))
         (setf *certifying* (make-hash-table :test 'equal))
         (setf *certified* (make-hash-table :test 'equal))

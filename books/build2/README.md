@@ -88,7 +88,7 @@ The system proves several important properties:
 
 ```bash
 cd $ACL2_SYSTEM_BOOKS
-./build2/cert2 --raw /workspaces/acl2
+build2/cert2 --raw /workspaces/acl2
 find . -name "*.cert" -type f | while read cert; do \
   base="${cert%.cert}";   if [ -f "$base.html" ]; then     rm -f "$base.html";   fi; \
 done
