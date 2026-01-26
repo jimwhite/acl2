@@ -220,359 +220,43 @@
     index))
 
 ;;; ============================================================================
-;;; HTML generation
+;;; HTML generation - Template loading
 ;;; ============================================================================
 
+(defvar *build2-dir* nil
+  "Directory containing cert2.lsp and template files.")
+
+(defun read-file-contents (filepath)
+  "Read entire contents of FILEPATH as a string."
+  (with-open-file (stream filepath :direction :input)
+    (let ((contents (make-string (file-length stream))))
+      (read-sequence contents stream)
+      contents)))
+
+(defun get-template-path (filename)
+  "Get path to template file FILENAME in build2 directory."
+  (let ((dir-str (namestring *build2-dir*)))
+    ;; Ensure directory ends with /
+    (unless (and (> (length dir-str) 0)
+                 (char= (char dir-str (1- (length dir-str))) #\/))
+      (setf dir-str (concatenate 'string dir-str "/")))
+    (pathname (concatenate 'string dir-str filename))))
+
 (defun generate-css ()
-  "Generate CSS for the documentation."
-  "
-<style>
-:root {
-  --bg: #1e1e2e;
-  --fg: #cdd6f4;
-  --comment: #6c7086;
-  --keyword: #cba6f7;
-  --string: #a6e3a1;
-  --function: #89b4fa;
-  --type: #f9e2af;
-  --link: #89dceb;
-  --link-hover: #f5c2e7;
-  --highlight: rgba(137, 180, 250, 0.2);
-  --border: #313244;
-}
-
-body {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  background: var(--bg);
-  color: var(--fg);
-  margin: 0;
-  padding: 20px;
-  line-height: 1.6;
-}
-
-.book-header {
-  border-bottom: 2px solid var(--border);
-  padding-bottom: 20px;
-  margin-bottom: 20px;
-}
-
-.book-header h1 {
-  color: var(--keyword);
-  margin: 0;
-}
-
-.book-header .path {
-  color: var(--comment);
-  font-size: 0.9em;
-}
-
-.form-block {
-  margin: 10px 0;
-  padding: 15px;
-  background: rgba(49, 50, 68, 0.5);
-  border-radius: 8px;
-  border-left: 3px solid var(--border);
-}
-
-.form-block.theorem { border-left-color: var(--keyword); }
-.form-block.function { border-left-color: var(--function); }
-.form-block.macro { border-left-color: var(--type); }
-.form-block.include-book { border-left-color: var(--string); }
-
-.form-block.hidden { display: none; }
-.form-block.dimmed { opacity: 0.3; }
-
-.form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.form-name {
-  color: var(--function);
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.form-name:hover {
-  color: var(--link-hover);
-  text-decoration: underline;
-}
-
-.form-type {
-  color: var(--comment);
-  font-size: 0.85em;
-}
-
-pre.code {
-  margin: 0;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-.sym-ref {
-  color: var(--link);
-  cursor: pointer;
-  border-radius: 2px;
-}
-
-.sym-ref:hover {
-  background: var(--highlight);
-  color: var(--link-hover);
-}
-
-.sym-ref.local-def { color: var(--function); font-weight: bold; }
-.sym-ref.external { color: var(--type); }
-
-/* Part buttons for defthm */
-.part-buttons {
-  display: flex;
-  gap: 5px;
-  margin: 10px 0;
-  flex-wrap: wrap;
-}
-
-.part-btn {
-  padding: 4px 10px;
-  background: var(--border);
-  border: 1px solid var(--comment);
-  border-radius: 4px;
-  color: var(--fg);
-  cursor: pointer;
-  font-size: 0.85em;
-  font-family: inherit;
-}
-
-.part-btn:hover {
-  background: var(--highlight);
-  border-color: var(--link);
-}
-
-.part-btn.active {
-  background: var(--link);
-  color: var(--bg);
-  border-color: var(--link);
-}
-
-/* References panel */
-.refs-panel {
-  margin-top: 10px;
-  padding: 10px;
-  background: rgba(0,0,0,0.2);
-  border-radius: 4px;
-  display: none;
-}
-
-.refs-panel.visible { display: block; }
-
-.refs-panel h4 {
-  margin: 0 0 5px 0;
-  color: var(--comment);
-  font-size: 0.9em;
-}
-
-.refs-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-
-/* Filter status */
-.filter-status {
-  position: sticky;
-  top: 0;
-  background: var(--bg);
-  padding: 10px;
-  border-bottom: 1px solid var(--border);
-  z-index: 100;
-  display: none;
-}
-
-.filter-status.active {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.clear-filter {
-  padding: 5px 15px;
-  background: var(--keyword);
-  color: var(--bg);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-/* RDFa vocab indicator */
-[vocab] { /* semantic web annotations present */ }
-</style>
-")
+  "Load CSS from external file."
+  (let ((css-file (get-template-path "cert2.css")))
+    (if (probe-file css-file)
+        (format nil "~%<style>~%~A~%</style>~%" (read-file-contents css-file))
+      ;; Fallback minimal CSS if file not found
+      "<style>body{font-family:monospace;}</style>")))
 
 (defun generate-javascript ()
-  "Generate JavaScript for interactive filtering."
-  "
-<script>
-// State
-let activeFilter = null;
-let activePartFilter = null;
-
-// Get all form blocks
-function getFormBlocks() {
-  return document.querySelectorAll('.form-block');
-}
-
-// Clear all filters
-function clearFilter() {
-  activeFilter = null;
-  activePartFilter = null;
-  getFormBlocks().forEach(b => {
-    b.classList.remove('hidden', 'dimmed');
-  });
-  document.querySelectorAll('.part-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector('.filter-status').classList.remove('active');
-}
-
-// Filter to show only forms that define or reference a symbol
-function filterBySymbol(symName, showUsedBy) {
-  clearFilter();
-  activeFilter = symName;
-  
-  const blocks = getFormBlocks();
-  let visibleCount = 0;
-  
-  blocks.forEach(block => {
-    const definesName = block.dataset.defines;
-    const references = (block.dataset.references || '').split(',');
-    const usedBy = (block.dataset.usedBy || '').split(',');
-    
-    let show = false;
-    if (showUsedBy) {
-      // Show forms that USE this symbol
-      show = references.includes(symName) || definesName === symName;
-    } else {
-      // Show forms that this symbol USES
-      show = usedBy.includes(symName) || definesName === symName;
-    }
-    
-    if (show) {
-      block.classList.remove('hidden');
-      visibleCount++;
-    } else {
-      block.classList.add('hidden');
-    }
-  });
-  
-  // Update status
-  const status = document.querySelector('.filter-status');
-  status.classList.add('active');
-  status.querySelector('.filter-text').textContent = 
-    `Filtering by: ${symName} (${visibleCount} items)`;
-}
-
-// Filter by defthm part (term, hints, rule-classes, etc.)
-function filterByPart(formId, partName) {
-  clearFilter();
-  activePartFilter = { formId, partName };
-  
-  // Get the part's referenced symbols
-  // data-part-term becomes dataset.partTerm, data-part-hints becomes dataset.partHints, etc.
-  const block = document.getElementById(formId);
-  const datasetKey = 'part' + partName.charAt(0).toUpperCase() + partName.slice(1).replace(/-([a-z])/g, (g) => g[1].toUpperCase());
-  const partData = block.dataset[datasetKey];
-  if (!partData) return;
-  
-  const partSyms = partData.split(',').filter(s => s);
-  
-  // Highlight the button
-  block.querySelector(`.part-btn[data-part=\"${partName}\"]`).classList.add('active');
-  
-  // Hide forms not referenced by this part
-  getFormBlocks().forEach(b => {
-    const definesName = b.dataset.defines;
-    if (b.id === formId || partSyms.includes(definesName)) {
-      b.classList.remove('hidden');
-    } else {
-      b.classList.add('hidden');
-    }
-  });
-  
-  // Update status
-  const status = document.querySelector('.filter-status');
-  status.classList.add('active');
-  status.querySelector('.filter-text').textContent = 
-    `Filtering ${formId} :${partName} (${partSyms.length} references)`;
-}
-
-// Click on a name to show what references it
-function handleNameClick(symName) {
-  if (activeFilter === symName) {
-    clearFilter();
-  } else {
-    filterBySymbol(symName, true);
-  }
-}
-
-// Navigate to a definition (same file or different)
-function navigateTo(symName, file) {
-  if (file) {
-    // External file - navigate
-    window.location.href = file + '.html#def-' + symName.toLowerCase();
-  } else {
-    // Same file - scroll
-    const target = document.getElementById('def-' + symName.toLowerCase());
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      target.classList.add('highlight');
-      setTimeout(() => target.classList.remove('highlight'), 2000);
-    }
-  }
-}
-
-// Initialize
-document.addEventListener('DOMContentLoaded', () => {
-  // Part buttons
-  document.querySelectorAll('.part-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const formId = btn.closest('.form-block').id;
-      const partName = btn.dataset.part;
-      if (activePartFilter && activePartFilter.formId === formId && 
-          activePartFilter.partName === partName) {
-        clearFilter();
-      } else {
-        filterByPart(formId, partName);
-      }
-    });
-  });
-  
-  // Clear filter button
-  document.querySelector('.clear-filter').addEventListener('click', clearFilter);
-  
-  // Symbol references
-  document.querySelectorAll('.sym-ref').forEach(ref => {
-    ref.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const sym = ref.dataset.sym;
-      const file = ref.dataset.file;
-      if (file) {
-        navigateTo(sym, file);
-      } else {
-        handleNameClick(sym);
-      }
-    });
-  });
-  
-  // Form names (show what uses them)
-  document.querySelectorAll('.form-name').forEach(name => {
-    name.addEventListener('click', (e) => {
-      handleNameClick(name.dataset.sym);
-    });
-  });
-});
-</script>
-")
+  "Load JavaScript from external file."
+  (let ((js-file (get-template-path "cert2.js")))
+    (if (probe-file js-file)
+        (format nil "~%<script>~%~A~%</script>~%" (read-file-contents js-file))
+      ;; Fallback: no JS if file not found
+      "")))
 
 (defun generate-html-header (book-name relative-path)
   "Generate HTML header for a book."
@@ -707,6 +391,74 @@ document.addEventListener('DOMContentLoaded', () => {
       
       (format out "  </div>~%~%"))))
 
+(defun extract-all-include-books (forms)
+  "Extract all include-book paths from FORMS. Returns list of (path localp dir-keyword)."
+  (loop for form in forms
+        append (extract-include-books form)))
+
+(defun resolve-include-path (include-info book-path)
+  "Resolve INCLUDE-INFO (path localp dir-keyword) relative to BOOK-PATH.
+   Returns the relative path for the HTML link (relative to the current HTML file)."
+  (destructuring-bind (inc-path localp dir-keyword) include-info
+    (declare (ignore localp))
+    (let* ((book-str (namestring book-path))
+           (book-dir (let ((last-slash (position #\/ book-str :from-end t)))
+                       (if last-slash
+                           (subseq book-str 0 (1+ last-slash))
+                         "")))
+           (sys-str (namestring *system-books-dir*)))
+      ;; Ensure sys-str ends with /
+      (unless (and (> (length sys-str) 0)
+                   (char= (char sys-str (1- (length sys-str))) #\/))
+        (setf sys-str (concatenate 'string sys-str "/")))
+      (cond
+        ;; :dir :system - need to compute relative path from current file to system books
+        ((eq dir-keyword :system)
+         ;; Count directory levels from system books to book-dir
+         (let* ((rel-book-dir (if (and (>= (length book-dir) (length sys-str))
+                                       (string= sys-str (subseq book-dir 0 (length sys-str))))
+                                  (subseq book-dir (length sys-str))
+                                ""))
+                (depth (count #\/ rel-book-dir))
+                (up-dirs (with-output-to-string (s)
+                           (dotimes (i depth) (write-string "../" s)))))
+           (concatenate 'string up-dirs inc-path)))
+        ;; Relative path - just use it directly (it's already relative to current file)
+        (t inc-path)))))
+
+(defun generate-includes-section (forms book-path)
+  "Generate HTML for the included books section."
+  (let* ((includes (extract-all-include-books forms))
+         ;; Remove duplicates (keep first occurrence)
+         (seen (make-hash-table :test 'equal))
+         (unique-includes 
+          (loop for inc in includes
+                for path = (first inc)
+                unless (gethash path seen)
+                collect inc
+                do (setf (gethash path seen) t))))
+    (when unique-includes
+      (with-output-to-string (out)
+        (format out "  <div class=\"includes-section\">~%")
+        (format out "    <h2>Included Books</h2>~%")
+        (format out "    <div class=\"includes-list\">~%")
+        (dolist (inc unique-includes)
+          (destructuring-bind (inc-path localp dir-keyword) inc
+            (let* ((resolved (resolve-include-path inc book-path))
+                   (html-path (concatenate 'string resolved ".html"))
+                   (display-name (let ((last-slash (position #\/ inc-path :from-end t)))
+                                   (if last-slash
+                                       (subseq inc-path (1+ last-slash))
+                                     inc-path)))
+                   (class (if localp "include-link local" "include-link")))
+              (format out "      <a class=\"~A\" href=\"~A\" title=\"~A\">~A</a>~%"
+                      class
+                      (html-escape html-path)
+                      (html-escape inc-path)
+                      (html-escape display-name)))))
+        (format out "    </div>~%")
+        (format out "  </div>~%~%")))))
+
 (defun generate-book-html (forms book-path)
   "Generate complete HTML for a book from its FORMS.
    Returns HTML string."
@@ -718,6 +470,10 @@ document.addEventListener('DOMContentLoaded', () => {
       (write-string (generate-html-header 
                      (or (pathname-name book-path) book-name)
                      relative-path) out)
+      ;; Add includes section
+      (let ((includes-html (generate-includes-section forms book-path)))
+        (when includes-html
+          (write-string includes-html out)))
       (loop for form in forms
             for idx from 0
             do (write-string (generate-form-html form index relative-path idx) out))
@@ -1022,6 +778,11 @@ document.addEventListener('DOMContentLoaded', () => {
       (progn
         (setf *acl2-executable* acl2-path)
         (setf *system-books-dir* (pathname books-dir))
+        ;; Set build2 dir for finding template files (CSS, JS)
+        (let ((dir-str (if (pathnamep books-dir) (namestring books-dir) books-dir)))
+          (unless (char= (char dir-str (1- (length dir-str))) #\/)
+            (setf dir-str (concatenate 'string dir-str "/")))
+          (setf *build2-dir* (pathname (concatenate 'string dir-str "build2/"))))
         (setf *certifying* (make-hash-table :test 'equal))
         (setf *certified* (make-hash-table :test 'equal))
         (multiple-value-bind (books options)
