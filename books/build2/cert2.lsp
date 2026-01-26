@@ -744,7 +744,8 @@
        ;; Rest of elements
        (let ((rest (cdr form))
              (new-indent (+ indent 2))
-             (elem-count 1))
+             (elem-count 1)
+             (prev-elem (car form)))
          ;; Determine if we should use multi-line format
          (let* ((form-str (handler-case (form-to-string form) (error () "")))
                 (form-len (length form-str))
@@ -761,11 +762,13 @@
                (t
                 (incf elem-count)
                 ;; Keep first 2 elements on same line (e.g., defthm name)
+                ;; Also keep keyword and its value on the same line
                 ;; Then use multi-line for rest
-                (if (and multi-line (> elem-count 2))
+                (if (and multi-line (> elem-count 2) (not (keywordp prev-elem)))
                     (format out "~%~A" (make-string new-indent :initial-element #\Space))
                   (write-char #\Space out))
                 (write-string (format-form-with-links-internal (car rest) index local-file new-indent t) out)
+                (setf prev-elem (car rest))
                 (setf rest (cdr rest)))))))
        (write-char #\) out)))
     ;; Fallback
