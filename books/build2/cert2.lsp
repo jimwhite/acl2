@@ -708,19 +708,48 @@
 ;;; Dependency scanning using proper Lisp reader
 ;;; ============================================================================
 
+(defun ensure-package-exists (name)
+  "Create package NAME if it doesn't exist. Returns the package."
+  (let ((name-str (string name)))
+    (or (find-package name-str)
+        (make-package name-str :use '("COMMON-LISP")))))
+
 (defun read-forms-from-file (filename)
   "Read all Lisp forms from FILENAME using the standard reader.
+   Creates packages on-the-fly as needed, restarting from beginning if necessary.
    Returns list of forms, or NIL on error."
-  (handler-case
-      (with-open-file (stream filename :direction :input
-                                       :if-does-not-exist nil)
-        (when stream
-          (let ((*package* (find-package "ACL2"))
-                (*read-eval* nil))  ; Safety: don't evaluate during read
-            (loop for form = (read stream nil :eof)
-                  until (eq form :eof)
-                  collect form))))
-    (error () nil)))
+  (let ((max-retries 20))
+    (loop for attempt from 1 to max-retries do
+      (handler-case
+          (with-open-file (stream filename :direction :input
+                                           :if-does-not-exist nil)
+            (when stream
+              (let ((*package* (find-package "ACL2"))
+                    (*read-eval* nil)
+                    (forms nil))
+                (loop
+                  (let ((form (read stream nil :eof)))
+                    (if (eq form :eof)
+                        (return-from read-forms-from-file (nreverse forms))
+                        (progn
+                          (push form forms)
+                          ;; Handle in-package
+                          (when (and (consp form)
+                                     (member (car form) '(in-package acl2::in-package cl:in-package)))
+                            (let ((pkg-name (string (cadr form))))
+                              (ensure-package-exists pkg-name)
+                              (setf *package* (find-package pkg-name)))))))))))
+        (sb-int:simple-reader-package-error (c)
+          ;; Create the missing package and retry from the beginning
+          (let ((pkg-name (sb-kernel::package-error-package c)))
+            (when *verbose*
+              (format t "  Creating package ~A...~%" pkg-name))
+            (ensure-package-exists pkg-name)))
+        (error (c)
+          (declare (ignore c))
+          (return-from read-forms-from-file nil))))
+    ;; Exceeded max retries
+    nil))
 
 (defun extract-include-books (form)
   "Extract include-book info from FORM. Returns list of (path localp dir-keyword)."
