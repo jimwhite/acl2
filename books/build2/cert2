@@ -44,11 +44,15 @@ for arg in "$@"; do
 done
 LISP_ARGS="$LISP_ARGS)"
 
-# Create the ACL2 script
+# Create the ACL2 script that runs in raw Lisp mode
+# We use :q to drop into raw Lisp, then load our code
 read -r -d '' ACL2_SCRIPT << 'ENDSCRIPT' || true
-(ld "SCRIPT_DIR/cert2.lsp" :ld-error-action :error)
-(let ((exit-code (build2-cli-fn 'ARGS_PLACEHOLDER)))
-  (good-bye (if exit-code (if (eq exit-code t) 0 exit-code) 1)))
+:q
+(defpackage "BUILD2" (:use "COMMON-LISP"))
+(cl:load "SCRIPT_DIR/io-raw.lsp")
+(cl:load "SCRIPT_DIR/cert2.lsp")
+(let ((exit-code (build2::build2-cli-fn 'ARGS_PLACEHOLDER)))
+  (sb-ext:exit :code (or exit-code 1)))
 ENDSCRIPT
 
 # Replace placeholders
