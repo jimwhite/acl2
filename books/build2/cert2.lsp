@@ -784,20 +784,158 @@
        (pathname (concatenate 'string base-str name))))))
 
 ;;; ============================================================================
+;;; HTML-only mode - generate docs for already certified books
+;;; ============================================================================
+
+(defun file-write-date-safe (path)
+  "Get file write date, or NIL if file doesn't exist."
+  (handler-case
+    (file-write-date path)
+    (error () nil)))
+
+(defun html-needs-update-p (cert-file html-file)
+  "Check if HTML needs to be (re)generated.
+   Returns T if .html is missing or older than .cert."
+  (let ((cert-date (file-write-date-safe cert-file))
+        (html-date (file-write-date-safe html-file)))
+    (or (null html-date)                    ; HTML missing
+        (and cert-date                       ; .cert exists
+             (> cert-date html-date)))))     ; .cert is newer (strict)
+
+(defun find-cert-files (directory)
+  "Find all .cert files under DIRECTORY recursively.
+   Returns list of absolute pathnames (without .cert extension)."
+  (let ((results nil)
+        (dir-str (namestring directory)))
+    ;; Ensure dir ends with /
+    (unless (and (> (length dir-str) 0)
+                 (char= (char dir-str (1- (length dir-str))) #\/))
+      (setf dir-str (concatenate 'string dir-str "/")))
+    ;; Use find command to get all .cert files
+    (let* ((cmd (format nil "find ~A -name '*.cert' -type f 2>/dev/null" dir-str))
+           (output (with-output-to-string (s)
+                     (sb-ext:run-program "/bin/sh" (list "-c" cmd)
+                                         :output s
+                                         :error nil))))
+      (with-input-from-string (in output)
+        (loop for line = (read-line in nil nil)
+              while line
+              when (and (> (length line) 5)
+                       (string= ".cert" (subseq line (- (length line) 5))))
+              do (push (pathname (subseq line 0 (- (length line) 5))) results))))
+    results))
+
+(defun generate-html-for-cert (book-path)
+  "Generate HTML for a book that has a .cert file.
+   Returns T if HTML was generated, NIL otherwise."
+  (let* ((book-str (namestring book-path))
+         (cert-file (concatenate 'string book-str ".cert"))
+         (html-file (concatenate 'string book-str ".html"))
+         (lisp-file (concatenate 'string book-str ".lisp")))
+    (cond
+      ((not (probe-file lisp-file))
+       (when *verbose*
+         (format t "  Skipping ~A (no .lisp file)~%" book-str))
+       nil)
+      ((not (html-needs-update-p cert-file html-file))
+       (when *verbose*
+         (format t "  ~A (up to date)~%" book-str))
+       nil)
+      (t
+       (format t "Generating HTML: ~A~%" book-str)
+       (handler-case
+         (let ((*verbose* nil))  ; Suppress duplicate message from write-book-html
+           (if (write-book-html book-path)
+               (progn
+                 (format t "  Generated: ~A~%" html-file)
+                 t)
+             (progn
+               (format t "  Skipped: ~A (could not read forms)~%" book-str)
+               nil)))
+         (error (e)
+           (format t "  Error: ~A~%" e)
+           nil))))))
+
+(defun process-html-only (args)
+  "Generate HTML for certified books specified in ARGS.
+   ARGS can be directories (searched recursively) or individual book paths.
+   If ARGS is empty, process current directory.
+   Returns count of HTML files generated."
+  (let ((items (if args args (list ".")))
+        (generated 0)
+        (skipped 0)
+        (errors 0))
+    (dolist (item items)
+      (let* ((item-str (if (pathnamep item) (namestring item) item))
+             (sys-str (namestring *system-books-dir*))
+             (_ (unless (char= (char sys-str (1- (length sys-str))) #\/)
+                  (setf sys-str (concatenate 'string sys-str "/"))))
+             (full-path (if (and (> (length item-str) 0)
+                                 (char= (char item-str 0) #\/))
+                            item-str
+                          (concatenate 'string sys-str item-str)))
+             ;; Check if this is a book (has .cert file) or a directory
+             (cert-file (concatenate 'string full-path ".cert"))
+             (is-book (probe-file cert-file))
+             (is-dir (and (not is-book) 
+                          (probe-file full-path)
+                          (sb-posix:s-isdir (sb-posix:stat-mode (sb-posix:stat full-path))))))
+        (declare (ignore _))
+        (cond
+          ;; Single book with .cert file
+          (is-book
+           (format t "~%Processing book: ~A~%" item)
+           (let ((result (generate-html-for-cert (pathname full-path))))
+             (cond
+               ((eq result t) (incf generated))
+               ((eq result nil) (incf skipped))
+               (t (incf errors)))))
+          ;; Directory - find all .cert files
+          (is-dir
+           (let ((cert-files (find-cert-files (pathname full-path))))
+             (format t "~%Found ~A certified books in ~A~%" (length cert-files) item)
+             (dolist (book-path cert-files)
+               (let ((result (generate-html-for-cert book-path)))
+                 (cond
+                   ((eq result t) (incf generated))
+                   ((eq result nil) (incf skipped))
+                   (t (incf errors)))))))
+          ;; Neither - try as directory anyway (might be relative)
+          (t
+           (let ((cert-files (find-cert-files (pathname full-path))))
+             (if cert-files
+                 (progn
+                   (format t "~%Found ~A certified books in ~A~%" (length cert-files) item)
+                   (dolist (book-path cert-files)
+                     (let ((result (generate-html-for-cert book-path)))
+                       (cond
+                         ((eq result t) (incf generated))
+                         ((eq result nil) (incf skipped))
+                         (t (incf errors))))))
+               (format t "~%No certified books found for: ~A~%" item)))))))
+    (format t "~%HTML generation complete: ~A generated, ~A up-to-date, ~A errors~%"
+            generated skipped errors)
+    generated))
+
+;;; ============================================================================
 ;;; Command-line interface
 ;;; ============================================================================
 
 (defun print-usage ()
   (format t "~%Usage: cert2 [options] book1 [book2 ...]~%")
+  (format t "       cert2 --html-only [directory]~%")
   (format t "~%Certify ACL2 books and generate HTML documentation.~%")
   (format t "~%Options:~%")
   (format t "  -h, --help      Show this help message~%")
   (format t "  -j N            Use N parallel jobs (not yet implemented)~%")
   (format t "  -v, --verbose   Verbose output~%")
   (format t "  --no-html       Skip HTML documentation generation~%")
+  (format t "  --html-only     Generate HTML only for books with .cert files~%")
+  (format t "                  (does not certify, just generates docs)~%")
   (format t "~%Books should be specified without the .lisp extension.~%")
   (format t "~%Example:~%")
-  (format t "  cert2 arithmetic/top std/lists/top~%~%"))
+  (format t "  cert2 arithmetic/top std/lists/top~%")
+  (format t "  cert2 --html-only arithmetic-2~%~%"))
 
 (defun parse-args-helper (args books options)
   "Helper for parse-args using recursion instead of loop."
@@ -812,6 +950,8 @@
         (parse-args-helper rest books (acons :verbose t options)))
        ((string= arg "--no-html")
         (parse-args-helper rest books (acons :no-html t options)))
+       ((string= arg "--html-only")
+        (parse-args-helper rest books (acons :html-only t options)))
        ((string= arg "-j")
         (if rest
             (parse-args-helper (cdr rest) books 
@@ -1002,9 +1142,13 @@
             (return-from build2-cli-fn 0))
           ;; Set verbose
           (setf *verbose* (cdr (assoc :verbose options)))
+          ;; Handle --html-only mode
+          (when (cdr (assoc :html-only options))
+            (process-html-only books)
+            (return-from build2-cli-fn 0))
           ;; Set HTML generation (on by default)
           (setf *generate-html* (not (cdr (assoc :no-html options))))
-          ;; Must have at least one book
+          ;; Must have at least one book for normal mode
           (when (null books)
             (format t "Error: No books specified.~%")
             (print-usage)
