@@ -294,37 +294,174 @@
 </body>
 </html>" (generate-javascript)))
 
-(defun make-sym-span (sym index local-file)
-  "Generate HTML span for a symbol reference.
+(defun get-definition-snippet (entry &optional (max-lines 5))
+  "Get the first MAX-LINES lines of a definition for tooltip.
+   Returns HTML-escaped string."
+  (declare (ignore entry max-lines))
+  ;; We'll compute this when generating form HTML and store it
+  nil)
+
+(defvar *definition-snippets* nil
+  "Hash table mapping symbol names to their definition snippets for tooltips.")
+
+(defun get-first-n-lines (str max-lines)
+  "Get first MAX-LINES lines from STR."
+  (handler-case
+    (let ((lines nil)
+          (start 0)
+          (count 0))
+      (loop while (and (< count max-lines) (< start (length str)))
+            for end = (position #\Newline str :start start)
+            do (push (subseq str start (or end (length str))) lines)
+               (incf count)
+               (setf start (if end (1+ end) (length str))))
+      (let ((result (nreverse lines)))
+        (if (and (< count (count #\Newline str)) (> (length result) 0))
+            (format nil "~{~A~^~%~}~%..." result)
+          (format nil "~{~A~^~%~}" result))))
+    (error () "")))
+
+(defun compute-definition-snippets (forms &optional (max-lines 5))
+  "Compute tooltip snippets for all definitions in FORMS.
+   Returns hash table: symbol-name -> snippet string."
+  (let ((snippets (make-hash-table :test 'equal)))
+    (dolist (form forms)
+      (handler-case
+        (let ((name (get-form-name form)))
+          (when name
+            (let* ((form-str (form-to-string form))
+                   (snippet (get-first-n-lines form-str max-lines)))
+              (setf (gethash (symbol-name name) snippets) snippet))))
+        (error () nil)))
+    snippets))
+
+(defun make-sym-link (sym index local-file)
+  "Generate HTML anchor for a symbol reference.
    INDEX is the xref-index, LOCAL-FILE is current file."
   (let* ((sym-name (symbol-name sym))
          (entry (gethash sym-name index))
          (target-file (and entry (xref-entry-file entry)))
+         (is-local-def (and entry (equal target-file local-file)))
          (is-external (and target-file (not (equal target-file local-file))))
+         (has-definition (not (null entry)))
+         (snippet (when *definition-snippets*
+                    (gethash sym-name *definition-snippets*)))
          (class (cond
-                  ((and entry (not is-external)) "sym-ref local-def")
-                  (is-external "sym-ref external")
-                  (t "sym-ref")))
-         (file-attr (if is-external
-                        (format nil " data-file=\"~A\"" 
-                                (html-escape target-file))
-                      "")))
-    (format nil "<span class=\"~A\" data-sym=\"~A\"~A>~A</span>"
-            class
-            (html-escape sym-name)
-            file-attr
-            (html-escape (string-downcase sym-name)))))
+                  (is-local-def "sym-link local-def")
+                  (is-external "sym-link external")
+                  (has-definition "sym-link")
+                  (t nil)))  ; No class for unknown symbols
+         (id-name (symbol-to-id sym)))
+    (if has-definition
+        ;; Symbol has a known definition - make it a link
+        (let* ((href (if is-external
+                        (concatenate 'string target-file ".html#def-" id-name)
+                      (concatenate 'string "#def-" id-name)))
+               (tooltip-attr (if snippet
+                                (format nil " title=\"~A\"" (html-escape snippet))
+                              "")))
+          (format nil "<a class=\"~A\" href=\"~A\" data-sym=\"~A\"~A>~A</a>"
+                  class
+                  (html-escape href)
+                  (html-escape sym-name)
+                  tooltip-attr
+                  (html-escape (string-downcase sym-name))))
+      ;; Unknown symbol - just output as text
+      (html-escape (string-downcase sym-name)))))
 
-(defun format-form-with-links (form index local-file)
-  "Format FORM as HTML with symbol links."
-  (let* ((form-str (form-to-string form))
-         (output (make-string-output-stream))
-         (syms-in-form (collect-symbols form)))
-    ;; Simple approach: escape the whole thing, then we'd need to parse
-    ;; For now, just escape and output
-    ;; A more sophisticated version would walk the form tree
-    (write-string (html-escape form-str) output)
-    (get-output-stream-string output)))
+(defun format-atom (atom index local-file)
+  "Format a single atom as HTML."
+  (handler-case
+    (cond
+      ;; Symbol that might have a definition
+      ((symbolp-acl2 atom)
+       (make-sym-link atom index local-file))
+      ;; Keyword
+      ((keywordp atom)
+       (format nil "<span class=\"keyword\">:~A</span>"
+               (html-escape (string-downcase (symbol-name atom)))))
+      ;; String
+      ((stringp atom)
+       (format nil "<span class=\"string\">\"~A\"</span>"
+               (html-escape atom)))
+      ;; Number
+      ((numberp atom)
+       (format nil "<span class=\"number\">~A</span>" atom))
+      ;; Character
+      ((characterp atom)
+       (format nil "#\\~A" (html-escape (string atom))))
+      ;; Nil
+      ((null atom) "nil")
+      ;; Anything else
+      (t (html-escape (prin1-to-string atom))))
+    (error (e)
+      (declare (ignore e))
+      "&lt;unprintable&gt;")))
+
+(defun format-form-with-links-internal (form index local-file &optional (indent 0) (in-list nil))
+  "Internal implementation of format-form-with-links."
+  (cond
+    ;; Nil
+    ((null form)
+     (if in-list "nil" "()"))
+    ;; Atom
+    ((atom form)
+     (format-atom form index local-file))
+    ;; Quote shorthand
+    ((and (consp form) (eq (car form) 'quote) (cdr form) (null (cddr form)))
+     (concatenate 'string "'" (format-form-with-links-internal (cadr form) index local-file indent t)))
+    ;; Backquote shorthand (quasiquote)
+    ((and (consp form) (member (car form) '(acl2::backquote sb-int:quasiquote)))
+     (concatenate 'string "`" (format-form-with-links-internal (cadr form) index local-file indent t)))
+    ;; Comma (unquote)
+    ((and (consp form) (member (car form) '(acl2::comma sb-impl::comma)))
+     (concatenate 'string "," (format-form-with-links-internal (cadr form) index local-file indent t)))
+    ;; List
+    ((consp form)
+     (with-output-to-string (out)
+       (write-char #\( out)
+       ;; First element
+       (write-string (format-form-with-links-internal (car form) index local-file (+ indent 1) t) out)
+       ;; Rest of elements
+       (let ((rest (cdr form))
+             (new-indent (+ indent 2))
+             (elem-count 1))
+         ;; Determine if we should use multi-line format
+         (let* ((form-str (handler-case (form-to-string form) (error () "")))
+                (form-len (length form-str))
+                (multi-line (or (> form-len 60)
+                               (position #\Newline form-str))))
+           (loop while rest do
+             (cond
+               ;; Dotted pair ending
+               ((atom rest)
+                (write-string " . " out)
+                (write-string (format-form-with-links-internal rest index local-file new-indent t) out)
+                (setf rest nil))
+               ;; Normal list element
+               (t
+                (incf elem-count)
+                (if (and multi-line (> elem-count 1))
+                    (format out "~%~A" (make-string new-indent :initial-element #\Space))
+                  (write-char #\Space out))
+                (write-string (format-form-with-links-internal (car rest) index local-file new-indent t) out)
+                (setf rest (cdr rest)))))))
+       (write-char #\) out)))
+    ;; Fallback
+    (t (handler-case (html-escape (prin1-to-string form)) (error () "&lt;unprintable&gt;")))))
+
+(defun format-form-with-links (form index local-file &optional (indent 0) (in-list nil))
+  "Format FORM as HTML with hyperlinked symbols.
+   INDEX is the xref-index, LOCAL-FILE is the current file.
+   INDENT is the current indentation level."
+  (handler-case
+    (format-form-with-links-internal form index local-file indent in-list)
+    (error ()
+      ;; Fallback to simple escaped form
+      (handler-case
+        (html-escape (form-to-string form))
+        (error ()
+          "&lt;error formatting form&gt;")))))
 
 (defun generate-form-html (form index local-file form-idx)
   "Generate HTML for a single FORM."
@@ -342,7 +479,8 @@
                      (mapcar #'symbol-name (xref-entry-used-by entry))
                     nil))
          (parts (and entry (xref-entry-parts entry)))
-         (form-str (html-escape (form-to-string form))))
+         ;; Use format-form-with-links instead of html-escape
+         (form-str (format-form-with-links form index local-file 0 nil)))
     (with-output-to-string (out)
       ;; Form block with RDFa and data attributes
       (format out "<div class=\"form-block ~A\" id=\"~A\"" type-str id)
@@ -465,7 +603,9 @@
   (let* ((book-str (namestring book-path))
          (book-name (car (last (pathname-directory book-path))))
          (relative-path (enough-namestring book-path *system-books-dir*))
-         (index (build-xref-index forms relative-path)))
+         (index (build-xref-index forms relative-path))
+         ;; Compute definition snippets for tooltips
+         (*definition-snippets* (compute-definition-snippets forms 5)))
     (with-output-to-string (out)
       (write-string (generate-html-header 
                      (or (pathname-name book-path) book-name)

@@ -56,6 +56,15 @@ body {
 .form-block.hidden { display: none; }
 .form-block.dimmed { opacity: 0.3; }
 
+.form-block.highlight {
+  animation: highlight-pulse 2s ease-out;
+}
+
+@keyframes highlight-pulse {
+  0% { background: var(--highlight); box-shadow: 0 0 20px var(--link); }
+  100% { background: rgba(49, 50, 68, 0.5); box-shadow: none; }
+}
+
 .form-header {
   display: flex;
   justify-content: space-between;
@@ -99,6 +108,48 @@ pre.code {
 
 .sym-ref.local-def { color: var(--function); font-weight: bold; }
 .sym-ref.external { color: var(--type); }
+
+/* Symbol links (clickable hyperlinks) */
+.sym-link {
+  color: var(--link);
+  text-decoration: none;
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+}
+
+.sym-link:hover {
+  background: var(--highlight);
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+.sym-link.local-def {
+  color: var(--function);
+  font-weight: bold;
+}
+
+.sym-link.external {
+  color: var(--type);
+}
+
+/* Tooltips using title attribute with custom styling */
+.sym-link[title] {
+  /* Browser will show title on hover */
+}
+
+/* Syntax highlighting in code blocks */
+.keyword {
+  color: var(--keyword);
+}
+
+.string {
+  color: var(--string);
+}
+
+.number {
+  color: #fab387; /* Catppuccin peach */
+}
 
 /* Part buttons for defthm */
 .part-buttons {

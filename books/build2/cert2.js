@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Clear filter button
   document.querySelector('.clear-filter').addEventListener('click', clearFilter);
   
-  // Symbol references
+  // Symbol references (old span-based refs)
   document.querySelectorAll('.sym-ref').forEach(ref => {
     ref.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -151,10 +151,44 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
   
+  // Symbol links (new anchor-based links)
+  // These use standard <a> tags so navigation happens automatically
+  // But we can enhance with highlighting on arrival
+  document.querySelectorAll('.sym-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      // If it's a local link, add highlight effect
+      const href = link.getAttribute('href');
+      if (href && href.startsWith('#')) {
+        // Local link - let default behavior happen, but add highlight
+        setTimeout(() => {
+          const targetId = href.substring(1);
+          const target = document.getElementById(targetId);
+          if (target) {
+            target.classList.add('highlight');
+            setTimeout(() => target.classList.remove('highlight'), 2000);
+          }
+        }, 100);
+      }
+      // For external links, default behavior handles navigation
+    });
+  });
+  
   // Form names (show what uses them)
   document.querySelectorAll('.form-name').forEach(name => {
     name.addEventListener('click', (e) => {
       handleNameClick(name.dataset.sym);
     });
   });
+  
+  // Handle hash navigation (when arriving at page with #anchor)
+  if (window.location.hash) {
+    const target = document.querySelector(window.location.hash);
+    if (target) {
+      setTimeout(() => {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        target.classList.add('highlight');
+        setTimeout(() => target.classList.remove('highlight'), 2000);
+      }, 200);
+    }
+  }
 });
