@@ -86,6 +86,15 @@ The system proves several important properties:
 ./cert2 -n mybook.lisp
 ```
 
+```bash
+cd $ACL2_SYSTEM_BOOKS
+./build2/cert2 --raw /workspaces/acl2
+find . -name "*.cert" -type f | while read cert; do \
+  base="${cert%.cert}";   if [ -f "$base.html" ]; then     rm -f "$base.html";   fi; \
+done
+build2/cert2 --html-only .
+```
+
 ## Status
 
 **Phase 1**: Core certification system
