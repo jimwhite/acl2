@@ -197,6 +197,67 @@ placeholder that should use proper pretty-printing in production.</p>"
     acc))
 
 ;;;============================================================================
+;;; Form to JSON-LD Conversion
+;;;============================================================================
+
+(define get-form-name ((form consp))
+  :returns (name stringp :rule-classes :type-prescription)
+  :short "Extract the defined name from a form (second element, typically)."
+  (b* ((rest (cdr form))
+       ((unless (consp rest)) "")
+       (second (car rest)))
+    (cond ((symbolp second) (symbol-name second))
+          ((stringp second) second)  ; for include-book
+          (t ""))))
+
+(define form-to-jsonld ((form consp) (book-name stringp))
+  :returns (jform jsonld-form-p)
+  :short "Convert an ACL2 form to a JSON-LD form structure."
+  :guard-hints (("Goal" :use ((:instance return-type-of-classify-form-type
+                                         (form-car (car form))))))
+  (b* ((form-car (car form))
+       (type-kw (if (symbolp form-car)
+                    (classify-form-type form-car)
+                  nil))
+       (jsonld-type (form-type-to-jsonld-type type-kw))
+       (name (get-form-name form))
+       (id (str::cat book-name "#" name))
+       ;; Collect referenced symbols
+       (syms (collect-symbols-from-form form nil))
+       (refs (symbols-to-string-list syms))
+       ;; For now, store the whole form as source (placeholder)
+       (source-str "(source)"))
+    (make-jsonld-form :id id
+                      :type jsonld-type
+                      :name name
+                      :source-form source-str
+                      :properties nil
+                      :references refs)))
+
+;;;============================================================================
+;;; JSON-LD Serialization using bridge::json-encode
+;;;============================================================================
+
+;; Use the centaur/bridge library for JSON encoding
+(include-book "centaur/bridge/to-json" :dir :system)
+
+(define jsonld-form-to-alist ((jform jsonld-form-p))
+  :returns (alist alistp)
+  :short "Convert a jsonld-form to an alist suitable for bridge::json-encode."
+  (b* (((jsonld-form jform) jform))
+    (list (cons "@context" "https://www.cs.utexas.edu/users/moore/acl2/vocab")
+          (cons "@id" jform.id)
+          (cons "@type" jform.type)
+          (cons "acl2:name" jform.name)
+          (cons "acl2:sourceForm" jform.source-form)
+          (cons "acl2:references" jform.references))))
+
+(define jsonld-form-to-json ((jform jsonld-form-p))
+  :returns (json stringp :rule-classes :type-prescription)
+  :short "Serialize a jsonld-form to a JSON-LD string."
+  (bridge::json-encode (jsonld-form-to-alist jform)))
+
+;;;============================================================================
 ;;; Tests (TDD)
 ;;;============================================================================
 

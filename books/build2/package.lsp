@@ -11,6 +11,9 @@
 ; Load centaur/fty package (provides FTY::*)
 (ld "centaur/fty/package.lsp" :dir :system)
 
+; Load centaur/bridge package (provides BRIDGE::json-encode)
+(ld "centaur/bridge/package.lsp" :dir :system)
+
 ; Define the BUILD2 package for our certification system.
 ; We import std's exports which include define, defaggregate, etc.
 
