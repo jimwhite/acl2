@@ -138,18 +138,22 @@
 (defun get-form-type (form)
   "Get the type of definition FORM."
   (when (consp form)
-    (case (car form)
-      ((acl2::defthm acl2::defthmd acl2::defrule) :theorem)
-      (acl2::defaxiom :axiom)
-      ((acl2::defun acl2::defund acl2::defun-sk) :function)
-      (acl2::defmacro :macro)
-      (acl2::defconst :constant)
-      (acl2::encapsulate :encapsulate)
-      (acl2::mutual-recursion :mutual-recursion)
-      (acl2::include-book :include-book)
-      (acl2::local :local)
-      (acl2::in-theory :in-theory)
-      (otherwise :other))))
+    (let ((name (and (symbolp (car form)) (symbol-name (car form)))))
+      (cond
+        ((member name '("DEFTHM" "DEFTHMD" "DEFRULE") :test #'string-equal) :theorem)
+        ((string-equal name "DEFAXIOM") :axiom)
+        ((member name '("DEFUN" "DEFUND" "DEFUN-SK" "DEFINE") :test #'string-equal) :function)
+        ((member name '("DEFMACRO" "DEFABBREV") :test #'string-equal) :macro)
+        ((string-equal name "DEFCONST") :constant)
+        ((member name '("ENCAPSULATE" "DEFSECTION") :test #'string-equal) :encapsulate)
+        ((string-equal name "MUTUAL-RECURSION") :mutual-recursion)
+        ((string-equal name "INCLUDE-BOOK") :include-book)
+        ((string-equal name "LOCAL") :local)
+        ((string-equal name "IN-THEORY") :in-theory)
+        ((member name '("DEFPROD" "DEFTAGSUM" "DEFLIST" "DEFALIST" "DEFOPTION"
+                        "DEFTYPES" "DEFFLEXSUM" "FTY::DEFPROD" "FTY::DEFTAGSUM"
+                        "FTY::DEFLIST" "FTY::DEFALIST") :test #'string-equal) :fty-type)
+        (t :other)))))
 
 ;;; ============================================================================
 ;;; HTML escaping and formatting
@@ -422,8 +426,11 @@
                         (format nil "~A#~A" book-id name)
                         (format nil "~A#form-~A" book-id (or form-idx 0))))
            (refs (collect-symbols-json form))
+           ;; Print with *package* set to ACL2 so symbols read as ACL2::FOO
+           ;; print without package prefix (since they're home package is ACL2)
            (source-str (let ((*print-pretty* t)
-                             (*print-right-margin* 80))
+                             (*print-right-margin* 80)
+                             (*package* (find-package "ACL2")))
                          (format nil "~S" form))))
       (format nil "{
   \"@context\": ~A,
@@ -1196,10 +1203,17 @@
 ;;; ============================================================================
 
 (defun ensure-package-exists (name)
-  "Create package NAME if it doesn't exist. Returns the package."
+  "Create package NAME if it doesn't exist. Returns the package.
+   New packages use COMMON-LISP and import ACL2 exported symbols so that
+   ACL2 forms like DEFTHM, DEFUN, etc. are read with the correct package."
   (let ((name-str (string name)))
     (or (find-package name-str)
-        (make-package name-str :use '("COMMON-LISP")))))
+        (let ((pkg (make-package name-str :use '("COMMON-LISP"))))
+          ;; Import from *acl2-exports* (not do-external-symbols, which misses internal symbols)
+          (when (boundp 'acl2::*acl2-exports*)
+            (dolist (sym acl2::*acl2-exports*)
+              (ignore-errors (import sym pkg))))
+          pkg))))
 
 (defun read-forms-from-file (filename)
   "Read all Lisp forms from FILENAME using the standard reader.

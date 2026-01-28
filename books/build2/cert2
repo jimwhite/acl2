@@ -61,9 +61,11 @@ LISP_ARGS="$LISP_ARGS)"
 
 # Create the ACL2 script that runs in raw Lisp mode
 # We use :q to drop into raw Lisp, then load our code
+# Import ACL2 exported symbols (from *acl2-exports*) into BUILD2 so defthm, include-book etc. resolve to ACL2::*
 read -r -d '' ACL2_SCRIPT << 'ENDSCRIPT' || true
 :q
 (defpackage "BUILD2" (:use "COMMON-LISP"))
+(dolist (s acl2::*acl2-exports*) (ignore-errors (import s (find-package "BUILD2"))))
 (cl:load "SCRIPT_DIR/cert2.lsp")
 (let ((exit-code (build2::build2-cli-fn 'ARGS_PLACEHOLDER "ACL2_PATH" "BOOKS_DIR" "SOURCE_DIR")))
   (sb-ext:exit :code (or exit-code 1)))
