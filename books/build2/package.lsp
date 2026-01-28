@@ -8,6 +8,9 @@
 ; Load std's package definitions first (provides STD::*, STR::*, etc.)
 (ld "std/package.lsp" :dir :system)
 
+; Load centaur/fty package (provides FTY::*)
+(ld "centaur/fty/package.lsp" :dir :system)
+
 ; Define the BUILD2 package for our certification system.
 ; We import std's exports which include define, defaggregate, etc.
 
@@ -42,6 +45,8 @@
       include-book
       certify-book
       ld
+      ;; b* is in std but make sure it's available
+      b*
       )
     (union-eq *acl2-exports*
               *common-lisp-symbols-from-main-lisp-package*))))

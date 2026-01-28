@@ -1,0 +1,102 @@
+{
+  "@context": {
+    "@version": 1.1,
+    "@vocab": "https://www.cs.utexas.edu/users/moore/acl2/vocab#",
+    "acl2": "https://www.cs.utexas.edu/users/moore/acl2/vocab#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "schema": "https://schema.org/",
+    
+    "name": {
+      "@id": "acl2:name",
+      "@type": "xsd:string"
+    },
+    "sourceForm": {
+      "@id": "acl2:sourceForm",
+      "@type": "xsd:string"
+    },
+    "absoluteEventNumber": {
+      "@id": "acl2:absoluteEventNumber",
+      "@type": "xsd:integer"
+    },
+    "symbolClass": {
+      "@id": "acl2:symbolClass",
+      "@type": "xsd:string"
+    },
+    
+    "formals": {
+      "@id": "acl2:formals",
+      "@type": "xsd:string"
+    },
+    "body": {
+      "@id": "acl2:body",
+      "@type": "xsd:string"
+    },
+    "guard": {
+      "@id": "acl2:guard",
+      "@type": "xsd:string"
+    },
+    "stobjs-in": {
+      "@id": "acl2:stobjs-in",
+      "@type": "xsd:string"
+    },
+    "stobjs-out": {
+      "@id": "acl2:stobjs-out",
+      "@type": "xsd:string"
+    },
+    "recursivep": {
+      "@id": "acl2:recursivep",
+      "@type": "xsd:boolean"
+    },
+    "typePrescriptions": {
+      "@id": "acl2:typePrescriptions",
+      "@type": "xsd:string"
+    },
+    "constrainedp": {
+      "@id": "acl2:constrainedp",
+      "@type": "xsd:boolean"
+    },
+    
+    "term": {
+      "@id": "acl2:term",
+      "@type": "xsd:string"
+    },
+    "hints": {
+      "@id": "acl2:hints",
+      "@type": "xsd:string"
+    },
+    "ruleClasses": {
+      "@id": "acl2:ruleClasses",
+      "@type": "xsd:string"
+    },
+    "instructions": {
+      "@id": "acl2:instructions",
+      "@type": "xsd:string"
+    },
+    
+    "references": {
+      "@id": "acl2:references",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "referencedBy": {
+      "@id": "acl2:referencedBy",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    
+    "Defun": "acl2:Defun",
+    "Defthm": "acl2:Defthm",
+    "Defmacro": "acl2:Defmacro",
+    "Defconst": "acl2:Defconst",
+    "Defaxiom": "acl2:Defaxiom",
+    "Encapsulate": "acl2:Encapsulate",
+    "MutualRecursion": "acl2:MutualRecursion",
+    "IncludeBook": "acl2:IncludeBook",
+    "InTheory": "acl2:InTheory",
+    "Event": "acl2:Event",
+    
+    "programmingLanguage": "schema:programmingLanguage",
+    "codeRepository": "schema:codeRepository"
+  }
+}
