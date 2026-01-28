@@ -339,6 +339,134 @@
     index))
 
 ;;; ============================================================================
+;;; JSON-LD generation
+;;; ============================================================================
+
+(defvar *jsonld-context* "https://www.cs.utexas.edu/users/moore/acl2/vocab"
+  "JSON-LD @context URL for ACL2 vocabulary.")
+
+(defun json-escape-string (str)
+  "Escape a string for JSON output."
+  (with-output-to-string (out)
+    (loop for c across str do
+      (case c
+        (#\" (write-string "\\\"" out))
+        (#\\ (write-string "\\\\" out))
+        (#\Newline (write-string "\\n" out))
+        (#\Return (write-string "\\r" out))
+        (#\Tab (write-string "\\t" out))
+        (otherwise 
+         (if (< (char-code c) 32)
+             (format out "\\u~4,'0X" (char-code c))
+             (write-char c out)))))))
+
+(defun json-encode-string (str)
+  "Encode a string as a JSON string with quotes."
+  (format nil "\"~A\"" (json-escape-string str)))
+
+(defun json-encode-list (items)
+  "Encode a list as a JSON array of strings."
+  (format nil "[~{~A~^, ~}]" 
+          (mapcar #'json-encode-string items)))
+
+(defun classify-form-type-json (form-car)
+  "Return the JSON-LD @type for a form given its car symbol."
+  (let ((name (if (symbolp form-car) (symbol-name form-car) "")))
+    (cond
+      ((member name '("DEFUN" "DEFUND" "DEFUN-SK" "DEFINE") :test #'string-equal)
+       "acl2:Defun")
+      ((member name '("DEFTHM" "DEFTHMD" "DEFRULE") :test #'string-equal)
+       "acl2:Defthm")
+      ((string-equal name "DEFMACRO") "acl2:Defmacro")
+      ((string-equal name "DEFCONST") "acl2:Defconst")
+      ((string-equal name "DEFAXIOM") "acl2:Defaxiom")
+      ((string-equal name "ENCAPSULATE") "acl2:Encapsulate")
+      ((string-equal name "MUTUAL-RECURSION") "acl2:MutualRecursion")
+      ((string-equal name "INCLUDE-BOOK") "acl2:IncludeBook")
+      ((string-equal name "IN-THEORY") "acl2:InTheory")
+      ((string-equal name "LOCAL") "acl2:Local")
+      (t "acl2:Event"))))
+
+(defun extract-form-name-json (form)
+  "Extract the defined name from a form as a string."
+  (when (and (consp form) (cdr form))
+    (let ((second (cadr form)))
+      (cond
+        ((symbolp second) (symbol-name second))
+        ((stringp second) second)
+        (t nil)))))
+
+(defun collect-symbols-json (form &optional acc)
+  "Recursively collect symbol names from a form."
+  (cond
+    ((null form) acc)
+    ((and (symbolp form) (not (keywordp form)) form)
+     (let ((name (symbol-name form)))
+       (if (member name acc :test #'string-equal)
+           acc
+           (cons name acc))))
+    ((consp form)
+     (collect-symbols-json (cdr form)
+                           (collect-symbols-json (car form) acc)))
+    (t acc)))
+
+(defun form-to-jsonld (form book-id &optional form-idx)
+  "Convert a single FORM to a JSON-LD object string.
+   BOOK-ID is the book identifier (relative path without extension).
+   FORM-IDX is the form index for generating unique IDs."
+  (when (consp form)
+    (let* ((form-car (car form))
+           (jsonld-type (classify-form-type-json form-car))
+           (name (extract-form-name-json form))
+           (form-id (if name
+                        (format nil "~A#~A" book-id name)
+                        (format nil "~A#form-~A" book-id (or form-idx 0))))
+           (refs (collect-symbols-json form))
+           (source-str (let ((*print-pretty* t)
+                             (*print-right-margin* 80))
+                         (format nil "~S" form))))
+      (format nil "{
+  \"@context\": ~A,
+  \"@id\": ~A,
+  \"@type\": ~A,
+  \"acl2:name\": ~A,
+  \"acl2:sourceForm\": ~A,
+  \"acl2:references\": ~A
+}"
+              (json-encode-string *jsonld-context*)
+              (json-encode-string form-id)
+              (json-encode-string jsonld-type)
+              (json-encode-string (or name ""))
+              (json-encode-string source-str)
+              (json-encode-list refs)))))
+
+(defun generate-book-jsonld (forms book-path)
+  "Generate JSON-LD for an entire book from its FORMS.
+   Returns a JSON array containing all forms as JSON-LD objects."
+  (let* ((book-str (namestring book-path))
+         (book-name (pathname-name (pathname book-str)))
+         (base-dir (pathname (ensure-trailing-slash 
+                              (or *acl2-source-dir* *system-books-dir*))))
+         (relative-path (clean-relative-path (enough-namestring book-path base-dir)))
+         (book-id (format nil "~A" relative-path))
+         (jsonld-forms nil))
+    ;; Convert each form to JSON-LD
+    (loop for form in forms
+          for idx from 0
+          for jsonld = (form-to-jsonld form book-id idx)
+          when jsonld
+          do (push jsonld jsonld-forms))
+    ;; Return as a JSON-LD graph
+    (format nil "{
+  \"@context\": ~A,
+  \"@graph\": [
+~{    ~A~^,~%~}
+  ]
+}"
+            (json-encode-string *jsonld-context*)
+            (nreverse jsonld-forms))))
+
+;;; ============================================================================
 ;;; HTML generation - Template loading
 ;;; ============================================================================
 
@@ -377,8 +505,8 @@
       ;; Fallback: no JS if file not found
       "")))
 
-(defun generate-html-header (book-name relative-path)
-  "Generate HTML header for a book."
+(defun generate-html-header (book-name relative-path &optional jsonld-content)
+  "Generate HTML header for a book. If JSONLD-CONTENT is provided, embed it."
   (format nil "<!DOCTYPE html>
 <html lang=\"en\" vocab=\"http://schema.org/\" typeof=\"SoftwareSourceCode\">
 <head>
@@ -387,7 +515,7 @@
   <title>~A - ACL2 Book</title>
   <meta property=\"name\" content=\"~A\">
   <meta property=\"programmingLanguage\" content=\"ACL2\">
-  ~A
+  ~A~A
 </head>
 <body>
   <div class=\"controls-left\">
@@ -414,6 +542,9 @@
   <main property=\"text\">
 " (html-escape book-name) (html-escape book-name)
   (generate-css)
+  (if jsonld-content
+      (format nil "~%  <script type=\"application/ld+json\">~%~A~%  </script>" jsonld-content)
+      "")
   (html-escape book-name)
   (html-escape (pathname-name (pathname relative-path)))
   (html-escape relative-path)))
@@ -944,7 +1075,7 @@
 
 (defun generate-book-html (forms book-path)
   "Generate complete HTML for a book from its FORMS.
-   Returns HTML string."
+   Returns HTML string with embedded JSON-LD."
   (let* ((book-str (namestring book-path))
          (book-name (car (last (pathname-directory book-path))))
          ;; Use ACL2 source dir (repo root) as base for all relative paths
@@ -954,11 +1085,14 @@
          (relative-path (clean-relative-path (enough-namestring book-path base-dir)))
          (index (build-xref-index-with-includes forms relative-path book-path))
          ;; Compute definition snippets for tooltips
-         (*definition-snippets* (compute-definition-snippets forms 5)))
+         (*definition-snippets* (compute-definition-snippets forms 5))
+         ;; Generate JSON-LD for embedding
+         (jsonld-content (generate-book-jsonld forms book-path)))
     (with-output-to-string (out)
       (write-string (generate-html-header 
                      (or (pathname-name book-path) book-name)
-                     relative-path) out)
+                     relative-path
+                     jsonld-content) out)
       ;; Add includes section
       (let ((includes-html (generate-includes-section forms book-path)))
         (when includes-html
@@ -969,7 +1103,7 @@
       (write-string (generate-html-footer) out))))
 
 (defun write-book-html (book-path)
-  "Generate and write HTML documentation for BOOK-PATH."
+  "Generate and write HTML documentation (with embedded JSON-LD) for BOOK-PATH."
   (let* ((book-str (namestring book-path))
          (lisp-file (concatenate 'string book-str ".lisp"))
          (html-file (concatenate 'string book-str ".html"))
@@ -1034,7 +1168,7 @@
       t)))
 
 (defun write-book-html-to-output (book-path relative-path)
-  "Generate and write HTML documentation for BOOK-PATH to output directory.
+  "Generate and write HTML documentation (with embedded JSON-LD) for BOOK-PATH to output directory.
    Also copies the .lisp source file if *output-dir* is set.
    RELATIVE-PATH is the path relative to the repo root."
   (let* ((book-str (namestring book-path))
@@ -1043,19 +1177,19 @@
          (forms (read-forms-from-file lisp-file)))
     (when forms
       (let ((html (generate-book-html forms book-path)))
-        ;; Write HTML file
+        ;; Write HTML file (with embedded JSON-LD)
         (ensure-directory-exists (directory-namestring html-out))
         (with-open-file (out html-out :direction :output
                                       :if-exists :supersede
                                       :if-does-not-exist :create)
           (write-string html out))
-        ;; Copy .lisp source if using output dir
-        (when *output-dir*
-          (let ((lisp-out (compute-output-path book-path relative-path ".lisp")))
-            (copy-file-if-newer lisp-file lisp-out)))
         (when *verbose*
-          (format t "  Generated: ~A~%" html-out))
-        t))))
+          (format t "  Generated: ~A~%" html-out)))
+      ;; Copy .lisp source if using output dir
+      (when *output-dir*
+        (let ((lisp-out (compute-output-path book-path relative-path ".lisp")))
+          (copy-file-if-newer lisp-file lisp-out)))
+      t)))
 
 ;;; ============================================================================
 ;;; Dependency scanning using proper Lisp reader
@@ -1212,7 +1346,7 @@
     results))
 
 (defun generate-html-for-cert (book-path)
-  "Generate HTML for a book that has a .cert file.
+  "Generate HTML (with embedded JSON-LD) for a book that has a .cert file.
    Returns T if HTML was generated, NIL otherwise."
   (let* ((book-str (namestring book-path))
          (cert-file (concatenate 'string book-str ".cert"))
