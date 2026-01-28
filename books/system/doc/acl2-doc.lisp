@@ -109287,6 +109287,10 @@ it."
  cleaned up and put in sync.  Thanks to Eric Smith and Grant Jurgensen for
  communication that led to these improvements.</p>
 
+ <p>ACL2 now checks that the value of keyword @(':OTF-FLG') is @('T') or
+ @('NIL'), and causes an error if not.  Thanks to Eric Smith for suggesting
+ that we consider this change.</p>
+
  <h3>New Features</h3>
 
  <p>The new function symbol @('strict-table-guard') returns its single argument
@@ -113364,12 +113368,13 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
  Fog&rdquo; and complete @(see waterfall) processing before starting any proof
  by induction.</p>
 
- <p>The default value for @(':otf-flg') is @('nil') except during processing of
- @(tsee defun) events, where the default is @('t') for both termination and
- @(see guard) proofs (see @(see defun)).  Note that the default for
- @(':otf-flg') is thus @('t') for processing @(tsee verify-termination) events,
- since they abbreviate @('defun') events.  However, the default for
- @(':otf-flg') is @('nil') for processing @(tsee verify-guards) events.</p>
+ <p>The value for @(':otf-flg') must be @('t') or @('nil').  The default is
+ @('nil') except during processing of @(tsee defun) events, for which the
+ default is @('t') for both termination and @(see guard) proofs (see @(see
+ defun)).  Note that the default for @(':otf-flg') is thus @('t') for
+ processing @(tsee verify-termination) events, since they abbreviate @('defun')
+ events.  However, the default for @(':otf-flg') is @('nil') for processing
+ @(tsee verify-guards) events.</p>
 
  <h3>Further Explanation</h3>
 
