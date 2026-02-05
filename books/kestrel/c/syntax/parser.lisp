@@ -1930,7 +1930,6 @@
           (b* ((parstate (if token (unread-token parstate) parstate))) ; expr
             (retok expr span parstate)))
          ;; expr ?
-
          ((erp token2 & parstate) (read-token parstate)))
       (cond
        ;; If token2 is a colon and GCC/Clang extensions are enabled,
@@ -11966,7 +11965,8 @@
                     nil
                   (cw "Parsed ~x0/~x1 files.~%" len-tunitmap len-filemap)))
             nil)))
-    (retok (transunit-ensemble tunitmap)))
+    (retok (make-transunit-ensemble :units tunitmap
+                                    :info nil)))
 
   :prepwork
   ((define parse-fileset-loop ((filemap filepath-filedata-mapp)

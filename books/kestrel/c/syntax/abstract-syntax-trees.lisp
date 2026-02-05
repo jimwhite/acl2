@@ -1886,8 +1886,8 @@
     (:cast/logand-ambig ((type/arg1 amb-expr/tyname)
                          (inc/dec inc/dec-op-list)
                          (arg/arg2 expr)))
-    (:stmt ((stmt comp-stmt)))
     ;; GCC extensions:
+    (:stmt ((stmt comp-stmt)))
     (:tycompat ((type1 tyname)
                 (type2 tyname)))
     (:offsetof ((type tyname)
@@ -3487,6 +3487,28 @@
     :induct t
     :enable remove1-equal))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption init-declor-option
+  init-declor
+  :short "Fixtype of optional initializer declarators."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Initializer declarators are defined in @(tsee init-declor)."))
+  :pred init-declor-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::defoption declon-option
+  declon
+  :short "Fixtype of optional declarations."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Declarations are defined in @(tsee declon)."))
+  :pred declon-optionp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::deftagsum expr/tyname
@@ -3725,6 +3747,7 @@
      The notion of file set as formalized here will still apply to that case,
      with some elements of the ensembles
      that may be headers instead of source files."))
-  ((units filepath-transunit-map))
+  ((units filepath-transunit-map)
+   (info any))
   :pred transunit-ensemblep
   :layout :fulltree)
