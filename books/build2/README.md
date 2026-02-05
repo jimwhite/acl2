@@ -110,6 +110,11 @@ The output directory will contain:
 - `.lisp` source files (copied for reference)
 - Preserved directory structure matching the source layout
 
+
+source ~/.cargo/env
+find "$ACL2_SYSTEM_BOOKS"/tau/bounders -name '*.lisp' \
+  -exec sh -c 'parinfer-rust -l lisp --lisp-block-comments -m paren < "$1" > "$1.tmp" && mv "$1.tmp" "$1"' _ {} \;
+
 ## Status
 
 **Phase 1**: Core certification system
