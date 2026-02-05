@@ -20,8 +20,8 @@
         "JUPYTER_PORT": "8888",
         "RESTARTABLE": "yes",
         "ACL2_LISP": "sbcl",
-        "ACL2": "/workspaces/acl2/saved_acl2",
-        "ACL2_HOME": "/workspaces/acl2",
-        "ACL2_SYSTEM_BOOKS": "/workspaces/acl2/books"
+        "ACL2": "${containerWorkspaceFolder}/saved_acl2",
+        "ACL2_HOME": "${containerWorkspaceFolder}",
+        "ACL2_SYSTEM_BOOKS": "${containerWorkspaceFolder}/books"
     }
 }
