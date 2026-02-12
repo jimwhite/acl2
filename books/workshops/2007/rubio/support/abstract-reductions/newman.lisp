@@ -399,9 +399,9 @@
 
 ;;; In the sequel, we build a collection of rules to prove these two goals.
 
-;;; ············································································
+;;; ............................................................................
 ;;; 3.2.1 Removing initial and final common parts
-;;; ············································································
+;;; ............................................................................
 
 
 (local
@@ -474,9 +474,9 @@
 
 
 
-;;; ············································································
+;;; ............................................................................
 ;;; 3.2.2 Removing the first element of the local peak
-;;; ············································································
+;;; ............................................................................
 
 ;;; First, let's prove that the local peak and the transformed are
 ;;; proofs with the same endpoints, so their proof measures have the
@@ -611,13 +611,13 @@
 ;;;         (CDR (PROOF-MEASURE (TRANSFORM-LOCAL-PEAK (LOCAL-PEAK P))))))).
 
 
-;;; ············································································
+;;; ............................................................................
 ;;; 3.2.3 An explicit reference to the peak-element
-;;; ············································································
+;;; ............................................................................
 
 
 ;;; Definition and properties of peak-element
-;;; ·········································
+;;; .........................................
 
 ;;; See the definition in abstract-proofs.lisp
 
@@ -675,13 +675,13 @@
 ;;;           (CDR (PROOF-MEASURE (TRANSFORM-LOCAL-PEAK (LOCAL-PEAK P))))))).
 
 
-;;; ············································································
+;;; ............................................................................
 ;;; 3.2.4 The peak element is bigger than any element of
 ;;; (transform-local-peak (local-peak p))
-;;; ············································································
+;;; ............................................................................
 
 ;;; Definition of being bigger (w.r.t rel) than every element of a list
-;;; ···································································
+;;; ...................................................................
 
 (local
  (defun rel-bigger-than-list (x l)
@@ -693,7 +693,7 @@
 ;;; Conditions assuring that an element m is rel-bigger-than-list than
 ;;; the elements of the proof-measure of a proof, when the proof is,
 ;;; respectively, steps-up or steps-down:
-;;; ···································································
+;;; ...................................................................
 
 ;;; A previous lemma: transitivity of rel is needed here
 
@@ -737,7 +737,7 @@
 ;;; (transform-local-peak (local-peak p)) in two proofs: the proof
 ;;; before the valley (steps-up) and the proof after the valley
 ;;; (steps-down). The following lemmas are needed for that purpose.
-;;; ····································································
+;;; ....................................................................
 
 ;;; If p is a proof, so they are the proofs after and before the
 ;;; valley.
@@ -766,7 +766,7 @@
 
 
 ;;; The transformed proof is a valley
-;;; ·································
+;;; .................................
 
 (local
  (defthm local-peak-local-peak-p
@@ -791,7 +791,7 @@
 ;;; steps-up-proof-measure-w-f-v (and then prove that the peak-element
 ;;; is bigger than every element of the complexities of the
 ;;; proof-after-valley and the proof-before-valley, respectively.
-;;; ····································································
+;;; ....................................................................
 
 
 
@@ -818,7 +818,7 @@
 
 
 ;;; Some technical lemmas
-;;; ·····················
+;;; .....................
 
 (local
  (defthm consp-proof-after-proof-instance
@@ -834,7 +834,7 @@
 
 
 ;;; And finally, the intended lemma
-;;; ·······························
+;;; ...............................
 
 (local
  (defthm valley-rel-bigger-peak-lemma
@@ -847,9 +847,9 @@
                                     (transform-local-peak (local-peak p))))))))
 
 
-;;; ············································································
+;;; ............................................................................
 ;;; 3.2.5 Using valley-rel-bigger-peak-lemma to simplify the goals
-;;; ············································································
+;;; ............................................................................
 
 ;;; The two unresolved goals, as stated at the end of 3.2.3, can be
 ;;; simplified to t by using the previously proved
@@ -860,7 +860,7 @@
 ;;; following lemma (stating that the peak-element is not a member of
 ;;; the proof-meassure of the transformed proof),
 ;;; the calls to multiset-diff in the goals now disappear.
-;;; ···································································
+;;; ...................................................................
 
 (local
  (encapsulate
@@ -897,7 +897,7 @@
 ;;; in the unresolved goal above, is reduced to a call to
 ;;; rel-bigger-than-list (and then valley-rel-bigger-peak-lemma will be
 ;;; applied)
-;;; ···································································
+;;; ...................................................................
 
 
 (local
@@ -914,18 +914,18 @@
 ;;; With this two rules altogether with valley-rel-bigger-peak-lemma our
 ;;; unresolved goal becomes T, so we have:
 
-;;; ············································································
+;;; ............................................................................
 ;;; 3.2.6  The main lemma of this book
-;;; ············································································
+;;; ............................................................................
 
 (defthm transform-to-valley-admission
   (implies (exists-local-peak p)
 	   (mul-rel (proof-measure (replace-local-peak p))
 		    (proof-measure p))))
 
-;;; ············································································
+;;; ............................................................................
 ;;; 3.2.7  Some final technical events
-;;; ············································································
+;;; ............................................................................
 
 ;;; Needed in the admission proof of transform-to-valley
 
@@ -967,13 +967,13 @@
 ;;; 4.1 Some previous events
 ;;; ----------------------------------------------------------------------------
 
-;;; ·············································································
+;;; .............................................................................
 ;;; 4.1.1 Previous rules needed to show that (transform-to-valley p) is eqv. to p
-;;; ·············································································
+;;; .............................................................................
 
 
 ;;; We have to see that (replace-local-peak p) is equivalent to p
-;;; ·····························································
+;;; .............................................................
 
 ;;; An useful rule to deal with concatenation of proofs
 (local
@@ -1037,9 +1037,9 @@
 ;;; three pieces of p (before, at and after the peak), using the
 ;;; previous bridge lemma.
 
-;;; ·············································································
+;;; .............................................................................
 ;;; 4.1.2 A rule needed to show that (transform-to-valley p) is a valley
-;;; ·············································································
+;;; .............................................................................
 
 
 
@@ -1050,9 +1050,9 @@
    (implies (equiv-p x y p)
             (equal  (steps-valley p) (not (exists-local-peak p))))))
 
-;;; ·············································································
+;;; .............................................................................
 ;;; 4.1.3 If equiv-p, then steps-q
-;;; ·············································································
+;;; .............................................................................
 
 (local
  (defthm equiv-p-implies-stetps-q
@@ -1060,9 +1060,9 @@
 	    (steps-q p))
    :rule-classes :forward-chaining))
 
-;;; ·············································································
+;;; .............................................................................
 ;;; 4.1.4 Disabling the induction rule for equiv-p
-;;; ·············································································
+;;; .............................................................................
 
 
 (local (in-theory (disable equiv-p-induct)))
@@ -1079,7 +1079,7 @@
 
 
 ;;; It returns an equivalent proof
-;;; ······························
+;;; ..............................
 
 
 (defthm equiv-p-x-y-transform-to-valley
@@ -1090,7 +1090,7 @@
 
 
 ;;; It returns a valley proof
-;;; ·························
+;;; .........................
 
 
 (defthm valley-transform-to-valley
