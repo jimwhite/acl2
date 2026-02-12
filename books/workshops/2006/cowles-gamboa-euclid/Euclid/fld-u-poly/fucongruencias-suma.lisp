@@ -30,23 +30,23 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; Descripci&oacute;n:
 ;;;
-;;; Aquí se demuestran las congruencias de la igualdad de polinomios
+;;; Aqu&iacute; se demuestran las congruencias de la igualdad de polinomios
 ;;; con la suma. Las demostraciones son complejas debido a que
 ;;; necesitan reglas expansivas. Estas reglas son peligrosas, ya que
-;;; pueden producir fácilmente ciclos en el demostrador. Para
-;;; restringir su aplicación caben dos opciones:
+;;; pueden producir f&aacute;cilmente ciclos en el demostrador. Para
+;;; restringir su aplicaci&oacute;n caben dos opciones:
 ;;;
-;;; 1. Desactivarlas y usarlas explícitamente donde sea necesario. Una
+;;; 1. Desactivarlas y usarlas expl&iacute;citamente donde sea necesario. Una
 ;;; variante es no generar la regla en absoluto (es decir, introducir
-;;; el teorema con la clases de reglas vacía).
+;;; el teorema con la clases de reglas vac&iacute;a).
 ;;;
-;;; 2. Restringir su aplicación sintácticamente para prevenir
+;;; 2. Restringir su aplicaci&oacute;n sint&aacute;cticamente para prevenir
 ;;; expansiones en cadena. Esto se puede lograr graciasa syntaxp.
 ;;;
-;;; Elegimos la segunda opción porque se consigue un mayor grado de
-;;; automatización y hace a las demostraciones menos sensibles a los
+;;; Elegimos la segunda opci&oacute;n porque se consigue un mayor grado de
+;;; automatizaci&oacute;n y hace a las demostraciones menos sensibles a los
 ;;; cambios.
 ;;; ------------------------------------------------------------------
 #|
@@ -91,11 +91,11 @@ To certify this book, first, create a world with the following packages:
 ;;; Congruencia de la igualdad de polinomios con la suma
 ;;; ----------------------------------------------------
 
-;;; Segundo parámetro
+;;; Segundo par&aacute;metro
 
 ;;; NOTA:
 ;;;
-;;; Esta propiedad es expansiva; restringimos su aplicación sintácticamente
+;;; Esta propiedad es expansiva; restringimos su aplicaci&oacute;n sint&aacute;cticamente
 
 (defthm
   polinomiop-implies-true-listp
@@ -141,7 +141,7 @@ To certify this book, first, create a world with the following packages:
 	      (+ p q2)))
   :rule-classes :congruence)
 
-;;; Primer parámetro
+;;; Primer par&aacute;metro
 
 ;; (defcong = = (+ p q) 1
 ;;   :hints (("Goal"
@@ -165,7 +165,7 @@ To certify this book, first, create a world with the following packages:
 
 ;;; NOTA:
 ;;;
-;;; Esta propiedad es expansiva; restringimos su aplicación sintácticamente
+;;; Esta propiedad es expansiva; restringimos su aplicaci&oacute;n sint&aacute;cticamente
 
 (defthm |p + q = fn(p) + q|
   (implies (syntaxp (not (and (consp p) (eq (primero p) 'fn))))

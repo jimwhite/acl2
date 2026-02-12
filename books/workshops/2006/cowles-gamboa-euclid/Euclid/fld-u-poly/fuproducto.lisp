@@ -33,15 +33,15 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; Descripci&oacute;n:
 ;;;
 ;;; Desarrollo del producto externo de un monomio por un polinomio y
 ;;; del producto de polinomios. Las funciones se completan
 ;;; cuidadosamente, de lo contrario, no es posible establecer las
-;;; congruencias, ya que éstas no pueden contener hipótesis. Se
+;;; congruencias, ya que &eacute;stas no pueden contener hip&oacute;tesis. Se
 ;;; demuestra que los polinomios con el producto forman un monoide
 ;;; conmutativo y que el producto distribuye respecto de la suma,
-;;; completándose con esto la demostración de las propiedades del
+;;; complet&aacute;ndose con esto la demostraci&oacute;n de las propiedades del
 ;;; anillo de polinomios.
 ;;; ----------------------------------------------------------------
 #|
@@ -130,12 +130,12 @@ To certify this book, first, create a world with the following packages:
   (implies (polinomiop (double-rewrite p))
 	   (= (*-monomio (FUMON::identidad) p) p)))
 
-;;; Cancelación
+;;; Cancelaci&oacute;n
 
 ;;; NOTA:
 ;;;
-;;; Primero se demuestra sintácticamente, introduciendo la forma
-;;; normal. Luego se extiende a la igualdad semántica.
+;;; Primero se demuestra sint&aacute;cticamente, introduciendo la forma
+;;; normal. Luego se extiende a la igualdad sem&aacute;ntica.
 
 (defthm |m = 0 => fn(m *M p) =e 0|
   (implies (FUMON::nulop m)
@@ -163,7 +163,7 @@ To certify this book, first, create a world with the following packages:
 ;;; NOTA:
 ;;;
 ;;; Esta propiedad permite cambiar un producto externo por otro
-;;; más sencillo sobre monomios.
+;;; m&aacute;s sencillo sobre monomios.
 
 (defthm |m1 *M (m2 *M p) = (m1 * m2) *M p|
   (implies (and (monomiop (double-rewrite m1))
@@ -246,7 +246,7 @@ To certify this book, first, create a world with the following packages:
 (defthm |1 * p = p|
   (= (* (identidad) p) p))
 
-;;; Cancelación
+;;; Cancelaci&oacute;n
 
 (defthm |0 * p =e 0|
   (equal (* (nulo) p) (nulo)))
@@ -264,8 +264,8 @@ To certify this book, first, create a world with the following packages:
 
 ;;; NOTA:
 ;;;
-;;; La inducción apropiada es múltiple. Unas veces se requiere una
-;;; hipótesis de inducción sobre uno de los parámetros, otras veces
+;;; La inducci&oacute;n apropiada es m&uacute;ltiple. Unas veces se requiere una
+;;; hip&oacute;tesis de inducci&oacute;n sobre uno de los par&aacute;metros, otras veces
 ;;; sobre el otro y otras sobre ambos. Hemos de suministrar el
 ;;; esquema.
 

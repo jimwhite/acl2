@@ -25,7 +25,7 @@
 ;;; ===========================================================================
 
 ;;; This is the Ackermann function, classical definition:
-;;; ·····················································
+;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
 
 (defun ack (m n)
   (declare (xargs :measure (cons (+ (nfix m) 1) (nfix n))
@@ -44,7 +44,7 @@
 (verify-guards ack)
 
 ;;; Our goal is to define an iterative version of ack:
-;;; ··················································
+;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
 
 ; (defun ack-it-aux (s z)
 ;   (declare (xargs :mode :program))
@@ -136,7 +136,7 @@
 ;;;----------------------------------------------------------------------------
 
 ;;; Some lemmas needed to the admission of ack-it-aux
-;;; ·················································
+;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
 
 ;;; 1)
 
@@ -192,7 +192,7 @@
 
 
 ;;; At last, admission of ack-it-aux and definition of ack-it
-;;; ·························································
+;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
 
 (defun nn-integer-true-listp (s)
   (declare (xargs :guard t))

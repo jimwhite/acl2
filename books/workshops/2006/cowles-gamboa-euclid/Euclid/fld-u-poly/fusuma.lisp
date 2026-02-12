@@ -30,14 +30,14 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; Descripci&oacute;n:
 ;;;
 ;;; Desarrollo de la suma de polinomios definida simplemente como la
-;;; concatenación de las listas de monomios que los integran. Las
-;;; propiedades de la concatenación de listas permiten establecer la
+;;; concatenaci&oacute;n de las listas de monomios que los integran. Las
+;;; propiedades de la concatenaci&oacute;n de listas permiten establecer la
 ;;; base para realizar demostraciones de propiedades sobre los
-;;; polinomios más complicadas que incorporan la igualdad
-;;; semántica. Se demuestra que los polinomios con la operación de
+;;; polinomios m&aacute;s complicadas que incorporan la igualdad
+;;; sem&aacute;ntica. Se demuestra que los polinomios con la operaci&oacute;n de
 ;;; suma forman un monoide conmutativo.
 ;;; ----------------------------------------------------------------
 #|

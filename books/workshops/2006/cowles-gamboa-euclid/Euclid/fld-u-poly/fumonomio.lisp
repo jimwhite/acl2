@@ -23,19 +23,19 @@
 
 ;;  Based on
 ;;; ------------------------------------------------------------------
-;;; Monomios con coeficientes y términos abstractos
+;;; Monomios con coeficientes y t&eacute;rminos abstractos
 ;;;
 ;;; Autores:
 ;;;
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; Descripci&oacute;n:
 ;;;
-;;; Pares coeficiente-término. Se define una igualdad semántica, ya
+;;; Pares coeficiente-t&eacute;rmino. Se define una igualdad sem&aacute;ntica, ya
 ;;; que dos monomios con coeficiente nulo han de ser interpretados
-;;; como el mismo, aunque tengan distinto término. Orden de monomios
-;;; heredado de los términos.
+;;; como el mismo, aunque tengan distinto t&eacute;rmino. Orden de monomios
+;;; heredado de los t&eacute;rminos.
 ;;; ------------------------------------------------------------------
 #|
 To certify this book, first, create a world with the following packages:
@@ -131,7 +131,7 @@ To certify this book, first, create a world with the following packages:
 (defun nulop (a)
   (FLD::= (coeficiente a) (FLD::0_f)))
 
-;;; Neutro de la operación
+;;; Neutro de la operaci&oacute;n
 
 ;; (defun identidad ()
 ;;   (monomio (COE::identidad) (TER::uno)))
@@ -139,7 +139,7 @@ To certify this book, first, create a world with the following packages:
 (defun identidad ()
   (monomio (FLD::1_f) (FUTER::uno)))
 
-;;; Operación
+;;; Operaci&oacute;n
 
 ;; (defun * (a b)
 ;;   (monomio (COE::* (coeficiente a) (coeficiente b))
@@ -149,7 +149,7 @@ To certify this book, first, create a world with the following packages:
   (monomio (FLD::* (coeficiente a) (coeficiente b))
 	   (FUTER::* (termino a) (termino b))))
 
-;;; Igualdad semántica
+;;; Igualdad sem&aacute;ntica
 
 ;; (defun = (a b)
 ;;   (or (and (not (monomiop a)) (not (monomiop b)))
@@ -167,7 +167,7 @@ To certify this book, first, create a world with the following packages:
 	   (FLD::= (coeficiente a) (coeficiente b))
 	   (FUTER::= (termino a) (termino b)))))
 
-;;; Igualdad de los términos subyacentes
+;;; Igualdad de los t&eacute;rminos subyacentes
 
 (defmacro =T (a b)
   `(FUTER::= (termino ,a) (termino ,b)))
@@ -177,13 +177,13 @@ To certify this book, first, create a world with the following packages:
 (defmacro < (a b)
   `(FUTER::< (termino ,a) (termino ,b)))
 
-;;; Inmersión en los ordinales
+;;; Inmersi&oacute;n en los ordinales
 
 (defmacro monomio->ordinal (a)
   `(FUTER::termino->ordinal (termino ,a)))
 
 ;;; -----------------------
-;;; Teoría de las funciones
+;;; Teor&iacute;a de las funciones
 ;;; -----------------------
 
 (deftheory funciones
@@ -287,13 +287,13 @@ To certify this book, first, create a world with the following packages:
 	      (* x y2)))
   :rule-classes :congruence)
 
-;;; Conmutatividad de la operación
+;;; Conmutatividad de la operaci&oacute;n
 
 (defthm |a * b = b * a|
   (implies (and (monomiop a) (monomiop b))
 	   (= (* a b) (* b a))))
 
-;;; Asociatividad de la operación
+;;; Asociatividad de la operaci&oacute;n
 
 ;; (defthm |(a * b) * c = a * (b * c)|
 ;;   (implies (and (monomiop a) (monomiop b) (monomiop c))
@@ -307,21 +307,21 @@ To certify this book, first, create a world with the following packages:
   :hints (("Goal"
 	   :in-theory (disable (nulo) FLD::|a + b = b + a|))))
 
-;;; Neutro de la operación
+;;; Neutro de la operaci&oacute;n
 
 (defthm |1 * b = b|
   (implies (monomiop b)
 	   (= (* (identidad) b) b))
   :hints (("Goal" :in-theory (disable (identidad)))))
 
-;;; Cancelativo de la operación
+;;; Cancelativo de la operaci&oacute;n
 
 (defthm |a = 0 => a * b = 0|
   (implies (and (monomiop a) (monomiop b) (nulop a))
 	   (nulop (* a b)))
   :hints (("Goal" :in-theory (disable (nulo)))))
 
-;;; Coeficiente y término del constructor
+;;; Coeficiente y t&eacute;rmino del constructor
 
 ;; (defthm coeficiente-monomio
 ;;   (implies (and (coeficientep c) (terminop e))
@@ -339,14 +339,14 @@ To certify this book, first, create a world with the following packages:
   (implies (and (fdp (double-rewrite c)) (terminop e))
 	   (FUTER::= (termino (monomio c e)) e)))
 
-;;; Eliminación de destructores
+;;; Eliminaci&oacute;n de destructores
 
 (defthm monomio-coeficiente-termino
   (implies (monomiop m)
 	   (equal (monomio (coeficiente m) (termino m)) m))
   :rule-classes (:rewrite :elim))
 
-;;; Coeficiente y término de la operación
+;;; Coeficiente y t&eacute;rmino de la operaci&oacute;n
 
 ;; (defthm coeficiente-*
 ;;   (COE::= (coeficiente (* a b))
@@ -362,7 +362,7 @@ To certify this book, first, create a world with the following packages:
   (FUTER::= (termino (* a b))
 	    (FUTER::* (termino a) (termino b))))
 
-;;; Buena fundamentación
+;;; Buena fundamentaci&oacute;n
 
 (defthm buena-fundamentacion-<-M
   (and (implies (monomiop a)
@@ -437,7 +437,7 @@ To certify this book, first, create a world with the following packages:
   (monomio (FLD::+ (coeficiente a) (coeficiente b))
 	   (termino a)))
 
-;;; Negación
+;;; Negaci&oacute;n
 
 ;; (defun - (a)
 ;;   (monomio (COE::- (coeficiente a)) (termino a)))
@@ -467,7 +467,7 @@ To certify this book, first, create a world with the following packages:
   (implies (nulop a)
 	   (nulop (* b a))))
 
-;;; Complemento a la conmutatividad y la asociatividad de la operación
+;;; Complemento a la conmutatividad y la asociatividad de la operaci&oacute;n
 
 (defthm |a * (b * c) = b * (a * c)|
   (implies (and (monomiop a) (monomiop b) (monomiop c))
@@ -562,12 +562,12 @@ To certify this book, first, create a world with the following packages:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;; ++++++++++++++++++++++++++
-;;; + Barrera de abstracción +
+;;; + Barrera de abstracci&oacute;n +
 ;;; ++++++++++++++++++++++++++
 
 ;;; NOTA:
 ;;;
-;;; A partir de aquí se procederá por aplicación de las propiedades
+;;; A partir de aqu&iacute; se proceder&aacute; por aplicaci&oacute;n de las propiedades
 
 (in-theory (disable funciones))
 (in-theory (enable nulop (nulop) (:type-prescription nulop)))

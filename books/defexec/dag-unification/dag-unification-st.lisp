@@ -1,6 +1,6 @@
 ;;; ============================================================================
 ;;; dag-unification-st.lisp
-;;; Título: A dag based unification algorithm using stobjs
+;;; T&iacute;tulo: A dag based unification algorithm using stobjs
 ;;; ============================================================================
 
 #| To certify this book:
@@ -21,7 +21,7 @@
 
 ;;; ============================================================================
 ;;;
-;;; 0) Introducción
+;;; 0) Introducci&oacute;n
 ;;;
 ;;; ============================================================================
 
@@ -571,7 +571,7 @@
 
 ;;; Guard verification:
 
-;;; REPETIDOS ¿ LOS DEJO?
+;;; REPETIDOS &iquest; LOS DEJO?
 
 
 (local
@@ -1176,7 +1176,7 @@
 
 ;;; Guard verification
 
-;;; AVERIGUAR POR QUé ESTE TEOREMA TARDA TANTO!!!!!!!!
+;;; AVERIGUAR POR QU&eacute; ESTE TEOREMA TARDA TANTO!!!!!!!!
 
 
 ;;; I don't know why, but the following theory has an important

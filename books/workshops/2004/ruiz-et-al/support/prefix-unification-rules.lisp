@@ -1,6 +1,6 @@
 ;;; ============================================================================
 ;;; prefix-unification-rules.lisp
-;;; Título: Unification as transformation rules (using a prefix representation of terms)
+;;; T&iacute;tulo: Unification as transformation rules (using a prefix representation of terms)
 ;;; ============================================================================
 
 
@@ -20,7 +20,7 @@
 
 ;;; ============================================================================
 ;;;
-;;; 0) Introducción
+;;; 0) Introducci&oacute;n
 ;;;
 ;;; ============================================================================
 

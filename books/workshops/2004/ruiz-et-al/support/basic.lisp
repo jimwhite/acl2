@@ -753,7 +753,7 @@
 ;;;
 ;;;============================================================================
 
-;; Ya incluido en la versión 2-8
+;; Ya incluido en la versi&oacute;n 2-8
 ;; (defun natp (n)
 ;;   (declare (xargs :guard t))
 ;;   (and (integerp n)

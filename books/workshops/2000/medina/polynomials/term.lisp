@@ -4,7 +4,7 @@
 ;;; Natural recognizer
 ;;; ------------------
 
-;;; Similar to «integerp» macro.
+;;; Similar to &laquo;integerp&raquo; macro.
 
 (defmacro naturalp (x)
   `(and (integerp ,x) (COMMON-LISP::<= 0 ,x)))
@@ -13,7 +13,7 @@
 ;;; True list of naturals recognizer
 ;;; --------------------------------
 
-;;; Similar to «integer-listp» function.
+;;; Similar to &laquo;integer-listp&raquo; function.
 
 (defun natural-listp (l)
   (cond ((atom l)

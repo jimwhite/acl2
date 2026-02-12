@@ -1,6 +1,6 @@
 ;;;============================================================================
 ;;; dags.lisp
-;;; Título: Term dags in ACL2
+;;; T&iacute;tulo: Term dags in ACL2
 ;;;============================================================================
 
 #| To certify this book:
@@ -20,7 +20,7 @@
 
 ;;;============================================================================
 ;;;
-;;; 0) Introducción
+;;; 0) Introducci&oacute;n
 ;;;
 ;;;============================================================================
 
@@ -589,7 +589,7 @@
 	(not (dag-p-aux hs rp g)))))
 
 ;;; Finally, the soundness theorem:
-;;; ·······························
+;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
 
 (defthm dag-p-soundness
   (implies (not (dag-p g))
@@ -633,7 +633,7 @@
 
 
 ;;; The main lemma for completeness:
-;;; ································
+;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
 
 (local
  (defthm dag-p-aux-completeness-main-lemma
@@ -1680,7 +1680,7 @@
 
 
 ;;; RECALL: These two theorems would allow us to define functions like these:
-;;; ·········································································
+;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
 
 
 ; (defun occur-check-l (flg x h g)

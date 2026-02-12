@@ -1,6 +1,6 @@
 ;;;============================================================================
 ;;; q-dag-unification-st.lisp
-;;; Título: A quadratic unification algorithm using stobjs
+;;; T&iacute;tulo: A quadratic unification algorithm using stobjs
 ;;;============================================================================
 
 #| To be certified:
@@ -15,7 +15,7 @@
 
 ;;;============================================================================
 ;;;
-;;; 0) Introducción
+;;; 0) Introducci&oacute;n
 ;;;
 ;;;============================================================================
 
@@ -743,7 +743,7 @@
 
 ;;; Este disable es importante, puesto que todas las reglas anteriores
 ;;; (y las que siguen)
-;;; llevan nth en su lado izquierdo. Por tanto, sólo habilitaremos nth
+;;; llevan nth en su lado izquierdo. Por tanto, s&oacute;lo habilitaremos nth
 ;;; en caso de que sea estrictamente necesario.
 (local (in-theory (disable nth)))
 
@@ -1129,7 +1129,7 @@
 (in-theory (disable tbs-as-system-st solved-as-system-st))
 
 
-;; Este función es solo para evitarme escribir:
+;; Este funci&oacute;n es solo para evitarme escribir:
 
 (local
  (defun well-formed-dag-system-st-bis (S td)

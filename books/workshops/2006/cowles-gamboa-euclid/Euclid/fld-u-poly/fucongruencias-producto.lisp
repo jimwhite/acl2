@@ -30,9 +30,9 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; Descripci&oacute;n:
 ;;;
-;;; Demostración de las congruencias de la igualdad de polinomios con
+;;; Demostraci&oacute;n de las congruencias de la igualdad de polinomios con
 ;;; el producto externo y el producto.
 ;;; -----------------------------------------------------------------
 #|
@@ -74,7 +74,7 @@ To certify this book, first, create a world with the following packages:
 	      :load-compiled-file nil)
 
 ;;; --------------------------------------------------------
-;;; Éstas son las propiedades de "polinomio" que lo abstraen
+;;; &Eacute;stas son las propiedades de "polinomio" que lo abstraen
 ;;; --------------------------------------------------------
 
 (defthm |m +M p != 0|
@@ -92,7 +92,7 @@ To certify this book, first, create a world with the following packages:
 	   (equal (resto (+M m p)) p)))
 
 ;;; ++++++++++++++++++++++++++
-;;; + Barrera de abstracción +
+;;; + Barrera de abstracci&oacute;n +
 ;;; ++++++++++++++++++++++++++
 
 (in-theory (disable +M))
@@ -101,8 +101,8 @@ To certify this book, first, create a world with the following packages:
 ;;; Distributividad del producto externo respecto a la suma externa
 ;;; ---------------------------------------------------------------
 
-;;; Propiedades sintácticas de la suma de monomio y polinomio y la
-;;; normalización.
+;;; Propiedades sint&aacute;cticas de la suma de monomio y polinomio y la
+;;; normalizaci&oacute;n.
 
 ;; (defthm |fn(m +Mo fn(p)) = fn(m +Mo p)|
 ;;   (equal (fn (+-monomio m (fn p)))
@@ -124,7 +124,7 @@ To certify this book, first, create a world with the following packages:
   :hints (("Subgoal *1/8"
 	   :in-theory (enable +M))))
 
-;;; Este es un caso particular de la definición de "+-monomio".
+;;; Este es un caso particular de la definici&oacute;n de "+-monomio".
 
 (defthm |n +Mo p = p_p +M (n +Mo p_r)|
   (implies (and (monomiop (double-rewrite n))
@@ -135,9 +135,9 @@ To certify this book, first, create a world with the following packages:
 		  (+M (primero p) (+-monomio n (resto p)))))
   :hints (("Goal" :do-not '(generalize))))
 
-;;; Esta propiedad sintáctica establece la relación entre La suma de
+;;; Esta propiedad sint&aacute;ctica establece la relaci&oacute;n entre La suma de
 ;;; monomios y polinomios, el constructor de los polinomios y la
-;;; función de normalización.
+;;; funci&oacute;n de normalizaci&oacute;n.
 
 (defthm |m +Mo fn(p) = fn(m +M p)|
   (implies (and (monomiop (double-rewrite m))
@@ -150,14 +150,14 @@ To certify this book, first, create a world with the following packages:
 
 ;;; NOTA:
 ;;;
-;;; Este teorema es tremendamente complicado. Nótese que la igualdad a
-;;; la que apela es sintáctica. El problema es una explosión
-;;; combinatoria en el número de casos debido, principalmente, a la
-;;; gran cantidad de casos existente en la definición de
+;;; Este teorema es tremendamente complicado. N&oacute;tese que la igualdad a
+;;; la que apela es sint&aacute;ctica. El problema es una explosi&oacute;n
+;;; combinatoria en el n&uacute;mero de casos debido, principalmente, a la
+;;; gran cantidad de casos existente en la definici&oacute;n de
 ;;; "+-monomio". Por otro lado, no parece factible simplificar dicha
-;;; definición, ya que esto obligaría a añadir hipótesis a muchos
+;;; definici&oacute;n, ya que esto obligar&iacute;a a a&ntilde;adir hip&oacute;tesis a muchos
 ;;; teoremas que son necesarios para demostrar la congruencia
-;;; (recuérdese que las congruencias son incondicionales). La
+;;; (recu&eacute;rdese que las congruencias son incondicionales). La
 ;;; consecuencia es una prueba muy extensa, poco automatizada y muy
 ;;; sensible al entorno.
 
@@ -289,7 +289,7 @@ To certify this book, first, create a world with the following packages:
 ;;;
 ;;; En realidad, este es el teorema que realmente queremos demostrar
 ;;; pero, para ello, hemos necesitado el anterior. Se emplea en la
-;;; demostración de que "m *M p = m *M fn(p)", que permite establecer
+;;; demostraci&oacute;n de que "m *M p = m *M fn(p)", que permite establecer
 ;;; la congruencia con el producto externo.
 
 (in-theory (disable |fn(m *M (n +Mo p)) =P fn((m * n) +Mo (m *M p))|))
@@ -306,7 +306,7 @@ To certify this book, first, create a world with the following packages:
 ;; (in-theory (disable |fn(m *M (n +Mo p)) = fn((m * n) +Mo (m *M p))|))
 
 ;;; ++++++++++++++++++++++++++
-;;; + Barrera de abstracción +
+;;; + Barrera de abstracci&oacute;n +
 ;;; ++++++++++++++++++++++++++
 
 (in-theory (disable = (=)))
@@ -315,7 +315,7 @@ To certify this book, first, create a world with the following packages:
 ;;; Congruencias de la igualdad de polinomios con el producto externo
 ;;; -----------------------------------------------------------------
 
-;;; Primer parámetro
+;;; Primer par&aacute;metro
 
 ;; (defcong MON::= = (*-monomio m p) 1
 ;;   :hints (("Goal" :in-theory (enable MON::=))))
@@ -327,11 +327,11 @@ To certify this book, first, create a world with the following packages:
 	      (*-monomio m2 p)))
   :rule-classes :congruence)
 
-;;; Segundo parámetro
+;;; Segundo par&aacute;metro
 
 ;;; NOTA:
 ;;;
-;;; Esta propiedad es expansiva; restringimos su aplicación sintácticamente
+;;; Esta propiedad es expansiva; restringimos su aplicaci&oacute;n sint&aacute;cticamente
 
 (local
   (defthm |m +M p = m +Mo p|
@@ -383,7 +383,7 @@ To certify this book, first, create a world with the following packages:
 ;;; Congruencia de la igualdad de polinomios con el producto
 ;;; --------------------------------------------------------
 
-;;; Segundo parámetro
+;;; Segundo par&aacute;metro
 
 (defthm |p * fn(q) = p * q|
   (= (* p (fn q)) (* p q)))
@@ -396,7 +396,7 @@ To certify this book, first, create a world with the following packages:
 	      (* p q2)))
   :rule-classes :congruence)
 
-;;; Primer parámetro
+;;; Primer par&aacute;metro
 
 (defthm |fn(p) * q = p * q|
   (= (* (fn p) q) (* p q)))

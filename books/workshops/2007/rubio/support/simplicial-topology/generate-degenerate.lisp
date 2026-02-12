@@ -2,7 +2,7 @@
 ;;; An elementary example about simplicial topology
 ;;; Supporting material for the paper "Formalizing simplicial topology
 ;;; in ACL2"
-;;; Authors: J.L. Ruiz-Reina, J. Rubio, M. Andrés, L. Lambán
+;;; Authors: J.L. Ruiz-Reina, J. Rubio, M. Andr&eacute;s, L. Lamb&aacute;n
 ;;; Created: July, 2007
 ;;; Last modified: July 9th, 2007
 ;;; ==========================================================

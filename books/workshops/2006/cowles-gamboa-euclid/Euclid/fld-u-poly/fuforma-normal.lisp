@@ -30,16 +30,16 @@
 ;;; Inmaculada Medina Bulo
 ;;; Francisco Palomo Lozano
 ;;;
-;;; Descripción:
+;;; Descripci&oacute;n:
 ;;;
-;;; Desarrollo de la función de normalización que permite reducir la
-;;; comprobación de la igualdad semántica de dos polinomios a la de
-;;; una igualdad sintáctica de sus formas normales. Se define primero
+;;; Desarrollo de la funci&oacute;n de normalizaci&oacute;n que permite reducir la
+;;; comprobaci&oacute;n de la igualdad sem&aacute;ntica de dos polinomios a la de
+;;; una igualdad sint&aacute;ctica de sus formas normales. Se define primero
 ;;; una suma externa de un monomio con un polinomio ordenado, teniendo
-;;; en cuenta una posible cancelación. A partir de aquí se define la
-;;; forma normal y su relación de equivalencia inducida. Se demuestran
+;;; en cuenta una posible cancelaci&oacute;n. A partir de aqu&iacute; se define la
+;;; forma normal y su relaci&oacute;n de equivalencia inducida. Se demuestran
 ;;; algunas propiedades importantes como la idempotencia de la
-;;; normalización.
+;;; normalizaci&oacute;n.
 ;;; ------------------------------------------------------------------
 #|
 To certify this book, first, create a world with the following packages:
@@ -83,7 +83,7 @@ To certify this book, first, create a world with the following packages:
 ;;; Polinomios ordenados
 ;;; --------------------
 
-;;; Esta función permite averiguar si un monomio debe preceder al
+;;; Esta funci&oacute;n permite averiguar si un monomio debe preceder al
 ;;; monomio principal de un polinomio ordenado
 
 (defmacro termino-mayor-termino-principal (m p)
@@ -91,7 +91,7 @@ To certify this book, first, create a world with the following packages:
        (FUTER::< (termino (primero ,p)) (termino ,m))))
 
 ;;; Reconocedor de polinomios estrictamente ordenado mediante un orden
-;;; de términos decreciente y que no poseen monomios nulos
+;;; de t&eacute;rminos decreciente y que no poseen monomios nulos
 
 (defun ordenadop (p)
   (and (polinomiop p)
@@ -101,7 +101,7 @@ To certify this book, first, create a world with the following packages:
 		(ordenadop (resto p))))))
 
 ;;; ------------------------------------
-;;; Adición de un monomio y un polinomio
+;;; Adici&oacute;n de un monomio y un polinomio
 ;;; ------------------------------------
 
 ;;; Suma un monomio a un polinomio
@@ -125,7 +125,7 @@ To certify this book, first, create a world with the following packages:
 ;;; NOTA:
 ;;;
 ;;; Hay que garantizar (cosa que probaremos en breve) que si el
-;;; polinomio está normalizado, el resultado también.
+;;; polinomio est&aacute; normalizado, el resultado tambi&eacute;n.
 
 ;; (defun +-monomio (m p)
 ;;   (cond ((and (not (monomiop m)) (not (polinomiop p)))
@@ -404,18 +404,18 @@ To certify this book, first, create a world with the following packages:
 ;;; Forma normal
 ;;; ------------
 
-;;; Normalización de un polinomio meidante adición de monomios.
+;;; Normalizaci&oacute;n de un polinomio meidante adici&oacute;n de monomios.
 
 ;;; NOTA:
 ;;;
-;;; Este es un punto en el que en un futuro se podría trabajar para
-;;; mejorar la eficiencia de los algoritmos. Básicamente podemos
-;;; entender la normalización de un polinomio como un proceso de
-;;; ordenación (con algunas diferencias importantes) y, con éste
-;;; símil, el algoritmo que se presenta a continuación correspondería
-;;; con un método directo (inserción directa). Cabría la posibilidad
-;;; de adaptar algoritmos de ordenación más eficientes (los de Hoare y
-;;; Williams serían buenas opciones) para normalizar polinomios.
+;;; Este es un punto en el que en un futuro se podr&iacute;a trabajar para
+;;; mejorar la eficiencia de los algoritmos. B&aacute;sicamente podemos
+;;; entender la normalizaci&oacute;n de un polinomio como un proceso de
+;;; ordenaci&oacute;n (con algunas diferencias importantes) y, con &eacute;ste
+;;; s&iacute;mil, el algoritmo que se presenta a continuaci&oacute;n corresponder&iacute;a
+;;; con un m&eacute;todo directo (inserci&oacute;n directa). Cabr&iacute;a la posibilidad
+;;; de adaptar algoritmos de ordenaci&oacute;n m&aacute;s eficientes (los de Hoare y
+;;; Williams ser&iacute;an buenas opciones) para normalizar polinomios.
 
 (defun fn (p)
   (cond ((or (not (polinomiop p)) (nulop p))
@@ -433,7 +433,7 @@ To certify this book, first, create a world with the following packages:
 ;;;
 ;;; NOTA:
 ;;;
-;;; Un polinomio normalizado coincide sintácticamente con su forma
+;;; Un polinomio normalizado coincide sint&aacute;cticamente con su forma
 ;;; normal.
 
 (defmacro fnp (p)
@@ -445,22 +445,22 @@ To certify this book, first, create a world with the following packages:
   (ordenadop (fn p))
   :rule-classes (:type-prescription :rewrite))
 
-;;; Si un polinomio está ordenado entonces está en forma normal
+;;; Si un polinomio est&aacute; ordenado entonces est&aacute; en forma normal
 
 (defthm fn-ordenado
   (implies (ordenadop (double-rewrite p))
 	   (equal (fn p) p)))
 
-;;; Un polinomio está en forma normal si, y sólo si, está ordenado
+;;; Un polinomio est&aacute; en forma normal si, y s&oacute;lo si, est&aacute; ordenado
 
 ;;; NOTA:
 ;;;
-;;; Este teorema establece la corrección de la función de
-;;; normalización frente a la especificación dada por el hecho de que
+;;; Este teorema establece la correcci&oacute;n de la funci&oacute;n de
+;;; normalizaci&oacute;n frente a la especificaci&oacute;n dada por el hecho de que
 ;;; un polinomio en forma normal debe tener sus monomios ordenados
 ;;; decrecientemente y no puede poseer monomios nulos. Al ser la
-;;; ordenación estricta, se evita la posibilidad de que aparezcan
-;;; monomios con el mismo término.
+;;; ordenaci&oacute;n estricta, se evita la posibilidad de que aparezcan
+;;; monomios con el mismo t&eacute;rmino.
 
 (defthm fnp-iff-ordenadop
   (iff (fnp p) (ordenadop p)))
@@ -472,15 +472,15 @@ To certify this book, first, create a world with the following packages:
   (fnp (fn p)))
 
 ;;; ------------------
-;;; Igualdad semántica
+;;; Igualdad sem&aacute;ntica
 ;;; ------------------
 
-;;; Igualdad semántica
+;;; Igualdad sem&aacute;ntica
 
 ;;; NOTA:
 ;;;
-;;; Aquí radica una de las aplicaciones de la forma normal: permitir
-;;; comprobar si dos polinomios son iguales módulo formas normales.
+;;; Aqu&iacute; radica una de las aplicaciones de la forma normal: permitir
+;;; comprobar si dos polinomios son iguales m&oacute;dulo formas normales.
 
 ;; (defun = (p1 p2)
 ;;   (equal (fn p1) (fn p2)))
@@ -488,12 +488,12 @@ To certify this book, first, create a world with the following packages:
 (defun = (p1 p2)
   (=P (fn p1) (fn p2)))
 
-;;; La igualdad semántica es una relación de equivalencia
+;;; La igualdad sem&aacute;ntica es una relaci&oacute;n de equivalencia
 
 ;;; NOTA:
 ;;;
 ;;; Esto abre paso al establecimiento de las congruencias entre la
-;;; igualdad semántica y las operaciones.
+;;; igualdad sem&aacute;ntica y las operaciones.
 
 (defthm
   =-is-an-equivalence
@@ -558,7 +558,7 @@ To certify this book, first, create a world with the following packages:
 			   (FLD::a a) (FLD::b b)
 			   (FLD::c (coeficiente (primero p)))))))
 
-;; (defthm |¬(a + b) = 0 => a +Mo (b +Mo p) = (a + b) +Mo p|
+;; (defthm |&not;(a + b) = 0 => a +Mo (b +Mo p) = (a + b) +Mo p|
 ;;   (implies (and (COE::coeficientep a)
 ;; 		(COE::coeficientep b)
 ;; 		(TER::terminop te)
@@ -584,7 +584,7 @@ To certify this book, first, create a world with the following packages:
 ;;; polinomio
 ;;; -----------------------------------------------------------------
 
-;;; Primer parámetro
+;;; Primer par&aacute;metro
 
 ;; (defcong MON::= = (+M m p) 1
 ;;   :hints (("Goal" :in-theory (enable MON::=))))
@@ -596,7 +596,7 @@ To certify this book, first, create a world with the following packages:
 	      (+M m2 p)))
   :rule-classes :congruence)
 
-;;; Segundo parámetro
+;;; Segundo par&aacute;metro
 
 ;; (defcong = = (+M m p) 2)
 
@@ -624,7 +624,7 @@ To certify this book, first, create a world with the following packages:
 ;;; Congruencia de la igualdad de polinomios con la suma externa
 ;;; ------------------------------------------------------------
 
-;;; Primer parámetro
+;;; Primer par&aacute;metro
 
 ;; (defcong MON::= equal (+-monomio m p) 1
 ;;   :hints (("Goal" :in-theory (enable MON::=))))
@@ -640,14 +640,14 @@ To certify this book, first, create a world with the following packages:
 
 ;;; NOTA:
 ;;;
-;;; Esta propiedad es expansiva; restringimos su aplicación sintácticamente
+;;; Esta propiedad es expansiva; restringimos su aplicaci&oacute;n sint&aacute;cticamente
 
 (local
   (defthm +-monomio-fn
     (implies (syntaxp (not (and (consp p) (eq (primero p) 'fn))))
 	     (= (+-monomio m p) (+-monomio m (fn p))))))
 
-;;; Segundo parámetro
+;;; Segundo par&aacute;metro
 
 ;; (defcong = = (+-monomio m p) 2)
 
