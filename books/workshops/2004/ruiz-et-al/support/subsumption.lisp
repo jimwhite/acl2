@@ -287,7 +287,7 @@
 ;;; Most of these properties are obtained by functional instantiation.
 
 ;;; Soundness
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; .........
 
 (defthm subs-soundness
   (implies (subs t1 t2)
@@ -298,7 +298,7 @@
 
 
 ;;; Completeness
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; .............
 
 (defthm subs-completeness
   (implies (equal (instance t1 sigma) t2)
@@ -308,7 +308,7 @@
 	   (:instance match-mv-completeness (S (list (cons t1 t2)))))))
 
 ;;; Substitution-s-p (closure property)
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; ...................................
 
 
 (defthm matching-substitution-s-p
@@ -318,7 +318,7 @@
 	   (:instance match-mv-substitution-s-p (S (list (cons t1 t2)))))))
 
 ;;; Substitution-p (needed for guard verification)
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; ..............................................
 
 
 (defthm matching-substitution-p
@@ -409,7 +409,7 @@
    (second (pair-args l1 (apply-subst nil sigma l1)))))
 
 ;;; Soundness
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; .........
 
 
 (defthm subs-list-soundness
@@ -421,7 +421,7 @@
 
 
 ;;; Completeness
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; .............
 
 (defthm subs-list-completeness
   (implies (equal (apply-subst nil sigma l1) l2)
@@ -431,7 +431,7 @@
 	   (:instance match-mv-completeness (S (first (pair-args l1 l2)))))))
 
 ;;; Substitution-s-p (closure property)
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; ...................................
 
 
 (defthm matching-list-substitution-s-p
@@ -444,7 +444,7 @@
 
 
 ;;; Substitution-p (needed for guard verification)
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; ..............................................
 
 
 (defthm matching-list-substitution-p
@@ -498,7 +498,7 @@
 ;;; ----------------------------------------------------------------------------
 
 ;;;; Subsumption reflexive
-;;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;;; .....................
 
 (defthm subsumption-reflexive
    (subs t1 t1)
@@ -508,7 +508,7 @@
 
 
 ;;;; Subsumption transitive
-;;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;;; ......................
 
 
 (defthm subsumption-transitive
@@ -528,7 +528,7 @@
 ;;; ----------------------------------------------------------------------------
 
 ;;; An useful rule:
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; ...............
 
 (defthm subsumption-apply-subst
   (subs term (instance term sigma))
@@ -536,7 +536,7 @@
 				  (t1 term) (t2 (instance term sigma))))))
 
 ;;; Variables are minimum elements in this quasi-order
-;;; &middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;&middot;
+;;; ..................................................
 
 (defthm variable-minimum-subsumption
   (implies (variable-p x)
