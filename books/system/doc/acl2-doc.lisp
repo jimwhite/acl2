@@ -15313,15 +15313,13 @@ way to split up large ACL2 developments into separate modules."
  editor produces files using an encoding other than ISO-8859-1, at least if one
  uses non-standard characters.  In particular, the default Emacs buffer
  encoding may be utf-8.  If your file has non-standard characters, then in
- Emacs you can evaluate the form</p>
+ Emacs it may be helpful to evaluate the form</p>
 
  @({
   (setq save-buffer-coding-system 'iso-8859-1)
  })
 
- <p>before saving the buffer into a file.  This will happen automatically for
- users who load distributed file @('emacs-acl2.el') (from a suitable directory;
- see @(see emacs)) into their Emacs sessions.</p>
+ <p>before saving the buffer into a file.</p>
 
  <p>For an example of character encodings in action, see the community book
  @('books/misc/character-encoding-test.lisp').</p>")

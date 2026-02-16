@@ -1,3 +1,3 @@
-#include "guarded.h"
 
+#include "guarded.h"
 int x2 = 0;
