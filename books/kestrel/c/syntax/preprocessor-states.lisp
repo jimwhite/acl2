@@ -10,6 +10,7 @@
 
 (in-package "C$")
 
+(include-book "preprocessor-options")
 (include-book "preprocessor-lexemes")
 (include-book "macro-tables")
 (include-book "parser-states")
@@ -173,85 +174,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::deftagsum hg-state
-  :short "Fixtype of header guard states."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "Header guards are a common technique to avoid
-     including the same header (or file, in general) multiple times.
-     The file, call it @('FILE'), has a form like")
-   (xdoc::codeblock
-    "#ifndef FILE_H"
-    "#define FILE_H"
-    "..."
-    "#endif")
-   (xdoc::p
-    "When we preprocess a file, we check whether it has that form.
-     To recognize that form, we use a sort of finite state machine
-     that we make part of @(tsee ppstate).
-     Here we define the states of the state machine:")
-   (xdoc::ul
-    (xdoc::li
-     "The @(':initial') state is the one as we start preprocessing a file.
-      We stay in this state so long as we do not find any token
-      (i.e. just comments and white space).
-      In this state, we are waiting for a @('#ifndef').")
-    (xdoc::li
-     "If we encounter a @('#ifndef') in the @(':initial') state,
-      we transition to the @(':ifndef') state,
-      where we keep track of the identifier following the @('#ifndef').
-      Is we encounter anything else,
-      we transition to the @(':not') state,
-      meaning that the file does not have the header guard form.")
-    (xdoc::li
-     "If we encounter a @('#define') in the @(':ifndef') state,
-      with the same identifier (@('FILE_H') in the example above),
-      we transition to the @(':define') state.
-      If we encounter anything else, we transition to @(':not').")
-    (xdoc::li
-     "We stay in the @(':define') state
-      until we find the @('#endif') that matches the initial @('#ifndef'),
-      at which point we move to the @(':endif') state,
-      where we still keep track of the name.")
-    (xdoc::li
-     "If we find no other tokens (only comments and white space),
-      and we reach the end of the file,
-      we transition to the @(':eof') state.
-      This is a final state, in which we have established that
-      the file has the header guard form,
-      and we know the name of the header guard.
-      If instead there are more tokens,
-      we transition to the other final state,
-      namely the @(':not') state."))
-   (xdoc::p
-    "Here is a depiction of the states (except @(':not'))
-     with respect to the content of the file:")
-   (xdoc::codeblock
-    "... (no tokens)     :initial"
-    "#ifndef FILE_H      :ifndef(FILE_H)"
-    "#define FILE_H      :define(FILE_H)"
-    "...                 :define(FILE_H)"
-    "#endif              :endif(FILE_H)"
-    "... (no tokens)     :endif(FILE_H)"
-    "EOF                 :eof(FILE_H)")
-   (xdoc::p
-    "In the future, we may add support for equivalent forms like")
-   (xdoc::codeblock
-    "#if !defined(FILE_H)"
-    "#define FILE_H"
-    "..."
-    "#endif"))
-  (:initial ())
-  (:ifndef ((name ident)))
-  (:define ((name ident)))
-  (:endif ((name ident)))
-  (:eof ((name ident)))
-  (:not ())
-  :pred hg-statep)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (defsection ppstate
   :short "Fixtype of preprocessor states."
   :long
@@ -299,20 +221,13 @@
      "The preprocessor state also contains
       a macro table that consists of all the macros in scope.")
     (xdoc::li
-     "The preprocessor state also contains a header guard state:
-      see @(tsee hg-state).")
-    (xdoc::li
-     "The preprocessor state also contains a list of the lexemes
-      that are being produced as the output of preprocessing.
-      These are in reverse order, for more efficient extension.
-      These lexemes are split into four chunks,
-      as explained in @(tsee add-rev-lexeme).")
-    (xdoc::li
      "The preprocessor state also contains a flag saying whether
       @('#error') and @('#warning') directives should be ignored,
       i.e. treated as no-ops.
       This flag is set when files are re-preprocessed
-      in a fresh context as explained in @(see preservable-inclusions).")))
+      in a fresh context as explained in @(see preservable-inclusions).")
+    (xdoc::li
+     "The preprocessor state also contains the preprocessor options.")))
 
   ;; needed for DEFSTOBJ and reader/writer proofs:
 
@@ -340,18 +255,8 @@
             :initially 0)
       (macros :type (satisfies macro-tablep)
               :initially ,(macro-table nil nil))
-      (hg :type (satisfies hg-statep)
-          :initially ,(hg-state-initial))
-      (rev-lexemes1 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes2 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes3 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (rev-lexemes4 :type (satisfies plexeme-listp)
-                    :initially nil)
-      (ignore-err/warn :type (satisfies booleanp)
-                       :initially nil)
+      (options :type (satisfies ppoptionsp)
+               :initially ,(irr-ppoptions))
       (ienv :type (satisfies ienvp)
             :initially ,(irr-ienv))
       :renaming (;; field recognizers:
@@ -363,12 +268,7 @@
                  (lexmarksp raw-ppstate->lexmarks-p)
                  (sizep raw-ppstate->size-p)
                  (macrosp raw-ppstate->macros-p)
-                 (hgp raw-ppstate->hg-p)
-                 (rev-lexemes1p raw-ppstate->rev-lexemes1-p)
-                 (rev-lexemes2p raw-ppstate->rev-lexemes2-p)
-                 (rev-lexemes3p raw-ppstate->rev-lexemes3-p)
-                 (rev-lexemes4p raw-ppstate->rev-lexemes4-p)
-                 (ignore-err/warnp raw-ppstat->ignore-err/warn-p)
+                 (optionsp raw-ppstate->options-p)
                  (ienvp raw-ppstate->ienvp)
                  ;; field readers:
                  (bytes raw-ppstate->bytes)
@@ -380,12 +280,7 @@
                  (lexmarks raw-ppstate->lexmarks)
                  (size raw-ppstate->size)
                  (macros raw-ppstate->macros)
-                 (hg raw-ppstate->hg)
-                 (rev-lexemes1 raw-ppstate->rev-lexemes1)
-                 (rev-lexemes2 raw-ppstate->rev-lexemes2)
-                 (rev-lexemes3 raw-ppstate->rev-lexemes3)
-                 (rev-lexemes4 raw-ppstate->rev-lexemes4)
-                 (ignore-err/warn raw-ppstate->ignore-err/warn)
+                 (options raw-ppstate->options)
                  (ienv raw-ppstate->ienv)
                  ;; field writers:
                  (update-bytes raw-update-ppstate->bytes)
@@ -397,12 +292,7 @@
                  (update-lexmarks raw-update-ppstate->lexmarks)
                  (update-size raw-update-ppstate->size)
                  (update-macros raw-update-ppstate->macros)
-                 (update-hg raw-update-ppstate->hg)
-                 (update-rev-lexemes1 raw-update-ppstate->rev-lexemes1)
-                 (update-rev-lexemes2 raw-update-ppstate->rev-lexemes2)
-                 (update-rev-lexemes3 raw-update-ppstate->rev-lexemes3)
-                 (update-rev-lexemes4 raw-update-ppstate->rev-lexemes4)
-                 (update-ignore-err/warn raw-update-ppstate->ignore-err/warn)
+                 (update-options raw-update-ppstate->options)
                  (update-ienv raw-update-ppstate->ienv))))
 
   ;; fixer:
@@ -514,40 +404,10 @@
          :exec (raw-ppstate->macros ppstate))
     :inline t)
 
-  (define ppstate->hg (ppstate)
-    :returns (hg hg-statep)
-    (mbe :logic (non-exec (raw-ppstate->hg (ppstate-fix ppstate)))
-         :exec (raw-ppstate->hg ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes1 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes1 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes1 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes2 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes2 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes2 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes3 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes3 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes3 ppstate))
-    :inline t)
-
-  (define ppstate->rev-lexemes4 (ppstate)
-    :returns (rev-lexemes plexeme-listp)
-    (mbe :logic (non-exec (raw-ppstate->rev-lexemes4 (ppstate-fix ppstate)))
-         :exec (raw-ppstate->rev-lexemes4 ppstate))
-    :inline t)
-
-  (define ppstate->ignore-err/warn (ppstate)
-    :returns (ignore-err/warn booleanp)
-    (mbe :logic (non-exec (raw-ppstate->ignore-err/warn (ppstate-fix ppstate)))
-         :exec (raw-ppstate->ignore-err/warn ppstate))
+  (define ppstate->options (ppstate)
+    :returns (options ppoptionsp)
+    (mbe :logic (non-exec (raw-ppstate->options (ppstate-fix ppstate)))
+         :exec (raw-ppstate->options ppstate))
     :inline t)
 
   (define ppstate->ienv (ppstate)
@@ -632,51 +492,12 @@
          :exec (raw-update-ppstate->macros macros ppstate))
     :inline t)
 
-  (define update-ppstate->hg ((hg hg-statep) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->hg (hg-state-fix hg)
-                                                  (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->hg hg ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes1 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes1
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes1 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes2 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes2
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes2 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes3 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes3
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes3 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->rev-lexemes4 ((rev-lexemes plexeme-listp) ppstate)
-    :returns (ppstate ppstatep)
-    (mbe :logic (non-exec (raw-update-ppstate->rev-lexemes4
-                           (plexeme-list-fix rev-lexemes)
-                           (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->rev-lexemes4 rev-lexemes ppstate))
-    :inline t)
-
-  (define update-ppstate->ignore-err/warn ((ignore-err/warn booleanp) ppstate)
+  (define update-ppstate->options ((options ppoptionsp) ppstate)
     :returns (ppstate ppstatep)
     (mbe :logic (non-exec
-                 (raw-update-ppstate->ignore-err/warn (bool-fix ignore-err/warn)
-                                                      (ppstate-fix ppstate)))
-         :exec (raw-update-ppstate->ignore-err/warn ignore-err/warn ppstate))
+                 (raw-update-ppstate->options (ppoptions-fix options)
+                                              (ppstate-fix ppstate)))
+         :exec (raw-update-ppstate->options options ppstate))
     :inline t)
 
   (define update-ppstate->ienv ((ienv ienvp) ppstate)
@@ -833,7 +654,7 @@
 
 (define init-ppstate ((data byte-listp)
                       (macros macro-tablep)
-                      (ignore-err/warn booleanp)
+                      (options ppoptionsp)
                       (ienv ienvp)
                       ppstate)
   :returns (ppstate ppstatep)
@@ -845,7 +666,7 @@
      It is built from
      (the data of) a file to preprocess,
      the current table of macros in scope,
-     a flag saying whether to ignore errors and warnings,
+     the preprocessor options,
      and an implementation environment.")
    (xdoc::p
     "The array of byte lists is resized to the file recursion limit,
@@ -856,9 +677,7 @@
      There are no read or unread characters,
      and no lexmarks pending.
      We resize the arrays of characters to the number of bytes,
-     which suffices because there are never more characters than bytes.
-     We set the header guard state to be the initial one.
-     We set the list of output reversed lexemes to empty."))
+     which suffices because there are never more characters than bytes."))
   (b* ((ppstate (update-ppstate->bytes data ppstate))
        (ppstate (update-ppstate->position (position-init) ppstate))
        (ppstate (update-ppstate->chars-length (len data) ppstate))
@@ -867,12 +686,7 @@
        (ppstate (update-ppstate->lexmarks nil ppstate))
        (ppstate (update-ppstate->size (len data) ppstate))
        (ppstate (update-ppstate->macros macros ppstate))
-       (ppstate (update-ppstate->hg (hg-state-initial) ppstate))
-       (ppstate (update-ppstate->rev-lexemes1 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes2 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes3 nil ppstate))
-       (ppstate (update-ppstate->rev-lexemes4 nil ppstate))
-       (ppstate (update-ppstate->ignore-err/warn ignore-err/warn ppstate))
+       (ppstate (update-ppstate->options options ppstate))
        (ppstate (update-ppstate->ienv ienv ppstate)))
     ppstate))
 
@@ -920,369 +734,3 @@
        (ppstate (update-ppstate->lexmarks new-lexmarks ppstate))
        (ppstate (update-ppstate->size new-size ppstate)))
     ppstate))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-ifndef ((name identp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering
-          a @('#ifndef') directive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If we are in the initial state,
-     we move to the @(':ifndef') state.
-     If we are in the @(':define') state,
-     i.e. in the main content of the file,
-     we stay in that state.
-     If we are in the @(':not') state,
-     we stay in that state (it is a final state).
-     In all other states, we transition to @(':not'):
-     if we were in @(':ifndef'),
-     it means that we are not encountering @('#define');
-     if we were in @(':endif'),
-     it means that there is extra stuff after the @('#endif')."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :initial (update-ppstate->hg (hg-state-ifndef name) ppstate)
-     :ifndef (update-ppstate->hg (hg-state-not) ppstate)
-     :define ppstate
-     :endif (update-ppstate->hg (hg-state-not) ppstate)
-     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                  ppstate)
-     :not ppstate))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-elif/else ((cond-level natp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a heaader guard transition when encountering
-          a @('#elif') or @('#else') directive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This should not happen at conditional nesting level 0.
-     If we are at the conditional nesting level 1,
-     and the header guard state is @(':ifndef') or @(':define'),
-     it means that we are inside the top-level @('#ifndef'),
-     but it contains a @('#elif') or @('#else');
-     thus, we move to the @(':not') state.
-     If we are at the conditional nesting level 1,
-     and the header guard state is not @(':ifndef') or @(':define'),
-     we must be in the @(':not') state, and the state does not change.
-     If we are at a conditional nesting level 2 or more,
-     we must be in either the @(':define') or @(':not') state,
-     and the state does not change."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (cond ((zp cond-level)
-           (prog2$ (raise "Internal error: conditional level 0.")
-                   ppstate))
-          ((= cond-level 1)
-           (case (hg-state-kind hg)
-             ((:ifndef :define) (update-ppstate->hg (hg-state-not) ppstate))
-             (:not ppstate)
-             (t (prog2$ (raise "Internal error: ~
-                                header guard state ~x0 at conditional level 1."
-                               hg)
-                        ppstate))))
-          (t ; cond-level >= 2
-           (if (member-eq (hg-state-kind hg) '(:define :not))
-               ppstate
-             (prog2$ (raise "Internal error: ~
-                             header guard state ~x0 at conditional level ~x1."
-                            hg cond-level)
-                     ppstate)))))
-  :no-function nil
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-endif ((cond-level natp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering a @('#endif')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This should not happen at conditional nesting level 0.
-     If we are at the conditional nesting level 1,
-     and the header guard state is @(':define'),
-     it means that we are inside the top-level @('#ifndef'),
-     and it does not contain a @('#elif') or @('#else')
-     (otherwise we would be in the @(':not') state);
-     thus, we move to the @(':endif') state.
-     If we are at the conditional nesting level 1,
-     and the header guard state is @(':ifndef'),
-     it means that we are missing the @('#define'),
-     so we move to the @(':not') state.
-     If the conditional level is 1
-     and the header guard state is not @(':define') or @(':ifndef'),
-     we must be in the @(':not') state, and the state does not change.
-     If we are at a conditional nesting level 2 or more,
-     we must be in either the @(':define') or @(':not') state,
-     and the state does not change."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (cond ((zp cond-level)
-           (prog2$ (raise "Internal error: conditional level 0.")
-                   ppstate))
-          ((= cond-level 1)
-           (case (hg-state-kind hg)
-             (:define (b* ((name (hg-state-define->name hg))
-                           (new-hg (hg-state-endif name)))
-                        (update-ppstate->hg new-hg ppstate)))
-             (:ifndef (update-ppstate->hg (hg-state-not) ppstate))
-             (:not ppstate)
-             (t (prog2$ (raise "Internal error: ~
-                                header guard state ~x0 at conditional level 1."
-                               hg)
-                        ppstate))))
-          (t ; cond-level >= 2
-           (if (member-eq (hg-state-kind hg) '(:define :not))
-               ppstate
-             (prog2$ (raise "Internal error: ~
-                             header guard state ~x0 at conditional level ~x1."
-                            hg cond-level)
-                     ppstate)))))
-  :no-function nil
-  :prepwork ((local (in-theory (enable nfix)))))
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-define ((name identp)
-                         (obj-empty-p booleanp)
-                         (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering
-          a @('#define') directive."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The @('obj-empty-p') flag says whether the @('#define') is for
-     an object-like macro with an empty replacement list.")
-   (xdoc::p
-    "If we are in the @(':ifndef') state,
-     the @('obj-empty-p') flag is @('t'),
-     and the names match,
-     we move to the @(':define') state;
-     if the names do not match, we move to @(':not'),
-     because we have not encountered the right @('#define').
-     If we are in the @(':define') state,
-     i.e. in the main content of the file,
-     we stay in that state.
-     If we are in the @(':not') state,
-     we stay in that state (it is a final state).
-     In all other states, we transition to @(':not'):
-     if we were in @(':initial'),
-     it means that we are not encountering @('#ifndef');
-     if we were in @(':endif'),
-     it means that there is extra stuff after the @('#endif')."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :initial (update-ppstate->hg (hg-state-not) ppstate)
-     :ifndef (if (and obj-empty-p
-                      (equal (ident-fix name) hg.name))
-                 (update-ppstate->hg (hg-state-define name) ppstate)
-               (update-ppstate->hg (hg-state-not) ppstate))
-     :define ppstate
-     :endif (update-ppstate->hg (hg-state-not) ppstate)
-     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                  ppstate)
-     :not ppstate))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-non-ifndef/elif/else/define ((ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering something
-          other than a @('#ifndef'), @('#elif'), @('#else'), or @('#define')."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "By `something other' we man another kind of directive,
-     or a text line with at least one token
-     (i.e. not just comments and white space).")
-   (xdoc::p
-    "If we are in the @(':define') state,
-     i.e. in the main content of the file,
-     we stay in that state.
-     If we are in the @(':not') state,
-     we stay in that state (it is a final state).
-     In all other states, we transition to @(':not'):
-     if we were in @(':initial'),
-     it means that we are not encountering @('#ifndef');
-     if we were in @(':ifndef'),
-     it means that we are not encountering @('#define');
-     if we were in @(':endif'),
-     it means that there is extra stuff after the @('#endif')."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (hg-state-case
-     hg
-     :initial (update-ppstate->hg (hg-state-not) ppstate)
-     :ifndef (update-ppstate->hg (hg-state-not) ppstate)
-     :define ppstate
-     :endif (update-ppstate->hg (hg-state-not) ppstate)
-     :eof (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                  ppstate)
-     :not ppstate))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define hg-trans-eof ((ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Perform a header guard transition when encountering end of file."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "If we are in the @(':endif') state,
-     we transition to the @(':eof') state:
-     the file has the header guard form.
-     If we are in the @(':initial') state,
-     we transition to the @(':not') state;
-     the file does not have the required @('#ifndef').
-     Otherwise, we must be in the @(':not') state, where we stay.."))
-  (b* ((ppstate (ppstate-fix ppstate))
-       (hg (ppstate->hg ppstate)))
-    (case (hg-state-kind hg)
-      (:endif (b* ((name (hg-state-endif->name hg))
-                   (new-hg (hg-state-eof name)))
-                (update-ppstate->hg new-hg ppstate)))
-      (:initial (update-ppstate->hg (hg-state-not) ppstate))
-      (:not ppstate)
-      (t (prog2$ (raise "Internal error: header guard state ~x0." hg)
-                 ppstate))))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define add-rev-lexeme ((lexeme plexemep) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Add a lexeme to the output reverse list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The reason for having four separate lists of reversed output lexemes
-     is the handling of the header guard structure,
-     explained in @(tsee hg-state).
-     If the file has the header guard structure,
-     we need to add the @('#ifndef'), @('#define'), and @('#endif') lines
-     to the output,
-     but only if the file has that structure;
-     so we accumulate the file content in chunks:
-     the first list for the content before @('#ifndef');
-     the second list for the content between @('#ifdef') and @('#define')
-     (which would have to consist of only comments and white space);
-     the third list for the content between @('#define') and @('#endif');
-     and the fourth list for the content after @('#endif')
-     (which would have to consist of only comments and white space).
-     If at any point we may discover that the file
-     does not have the header guard structure,
-     we accumulate the rest of the content into the fourth list.
-     At the end, if the file has the header guard structure,
-     we assemble the chunks and interpose
-     the @('#ifndef'), @('#define') and @('#endif');
-     if the file does not the header guard strucrure,
-     we assemble the chunks without interpositions.")
-   (xdoc::p
-    "This (i.e. the four lists and the interposition)
-     is admittedly a bit complicated.
-     Eventually we plan to obviate the need for this,
-     by integrating the preprocessor with the parser."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes (cons lexeme rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes (cons lexeme rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes (cons lexeme rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes (cons lexeme rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define add-rev-lexemes ((lexemes plexeme-listp) (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Add a list of lexemes to the output reverse list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The lexemes to add are passed in direct (i.e. not reverse) order,
-     so we need to append them in reverse.")
-   (xdoc::p
-    "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes
-                    (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes
-                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes
-                   (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes
-                         (revappend (plexeme-list-fix lexemes) rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
-  :no-function nil)
-
-;;;;;;;;;;;;;;;;;;;;
-
-(define add-rev-rev-lexemes ((rev-lexemes-to-add plexeme-listp)
-                             (ppstate ppstatep))
-  :returns (new-ppstate ppstatep)
-  :short "Add a list of reversed lexemes to the output reverse list."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "The difference with @(tsee add-rev-lexemes) is that
-     the lexemes to add are already reversed,
-     so we just append them.")
-   (xdoc::p
-    "The list is chosen as explained in @(tsee add-rev-lexeme)."))
-  (case (hg-state-kind (ppstate->hg ppstate))
-    (:initial (b* ((rev-lexemes (ppstate->rev-lexemes1 ppstate))
-                   (new-rev-lexemes
-                    (append rev-lexemes-to-add rev-lexemes)))
-                (update-ppstate->rev-lexemes1 new-rev-lexemes ppstate)))
-    (:ifndef (b* ((rev-lexemes (ppstate->rev-lexemes2 ppstate))
-                  (new-rev-lexemes
-                   (append rev-lexemes-to-add rev-lexemes)))
-               (update-ppstate->rev-lexemes2 new-rev-lexemes ppstate)))
-    (:define (b* ((rev-lexemes (ppstate->rev-lexemes3 ppstate))
-                  (new-rev-lexemes
-                   (append rev-lexemes-to-add rev-lexemes)))
-               (update-ppstate->rev-lexemes3 new-rev-lexemes ppstate)))
-    ((:endif :not) (b* ((rev-lexemes (ppstate->rev-lexemes4 ppstate))
-                        (new-rev-lexemes
-                         (append rev-lexemes-to-add rev-lexemes)))
-                     (update-ppstate->rev-lexemes4 new-rev-lexemes ppstate)))
-    (:eof (prog2$ (raise "Internal error: header guard state ~x0."
-                         (ppstate->hg ppstate))
-                  (ppstate-fix ppstate)))
-    (t (prog2$ (impossible) ppstate)))
-  :no-function nil)

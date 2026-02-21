@@ -109626,6 +109626,13 @@ it."
  to signal a soft error from within the body of a @('DO') @(tsee loop$)
  expression.</p>
 
+ <p>Fixed an issue reported by Eric McCarthy when certifying books with
+ &ldquo;ACL2 in Docker image (platform linux/amd64) running on WSL2 (Windows
+ Subsystem for Linux v2) on Windows 11 host&rdquo;: the @(see certificate) file
+ could be a bit newer than the compiled file, which shouldn't happen.  The fix
+ is specific to WSL2.  Thanks to Eric McCarthy for reporting the problem and
+ for testing the fix.</p>
+
  <h3>EMACS Support</h3>
 
  <h3>Experimental Versions</h3>

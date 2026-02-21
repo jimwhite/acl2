@@ -182,16 +182,9 @@
     "It may seem strange to handle macro undefinition
      by adding an entry with @('nil') to the dynamic alist,
      instead of just removing the entry from the alist.
-     The reason is to facilitate the handling of
-     @('#include') directives that we do not expand.
-     When one such directive is encountered,
-     although it is not expanded in place,
-     we need to preprocess the rest of the including file
-     as if the included file were expanded,
-     and in particular its @('#define') and @('#undef').
-     Thus, we can simply append the macros contributed by the included file
-     to the front of the (dynamic) alist of the including file:
-     see @(tsee macro-extend).")
+     But this approach makes it faster
+     both to undefine a macro,
+     and to find out if a macro was undefined in a lookup.")
    (xdoc::p
     "The dynamic alist of macros does not necessarily have unique keys.
      This is intentional,
@@ -547,25 +540,3 @@
   (("Goal" :in-theory (enable alistp-when-ident-macro-info-alistp-rewrite
                               alistp-when-ident-macro-info-option-alistp-rewrite
                               acons))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(define macro-extend ((macros ident-macro-info-option-alistp)
-                      (table macro-tablep))
-  :returns (new-table macro-tablep)
-  :short "Extend the macro table with some macro definitions and undefinitions."
-  :long
-  (xdoc::topstring
-   (xdoc::p
-    "This is used to incorporate,
-     into the macro table of a file being preprocessed,
-     the macros contributed by a included file
-     whose @('#include') directive is not expanded in place.
-     Although the included file is not expanded in place,
-     we need to preprocess the rest of the including file
-     as if the included file were expanded in place:
-     in particular, we must add the macro definitions and undefinitions that
-     the expanded included file would contribute."))
-  (b* (((macro-table table) table)
-       (new-dynamic (append macros table.dynamic)))
-    (change-macro-table table :dynamic new-dynamic)))

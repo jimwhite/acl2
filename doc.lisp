@@ -106736,6 +106736,13 @@ Changes at the System Level
   to signal a soft error from within the body of a [30m[47mDO[0m[0m [30m[47m[loop$][0m[0m
   expression.
 
+  Fixed an issue reported by Eric McCarthy when certifying books with
+  ``ACL2 in Docker image (platform linux/amd64) running on WSL2
+  (Windows Subsystem for Linux v2) on Windows 11 host'': the
+  [certificate] file could be a bit newer than the compiled file,
+  which shouldn't happen.  The fix is specific to WSL2.  Thanks to
+  Eric McCarthy for reporting the problem and for testing the fix.
+
 
 EMACS Support
 

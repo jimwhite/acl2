@@ -18,6 +18,7 @@
 (include-book "kestrel/utilities/widen-margins" :dir :system)
 (include-book "kestrel/utilities/progn" :dir :system)
 (include-book "kestrel/utilities/defmacrodoc" :dir :system)
+(include-book "kestrel/utilities/mv-nth" :dir :system)
 (include-book "kestrel/executable-parsers/parse-executable" :dir :system)
 (include-book "kestrel/executable-parsers/parsed-executable-tools" :dir :system)
 (include-book "kestrel/bv/intro" :dir :system) ; reduce?
@@ -33,6 +34,12 @@
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/ash" :dir :system)
+(include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/rotate" :dir :system)
+(include-book "kestrel/bv/if-becomes-bvif-rules" :dir :system)
+(include-book "kestrel/bv-lists/bv-array-conversions" :dir :system)
+(include-book "kestrel/bv-lists/array-patterns" :dir :system)
+(include-book "kestrel/lists-light/nth" :dir :system)
 (include-book "kestrel/axe/rules1" :dir :system)
 (include-book "rewriter")
 (include-book "support")
@@ -47,10 +54,14 @@
 (include-book "../convert-to-bv-rules-axe")
 (include-book "../bv-array-rules-axe") ;reduce?
 (include-book "../logops-rules-axe")
+(include-book "../boolean-rules-axe")
+(include-book "../list-rules-axe")
+(include-book "../rules3") ; for equal-of-bvplus-and-bvplus-reduce-constants
 (include-book "assumptions")
 (include-book "run-until-return")
 ;(include-book "pc")
 (include-book "rule-lists")
+(include-book "axe-rules")
 ;(include-book "read-over-write-rules")
 ;(include-book "write-over-write-rules")
 ;(include-book "clear-writes")
@@ -58,6 +69,8 @@
 (include-book "kestrel/arithmetic-light/plus" :dir :system)
 (include-book "kestrel/arithmetic-light/fix" :dir :system)
 (include-book "kestrel/arithmetic-light/minus" :dir :system)
+(include-book "kestrel/arithmetic-light/less-than" :dir :system)
+(include-book "kestrel/arithmetic-light/ifix" :dir :system)
 (include-book "kestrel/executable-parsers/elf-tools" :dir :system)
 (include-book "kestrel/axe/utilities" :dir :system) ; for the user's convenience
 (include-book "kestrel/utilities/untranslate-dollar-list" :dir :system)
@@ -70,7 +83,7 @@
 ;; The presence of any of these function in the term/DAG indicates that the
 ;; symbolic execution is incomplete:
 (defconst *incomplete-run-fns* '(run-until-return-aux
-                                 ;run-until-sp-is-above
+                                 run-until-return-or-reach-pc-aux
                                  step32))
 
 ;; The presence of any of these functions in the term/DAG indicates an error state
@@ -105,6 +118,8 @@
         (case output-indicator
           ;; Extract a register:
           (:r0 `(r0 ,term)) ; todo: support r0/r1 together holding a 64-bit value
+          (:r15 `(r15 ,term)) ; todo: support r0/r1 together holding a 64-bit value
+          (:pc `(pc ,term)) ; todo: support r0/r1 together holding a 64-bit value
           ;; (:x1 `(x1 ,term))
           ;; ;; todo: more
           ;; (:a0 `(a0 ,term)) ; return value 0
@@ -261,7 +276,7 @@
                                 ;; remove-assumption-rules
                                 step-limit
                                 step-increment
-                                ;; stop-pcs
+                                stop-pcs
                                 memoizep
                                 monitor
                                 normalize-xors
@@ -295,7 +310,7 @@
                               ;; (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (step-incrementp step-increment)
-                              ;; (nat-listp stop-pcs)
+                              (nat-listp stop-pcs)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
@@ -403,18 +418,11 @@
         (er hard? 'unroll-arm-code-core "Some assumption is not a valid term: ~x0." assumptions)
         (mv :bad-assumptions nil state))
        ;; Prepare for symbolic execution:
-       ;; (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
-       ;; (- (and stop-pcs
-       ;;         position-independentp ; todo: make this work!
-       ;;         (er hard? 'unroll-arm-code-core ":stop-pcs are not supported with position-independentp.")))
-       (term-to-simulate '(run-subroutine arm))
-       ;; (term-to-simulate (if stop-pcs
-       ;;                       (if 64-bitp
-       ;;                           `(run-until-return-or-reach-pc3 ',stop-pcs x86)
-       ;;                         `(run-until-return-or-reach-pc4 ',stop-pcs x86))
-       ;;                     (if 64-bitp
-       ;;                         '(run-until-return3 x86)
-       ;;                       '(run-until-return4 x86))))
+       (- (and stop-pcs (cw "Will stop execution when any of these PCs are reached: ~x0.~%" stop-pcs))) ; todo: print in hex?
+       (- (and stop-pcs
+               position-independentp ; todo: make this work!
+               (er hard? 'unroll-arm-code-core ":stop-pcs are not yet supported with position-independentp.")))
+       (term-to-simulate (if stop-pcs `(run-until-return-or-reach-pc ',stop-pcs arm) '(run-subroutine arm)))
        (term-to-simulate (maybe-wrap-in-output-extractor output-indicator term-to-simulate (w state))) ;TODO: delay this if lifting a loop?
        ((when (not (termp term-to-simulate (w state))))
         (er hard? 'unroll-arm-code-core "Bad term after wrapping in output-extractor: ~x0." term-to-simulate)
@@ -431,16 +439,10 @@
        ;; Choose the lifter rules to use:
        (lifter-rules (lifter-rules32) ;(if 64-bitp (unroller-rules64) (unroller-rules32))
                      )
-       (symbolic-execution-rules (symbolic-execution-rules32))
-       ;; (symbolic-execution-rules (if stop-pcs
-       ;;                               (if 64-bitp
-       ;;                                   (symbolic-execution-rules-with-stop-pcs64)
-       ;;                                 (symbolic-execution-rules-with-stop-pcs32))
-       ;;                             (if 64-bitp
-       ;;                                 (symbolic-execution-rules64)
-       ;;                               (symbolic-execution-rules32))))
+       (symbolic-execution-rules (if stop-pcs (symbolic-execution-rules-with-stop-pcs32) (symbolic-execution-rules32)))
        (lifter-rules (append symbolic-execution-rules lifter-rules))
        ;; Add any extra-rules:
+       ;; (- (cw "Using ~x0 extra-rules: ~X12.~%" (len extra-rules) extra-rules nil))
        (- (let ((intersection (intersection-eq extra-rules lifter-rules))) ; todo: optimize (sort and then compare, and also use sorted lists below...)
             (and intersection
                  (cw "Warning: The extra-rules include these rules that are already present: ~X01.~%" intersection nil))))
@@ -468,12 +470,10 @@
                     )
        (rules-to-monitor (maybe-add-debug-rules debug-rules monitor))
        ;; Do the symbolic execution:
+       (rule-to-limit (if stop-pcs 'run-until-return-or-reach-pc-aux-opener-axe 'run-until-return-aux-opener-axe))
        ((mv erp result-dag-or-quotep hits state)
         (repeatedly-run 0 step-limit step-increment dag-to-simulate lifter-rule-alist pruning-rule-alist assumptions
-                        'run-until-return-aux-opener ;arm::step-opener
-                        ;; (if 64-bitp
-                        ;;     (first (step-opener-rules64))
-                        ;;   (first (step-opener-rules32)))
+                        rule-to-limit
                         rules-to-monitor prune-precise prune-approx normalize-xors count-hits (empty-hits) print print-base max-printed-term-size
                         nil ; no-warn-ground-functions
                         nil ; fns-to-elide
@@ -521,7 +521,7 @@
                         ;; remove-assumption-rules
                         step-limit
                         step-increment
-                        ;;stop-pcs
+                        stop-pcs
                         memoizep
                         monitor
                         normalize-xors
@@ -562,7 +562,7 @@
                               ;; (symbol-listp remove-assumption-rules)
                               (natp step-limit)
                               (step-incrementp step-increment)
-                              ;; (nat-listp stop-pcs)
+                              (nat-listp stop-pcs)
                               (booleanp memoizep)
                               (or (symbol-listp monitor)
                                   (eq :debug monitor))
@@ -615,7 +615,7 @@
                                  prune-precise prune-approx extra-rules remove-rules
                                  ;; extra-assumption-rules remove-assumption-rules
                                  step-limit step-increment
-                                 ;;stop-pcs
+                                 stop-pcs
                                  memoizep monitor normalize-xors count-hits print print-base max-printed-term-size untranslatep state))
        ((when erp) (mv erp nil state))
        ;; Extract info from the result-dag:
@@ -780,7 +780,7 @@
 ;;                                  (remove-assumption-rules 'nil)
                                   (step-limit '1000000)
                                   (step-increment '100)
-                                  ;;(stop-pcs 'nil)
+                                  (stop-pcs 'nil)
                                   (memoizep 't)
                                   (monitor 'nil)
                                   (normalize-xors 'nil)
@@ -819,7 +819,7 @@
         ;;      ,remove-assumption-rules ; gets evaluated since not quoted
         ',step-limit
         ',step-increment
-        ;;      ,stop-pcs
+        ,stop-pcs
         ',memoizep
         ,monitor ; gets evaluated since not quoted
         ',normalize-xors
@@ -867,7 +867,7 @@
          ;; (remove-assumption-rules "Rules to be removed when simplifying assumptions.")
          (step-limit "Limit on the total number of symbolic executions steps to allow (total number of steps over all branches, if the simulation splits).")
          (step-increment "Number of model steps to allow before pausing to simplify the DAG and remove unused nodes.")
-;;         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
+         (stop-pcs "A list of program counters (natural numbers) at which to stop the execution, for debugging.")
          (memoizep "Whether to memoize during rewriting (when not using contextual information -- as doing both would be unsound).")
          (monitor "Rule names (symbols) to be monitored when rewriting.") ; during assumptions too?
          (normalize-xors "Whether to normalize BITXOR and BVXOR nodes when rewriting (@('t'), @('nil'), or @(':compact')).")
