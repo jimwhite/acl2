@@ -3,8 +3,8 @@
 ; The contents of this file are derived from ACL2 Community Book
 ; books/system/doc/acl2-doc.lisp.
 
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
-; Copyright (C) 2024, Regents of the University of Texas
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
+; Copyright (C) 2026, Regents of the University of Texas
 
 ; This version of ACL2 is a descendent of ACL2 Version 1.9, Copyright
 ; (C) 1997 Computational Logic, Inc.  See the documentation topic NOTE-2-0.
@@ -1625,7 +1625,7 @@ Subtopics
   (START-HERE)
   "General information About ACL2
 
-  This is ACL2 Version 8.6, [copyright] (C) 2026, Regents of the
+  This is ACL2 Version 8.7, [copyright] (C) 2026, Regents of the
   University of Texas, authored by Matt Kaufmann and J Strother
   Moore.
 
@@ -1728,7 +1728,7 @@ Subtopics
   the web contains links to demos, publications, mailing lists,
   installation instructions, and more --- and, especially, to the
   {ACL2+Books Manual |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html},
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html},
   which provides online documentation for ACL2 and its libraries,
   known as ``books''.
 
@@ -4978,7 +4978,7 @@ Silent loading of ACL2 customization files
 
   As discussed elsewhere (see [documentation]), the web-based
   {ACL2+Books Manual |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html}
   provides a way to browse the combined documentation for the ACL2
   system and community books.  Such documentation can also be read at
   the terminal using the [30m[47m:[0m[0m[30m[47m[doc][0m[0m command, though documentation for
@@ -15768,7 +15768,7 @@ Subtopics
   contains [documentation] only about the ACL2 [3msystem[0m, and does not
   include documentation from the [community-books].  Please point
   your browser at the {ACL2+Books Manual |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html}
   (or if browsing in [ACL2-Doc], switch to that manual with meta-0 I)
   to access the desired topic.
 
@@ -18440,19 +18440,27 @@ Subtopics
   but, sadly, this may not hold for all host Lisps, and may not even
   be possible for some of them.
 
-  The use of the above encoding could in principle cause problems if
-  one's editor produces files using an encoding other than
-  ISO-8859-1, at least if one uses non-standard characters.  In
-  particular, the default Emacs buffer encoding may be utf-8.  If
-  your file has non-standard characters, then in Emacs it may be
-  helpful to evaluate the form
+  Despite the use of Latin-1 for reading files, it is possible to use
+  UTF-8-encoded characters in ACL2 books.  Note though that the use
+  of such characters may result in surprising behavior, since a
+  single user-perceived character may correspond to multiple ACL2
+  [characters].  See [using-utf-8] for more details on the possible
+  pitfalls related to UTF-8.
 
-    (setq save-buffer-coding-system 'iso-8859-1)
-
-  before saving the buffer into a file.
+  For users of [emacs], the buffer encoding is typically inferred from
+  the file, defaulting to UTF-8 if no special characters are found.
+  If necessary, [emacs] can be instructed to convert the character
+  encoding on file save by setting the [30m[47msave-buffer-coding-system[0m[0m
+  variable.
 
   For an example of character encodings in action, see the community
-  book [30m[47mbooks/misc/character-encoding-test.lisp[0m[0m.")
+  book [30m[47mbooks/misc/character-encoding-test.lisp[0m[0m.
+
+
+Subtopics
+
+  [Using-utf-8]
+      Tips and warnings for using UTF-8.")
  (CHARACTER-LISTP
   (CHARACTERS LISTS ACL2-BUILT-INS)
   "Recognizer for a true list of characters
@@ -22667,7 +22675,7 @@ See [30m[47m[set-constraint-tracking][0m[0m.")
   authorship of [documentation], see [documentation-copyright], which
   notes that there are many documentation authors.
 
-  ACL2 Version 8.6 --- A Computational Logic for Applicative Common
+  ACL2 Version 8.7 --- A Computational Logic for Applicative Common
   Lisp
 
   Copyright (C) 2026, Regents of the University of Texas
@@ -22915,7 +22923,7 @@ Subtopics
 Pre-built images
 
   {This website |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/images/Readme.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/distrib/images/Readme.html}
   contains links to ACL2 executables and packages.  Each [30m[47m-md5sum[0m[0m file
   was created using [30m[47mmd5sum[0m[0m.  We may add additional links from time to
   time.
@@ -34663,7 +34671,7 @@ Subtopics
   users will probably access the ACL2 documentation in other ways;
   see [documentation].  In particular, consider using the {ACL2+Books
   Manual |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html},
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html},
   for topics documented in the ACL2 community [books] or in the ACL2
   system (where the latter are rearranged).
 
@@ -34724,7 +34732,7 @@ Available Documentation
     * [31;1mThe online version (recommended).[0m If you expect to have an internet
       connection while using the documentation, you may prefer to use
       the online version of the {ACL2+Books Manual |
-      https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}.
+      https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html}.
 
     * [31;1mA local version.[0m If you sometimes work without an internet
       connection, you can {download | download/} a local copy of any
@@ -35782,25 +35790,34 @@ Miscellaneous efficiency ideas
   "Emacs support for ACL2
 
   Many successful users of ACL2 take advantage of the Emacs editor, for
-  example by running ACL2 in an Emacs shell buffer.  If you do so,
-  then you may wish to load the distributed file [30m[47memacs-acl2.el[0m[0m from
-  one of two directories under the main ACL2 directory: [30m[47mbooks/emacs/[0m[0m
-  if you use a recent version of Emacs, or [30m[47memacs/[0m[0m if you use Emacs
-  24.  An easy way to arrange this is to put the load form into your
-  [30m[47m.emacs[0m[0m file; here, [30m[47mDIR[0m[0m denotes your main ACL2 directory.
+  example by running ACL2 in an Emacs shell buffer.  See
+  emacs-workflow.  If you use ACL2 with Emacs, then you may wish to
+  load the file [30m[47memacs-acl2.el[0m[0m, which provides many helpful
+  ACL2-specific commands and settings.  Most users should use the
+  following Emacs command:
 
-    (load \"DIR/books/emacs/emacs-acl2.el\") ; for recent Emacs versions
+    (load \"DIR/books/emacs/emacs-acl2.el\")
 
-  [31;1m-OR-[0m
+  where [30m[47mDIR[0m[0m should be changed to the path to your main ACL2 directory.
+
+  An easy way to arrange this is to put this [30m[47mload[0m[0m command into your
+  Emacs init file (e.g., [30m[47m~/.emacs.d/init.el[0m[0m or [30m[47m~/.emacs[0m[0m).
+
+  Users of Emacs 24 (an older version) may instead prefer to use the
+  following command to load a version of the file that is suitable
+  for Emacs 24:
 
     (load \"DIR/emacs/emacs-acl2.el\") ; for Emacs 24
 
-  The file begins with considerable comments describing what it offers.
+  The file [30m[47memacs-acl2.el[0m[0m begins with considerable comments describing
+  what it offers.  We recommend reading through the file to see what
+  commands are available and how to invoke them using Emacs key
+  combinations.
 
-  In particular, the above file provides the ACL2-Doc browser, a
-  convenient tool for viewing, in Emacs, documentation for both the
-  ACL2 system and the documented community books, as well as custom
-  manuals.  See [ACL2-Doc].
+  Notably, [30m[47memacs-acl2.el[0m[0m provides the ACL2-Doc browser, a convenient
+  tool for viewing, in Emacs, documentation for both the ACL2 system
+  and the documented community books, as well as custom manuals.  See
+  [ACL2-Doc].
 
   If you are not comfortable with Emacs, you may prefer to use an
   Eclipse-based interface; see [ACL2-sedan].")
@@ -42013,7 +42030,7 @@ Example 2
   not included in the current ACL2 session?
 
   The [xdoc] {ACL2+Books Manual |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html}
   includes documentation for both the ACL2 system and the
   [community-books].  For more information on this manual and how to
   view it, see [documentation].")
@@ -58145,9 +58162,9 @@ Subtopics
 
    1. Decide which of the following you want to install:
 
-        * The [31;1mlatest ACL2 release[0m (version 8.6 (see [NOTE-8-6])).  The release
+        * The [31;1mlatest ACL2 release[0m (version 8.7 (see [NOTE-8-7])).  The release
           is stable and very well tested but does not include any
-          improvements or fixes made since October, 2024.  It may be
+          improvements or fixes made since March, 2026.  It may be
           appropriate if you do not need the very latest tools and
           libraries and do not plan to contribute to the
           [community-books].  A pre-built binary distribution (see
@@ -58173,21 +58190,21 @@ Subtopics
    3. Depending on your decision in Step 1, download ACL2 by doing either
       of the following:
 
-        * [31;1mFor the latest ACL2 release[0m (version 8.6):
+        * [31;1mFor the latest ACL2 release[0m (version 8.7):
 
            1. Change to a directory that does not already contain a subdirectory
-              called [30m[47macl2-8.6[0m[0m.
+              called [30m[47macl2-8.7[0m[0m.
 
-           2. Download { [30m[47macl2-8.6.tar.gz[0m[0m |
-              https://github.com/acl2-devel/acl2-devel/releases/download/8.6/acl2-8.6.tar.gz}
+           2. Download { [30m[47macl2-8.7.tar.gz[0m[0m |
+              https://github.com/acl2-devel/acl2-devel/releases/download/8.7/acl2-8.7.tar.gz}
               to that directory.
 
            3. Execute the following:
 
-                  tar xfz acl2-8.6.tar.gz
-                  cd acl2-8.6
+                  tar xfz acl2-8.7.tar.gz
+                  cd acl2-8.7
 
-          The new subdirectory [30m[47macl2-8.6[0m[0m should now be your shell's current
+          The new subdirectory [30m[47macl2-8.7[0m[0m should now be your shell's current
           directory.
 
         * [31;1mOr, for the latest development snapshot[0m:
@@ -106346,7 +106363,7 @@ Experimental Versions
   checkpoints'' is followed by `` from gag-mode'' as before).")
  (NOTE-8-7
   (RELEASE-NOTES)
-  "ACL2 Version 8.7 (xxx, 20xx) Notes
+  "ACL2 Version 8.7 (March, 2026) Notes
 
   NOTE!  New users can ignore these release notes, because the
   [documentation] has been updated to reflect all changes that are
@@ -106760,6 +106777,45 @@ EMACS Support
 Experimental Versions
 
   [3m[None][0m")
+ (NOTE-8-8
+  (RELEASE-NOTES)
+  "ACL2 Version 8.8 (xxx, 20xx) Notes
+
+  NOTE!  New users can ignore these release notes, because the
+  [documentation] has been updated to reflect all changes that are
+  recorded here.
+
+  Below we roughly organize the changes to ACL2 since Version 8.7 into
+  the following categories of changes: existing features, new
+  features, heuristic and efficiency improvements, bug fixes, changes
+  at the system level, Emacs support, and experimental versions.
+  Each change is described in just one category, though of course
+  many changes could be placed in more than one category.
+
+  Note that only ACL2 system changes are listed below.  See also
+  note-8-8-books for a summary of changes made to the ACL2 Community
+  Books since ACL2 8.7, including the build system.
+
+
+Changes to Existing Features
+
+
+New Features
+
+
+Heuristic and Efficiency Improvements
+
+
+Bug Fixes
+
+
+Changes at the System Level
+
+
+EMACS Support
+
+
+Experimental Versions")
  (NOTE1 (POINTERS) "See [note-1-1].")
  (NOTE2 (POINTERS) "See [note-1-2].")
  (NOTE3 (POINTERS) "See [note-1-3].")
@@ -116759,7 +116815,7 @@ Subtopics
   other shortcuts available.
 
   [31;1mWARNING[0m: Some of these packages might be for old versions of ACL2.  We
-  recommend that you use the latest version of ACL2 (Version 8.6).
+  recommend that you use the latest version of ACL2 (Version 8.7).
 
 
 Linux/Mac/Windows Binaries in ACL2s
@@ -129320,18 +129376,24 @@ Subtopics
       ACL2 Version 8.6 (October, 2024) Notes
 
   [Note-8-7]
-      ACL2 Version 8.7 (xxx, 20xx) Notes")
+      ACL2 Version 8.7 (March, 2026) Notes
+
+  [Note-8-8]
+      ACL2 Version 8.8 (xxx, 20xx) Notes")
  (RELEASES
   (ABOUT-ACL2)
   "ACL2 releases
 
   The current ACL2 release on the {ACL2 home page |
   http://www.cs.utexas.edu/users/moore/acl2/index.html} is Version
-  8.6; see [note-8-6] for release notes.
+  8.7; see [note-8-7] for release notes.
 
   Below is a list of past releases and their corresponding past ACL2
   home pages.  (Note: Some older versions of the manuals have been
   made unreadable to avoid potential security issues.)
+
+    * {Version 8.6 (October, 2024) |
+      http://www.cs.utexas.edu/users/moore/acl2/v8-6/index.html}
 
     * {Version 8.5 (July, 2022) |
       http://www.cs.utexas.edu/users/moore/acl2/v8-5/index.html}
@@ -142703,8 +142765,8 @@ Subtopics
   like this:
 
     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-    +   built January 14, 2026  10:09:28.                                  +
+    + ACL2 Version 8.7+ (a development snapshot based on ACL2 Version 8.7) +
+    +   built April 14, 2026  10:09:28.                                    +
     +   (Git commit hash: 1234567890abcdefghijklmnopqrstuvwxyz!@#$)        +
     + Copyright (C) 2026, Regents of the University of Texas.              +
     + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
@@ -142719,8 +142781,8 @@ Subtopics
   executable.\"[0m[0m.
 
     ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-    +   built January 14, 2026  09:56:49.                                  +
+    + ACL2 Version 8.7+ (a development snapshot based on ACL2 Version 8.7) +
+    +   built April 14, 2026  09:56:49.                                    +
     +   (Note from the environment when this executable was saved:         +
     +    This is my private executable.)                                   +
     + Copyright (C) 2026, Regents of the University of Texas.              +
@@ -146141,7 +146203,7 @@ Subtopics
   describe the ACL2 distribution only (without the community books).
   Its files are available by obtaining a gzipped tarfile,
   {acl2.tar.gz |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/acl2.tar.gz}.
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/distrib/acl2.tar.gz}.
   If you download this file and extract it with
 
     tar xfz acl2.tar.gz
@@ -146162,9 +146224,9 @@ Subtopics
     emacs/        ; Some helpful emacs utilities
 
   Also available are {images/ |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/images/},
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/distrib/images/},
   which may contain executables; see {images/Readme.html |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/distrib/images/Readme.html}
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/distrib/images/Readme.html}
 
 
 GitHub Distributions
@@ -153628,7 +153690,7 @@ Subtopics
   This is the documentation for the ACL2 system.  For the ACL2+Books
   Manual, which documents both the ACL2 system and the ACL2
   [community-books], see the {ACL2+Books Manual |
-  https://www.cs.utexas.edu/users/moore/acl2/v8-6/combined-manual/index.html}.
+  https://www.cs.utexas.edu/users/moore/acl2/v8-7/combined-manual/index.html}.
 
 
 Subtopics
@@ -160808,6 +160870,52 @@ Subtopics
   computation is still called once for each number in Step 2, but is
   no longer called during Step 3.  Similarly, the [30m[47m[include-book][0m[0m no
   longer shows any calls of the expensive computation.")
+ (USING-UTF-8
+  (CHARACTER-ENCODING)
+  "Tips and warnings for using UTF-8.
+
+  Non-standard characters may be encoded in UTF-8 in ACL2 despite the
+  use of ISO-8859-1 (also known as Latin-1) for reading files and
+  input.  Furthermore, UTF-8 is more widely supported and a more
+  common default across various editors, viewers, terminals, etc.
+  Therefore, it may be desirable to use UTF-8 instead of Latin-1 in
+  ACL2 books.  However, as alluded to in [character-encoding], the
+  ACL2 interpretation of strings which include UTF-8 characters may
+  surprise users unless they understand certain details of the
+  encoding and the ACL2 reader.
+
+  Recall that ACL2 [strings] are sequences of ACL2 [characters].
+  Furthermore, there are 256 distinct ACL2 characters, each
+  corresponding to a distinct 8-bit byte.  Users may expect their
+  perceived characters to align with ACL2's notion of characters.
+  However, this assumption is broken when a UTF-8 ``character'' is
+  represented by more than one byte.  Since the ACL2 reader uses
+  Latin-1, the multi-byte UTF-8 ``character'' will be read by ACL2 as
+  multiple ACL2 characters, one for each byte.  Nonetheless, strings
+  containing such sequences of bytes will print properly in
+  environments which are configured to expect UTF-8.
+
+  We now consider a concrete example of UTF-8 in ACL2 strings.  In
+  UTF-8, the ``lowercase alpha'' character, \\alpha, is represented by
+  the two byte sequence [30m[47m#xCE[0m[0m [30m[47m#xB1[0m[0m.  We can explicitly create the
+  string consisting of just the UTF-8-encoded lowercase alpha, as in
+  the following constant.
+
+    (defconst *utf8-alpha*
+      (coerce (list (code-char #xCE) (code-char #xB1)) 'string))
+
+  In UTF-8 environments, printing this string will result in the single
+  visible lowercase alpha character.  However, if we evaluate [30m[47m(length
+  *utf8-alpha*)[0m[0m, we get [30m[47m2[0m[0m, since the string consists of two ACL2
+  [characters], one for each byte. Similarly, we might reverse the
+  string.
+
+    (reverse *utf8-alpha*)
+
+  Doing so yields a string which is not valid UTF-8.  In Emacs, this
+  string is rendered using the octal codes for each byte.
+
+    \"\\261\\316\"")
  (USING_THE_ASSOCIATIVITY_OF_APP_TO_PROVE_A_TRIVIAL_CONSEQUENCE
   (PAGES_WRITTEN_ESPECIALLY_FOR_THE_TOURS)
   "Using the Associativity of App to Prove a Trivial Consequence

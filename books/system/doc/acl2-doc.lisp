@@ -2,7 +2,7 @@
 ;
 ; acl2-doc.lisp - Documentation for the ACL2 Theorem Prover
 ;
-; ACL2 Version 8.6 -- A Computational Logic for Applicative Common Lisp
+; ACL2 Version 8.7 -- A Computational Logic for Applicative Common Lisp
 ; Copyright (C) 2026, Regents of the University of Texas
 ;
 ; This documentation was derived from the ACL2 system in October 2013, which
@@ -194,7 +194,7 @@
 ; who are looking at an older version of ACL2 will see the corresponding
 ; ACL2+Books Manual at this link.
 
-  "https://www.cs.utexas.edu/users/moore/acl2/v8-6/")
+  "https://www.cs.utexas.edu/users/moore/acl2/v8-7/")
 
 (defun acl2-url-ref (path s)
 
@@ -15314,17 +15314,17 @@ way to split up large ACL2 developments into separate modules."
  is also used for reading from the terminal; but, sadly, this may not hold for
  all host Lisps, and may not even be possible for some of them.</p>
 
- <p>The use of the above encoding could in principle cause problems if one's
- editor produces files using an encoding other than ISO-8859-1, at least if one
- uses non-standard characters.  In particular, the default Emacs buffer
- encoding may be utf-8.  If your file has non-standard characters, then in
- Emacs it may be helpful to evaluate the form</p>
+ <p>Despite the use of Latin-1 for reading files, it is possible to use
+ UTF-8-encoded characters in ACL2 books.  Note though that the use of such
+ characters may result in surprising behavior, since a single user-perceived
+ character may correspond to multiple ACL2 @(see characters).  See
+ @(see using-utf-8) for more details on the possible pitfalls related to
+ UTF-8.</p>
 
- @({
-  (setq save-buffer-coding-system 'iso-8859-1)
- })
-
- <p>before saving the buffer into a file.</p>
+ <p>For users of @(see emacs), the buffer encoding is typically inferred from
+ the file, defaulting to UTF-8 if no special characters are found.  If
+ necessary, @(see emacs) can be instructed to convert the character encoding on
+ file save by setting the @('save-buffer-coding-system') variable.</p>
 
  <p>For an example of character encodings in action, see the community book
  @('books/misc/character-encoding-test.lisp').</p>")
@@ -32314,26 +32314,34 @@ ld) and @(tsee include-book)"
   :parents (acl2-tutorial)
   :short "Emacs support for ACL2"
   :long "<p>Many successful users of ACL2 take advantage of the Emacs editor,
- for example by running ACL2 in an Emacs shell buffer.  If you do so, then you
- may wish to load the distributed file @('emacs-acl2.el') from one of two
- directories under the main ACL2 directory: @('books/emacs/') if you use a
- recent version of Emacs, or @('emacs/') if you use Emacs 24.  An easy way to
- arrange this is to put the load form into your @('.emacs') file; here,
- @('DIR') denotes your main ACL2 directory.</p>
+ for example by running ACL2 in an Emacs shell buffer.  See @(see
+ emacs-workflow).  If you use ACL2 with Emacs, then you may wish to load the
+ file @('emacs-acl2.el'), which provides many helpful ACL2-specific
+ commands and settings.  Most users should use the following Emacs command:</p>
 
  @({
- (load \"DIR/books/emacs/emacs-acl2.el\") ; for recent Emacs versions
+ (load \"DIR/books/emacs/emacs-acl2.el\")
  })
 
- <p><b>-OR-</b></p>
+ <p>where @('DIR') should be changed to the path to your main ACL2 directory.
+ </p>
+
+ <p>An easy way to arrange this is to put this @('load') command into your
+ Emacs init file (e.g., @('~/.emacs.d/init.el') or @('~/.emacs')).</p>
+
+ <p>Users of Emacs 24 (an older version) may instead prefer to use the
+ following command to load a version of the file that is suitable for Emacs
+ 24:</p>
 
  @({
  (load \"DIR/emacs/emacs-acl2.el\") ; for Emacs 24
  })
 
- <p>The file begins with considerable comments describing what it offers.</p>
+ <p>The file @('emacs-acl2.el') begins with considerable comments describing
+ what it offers.  We recommend reading through the file to see what commands
+ are available and how to invoke them using Emacs key combinations.</p>
 
- <p>In particular, the above file provides the ACL2-Doc browser, a convenient
+ <p>Notably, @('emacs-acl2.el') provides the ACL2-Doc browser, a convenient
  tool for viewing, in Emacs, documentation for both the ACL2 system and the
  documented community books, as well as custom manuals.  See @(see
  ACL2-Doc).</p>
@@ -54546,9 +54554,9 @@ tables in the current Hons Space."
  <li>Decide which of the following you want to install:
    <ul>
          <li>The <b>latest ACL2 release</b>
-         (<see topic='@(url note-8-6)'>version 8.6</see>).  The release is
+         (<see topic='@(url note-8-7)'>version 8.7</see>).  The release is
          stable and very well tested but does not include any improvements
-         or fixes made since October, 2024.  It may be appropriate
+         or fixes made since March, 2026.  It may be appropriate
          if you do not need the very latest tools and libraries and
          do not plan to contribute to the @(see community-books).  A
          <see topic='@(url pre-built-binary-distributions)'>pre-built
@@ -54579,19 +54587,19 @@ tables in the current Hons Space."
  <li>Depending on your decision in Step 1, download ACL2 by doing
      either of the following:
     <ul>
-        <li><b>For the latest ACL2 release</b> (version 8.6):
+        <li><b>For the latest ACL2 release</b> (version 8.7):
           <ol>
             <li>Change to a directory that does not already contain a
-            subdirectory called @('acl2-8.6').</li>
-            <li>Download <a href='https://github.com/acl2-devel/acl2-devel/releases/download/8.6/acl2-8.6.tar.gz'>
-            @('acl2-8.6.tar.gz')</a> to that directory.</li>
+            subdirectory called @('acl2-8.7').</li>
+            <li>Download <a href='https://github.com/acl2-devel/acl2-devel/releases/download/8.7/acl2-8.7.tar.gz'>
+            @('acl2-8.7.tar.gz')</a> to that directory.</li>
             <li>Execute the following:
             @({
-            tar xfz acl2-8.6.tar.gz
-            cd acl2-8.6
+            tar xfz acl2-8.7.tar.gz
+            cd acl2-8.7
             })</li>
           </ol>
-          The new subdirectory @('acl2-8.6') should now
+          The new subdirectory @('acl2-8.7') should now
           be your shell's current directory.
         </li>
 
@@ -109252,7 +109260,7 @@ it."
 ; built on SBCL with safety 3.
 
   :parents (release-notes)
-  :short "ACL2 Version  8.7 (xxx, 20xx) Notes"
+  :short "ACL2 Version  8.7 (March, 2026) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
  documentation) has been updated to reflect all changes that are recorded
  here.</p>
@@ -109663,6 +109671,40 @@ it."
  <h3>Experimental Versions</h3>
 
  <p><i>[None]</i></p>
+
+ ")
+
+(defxdoc note-8-8
+  :parents (release-notes)
+  :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
+  :long "<p>NOTE!  New users can ignore these release notes, because the @(see
+ documentation) has been updated to reflect all changes that are recorded
+ here.</p>
+
+ <p>Below we roughly organize the changes to ACL2 since Version  8.7 into the
+ following categories of changes: existing features, new features, heuristic
+ and efficiency improvements, bug fixes, changes at the system level, Emacs
+ support, and experimental versions.  Each change is described in just one
+ category, though of course many changes could be placed in more than one
+ category.</p>
+
+ <p>Note that only ACL2 system changes are listed below.  See also @(see
+ note-8-8-books) for a summary of changes made to the ACL2 Community Books
+ since ACL2  8.7, including the build system.</p>
+
+ <h3>Changes to Existing Features</h3>
+
+ <h3>New Features</h3>
+
+ <h3>Heuristic and Efficiency Improvements</h3>
+
+ <h3>Bug Fixes</h3>
+
+ <h3>Changes at the System Level</h3>
+
+ <h3>EMACS Support</h3>
+
+ <h3>Experimental Versions</h3>
 
  ")
 
@@ -116812,7 +116854,7 @@ arithmetic) for libraries of @(see books) for arithmetic reasoning.</p>")
 
  <p><font color='red'><b>WARNING</b></font>: Some of these packages might
  be for old versions of ACL2.  We recommend that you use the latest
- version of ACL2 (Version 8.6).</p>
+ version of ACL2 (Version 8.7).</p>
 
  <h3>Linux/Mac/Windows Binaries in ACL2s</h3>
 
@@ -129535,13 +129577,14 @@ work on <tt>(q x)</tt>.</p>
   :short "ACL2 releases"
   :long "<p>The current ACL2 release on the <a
  href='http://www.cs.utexas.edu/users/moore/acl2/index.html'>ACL2 home page</a>
- is Version 8.6; see @(see note-8-6) for release notes.</p>
+ is Version 8.7; see @(see note-8-7) for release notes.</p>
 
  <p>Below is a list of past releases and their corresponding past ACL2 home
  pages.  (Note: Some older versions of the manuals have been made unreadable to
  avoid potential security issues.)</p>
 
  <ul>
+ <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-6/index.html'>Version 8.6 (October, 2024)</a></li>
  <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-5/index.html'>Version 8.5 (July, 2022)</a></li>
  <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-4/index.html'>Version 8.4 (August, 2021)</a></li>
  <li><a href='http://www.cs.utexas.edu/users/moore/acl2/v8-3/index.html'>Version 8.3 (April, 2020)</a></li>
@@ -143085,8 +143128,8 @@ work on <tt>(q x)</tt>.</p>
 
  @({
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-  + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
-  +   built January 14, 2026  10:09:28.                                  +
+  + ACL2 Version 8.7+ (a development snapshot based on ACL2 Version 8.7) +
+  +   built April 14, 2026  10:09:28.                                    +
   +   (Git commit hash: 1234567890abcdefghijklmnopqrstuvwxyz!@#$)        +
   + Copyright (C) 2026, Regents of the University of Texas.              +
   + ACL2 comes with ABSOLUTELY NO WARRANTY.  This is free software and   +
@@ -143103,8 +143146,8 @@ work on <tt>(q x)</tt>.</p>
 
  @({
  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- + ACL2 Version 8.6+ (a development snapshot based on ACL2 Version 8.6) +
- +   built January 14, 2026  09:56:49.                                  +
+ + ACL2 Version 8.7+ (a development snapshot based on ACL2 Version 8.7) +
+ +   built April 14, 2026  09:56:49.                                    +
  +   (Note from the environment when this executable was saved:         +
  +    This is my private executable.)                                   +
  + Copyright (C) 2026, Regents of the University of Texas.              +
@@ -161101,6 +161144,58 @@ introduction-to-the-tau-system) for more information about Tau.</dd>
 
  <p><see topic='@(url |Overview of the Proof of a Trivial Consequence|)'><img
  src='res/tours/walking.gif'></img></see></p>")
+
+(defxdoc using-utf-8
+  :parents (character-encoding)
+  :short "Tips and warnings for using UTF-8."
+  :long "<p>Non-standard characters may be encoded in UTF-8 in ACL2 despite the
+ use of ISO-8859-1 (also known as Latin-1) for reading files and input.
+ Furthermore, UTF-8 is more widely supported and a more common default across
+ various editors, viewers, terminals, etc.  Therefore, it may be desirable to
+ use UTF-8 instead of Latin-1 in ACL2 books.  However, as alluded to in
+ @(see character-encoding), the ACL2 interpretation of strings which include
+ UTF-8 characters may surprise users unless they understand certain details of
+ the encoding and the ACL2 reader.</p>
+
+ <p>Recall that ACL2 @(see strings) are sequences of ACL2 @(see characters).
+ Furthermore, there are 256 distinct ACL2 characters, each corresponding to a
+ distinct 8-bit byte.  Users may expect their perceived characters to align
+ with ACL2's notion of characters.  However, this assumption is broken when
+ a UTF-8 ``character'' is represented by more than one byte.  Since the ACL2
+ reader uses Latin-1, the multi-byte UTF-8 ``character'' will be read by ACL2
+ as multiple ACL2 characters, one for each byte.  Nonetheless, strings
+ containing such sequences of bytes will print properly in environments which
+ are configured to expect UTF-8.
+ </p>
+
+ <p>We now consider a concrete example of UTF-8 in ACL2 strings.  In UTF-8, the
+ ``lowercase alpha'' character, &alpha;, is represented by the two byte
+ sequence @('#xCE') @('#xB1').  We can explicitly create the string consisting
+ of just the UTF-8-encoded lowercase alpha, as in the following constant.</p>
+
+ @({
+ (defconst *utf8-alpha*
+   (coerce (list (code-char #xCE) (code-char #xB1)) 'string))
+ })
+
+ <p>In UTF-8 environments, printing this string will result in the single
+ visible lowercase alpha character.  However, if we evaluate
+ @('(length *utf8-alpha*)'), we get @('2'), since the string consists of two
+ ACL2 @(see characters), one for each byte. Similarly, we might reverse the
+ string.</p>
+
+ @({
+ (reverse *utf8-alpha*)
+ })
+
+ <p>
+ Doing so yields a string which is not valid UTF-8.  In Emacs, this string is
+ rendered using the octal codes for each byte.
+ </p>
+
+ @({
+ \"\\261\\316\"
+ })")
 
 (defxdoc value-triple
   :parents (events acl2-built-ins errors)

@@ -360,6 +360,11 @@ ${info Excluding books that are CCL-only: [$(CERT_PL_CCL_ONLY)]}
 OK_CERTS := $(filter-out $(CERT_PL_CCL_ONLY), $(OK_CERTS))
 endif
 
+ifneq (SBCL, $(ACL2_HOST_LISP))
+${info Excluding books that are SBCL-only: [$(CERT_PL_SBCL_ONLY)]}
+OK_CERTS := $(filter-out $(CERT_PL_SBCL_ONLY), $(OK_CERTS))
+endif
+
 ifeq (ALLEGRO, $(ACL2_HOST_LISP))
 ${info Excluding non-Allegro books: [$(CERT_PL_NON_ALLEGRO)]}
 OK_CERTS := $(filter-out $(CERT_PL_NON_ALLEGRO), $(OK_CERTS))
@@ -608,7 +613,8 @@ SLOW_BOOKS := \
   workshops/2011/krug-et-al/support/MinVisor/setup-nested-page-tables.cert \
   workshops/2013/hardin-hardin/support/APSP.cert \
   demos/ppr1-experiments-thm-1-ppr1.cert \
-  kestrel/acl2data/gather/tests/run-tests.cert
+  kestrel/acl2data/gather/tests/run-tests.cert \
+  projects/aleo/vm/circuits/axe/blake2s-proof2.cert
 
 # The following could well be considered as slow books, too.
 # top.cert
