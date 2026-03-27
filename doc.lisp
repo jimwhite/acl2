@@ -106799,6 +106799,19 @@ Experimental Versions
 
 Changes to Existing Features
 
+  (SBCL only) Modified SBCL to avoid its ``readtable normalization''
+  feature for reading symbols containing Unicode characters.  This
+  avoids cases that otherwise create non-ACL2 characters in the
+  resulting [30m[47m[symbol-name][0m[0m.  Thanks to Eric McCarthy, who provided a
+  solution as well as the following raw Lisp example; see also {the
+  Zulip discussion of this issue |
+  https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162}.
+
+    (char-code (char (symbol-name (read-from-string
+                                   (format nil \"~c\" (code-char 181))))
+                     0))
+    => 924  ; GREEK CAPITAL LETTER MU
+
 
 New Features
 
@@ -106807,6 +106820,14 @@ Heuristic and Efficiency Improvements
 
 
 Bug Fixes
+
+  Fixed a soundness bug caused by creation of a character that is not
+  an ACL2 character.  All ACL2 characters have codes less than 256,
+  but the expression [30m[47m(char-code (char-upcase (code-char 255)))[0m[0m
+  evaluated to 376 in ACL2 built on every host Lisp except GCL.
+  Thanks to Eric McCarthy for {pointing out this bug as well as code
+  relevant to a fix |
+  https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162}.
 
 
 Changes at the System Level
