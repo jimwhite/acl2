@@ -28,7 +28,6 @@
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -39,8 +38,7 @@
 
 (local
  (defthm equal-of-+-of-bvchop-same-31-32-linear
-   (implies (and (unsigned-byte-p 32 x)
-                 (integerp y))
+   (implies (unsigned-byte-p 32 x)
             (equal x (+ (bvchop 31 x) (* (expt 2 31) (getbit 31 x)))))
    :rule-classes :linear
    :hints (("Goal" :use (:instance acl2::split-bv
@@ -335,7 +333,7 @@
 
 (defthm mv-nth-0-of-lsr_c-becomes-bvshr
   (implies (and (unsigned-byte-p n x)
-                (integerp shift)
+                ;; (integerp shift)
                 (> shift 0) ; todo drop
                 (natp shift)
                 )
@@ -345,7 +343,7 @@
 
 (defthm mv-nth-1-of-lsr_c-becomes-getbit
   (implies (and (unsigned-byte-p n x)
-                (integerp shift)
+                ;; (integerp shift)
                 (> shift 0) ; todo drop
                 (natp shift)
                 )
@@ -369,11 +367,8 @@
 
 ;drop?
 (defthm integerp-of-lsr
-  (implies (and (unsigned-byte-p n x)
-                 (integerp shift)
-                 ;; the assert:
-                 (>= shift 0))
-            (integerp (lsr n x hift)))
+  (implies (integerp x)
+           (integerp (lsr n x shift)))
   :hints (("Goal" :in-theory (enable lsr lsr_c))))
 
 (defthm lsr-becomes-bvshr
@@ -535,6 +530,13 @@
                                   (acl2::floor-of-*-of-/-and-1) ; todo: gen?
                                   ))))
 
+(defthmd div-becomes-bvdiv
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (div x y)
+                  (acl2::bvdiv 32 x y)))
+  :hints (("Goal" :in-theory (enable acl2::bvdiv))))
+
 
 ;; For mod, we can just use the ACL2 mod.  This theorem shows that the ACL2 mod
 ;; satisfies the defining equation used for mod in the spec:
@@ -564,7 +566,7 @@
                   (acl2::rightrotate n shift x)))
   :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
 
-;; could try to complify the RHS but that would involve a case split
+;; could try to simplify the RHS but that would involve a case split
 (defthm mv-nth-1-of-ror_c-becomes-getbit-of-rightrotate
   (implies (and (unsigned-byte-p n x)
                 (integerp shift))
@@ -1083,10 +1085,22 @@
 ;;         (bvand 32 #xfffffffc x))
 ;;  :hints (("Goal" :in-theory (enable align bvand))))
 
+(defthm bvchop-2-of-align-of-4
+  (equal (bvchop 2 (align x 4))
+         0)
+  :hints (("Goal" :in-theory (enable align))))
+
+(defthm align-of-4-when-aligned
+  (implies (and (equal (bvchop 2 x) 0)
+                (integerp x))
+           (equal (align x 4)
+                  x))
+  :hints (("Goal" :in-theory (enable align bvchop mod))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; todo: think about this
-;; Val should contain enough informaion to distinguish different unknown bits (e.g., opcode, flag, etc.)
+;; Val should contain enough information to distinguish different unknown bits (e.g., opcode, flag, etc.)
 (encapsulate (((unknown-bits * * arm) => *))
     (local (defun unknown-bits (n val arm)
              (declare (xargs :guard (posp n) :stobjs arm)
@@ -1130,8 +1144,7 @@
 ;; todo: add a case for Thumb
 (defun pcvalue (inst-address)
   (declare (xargs :guard (addressp inst-address)))
-  (+ 8 inst-address) ; todo: wrap?
-  )
+  (bvplus 32 8 inst-address))
 
 ;; TODO: Can return PC+4 on versions before ARMv7?
 (defund PCStoreValue (inst-address)
@@ -1177,3 +1190,31 @@
   (declare (xargs :guard (and (unsigned-byte-p 32 x)
                               (unsigned-byte-p 32 y))))
   (bvxor 32 x y))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; In the instruction semantic functions, access to register N must check
+;; whether N is *pc* and adjust by adding 8 (usually) if so.
+;todo: disable but need rules
+;; TODO: In some cases, this may be overkill because the register can't be the PC.
+;; In those cases, we could just use REG instead of REG*.
+(defun reg* (n arm)
+  (declare (xargs :guard (register-numberp n)
+                  :stobjs arm))
+  (let ((val (reg n arm)))
+    (if (equal *pc* n)
+        (let ((offset (if (equal (isetstate arm) *InstrSet_ARM*)
+                          8 ; todo: should this ever be 12?
+                        4 ; for Thumb (and ThumbEE)
+                        )))
+          (bvplus 32 offset val))
+      val)))
+
+(defthm unsigned-byte-p-of-reg*
+  (implies (and (<= 32 size)
+                (integerp size)
+                (< reg 16)
+                (natp reg)
+                (armp arm))
+           (unsigned-byte-p size (reg* reg arm)))
+  :hints (("Goal" :in-theory (enable reg*))))

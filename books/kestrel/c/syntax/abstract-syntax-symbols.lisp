@@ -55,6 +55,8 @@
 
     typequal/attribspec-list-listp
 
+    keyword-uscores-p
+
     unopp
     unop-case
     unop-kind
@@ -63,8 +65,17 @@
     binop-case
     binop-kind
 
+    stor-spec
+    stor-spec-fix
+
+    type-qual
+    type-qual-fix
+
     asm-name-spec-optionp
 
+    exprs/decls/stmts
+
+    expr
     exprp
     expr-fix
     expr-count
@@ -83,7 +94,9 @@
     make-expr-arrsub
     make-expr-funcall
     make-expr-member
+    expr-member->arg
     make-expr-memberp
+    expr-memberp->arg
     make-expr-complit
     expr-unary
     make-expr-unary
@@ -119,13 +132,16 @@
     const-exprp
     const-expr-count
     const-expr
+    make-const-expr
     const-expr->expr
+    const-expr->info
 
     const-expr-optionp
     const-expr-option-fix
     const-expr-option-count
     const-expr-option-case
 
+    genassoc
     genassocp
     genassoc-fix
     genassoc-count
@@ -137,6 +153,7 @@
     genassoc-list-fix
     genassoc-list-count
 
+    member-designor
     member-designorp
     member-designor-fix
     member-designor-count
@@ -144,6 +161,7 @@
     make-member-designor-dot
     make-member-designor-sub
 
+    type-spec
     type-specp
     type-spec-fix
     type-spec-count
@@ -159,6 +177,7 @@
 
     type-spec-listp
 
+    spec/qual
     spec/qual-p
     spec/qual-fix
     spec/qual-count
@@ -171,6 +190,7 @@
     spec/qual-list-fix
     spec/qual-list-count
 
+    align-spec
     align-specp
     align-spec-fix
     align-spec-count
@@ -178,6 +198,7 @@
     align-spec-alignas-type
     align-spec-alignas-expr
 
+    decl-spec
     decl-specp
     decl-spec-fix
     decl-spec-count
@@ -190,6 +211,7 @@
     decl-spec-list-fix
     decl-spec-list-count
 
+    initer
     initerp
     initer-fix
     initer-count
@@ -212,6 +234,7 @@
     desiniter-list-fix
     desiniter-list-count
 
+    designor
     designorp
     designor-fix
     designor-count
@@ -290,12 +313,15 @@
     param-declon-list-fix
     param-declon-list-count
 
+    param-declor
     param-declorp
     param-declor-fix
     param-declor-count
     param-declor-case
+    param-declor-nonabstract
     make-param-declor-nonabstract
     param-declor-nonabstract->declor
+    param-declor-nonabstract->info
     param-declor-abstract
     param-declor-none
 
@@ -365,6 +391,7 @@
     make-init-declor
     init-declor->declor
     init-declor->initer?
+    init-declor->info
 
     init-declor-listp
     init-declor-list-fix
@@ -391,6 +418,9 @@
     label-case
     make-label-name
     make-label-casexpr
+
+    asm-stmt
+    asm-stmt-fix
 
     stmtp
     stmt-fix
@@ -442,15 +472,17 @@
     comp-stmt->labels
     comp-stmt->items
 
-    fundefp
     fundef
+    fundefp
     fundef-fix
     make-fundef
     fundef->declor
+    fundef->info
 
     fundef-optionp
     fundef-option-case
 
+    ext-declon
     ext-declonp
     ext-declon-fix
     ext-declon-case
@@ -462,6 +494,9 @@
     ext-declon-listp
     ext-declon-list-fix
 
+    trans-items
+
+    trans-item
     trans-itemp
     trans-item-fix
     trans-item-case
@@ -471,33 +506,36 @@
     trans-item-listp
     trans-item-list-fix
 
-    transunitp
-    transunit
-    make-transunit
-    transunit-fix
-    transunit->items
+    trans-unit
+    trans-unitp
+    make-trans-unit
+    trans-unit-fix
+    trans-unit->items
 
-    filepath-transunit-mapp
+    filepath-optionp
 
-    transunit-ensemblep
-    transunit-ensemble
-    transunit-ensemble->units
+    filepath-trans-unit-map
+    filepath-trans-unit-mapp
+
+    trans-ensemble
+    trans-ensemblep
+    trans-ensemble->units
 
     filepathp
     filepath
-    filepath->unwrap
+    filepath->string
 
     filedatap
     filedata
-    filedata->unwrap
+    filedata->bytes
 
     filesetp
     fileset
-    fileset->unwrap
+    fileset->files
 
     code-ensemble
     code-ensemblep
-    code-ensemble->transunits
+    code-ensemble->trans-units
     code-ensemble->ienv
     make-code-ensemble
     change-code-ensemble
@@ -521,8 +559,8 @@
     irr-block-item
     irr-fundef
     irr-trans-item
-    irr-transunit
-    irr-transunit-ensemble
+    irr-trans-unit
+    irr-trans-ensemble
     irr-code-ensemble
 
     ;; unambiguity:
@@ -582,9 +620,9 @@
     ext-declon-list-unambp
     trans-item-unambp
     trans-item-list-unambp
-    transunit-unambp
-    filepath-transunit-map-unambp
-    transunit-ensemble-unambp
+    trans-unit-unambp
+    filepath-trans-unit-map-unambp
+    trans-ensemble-unambp
     code-ensemble-unambp
 
     ;; purity:
@@ -652,9 +690,9 @@
     ext-declon-list-aidentp
     trans-item-aidentp
     trans-item-list-aidentp
-    transunit-aidentp
-    filepath-transunit-map-aidentp
-    transunit-ensemble-aidentp
+    trans-unit-aidentp
+    filepath-trans-unit-map-aidentp
+    trans-ensemble-aidentp
     code-ensemble-aidentp
 
     ;; formalized subset:
@@ -704,10 +742,43 @@
 
     ;; validation information:
 
+    uid
+    uidp
+    uid-fix
+
+    type
+    typep
+    type-fix
     type-case
     type-kind
+    type-count
     type-void
     type-sint
+    type-pointer->to
+
+    type-listp
+    type-list-count
+
+    type-struct->uid
+    type-struct->tunit?
+    type-struct->tag/members
+
+    type-struni-tag/members-p
+    type-struni-tag/members-count
+    type-struni-tag/members-case
+    type-struni-tag/members-tagged->tag
+
+    type-struni-member-p
+    type-struni-member-count
+
+    type-struni-member-list
+    type-struni-member-listp
+    type-struni-member-list-count
+    type-struni-member->type
+
+    type-params-p
+    type-params-case
+    type-params-count
 
     ident-type-map
     ident-type-mapp
@@ -717,40 +788,30 @@
     type-to-value-kind
     type-integerp
 
-    iconst-info
+    iconst-vinfo
 
-    var-info
-    var-infop
-    var-info-fix
-    coerce-var-info
+    var-vinfo
+    var-vinfop
+    var-vinfo-fix
+    var-vinfo->uid
+    coerce-var-vinfo
 
-    expr-const-infop
-    expr-const-info-fix
+    type-spec-struct-vinfop
+    type-spec-struct-vinfo->type
 
-    expr-string-infop
+    type-vinfop
+    type-vinfo-fix
+    type-vinfo->type
 
-    expr-arrsub-infop
+    type+uid-vinfo
+    type+uid-vinfop
+    type+uid-vinfo->type
+    type+uid-vinfo->uid
 
-    expr-funcall-infop
-
-    expr-unary-infop
-
-    expr-binary-infop
-
-    tyname-info
-    tyname-infop
-
-    param-declor-nonabstract-info
-    param-declor-nonabstract-info->type
-
-    init-declor-info
-    init-declor-info->type
-    init-declor-info->typedefp
-
-    fundef-info
-    fundef-infop
-    fundef-info->type
-    fundef-info->table-body-start
+    init-declor-vinfo
+    init-declor-vinfop
+    init-declor-vinfo->type
+    init-declor-vinfo->typedefp
 
     expr-type
     initer-type
@@ -829,9 +890,9 @@
     ext-declon-list-annop
     trans-item-annop
     trans-item-list-annop
-    transunit-annop
-    filepath-transunit-map-annop
-    transunit-ensemble-annop
+    trans-unit-annop
+    filepath-trans-unit-map-annop
+    trans-ensemble-annop
     code-ensemble-annop
 
     ;; other operations:

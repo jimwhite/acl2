@@ -3475,19 +3475,18 @@
   (active-runep '(:rewrite left-to-right))
 
   General Form:
-  (active-runep rune &optional strict)
+  (active-runep x &optional strict)
  })
 
- <p>where @('rune') has the shape of a @(see rune).  This macro expands to an
- expression using the variables @('ens') and @('state'), and returns
- non-@('nil') when the given rune exists and is @(see enable)d (according to
- the given ``enabled structure,'' @('ens'), and the current logical @(see
- world) of the given @(tsee state)).  See @(see theory-invariant) for how this
- macro can be of use.</p>
+ <p>This macro expands to an expression using the variables @('ens') and
+ @('state'), and returns non-@('nil') when the argument evaluates to an @(see
+ enable)d @(see rune) (according to the given ``enabled structure,'' @('ens'),
+ and the current logical @(see world) of the given @(tsee state)).  See @(see
+ theory-invariant) for how this macro can be of use.</p>
 
  <p>When the optional argument is @('nil') or is omitted, then although the
- argument is required to have the shape of a @(see rune), it need not be a
- rune.  For example, if there is no rewrite rule named @('left-to-right'), then
+ argument generally has the shape of a @(see rune), it need not be a rune.  For
+ example, if there is no rewrite rule named @('left-to-right'), then
  @('(active-runep '(:rewrite left-to-right))') will simply return @('nil').  If
  instead you'd like this call to cause an error, use a non-nil optional
  argument or, equivalently, use @(tsee active-or-non-runep).</p>")
@@ -4611,6 +4610,20 @@ and @(tsee include-book)"
  </ul>
 
  ")
+
+;;; The following is commented out because alist-keys is already documented in
+;;; std/alists/alist-keys.lisp.
+; (defxdoc alist-keys
+;   :parents (stobj acl2-built-ins)
+;   :short "Count the number of keys in association list"
+;   :long "<p>@('(Alist-keys al)') returns the sorted list of keys in an
+;  association list.  The sorting function is @(tsee merge-sort-lexorder).</p>
+;
+;  <p>@('Alist-keys') has a guard of @('t').  This function is called in the body
+;  of function, @('<h>-keys') where @('<h>') is a hash-table field of a @(see
+;  stobj).  See @(see defstobj).</p>
+;
+;  @(def alist-keys)")
 
 (defxdoc alist-keys-subsetp
   :parents (alists acl2-built-ins)
@@ -7041,7 +7054,7 @@ and @(tsee include-book)"
  })
 
  <p>@('Obj') may be any object and is called the ``default value'' of the
- array.  @(tsee Max) must be an integer greater than @('dim').  @('Name') must
+ array.  @('Max') must be an integer greater than @('dim').  @('Name') must
  be a symbol.  The @(':')@(tsee default) and @(':name') entries are optional;
  if @(':')@(tsee default) is omitted, the default value is @('nil').  The
  function @(tsee header), when given a name and a 1- or 2-dimensional array,
@@ -7093,7 +7106,7 @@ and @(tsee include-book)"
  <p>To prevent arrays from growing excessively long due to repeated @(tsee
  aset1) operations, @(tsee aset1) essentially calls @(tsee compress1) on the
  new alist whenever the length of the new alist exceeds the @(':')@(tsee
- maximum-length) entry, @(tsee max), in the @(see header) of the array.  See
+ maximum-length) entry, @('max'), in the @(see header) of the array.  See
  the definition of @(tsee aset1) (for example by using @(':')@(tsee pe)).  This
  is primarily just a mechanism for freeing up @(tsee cons) space consumed while
  doing @(tsee aset1) operations.  Note however that this @(tsee compress1) call
@@ -19344,8 +19357,6 @@ subtree of X with T, without duplication.</p>
  of function, @('<h>-count') where @('<h>') is a hash-table field of a @(see
  stobj).  See @(see defstobj).</p>
 
- @(def hons-remove-assoc)
-
  @(def count-keys)")
 
 (defxdoc course-materials
@@ -22551,7 +22562,7 @@ href='http://www.cs.utexas.edu/users/moore/classes/index.html'>here</a>.</li>
   below.  The basic idea is that a formal can be assigned ilk @(':FN') (or ilk
   @(':EXPR')) iff it is sometimes passed into a @(':FN') (or @(':EXPR')) slot
   in the body of @('fn') and is never passed into any other kind of slot.  A
-  formal can be be assigned ilk @('NIL') iff it is never passed into a slot of
+  formal can be assigned ilk @('NIL') iff it is never passed into a slot of
   ilk @(':FN') or @(':EXPR'), i.e., if it is used exclusively as an
   ``ordinary'' object.  We are more precise below.</p>
 
@@ -23093,14 +23104,15 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
      ((g1 x1 ... xn_1)
       ...
       (gk x1 ... xn_k))
-     :namedp flg)       ; [optional keyword argument]
+     :namedp flg ; [optional keyword argument]
+     :skip-checks sflg ; [optional keyword argument]
+     )
  })
 
  <p>where @('ev') and @('ev-list') are new function symbols and @('g1'), ...,
  @('gk') are old function symbols with the indicated number of formals, i.e.,
- each @('gi') has @('n_i') formals.  If the @(':namedp') keyword argument
- is provided, its value should be Boolean.  If not provided, the default
- value for @('flg') is @('nil').</p>
+ each @('gi') has @('n_i') formals.  Each keyword argument should be Boolean
+ and defaults to @('nil').</p>
 
  <p>This function provides a convenient way to constrain @('ev') and
  @('ev-list') to be mutually-recursive evaluator functions for the symbols
@@ -23113,12 +23125,12 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  a proof that it is correct for any larger evaluator function.  See @(see meta)
  for a discussion of metafunctions.</p>
 
- <p>If the @(':namedp') @('flg') is @('nil') (the default) constraints have
+ <p>If the @(':namedp') @('nflg') is @('nil') (the default) constraints have
  names of the form <i>ev</i>@('-CONSTRAINT-')<i>i</i>, e.g.,
- @('EV-CONSTRAINT-0'), @('EV-CONSTRAINT-1'), etc.  If @('flg') is non-@('nil'),
- the constraints are named more mnemonically, e.g., @('EV-OF-VARIABLE'),
- @('EV-OF-REVAPPEND-CALL'), etc.  We illustrate the @(':namedp t') names
- below.</p>
+ @('EV-CONSTRAINT-0'), @('EV-CONSTRAINT-1'), etc.  If @('nflg') is
+ non-@('nil'), the constraints are named more mnemonically, e.g.,
+ @('EV-OF-VARIABLE'), @('EV-OF-REVAPPEND-CALL'), etc.  We illustrate the
+ @(':namedp t') names below.</p>
 
  <p>@('Defevaluator') executes an @(tsee encapsulate) after generating the
  appropriate @(tsee defun) and @(tsee defthm) events.  Perhaps the easiest way
@@ -23227,6 +23239,12 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  @('(caddar x)').  However, ACL2 lambda expressions are all <i>closed</i>: in
  @('(lambda (v1 ... vn) body)'), the only free variables in @('body') are among
  the @('vi').  See @(see term).)</p>
+
+ <p>The @(':skip-checks') argument is @('nil') by default, in which case
+ certain preliminary checks are made in order to provide helpful error
+ messages.  When this argument is @('t'), those checks are skipped, in which
+ case the resultin @('encapsulate') event will fail if those checks would have
+ produced an error, but the error message may be less helpful.</p>
 
  <p>Acknowledgment: We thank Sol Swords and Jared Davis for their community
  book @('tools/defevaluator-fast.lisp'), which provided the model on which the
@@ -23855,7 +23873,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
 
  <p>The following code is intended to give an idea for how one might define the
  ``guts'' of a trusted clause-processor in raw Lisp.  The idea is to stub out
- functions, such as @('acl2-my-prove below'), that you want to define in raw
+ functions, such as @('acl2-my-prove') below, that you want to define in raw
  Lisp; and then, load a raw Lisp file to overwrite any such function with the
  real code.  But then we make any such overwritten function untouchable.  (This
  last step is important because otherwise, one can prove @('nil') using a
@@ -24976,7 +24994,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  creator, accessors, updaters, constants.  For fields of @('ARRAY') type, this
  event also introduces length and resize functions.  For fields of
  @('HASH-TABLE') type, this event also introduces boundp, get?, remove, count,
- clear, and initialization functions.  Fields of @('STOBJ-TABLE') type
+ keys, clear, and initialization functions.  Fields of @('STOBJ-TABLE') type
  introduce those functions as well except for the get? function.</p>
 
  <h3>The Single-Threaded Object Introduced</h3>
@@ -25043,7 +25061,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  introduced; see @(see defstobj-element-type) for discussion of the
  @(':element-type') keyword that may be provided for performance .  For fields
  of @('HASH-TABLE') or @('STOBJ-TABLE') type, this event also introduces
- boundp, get? (@('HASH-TABLE') types only), remove, count, clear, and
+ boundp, get? (@('HASH-TABLE') types only), remove, count, keys, clear, and
  initialization functions, as discussed below.  Constants are introduced that
  correspond to the accessor functions.</p>
 
@@ -25255,6 +25273,9 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
  <li>a ``count'' function that returns the number of (distinct) bound
  keys;</li>
 
+ <li>a ``keys'' function that returns the list of bound keys, sorted with
+ @(tsee merge-sort-lexorder);</li>
+
  <li>a ``clear'' function that creates a new empty hash table (and logically,
  the empty alist);</li>
 
@@ -25315,14 +25336,14 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
 
  <p>These functions &mdash; the recognizer, accessor, and updater, and also
  length and resize functions in the case of array fields, and boundp, get?,
- remove, count, clear, and init functions in the case of hash-table fields
- &mdash; have ``default names.''  The default names depend on the field name,
- @('fieldi'), and on whether the field is an array field, a hash-table field,
- or neither (i.e., a scalar field).  For clarity, suppose @('fieldi') is named
- @('c'). The default names are shown below in calls, which also indicate the
- arities of the functions.  In the expressions, we use @('x') as the object to
- be recognized by field recognizers, @('i') as an array index or the size of a
- resized array, @('k') as a key (for the logical association list or raw-Lisp
+ remove, count, keys, clear, and init functions in the case of hash-table
+ fields &mdash; have ``default names.''  The default names depend on the field
+ name, @('fieldi'), and on whether the field is an array field, a hash-table
+ field, or neither (i.e., a scalar field).  For clarity, suppose @('fieldi') is
+ named @('c'). The default names are shown below in calls, which also indicate
+ the arities of the functions.  In the expressions, we use @('x') as the object
+ to be recognized by field recognizers, @('i') as an array index or the size of
+ a resized array, @('k') as a key (for the logical association list or raw-Lisp
  hash table associated with the field), @('v') as the ``new value'' to be
  installed by an updater, and @('name') as the single-threaded object.</p>
 
@@ -25340,6 +25361,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   get? [For hash-tables only, not stobj-tables]        (c-get? k name)
   remove                                               (c-rem k name)
   count                                                (c-count name)
+  keys                                                 (c-keys name)
   clear                                                (c-clear name)
   init                                                 (c-init ht-size
                                                                rehash-size
@@ -25394,6 +25416,8 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
                                    ;   (mv nil nil) if key is not bound in H
   (DEFUN H-REM (K $S) ...)         ; remove key K from field H
   (DEFUN H-COUNT ($S) ...)         ; the number of (distinct) keys in field H
+  (DEFUN H-KEYS ($S) ...)          ; the sorted list of (distinct) keys in
+                                   ;   field H, sorted by merge-sort-lexorder
   (DEFUN H-CLEAR ($S) ...)         ; empty the hash table for field H
   (DEFUN H-INIT (HT-SIZE REHASH-SIZE REHASH-THRESHOLD $S) ...)
                                    ; replace the hash table for field H with
@@ -27630,7 +27654,7 @@ of @('term'). This can be retrieved with @(tsee getpropc).</p>
   below.  The basic idea is that a formal can be assigned ilk @(':FN') (or ilk
   @(':EXPR')) iff it is sometimes passed into a @(':FN') (or @(':EXPR')) slot
   in the body of @('fn') and is never passed into any other kind of slot.  A
-  formal can be be assigned ilk @('NIL') iff it is never passed into a slot of
+  formal can be assigned ilk @('NIL') iff it is never passed into a slot of
   ilk @(':FN') or @(':EXPR'), i.e., if it is used as an ``ordinary'' object.
   We are more precise below.</p>
 
@@ -27992,7 +28016,7 @@ ld) and @(tsee include-book)"
  <p>The predicate @('dfp') recognizes those rational numbers that have a
  floating-point representation.  We do not review floating-point numbers here,
  other than to note that a floating-point number is equal to a binary
- significand between 1 and 2 times 2 to a power, such as as @('1.01100 *
+ significand between 1 and 2 times 2 to a power, such as @('1.01100 *
  2^30').  For example, 1/4 is representable but 1/3 is not.</p>
 
  @({
@@ -35189,7 +35213,7 @@ ld) and @(tsee include-book)"
  example, @('(p -7)'), @('(p 'abc)'), and @('(p 0)') are all established by
  Base Case 1.  @('(p 1)') is established by Base Case 2.  @('(p 2)') is
  established from @('(p 0)') and the Induction Step.  Think about it!  @('(p
- 3)') is established form @('(p 1)') and the Induction Step, etc.</p>
+ 3)') is established from @('(p 1)') and the Induction Step, etc.</p>
 
  <p>A function that suggests this induction is:</p>
 
@@ -35371,7 +35395,7 @@ ld) and @(tsee include-book)"
  </code>
 
  <p>Note that the induction hypothesis is about an @('i') that is <i>bigger</i>
- than the @('i') in in the conclusion.  In induction, as in recursion, the
+ than the @('i') in the conclusion.  In induction, as in recursion, the
  sense of one thing being ``smaller'' than another is determined by an
  arbitrary measure of all the variables, not the magnitude or extent of some
  particular variable.</p>
@@ -39221,7 +39245,7 @@ current fast alists."
 
 (defxdoc fmx
   :parents (io acl2-built-ins)
-  :short "@('(fmx str &rest args) => state')"
+  :short "@('(fmx str &rest args) => (mv col state)')"
   :long "<p>See @(see fmt) for further explanation, including documentation of
  the tilde-directives.</p>")
 
@@ -53129,35 +53153,29 @@ tables in the current Hons Space."
   :short "Designate theory for some rewriting done for non-linear arithmetic"
   :long "<p>We assume familiarity with @(see theories); in particular, see
  @(see in-theory) for the normal way to set the current theory.  Here, we
- discuss an analogous event that pertains only to non-linear arithmetic
- (see @(see non-linear-arithmetic)).</p>
+ discuss a more primitive but analogous event that pertains only to non-linear
+ arithmetic (see @(see non-linear-arithmetic)).</p>
 
  @({
   Example:
-  (in-arithmetic-theory '(lemma1 lemma2))
+  (in-arithmetic-theory '(lemma1 lemma2 (:rewrite lemma3 . 2)))
 
   General Form:
-  (in-arithmetic-theory term)
+  (in-arithmetic-theory '(e1 ... en))
  })
 
- <p>where @('term') is a term that when evaluated will produce a theory (see
- @(see theories)).  Except for the variable @(tsee world), @('term') must
- contain no free variables.  @('Term') is evaluated with the variable @(tsee
- world) bound to the current @(see world) to obtain a theory and the
- corresponding runic theory (see @(see theories)) is then used by non-linear
- arithmetic (see @(see non-linear-arithmetic)).</p>
+ <p>where each @('ei') is a ``runic designator'' as defined formally in @(see
+ theories).  The non-linear arithmetic theory is obtained by expanding each
+ runic designator into a set of runes and unioning those sets together.</p>
 
- <p>Warning: If @('term') involves macros such as @(tsee ENABLE) and @(tsee
- DISABLE) you will probably not get what you expect!  Those macros are defined
- relative to the @(tsee CURRENT-THEORY).  But in this context you might wish
- they were defined in terms of the ``@('CURRENT-ARITHMETIC-THEORY')'' which is
- not actually a defined function.  We do not anticipate that users will
- repeatedly modify the arithmetic theory.  We expect @('term') most often to be
- a constant list of runes and so have not provided ``arithmetic theory
- manipulation functions'' analogous to @(tsee CURRENT-THEORY) and @(tsee
- ENABLE).</p>
-
- <p>See @(see non-linear-arithmetic).</p>")
+ <p>Warning: The theory set by @('in-arithmetic-theory') is used only when
+ inequalities are combined according to the heuristics described in @(see
+ non-linear-arithmetic).  We do not anticipate that users will repeatedly
+ modify the arithmetic theory and thus have not provided more sophisticated
+ tools for constructing it.  So, for example, you cannot construct it with the
+ usual @(see theory-functions) or by reference to previously named theories.
+ Instead, you must explicitly list the runic designators constituting the
+ theory.</p>")
 
 (defxdoc in-package
   :parents (packages acl2-built-ins)
@@ -53203,7 +53221,7 @@ tables in the current Hons Space."
  infinities.</p>
 
  <p>Then for @('e') to be in interval @('x'), it must be the case that @('e')
- satisfies the domain predicate <i>dom</i> (where where <i>dom</i>=@('nil')
+ satisfies the domain predicate <i>dom</i> (where <i>dom</i>=@('nil')
  means there is no restriction on the domain) and @('(<? ')<i>lo-rel lo</i>@('
  e)') and @('(<? ')<i>hi-rel</i>@(' e ')<i>hi</i>@(')').  [Note: ``Appropriate
  treatment of infinities'' is slightly awkward if both infinities are
@@ -53509,7 +53527,12 @@ tables in the current Hons Space."
  arguments are not evaluated.  @('Invariant') is just a macro that expands into
  a term that checks that not both @(see rune)s are enabled.  See @(see
  theory-invariant).  Also see @(see incompatible!) for a variant that insists
- the arguments are indeed runes, not merely having the shapes of runes.</p>")
+ the arguments are indeed runes, not merely having the shapes of runes.</p>
+
+ <p>Note that each argument must have the shape of a rune, as defined by
+ @('weak-runep').</p>
+
+ @(def weak-runep)")
 
 (defxdoc incompatible!
   :parents (theories)
@@ -55876,7 +55899,7 @@ tables in the current Hons Space."
 
   <p>The current documentation topic takes a slightly more informal approach
   but covers much of the same ground.  In particular, after some preliminary
-  remarks we coach you through a few simple simple exercises involving
+  remarks we coach you through a few simple exercises involving
   @('apply$') and related concepts.  During these exercises we draw your
   attention to some basic lessons to keep in mind.  At the end of this topic we
   list some simple challenge problems.</p>
@@ -75051,7 +75074,7 @@ it."
  })
 
  <p>Notice that in the following (silly) conjecture, ACL2 initially does only
- does the simplification directed by the metafunction; a second goal is
+ the simplification directed by the metafunction; a second goal is
  generated before the commutativity of addition can be applied.  If the above
  calls of @('UNHIDE') and @('HIDE') had been stripped off, then @('Goal'')
  would have been the term printed in @('Goal''') below.</p>
@@ -76333,7 +76356,7 @@ it."
  no printing.</p>
 
  <p>Some @(':rewrite') rules are considered ``simple abbreviations''; see @(see
- simple).  These can be be monitored, but are only tried at certain times
+ simple).  These can be monitored, but are only tried at certain times
  during the proof.  Monitoring is carried out by code inside the rewriter but
  abbreviation rules may be applied by a special purpose simplifier inside the
  so-called <i>preprocess</i> phase of a proof.  If you desire to monitor an
@@ -76394,7 +76417,7 @@ it."
  the @('lhs') matches the target, the rewriter then attempts to establish the
  @('hypi') by rewriting each of them in turn, instantiating each @('hypi') with
  the substitution.  If the instance of each @('hypi') rewrites to true, we know
- &mdash; by the theorem justifying this rule &mdash; that that the instance of
+ &mdash; by the theorem justifying this rule &mdash; that the instance of
  @('lhs') is equivalent to the corresponding instance of @('rhs'), but the
  instance of @('lhs') is the target.  So the rewriter is logically justified in
  replacing the occurrence of the target by the instance of @('rhs') and
@@ -82144,7 +82167,7 @@ it."
                  (implies (and (op x y) (op y z)) (op x z))
                  :rule-classes :forward-chaining))
 
-  ; fails in Version_2.6; succeeds in in Version_2.7
+  ; fails in Version_2.6; succeeds in Version_2.7
   (thm (implies (and (op a b) (op b c) (op b e)) (op a c)))
  })
 
@@ -88598,7 +88621,7 @@ it."
 
 ; Fixed a bug in :pso, specifically in its "So we now return to" messages,
 ; which were printing a goal that had just been proved for induction.  The fix
-; involved handling of of jppl-flg values in functions pop-clause-msg1 and
+; involved handling of jppl-flg values in functions pop-clause-msg1 and
 ; pop-clause-msg.
 
 ; The bug that could cause certify-book to fail with local make-event forms was
@@ -97866,7 +97889,7 @@ it."
 
 ; Fixed the guard error message for pkg-imports to report a violation for that
 ; function, not (as had been the case) for function pkg-witness.  More
-; generally, did miscellaneous cleaning of of code pertaining to those two
+; generally, did miscellaneous cleaning of code pertaining to those two
 ; functions.
 
 ; Modified the handling of print-number-base-16-upcase-digits so that it is
@@ -102788,7 +102811,7 @@ it."
  Keshav Kini for the suggestion.</p>
 
  <p>For documentation printed at the terminal with @(':')@(tsee doc), links
- (enclosed in in square brackets, ``[..]'') continue to be printed with respect
+ (enclosed in square brackets, ``[..]'') continue to be printed with respect
  to the @('\"ACL2\"') package (that is, as though the current package were
  @('\"ACL2\"')).  Now, however, where a link formerly might be printed as
  ``[acl2::foo]'', it is now printed as ``[foo]''; that is, a package prefix of
@@ -109387,7 +109410,8 @@ it."
  implies that such function definitions were compiled with each pass.  Now,
  with a few exceptions, these definitions are saved in the first pass of
  evaluating the @('encapsulate') form and retrieved, rather than re-evaluated,
- in the second pass.  The exceptions include the following.
+ in the second pass.  The exceptions include the following.  <b>WARNING</b>:
+ These restrictions have been removed in later versions; see @(see note-8-8).
 
  <ul>
 
@@ -109675,6 +109699,10 @@ it."
  ")
 
 (defxdoc note-8-8
+
+; When *debug-on* is t, the debug info now goes to (standard-co state) instead
+; of Lisp standard output.
+
   :parents (release-notes)
   :short "ACL2 Version  8.8 (xxx, 20xx) Notes"
   :long "<p>NOTE!  New users can ignore these release notes, because the @(see
@@ -109709,7 +109737,36 @@ it."
  => 924  ; GREEK CAPITAL LETTER MU
  })
 
+ <p>Strengthened the checks on the arguments to @(tsee incompatible) by using a
+ new function, @('weak-runep'), which checks that the keyword specifies one of
+ the known @(see rule-classes).  This can catch typos such as @('(:definiitioon
+ foo)').  Thanks to Eric Smith for the idea, which was brought to his attention
+ by Claude Code.</p>
+
+ <p>Improved an error message printed after a hard error that is encountered
+ during macroexpansion.  Now, that message suggests to look <i>above</i> for an
+ explanation (i.e., the hard error message).  It formerly said
+ &ldquo;below&rdquo; rather than &ldquo;above&rdquo;, but the only message
+ below it was pointing out &ldquo;Evaluation aborted&rdquo;.</p>
+
+ <p>Improved error messages for ill-formed first and second arguments of @(tsee
+ defund), @(tsee defun-nx), and @(tsee defund-nx).  The case of @('defund-nx')
+ was reported by Claude Code as showing no error message at all, for example
+ when evaluting the form, @('(defund-nx 42 (x) x)').  Thanks to Eric Smith for
+ bringing these to our attention.</p>
+
+ <p>Improved the @(see guard), as well as the guard violation message, for
+ @(tsee defevaluator).</p>
+
+ <p>The macro @(tsee tau-data) now has a guard requiring its argument to be a
+ symbol.  Thanks to Jerome Dubois and Eric Smith for a Zulip discussion leading
+ to this change.</p>
+
  <h3>New Features</h3>
+
+ <p>For @(tsee defstobj) fields of hash-table type, a new &ldquo;keys&rdquo;
+ function returns a sorted list of keys of the hash table.  See @(see
+ defstobj).  Thanks to Eric Smith for requesting this enhancement.</p>
 
  <h3>Heuristic and Efficiency Improvements</h3>
 
@@ -109722,7 +109779,69 @@ it."
  href='https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162'>pointing
  out this bug as well as code relevant to a fix</a>.</p>
 
+ <p>Checks were improved to avoid raw Lisp errors in the following situations:</p>
+
+ <ul>
+
+ <li>when the first argument of a call of @(tsee table) is not a symbol;</li>
+
+ <li>when a @(see computed-hint) evaluates to an expression of the form
+ @('(:computed-hint-replacement x ...)') where @('x') is neither @('t'),
+ @('nil'), nor a true list; and</li>
+
+ <li>when the second argument of @(tsee defevaluator) is ill-formed.</li>
+
+ </ul>
+
+ <p>Thanks to Eric Smith for passing along these bug reports from Claude
+ Code (which reported, for the first two: &ldquo;Four subagents tested ~270
+ malformed inputs across nearly every ACL2 event type.... Out of ~270 tests,
+ only 2 bugs were found&rdquo;).</p>
+
+ <p>Fixed many dozens of typos in comments and error messages, as reported by
+ Eric Smith, who used Claude Code and filtered out some false positives.</p>
+
+ <p>Fixed the behavior of aborts to avoid printing a newline to the terminal
+ when, like everything else, it should be printed to standard output.  Thanks
+ to Eric McCarthy for finding this bug as well as providing a detailed
+ explanation and the fix.</p>
+
+ <p>Fixed bugs in the raw Lisp definitions supporting @(tsee mfc-rw+) and
+ @(tsee mfc-relieve-hyp).  Thanks to Eric Smith for sending a report he
+ produced with Claude Code that points out the bugs and provides the fixes.</p>
+
+ <p>A release note item in @(see note-8-7) mentions a new feature in the
+ preceding ACL2 release, for which &ldquo;definitions are saved in the first
+ pass of evaluating the @('encapsulate') form and retrieved, rather than
+ re-evaluated, in the second pass.&rdquo; The implementation of this feature
+ has been significantly modified.  This modification fixes some bugs, as noted
+ in a new test book, @('books/system/tests/encap-defs-ht-input.lsp'), which
+ mentions those bugs (search for &ldquo;8.7&rdquo;).  This modification also
+ removes the first two restrictions mentioned in the aforementioned release
+ note item.  The key idea is to avoid saving code for @(see local) definitions
+ but to save code for most @(see redundant) definitions.</p>
+
  <h3>Changes at the System Level</h3>
+
+ <p>The built-in @(see events) @('Integer-1') and @('cons-equal') are now
+ @(tsee defthm) events instead of @(tsee defaxiom) events.  Thanks to Eric
+ Smith for showing us a report from Claude Code, which explained how those two
+ formulas are provable from the other axioms.</p>
+
+ <p>Added a capability for collecting times for definitions made during the
+ @('include-book') pass of @(tsee certify-book).  See the comment in the
+ definition of @('*pass2-def-time-info*') in the ACL2 source code.  Thanks to
+ Eric Smith for a conversation leading to this enhancement.</p>
+
+ <p>Added a build-time check (incomplete in principle, but perhaps complete in
+ practice) that for ACL2 floating-point operations (see @(see df)), overflow
+ and division by zero cause errors rather than producing results that are not
+ truly numbers.  Thanks to Camm Maguire for a conversation leading to this
+ check.</p>
+
+ <p>(GCL only) Added code for proper handling of floating-point exceptions on
+ arm and riscv64 platforms.  Thanks to Camm Maguire for major help with
+ this.</p>
 
  <h3>EMACS Support</h3>
 
@@ -129032,7 +129151,7 @@ work on <tt>(q x)</tt>.</p>
  @({
     (defun n3 () 0)
     (defun n4 () 1)
-    (defun n5 () (> (n3) (n4))) ; body is see normalized to nil
+    (defun n5 () (> (n3) (n4))) ; body is normalized to nil
     (thm (equal (n5) nil)) ; succeeds, trivially
     (set-ld-redefinition-action '(:warn . :overwrite) state)
     (defun n3 () 2)
@@ -129515,7 +129634,7 @@ work on <tt>(q x)</tt>.</p>
   <p>In frame 4 we are to maintain @('FEQ') on a call of @('G').  In frame 5 we
   are rewriting the second argument of @('G') and used
   @('G2EQ2-IMPLIES-FEQ-G-2') to derive the new geneqv containing @('G2EQ2').
-  We could get @('G2EQ1') into that new geneqv is only we had a congruence rule
+  We could get @('G2EQ1') into that new geneqv if only we had a congruence rule
   that says @('FEQ') is maintained on @('G') when rewriting the second argument
   of @('G') maintaining @('G2EQ1').  That's just the ``forgotten'' @('(DEFCONG
   G2EQ1 FEQ (G X Y) 2)').  Of course we could alternatively have chosen to
@@ -137634,7 +137753,7 @@ work on <tt>(q x)</tt>.</p>
   (set-inhibit-er string1 string2 ...)
  })
 
- <p>where each string is considered without regard to case.  This macro is is
+ <p>where each string is considered without regard to case.  This macro is
  essentially @('(local (table inhibit-er-table nil 'alist :clear))'),
  where @('alist') pairs each supplied string with @('nil'): that is, @('alist')
  is @('(pairlis$ lst nil)') where @('lst') is the list of strings supplied.
@@ -137791,7 +137910,7 @@ work on <tt>(q x)</tt>.</p>
   (set-inhibit-warnings string1 string2 ...)
  })
 
- <p>where each string is considered without regard to case.  This macro is is
+ <p>where each string is considered without regard to case.  This macro is
  essentially @('(local (table inhibit-warnings-table nil 'alist :clear))'),
  where @('alist') pairs each supplied string with @('nil'): that is, @('alist')
  is @('(pairlis$ lst nil)') where @('lst') is the list of strings supplied.
@@ -144849,7 +144968,7 @@ work on <tt>(q x)</tt>.</p>
  @('TipCnt'), that the formal @('counters') is used.  From the discussion in
  @(see stobj-example-1) it has been made clear that @('TipCnt') can only be
  called on the @('counters') object.  And yet, in that same discussion it was
- said that an argument is so treated only if it it declared among the
+ said that an argument is so treated only if it is declared among the
  @(':stobjs') in the definition of the function.  So why doesn't @('TipCnt')
  include something like @('(declare (xargs :stobjs (counters)))')?</p>
 
@@ -151162,10 +151281,11 @@ work on <tt>(q x)</tt>.</p>
  somewhat pretentious nature of any such advice.  But these remarks have helped
  many users approach ACL2 in a constructive and disciplined way.</p>
 
- <p>We say much more about The Method in the ACL2 book.  See the home page.
- Also see @(see set-gag-mode) for a discussion of a way for ACL2 to help you to
- use The Method.  And again, see @(see introduction-to-the-theorem-prover) for
- a more detailed tutorial.</p>
+ <p>We say much more about The Method in the book, <em>Computer-Aided
+ Reasoning: An Approach</em>; see @(see pubs::pubs-books).  Also see @(see
+ set-gag-mode) for a discussion of a way for ACL2 to help you to use The
+ Method.  And again, see @(see introduction-to-the-theorem-prover) for a more
+ detailed tutorial.</p>
 
  <p>Learning to read failed proofs is a useful skill.  There are several kinds
  of ``checkpoints'' in a proof: (1) a formula to which induction is being (or
@@ -153724,7 +153844,7 @@ work on <tt>(q x)</tt>.</p>
  is passed to the native Lisp trace (after removing the @(':native') and
  @(':multiplicity') options).  Each trace spec generates its own call of Lisp
  @('trace'): directly in most cases, but if SBCL is the host Lisp then the SBCL
- @('trace') syntax is accommodated by placing the the function symbol last,
+ @('trace') syntax is accommodated by placing the function symbol last,
  after any keyword options.  A trust tag (see @(see defttag)) is required in
  order to use the @(':native') option, because arbitrary raw Lisp may be
  executed by the options!</p>
@@ -173195,7 +173315,7 @@ expand function call at the current subterm, without simplifying"
   used microprocessor built by Motorola, within the mathematical logic of the
   automated reasoning system Nqthm, a.k.a. the Boyer-Moore Theorem Prover.
   Using this formal description, we have mechanically checked the correctness
-  of MC68020 object code programs for for binary search, Hoare's Quick Sort,
+  of MC68020 object code programs for binary search, Hoare's Quick Sort,
   twenty-one functions from the Berkeley Unix C string library, and other
   well-known algorithms.  The object code for these examples was generated
   using the Gnu C, the Verdix Ada, and the AKCL common Lisp compilers.  We have

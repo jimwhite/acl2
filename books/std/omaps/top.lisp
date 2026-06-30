@@ -11,7 +11,6 @@
 (in-package "OMAP")
 
 (include-book "core")
-(include-book "with-fixing-theorems")
 (include-book "assoc")
 (include-book "submap")
 (include-book "extensionality")
@@ -20,3 +19,10 @@
 (include-book "update")
 (include-book "from-alist")
 (include-book "from-lists")
+(include-book "compose")
+(include-book "identityp")
+(include-book "injectivep")
+(include-book "inverse")
+(include-book "restrict")
+(include-book "restrict-values")
+(include-book "closedp")

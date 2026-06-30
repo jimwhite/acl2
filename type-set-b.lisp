@@ -968,7 +968,7 @@
 ; if a proof attempt was aborted then we had to carefully clean up the property
 ; list structures so that they once again reflected the current (global)
 ; theory.  The beauty of the ACL2 approach is that local hint settings have no
-; affect on the global theory and yet involve no overhead.
+; effect on the global theory and yet involve no overhead.
 
 ; A delicacy of the current implementation however concerns the relation
 ; between the global enabled structure and undoing.  If the world is backed up
@@ -2908,7 +2908,7 @@
 ; meaning of these records.
 
 ; In a recognizer-tuple, fn is the name of some Boolean-valued
-; function of one argument.  True-ts and and false-ts are type sets.
+; function of one argument.  True-ts and false-ts are type sets.
 ; If such a record is on the recognizer-alist then it is the case that
 ; (fn x) implies that the type set of x is a subset of true-ts and
 ; (not (fn x)) implies that the type set of x is a subset of false-ts.
@@ -3110,7 +3110,7 @@
 
 (defun most-recent-enabled-recog-tuple1 (lst ens)
 
-; This function finds the first recognizer-tuple in lst whose whose :nume is
+; This function finds the first recognizer-tuple in lst whose :nume is
 ; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
 ; are always "enabled."
 
@@ -3121,7 +3121,7 @@
 
 (defun most-recent-enabled-recog-tuple (fn wrld ens)
 
-; This function finds the first recognizer-tuple for fn whose whose :nume is
+; This function finds the first recognizer-tuple for fn whose :nume is
 ; enabled-numep.  Thus, primitive recognizer tuples, like that for rationalp,
 ; are always "enabled."
 
@@ -4919,6 +4919,9 @@
 
 (defrec ancestor
 
+; As the rewriter backchains, these records are added to the ancestors stack by
+; push-ancestor (or using make-ancestor-binding-hyp, for binding hyps).
+
 ; Note: if lit is :binding-hyp, then atm is hyp, fn-count is unify-subst and
 ; tokens is nil (see relevant comment in earlier-ancestor-biggerp).  See
 ; make-ancestor-binding-hyp, ancestor-binding-hyp-p, ancestor-binding-hyp/hyp,
@@ -5609,7 +5612,7 @@
                                      (merged-additive-const-ts
                                       (type-set-quote merged-additive-const))
 
-; We have have the following type information:
+; We have the following type information:
 ; ts:
 ;   type of orig-term (the term we are typing), which intersects both
 ;   *ts-ratio* and *ts-integer* and is contained in *ts-rational*
@@ -7739,7 +7742,7 @@
 ; var whose most-recent-enabled-recog-tuple has those strongp, true-ts, and
 ; false-ts fields, in which case var is :one and rune[s] is a single rune; or
 ; else x is a call of IF on a tree of strong compound-recognizer calls of var,
-; in which case rune[s] is is a list of runes justifying that conclusion.
+; in which case rune[s] is a list of runes justifying that conclusion.
 
   (cond
    ((eq (ffn-symb x) 'if)
@@ -11997,7 +12000,7 @@
 ; type-alist-equality-loop1.  We discovered this in Version_2.7 during
 ; regression tests, specifically, with the last form in the community book
 ; books/workshops/2000/manolios/pipeline/pipeline/deterministic-systems/128/top/ma128-isa128.
-; This function was being called differently because of a change in in
+; This function was being called differently because of a change in
 ; built-in-clausep to use forward-chaining.
 
                       (equal type-alist type-alist0))

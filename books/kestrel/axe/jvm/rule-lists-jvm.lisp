@@ -1,7 +1,7 @@
 ; Lists of rule names (JVM-related)
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -49,7 +49,7 @@
 ;; Rules about new addresses
 (defun new-ad-rules ()
   (declare (xargs :guard t))
-  '( ;;rules to simplidy sets of new addresses (could instead unroll n-new-ads?)
+  '(;;rules to simplidy sets of new addresses (could instead unroll n-new-ads?)
     insert-of-new-ad-of-insert-of-nth-new-ad ;new
     insert-of-nth-new-ad-of-insert-of-nth-new-ad
     insert-of-next-ad-onto-union-of-dom-and-n-new-adsalt-better
@@ -211,8 +211,8 @@
           (step-state-with-pc-and-call-stack-height-rules)
           '(run-until-return-from-stack-height-of-myif-axe ;chooses a state to step and introduces STEP-STATE-WITH-PC-AND-CALL-STACK-HEIGHT
             ;; run-until-return-from-stack-height-of-myif-axe-alt ;fixme which of these do we prefer?
-            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exeception states
-            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exeception states
+            run-until-return-from-stack-height-of-myif-axe-split-1 ;in case there are exception states
+            run-until-return-from-stack-height-of-myif-axe-split-2 ;in case there are exception states
             )))
 
 ;; Since Axe cannot natively evaluate these functions
@@ -918,7 +918,7 @@
             logext-when-usb-cheap ;new, since logext is still used a little bit (for arraycopy?)
             logext-identity-when-usb-smaller-axe
 
-            jvm::op-code
+            jvm::instruction-opcode
 
             jvm::call-stack
 
@@ -944,10 +944,11 @@
             jvm::initialize-static-fields-base
             default-value
 ;    strip-cars-opener
-            strip-cars-of-non-consp
+;            strip-cars-when-not-consp
             ;bvand-of-logext
             ;bvand-of-logext-alt
 
+            array-length ; try array-length-of-set-field-both instead?
             ;; rules about get-field:
             get-field-of-set-field-both ;todo: try this one first
             ;; don't need these 3 if we have get-field-of-set-field-both:
@@ -1032,6 +1033,7 @@
             jvm::stack-of-make-frame
             jvm::method-designator-of-make-frame
             jvm::method-info-of-make-frame
+            ;jvm::method-program ; new
             ;; todo: rename to frame-method-descriptor, etc.:
             jvm::cur-method-descriptor
             jvm::cur-method-name
@@ -1589,14 +1591,14 @@
 ;todo: add jvm to the name
 (defun phase-1-rules ()
   (declare (xargs :guard t))
-  (set-difference-equal (append '( ;bvshl ;this makes things much bigger
+  (set-difference-equal (append '(;bvshl ;this makes things much bigger
                                   )
                                 (amazing-rules-spec-and-dag)
                                 (map-rules)
                                 (jvm-semantics-rules)
                                 (jvm-simplification-rules)
                                 (run-until-return-from-stack-height-rules-smart))
-                        '(                ;;BVOR-WITH-SMALL-ARG2
+                        '(;;BVOR-WITH-SMALL-ARG2
                           getbit-of-bvxor ;new
                           bvplus-commutative-axe
                           bvplus-commutative-2-axe
@@ -1614,14 +1616,14 @@
   (list (make-rule-alist! (phase-1-rules)
                           (w state))
         ;; here's what gets turned on here (BVPLUS-COMMUTATIVE-AXE BVPLUS-COMMUTATIVE-2-AXE BVPLUS-ASSOCIATIVE BVUMINUS-OF-BVPLUS GETBIT-OF-BVXOR BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT BVASHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT):
-        (make-rule-alist! (set-difference-equal (append '( ;bvshl ;this makes things much bigger
+        (make-rule-alist! (set-difference-equal (append '(;bvshl ;this makes things much bigger
                                                           )
                                                         (amazing-rules-spec-and-dag)
                                                         (map-rules)
                                                         (jvm-semantics-rules)
                                                         (jvm-simplification-rules)
                                                         (run-until-return-from-stack-height-rules-smart))
-                                                '( ;BVOR-WITH-SMALL-ARG2
+                                                '(;BVOR-WITH-SMALL-ARG2
                                                   ;;GETBIT-OF-BVXOR
                                                   ;;BVSHR-REWRITE-FOR-CONSTANT-SHIFT-AMOUNT
                                                   ;;BVSHL-REWRITE-WITH-BVCHOP-FOR-CONSTANT-SHIFT-AMOUNT
@@ -1647,7 +1649,7 @@
 (set-axe-rule-priority run-until-return-from-stack-height-opener-axe -10)
 (set-axe-rule-priority run-until-return-from-stack-height-base-axe -9)
 
-(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -13)
+(set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame-of-push-frame -13)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame-of-push-frame -12)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame-of-push-frame -11)
 (set-axe-rule-priority jvm::call-stack-size-of-push-frame -10)

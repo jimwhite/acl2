@@ -3546,7 +3546,7 @@ Subtopics
       [30m[47m(fmt1! str alist col channel state evisc) => (mv col state)[0m[0m
 
   [Fmx]
-      [30m[47m(fmx str &rest args) => state[0m[0m
+      [30m[47m(fmx str &rest args) => (mv col state)[0m[0m
 
   [Fmx-cw]
       [30m[47m(fmx-cw str &rest args) => state[0m[0m
@@ -6035,18 +6035,17 @@ Subtopics
     (active-runep '(:rewrite left-to-right))
 
     General Form:
-    (active-runep rune &optional strict)
+    (active-runep x &optional strict)
 
-  where [30m[47mrune[0m[0m has the shape of a [rune].  This macro expands to an
-  expression using the variables [30m[47mens[0m[0m and [30m[47mstate[0m[0m, and returns non-[30m[47mnil[0m[0m
-  when the given rune exists and is [enable]d (according to the given
-  ``enabled structure,'' [30m[47mens[0m[0m, and the current logical [world] of the
-  given [30m[47m[state][0m[0m).  See [theory-invariant] for how this macro can be
-  of use.
+  This macro expands to an expression using the variables [30m[47mens[0m[0m and
+  [30m[47mstate[0m[0m, and returns non-[30m[47mnil[0m[0m when the argument evaluates to an
+  [enable]d [rune] (according to the given ``enabled structure,''
+  [30m[47mens[0m[0m, and the current logical [world] of the given [30m[47m[state][0m[0m).  See
+  [theory-invariant] for how this macro can be of use.
 
   When the optional argument is [30m[47mnil[0m[0m or is omitted, then although the
-  argument is required to have the shape of a [rune], it need not be
-  a rune.  For example, if there is no rewrite rule named
+  argument generally has the shape of a [rune], it need not be a
+  rune.  For example, if there is no rewrite rule named
   [30m[47mleft-to-right[0m[0m, then [30m[47m(active-runep '(:rewrite left-to-right))[0m[0m will
   simply return [30m[47mnil[0m[0m.  If instead you'd like this call to cause an
   error, use a non-nil optional argument or, equivalently, use
@@ -10045,7 +10044,7 @@ The Logical Description of ACL2 Arrays
              ).
 
   [30m[47mObj[0m[0m may be any object and is called the ``default value'' of the
-  array.  [30m[47m[Max][0m[0m must be an integer greater than [30m[47mdim[0m[0m.  [30m[47mName[0m[0m must be a
+  array.  [30m[47mMax[0m[0m must be an integer greater than [30m[47mdim[0m[0m.  [30m[47mName[0m[0m must be a
   symbol.  The [30m[47m:[0m[0m[30m[47m[default][0m[0m and [30m[47m:name[0m[0m entries are optional; if
   [30m[47m:[0m[0m[30m[47m[default][0m[0m is omitted, the default value is [30m[47mnil[0m[0m.  The function
   [30m[47m[header][0m[0m, when given a name and a 1- or 2-dimensional array,
@@ -10097,7 +10096,7 @@ The Logical Description of ACL2 Arrays
   To prevent arrays from growing excessively long due to repeated
   [30m[47m[aset1][0m[0m operations, [30m[47m[aset1][0m[0m essentially calls [30m[47m[compress1][0m[0m on the
   new alist whenever the length of the new alist exceeds the
-  [30m[47m:[0m[0m[30m[47m[maximum-length][0m[0m entry, [30m[47m[max][0m[0m, in the [header] of the array.  See
+  [30m[47m:[0m[0m[30m[47m[maximum-length][0m[0m entry, [30m[47mmax[0m[0m, in the [header] of the array.  See
   the definition of [30m[47m[aset1][0m[0m (for example by using [30m[47m:[0m[0m[30m[47m[pe][0m[0m).  This is
   primarily just a mechanism for freeing up [30m[47m[cons][0m[0m space consumed
   while doing [30m[47m[aset1][0m[0m operations.  Note however that this [30m[47m[compress1][0m[0m
@@ -22803,18 +22802,6 @@ Subtopics
   function, [30m[47m<h>-count[0m[0m where [30m[47m<h>[0m[0m is a hash-table field of a [stobj].
   See [defstobj].
 
-  [31;1mFunction: [0m<hons-remove-assoc>
-
-    (defun hons-remove-assoc (k x)
-      (declare (xargs :guard t))
-      (if (atom x)
-          nil
-        (if (and (consp (car x))
-                 (not (equal k (caar x))))
-            (cons (car x)
-                  (hons-remove-assoc k (cdr x)))
-          (hons-remove-assoc k (cdr x)))))
-
   [31;1mFunction: [0m<count-keys>
 
     (defun count-keys (al)
@@ -25920,9 +25907,9 @@ Requirements of [30m[47mDefbadge[0m[0m
   idea is that a formal can be assigned ilk [30m[47m:FN[0m[0m (or ilk [30m[47m:EXPR[0m[0m) iff it
   is sometimes passed into a [30m[47m:FN[0m[0m (or [30m[47m:EXPR[0m[0m) slot in the body of [30m[47mfn[0m[0m
   and is never passed into any other kind of slot.  A formal can be
-  be assigned ilk [30m[47mNIL[0m[0m iff it is never passed into a slot of ilk [30m[47m:FN[0m[0m
-  or [30m[47m:EXPR[0m[0m, i.e., if it is used exclusively as an ``ordinary''
-  object.  We are more precise below.
+  assigned ilk [30m[47mNIL[0m[0m iff it is never passed into a slot of ilk [30m[47m:FN[0m[0m or
+  [30m[47m:EXPR[0m[0m, i.e., if it is used exclusively as an ``ordinary'' object.
+  We are more precise below.
 
   [3m(b)[0m Every [30m[47m:FN[0m[0m and [30m[47m:EXPR[0m[0m slot of every function called in the body of
   [30m[47mfn[0m[0m is occupied either by a formal of [30m[47mfn[0m[0m of the same ilk or, in the
@@ -26447,13 +26434,14 @@ Subtopics
        ((g1 x1 ... xn_1)
         ...
         (gk x1 ... xn_k))
-       :namedp flg)       ; [optional keyword argument]
+       :namedp flg ; [optional keyword argument]
+       :skip-checks sflg ; [optional keyword argument]
+       )
 
   where [30m[47mev[0m[0m and [30m[47mev-list[0m[0m are new function symbols and [30m[47mg1[0m[0m, ..., [30m[47mgk[0m[0m are old
   function symbols with the indicated number of formals, i.e., each
-  [30m[47mgi[0m[0m has [30m[47mn_i[0m[0m formals.  If the [30m[47m:namedp[0m[0m keyword argument is provided,
-  its value should be Boolean.  If not provided, the default value
-  for [30m[47mflg[0m[0m is [30m[47mnil[0m[0m.
+  [30m[47mgi[0m[0m has [30m[47mn_i[0m[0m formals.  Each keyword argument should be Boolean and
+  defaults to [30m[47mnil[0m[0m.
 
   This function provides a convenient way to constrain [30m[47mev[0m[0m and [30m[47mev-list[0m[0m
   to be mutually-recursive evaluator functions for the symbols [30m[47mg1[0m[0m,
@@ -26467,11 +26455,11 @@ Subtopics
   instantiation) to a proof that it is correct for any larger
   evaluator function.  See [meta] for a discussion of metafunctions.
 
-  If the [30m[47m:namedp[0m[0m [30m[47mflg[0m[0m is [30m[47mnil[0m[0m (the default) constraints have names of the
-  form [3mev[0m[30m[47m-CONSTRAINT-[0m[0m[3mi[0m, e.g., [30m[47mEV-CONSTRAINT-0[0m[0m, [30m[47mEV-CONSTRAINT-1[0m[0m, etc.
-  If [30m[47mflg[0m[0m is non-[30m[47mnil[0m[0m, the constraints are named more mnemonically,
-  e.g., [30m[47mEV-OF-VARIABLE[0m[0m, [30m[47mEV-OF-REVAPPEND-CALL[0m[0m, etc.  We illustrate the
-  [30m[47m:namedp t[0m[0m names below.
+  If the [30m[47m:namedp[0m[0m [30m[47mnflg[0m[0m is [30m[47mnil[0m[0m (the default) constraints have names of
+  the form [3mev[0m[30m[47m-CONSTRAINT-[0m[0m[3mi[0m, e.g., [30m[47mEV-CONSTRAINT-0[0m[0m, [30m[47mEV-CONSTRAINT-1[0m[0m,
+  etc.  If [30m[47mnflg[0m[0m is non-[30m[47mnil[0m[0m, the constraints are named more
+  mnemonically, e.g., [30m[47mEV-OF-VARIABLE[0m[0m, [30m[47mEV-OF-REVAPPEND-CALL[0m[0m, etc.  We
+  illustrate the [30m[47m:namedp t[0m[0m names below.
 
   [30m[47mDefevaluator[0m[0m executes an [30m[47m[encapsulate][0m[0m after generating the
   appropriate [30m[47m[defun][0m[0m and [30m[47m[defthm][0m[0m events.  Perhaps the easiest way
@@ -26576,6 +26564,13 @@ Subtopics
   body, [30m[47m(caddar x)[0m[0m.  However, ACL2 lambda expressions are all [3mclosed[0m:
   in [30m[47m(lambda (v1 ... vn) body)[0m[0m, the only free variables in [30m[47mbody[0m[0m are
   among the [30m[47mvi[0m[0m.  See [term].)
+
+  The [30m[47m:skip-checks[0m[0m argument is [30m[47mnil[0m[0m by default, in which case certain
+  preliminary checks are made in order to provide helpful error
+  messages.  When this argument is [30m[47mt[0m[0m, those checks are skipped, in
+  which case the resultin [30m[47mencapsulate[0m[0m event will fail if those checks
+  would have produced an error, but the error message may be less
+  helpful.
 
   Acknowledgment: We thank Sol Swords and Jared Davis for their
   community book [30m[47mtools/defevaluator-fast.lisp[0m[0m, which provided the
@@ -27181,7 +27176,7 @@ Restrictions
 
   The following code is intended to give an idea for how one might
   define the ``guts'' of a trusted clause-processor in raw Lisp.  The
-  idea is to stub out functions, such as [30m[47macl2-my-prove below[0m[0m, that
+  idea is to stub out functions, such as [30m[47macl2-my-prove[0m[0m below, that
   you want to define in raw Lisp; and then, load a raw Lisp file to
   overwrite any such function with the real code.  But then we make
   any such overwritten function untouchable.  (This last step is
@@ -28337,9 +28332,9 @@ Subtopics
   creator, accessors, updaters, constants.  For fields of [30m[47mARRAY[0m[0m type,
   this event also introduces length and resize functions.  For fields
   of [30m[47mHASH-TABLE[0m[0m type, this event also introduces boundp, get?,
-  remove, count, clear, and initialization functions.  Fields of
-  [30m[47mSTOBJ-TABLE[0m[0m type introduce those functions as well except for the
-  get? function.
+  remove, count, keys, clear, and initialization functions.  Fields
+  of [30m[47mSTOBJ-TABLE[0m[0m type introduce those functions as well except for
+  the get? function.
 
 
 The Single-Threaded Object Introduced
@@ -28411,8 +28406,8 @@ The Single-Threaded Object Introduced
   the [30m[47m:element-type[0m[0m keyword that may be provided for performance .
   For fields of [30m[47mHASH-TABLE[0m[0m or [30m[47mSTOBJ-TABLE[0m[0m type, this event also
   introduces boundp, get? ([30m[47mHASH-TABLE[0m[0m types only), remove, count,
-  clear, and initialization functions, as discussed below.  Constants
-  are introduced that correspond to the accessor functions.
+  keys, clear, and initialization functions, as discussed below.
+  Constants are introduced that correspond to the accessor functions.
 
 
 Restrictions on the Field Descriptions in Defstobj
@@ -28618,6 +28613,9 @@ Hash-table Types
     * a ``count'' function that returns the number of (distinct) bound
       keys;
 
+    * a ``keys'' function that returns the list of bound keys, sorted with
+      [30m[47m[merge-sort-lexorder][0m[0m;
+
     * a ``clear'' function that creates a new empty hash table (and
       logically, the empty alist);
 
@@ -28679,17 +28677,18 @@ The Default Function Names
 
   These functions --- the recognizer, accessor, and updater, and also
   length and resize functions in the case of array fields, and
-  boundp, get?, remove, count, clear, and init functions in the case
-  of hash-table fields --- have ``default names.'' The default names
-  depend on the field name, [30m[47mfieldi[0m[0m, and on whether the field is an
-  array field, a hash-table field, or neither (i.e., a scalar field).
-  For clarity, suppose [30m[47mfieldi[0m[0m is named [30m[47mc[0m[0m. The default names are shown
-  below in calls, which also indicate the arities of the functions.
-  In the expressions, we use [30m[47mx[0m[0m as the object to be recognized by
-  field recognizers, [30m[47mi[0m[0m as an array index or the size of a resized
-  array, [30m[47mk[0m[0m as a key (for the logical association list or raw-Lisp
-  hash table associated with the field), [30m[47mv[0m[0m as the ``new value'' to be
-  installed by an updater, and [30m[47mname[0m[0m as the single-threaded object.
+  boundp, get?, remove, count, keys, clear, and init functions in the
+  case of hash-table fields --- have ``default names.'' The default
+  names depend on the field name, [30m[47mfieldi[0m[0m, and on whether the field is
+  an array field, a hash-table field, or neither (i.e., a scalar
+  field).  For clarity, suppose [30m[47mfieldi[0m[0m is named [30m[47mc[0m[0m. The default names
+  are shown below in calls, which also indicate the arities of the
+  functions.  In the expressions, we use [30m[47mx[0m[0m as the object to be
+  recognized by field recognizers, [30m[47mi[0m[0m as an array index or the size of
+  a resized array, [30m[47mk[0m[0m as a key (for the logical association list or
+  raw-Lisp hash table associated with the field), [30m[47mv[0m[0m as the ``new
+  value'' to be installed by an updater, and [30m[47mname[0m[0m as the
+  single-threaded object.
 
                 scalar field        array field          hash-table field
                                                          and stobj-table field
@@ -28704,6 +28703,7 @@ The Default Function Names
     get? [For hash-tables only, not stobj-tables]        (c-get? k name)
     remove                                               (c-rem k name)
     count                                                (c-count name)
+    keys                                                 (c-keys name)
     clear                                                (c-clear name)
     init                                                 (c-init ht-size
                                                                  rehash-size
@@ -28752,6 +28752,8 @@ The Default Function Names
                                      ;   (mv nil nil) if key is not bound in H
     (DEFUN H-REM (K $S) ...)         ; remove key K from field H
     (DEFUN H-COUNT ($S) ...)         ; the number of (distinct) keys in field H
+    (DEFUN H-KEYS ($S) ...)          ; the sorted list of (distinct) keys in
+                                     ;   field H, sorted by merge-sort-lexorder
     (DEFUN H-CLEAR ($S) ...)         ; empty the hash table for field H
     (DEFUN H-INIT (HT-SIZE REHASH-SIZE REHASH-THRESHOLD $S) ...)
                                      ; replace the hash table for field H with
@@ -31026,9 +31028,9 @@ Requirements of [30m[47mDefwarrant[0m[0m
   idea is that a formal can be assigned ilk [30m[47m:FN[0m[0m (or ilk [30m[47m:EXPR[0m[0m) iff it
   is sometimes passed into a [30m[47m:FN[0m[0m (or [30m[47m:EXPR[0m[0m) slot in the body of [30m[47mfn[0m[0m
   and is never passed into any other kind of slot.  A formal can be
-  be assigned ilk [30m[47mNIL[0m[0m iff it is never passed into a slot of ilk [30m[47m:FN[0m[0m
-  or [30m[47m:EXPR[0m[0m, i.e., if it is used as an ``ordinary'' object.  We are
-  more precise below.
+  assigned ilk [30m[47mNIL[0m[0m iff it is never passed into a slot of ilk [30m[47m:FN[0m[0m or
+  [30m[47m:EXPR[0m[0m, i.e., if it is used as an ``ordinary'' object.  We are more
+  precise below.
 
   [3m(d)[0m Every [30m[47m:FN[0m[0m and [30m[47m:EXPR[0m[0m slot of every function called in the body of
   [30m[47mfn[0m[0m is occupied either by a formal of [30m[47mfn[0m[0m of the same ilk or, in the
@@ -31399,8 +31401,8 @@ Section 3: How the challenges are addressed
   floating-point representation.  We do not review floating-point
   numbers here, other than to note that a floating-point number is
   equal to a binary significand between 1 and 2 times 2 to a power,
-  such as as [30m[47m1.01100 * 2^30[0m[0m.  For example, 1/4 is representable but
-  1/3 is not.
+  such as [30m[47m1.01100 * 2^30[0m[0m.  For example, 1/4 is representable but 1/3
+  is not.
 
     ACL2 !>(dfp 1/4) ; represented by the double-float, 0.25d0
     T
@@ -38952,7 +38954,7 @@ Subtopics
   example, [30m[47m(p -7)[0m[0m, [30m[47m(p 'abc)[0m[0m, and [30m[47m(p 0)[0m[0m are all established by Base
   Case 1.  [30m[47m(p 1)[0m[0m is established by Base Case 2.  [30m[47m(p 2)[0m[0m is established
   from [30m[47m(p 0)[0m[0m and the Induction Step.  Think about it!  [30m[47m(p 3)[0m[0m is
-  established form [30m[47m(p 1)[0m[0m and the Induction Step, etc.
+  established from [30m[47m(p 1)[0m[0m and the Induction Step, etc.
 
   A function that suggests this induction is:
 
@@ -39104,10 +39106,10 @@ Subtopics
              (p i max))
 
   Note that the induction hypothesis is about an [30m[47mi[0m[0m that is [3mbigger[0m than
-  the [30m[47mi[0m[0m in in the conclusion.  In induction, as in recursion, the
-  sense of one thing being ``smaller'' than another is determined by
-  an arbitrary measure of all the variables, not the magnitude or
-  extent of some particular variable.
+  the [30m[47mi[0m[0m in the conclusion.  In induction, as in recursion, the sense
+  of one thing being ``smaller'' than another is determined by an
+  arbitrary measure of all the variables, not the magnitude or extent
+  of some particular variable.
 
   A function that suggests this induction is shown below.  ACL2 has to
   be told the measure, namely the difference between [30m[47mmax[0m[0m and [30m[47mi[0m[0m
@@ -42953,7 +42955,7 @@ Example 2
                  "See [printing-to-strings].")
  (FMX
   (IO ACL2-BUILT-INS)
-  "[30m[47m(fmx str &rest args) => state[0m[0m
+  "[30m[47m(fmx str &rest args) => (mv col state)[0m[0m
 
   See [fmt] for further explanation, including documentation of the
   tilde-directives.")
@@ -56743,35 +56745,29 @@ Frequent Contributors
   "Designate theory for some rewriting done for non-linear arithmetic
 
   We assume familiarity with [theories]; in particular, see [in-theory]
-  for the normal way to set the current theory.  Here, we discuss an
-  analogous event that pertains only to non-linear arithmetic (see
-  [non-linear-arithmetic]).
+  for the normal way to set the current theory.  Here, we discuss a
+  more primitive but analogous event that pertains only to non-linear
+  arithmetic (see [non-linear-arithmetic]).
 
     Example:
-    (in-arithmetic-theory '(lemma1 lemma2))
+    (in-arithmetic-theory '(lemma1 lemma2 (:rewrite lemma3 . 2)))
 
     General Form:
-    (in-arithmetic-theory term)
+    (in-arithmetic-theory '(e1 ... en))
 
-  where [30m[47mterm[0m[0m is a term that when evaluated will produce a theory (see
-  [theories]).  Except for the variable [30m[47m[world][0m[0m, [30m[47mterm[0m[0m must contain no
-  free variables.  [30m[47mTerm[0m[0m is evaluated with the variable [30m[47m[world][0m[0m bound
-  to the current [world] to obtain a theory and the corresponding
-  runic theory (see [theories]) is then used by non-linear arithmetic
-  (see [non-linear-arithmetic]).
+  where each [30m[47mei[0m[0m is a ``runic designator'' as defined formally in
+  [theories].  The non-linear arithmetic theory is obtained by
+  expanding each runic designator into a set of runes and unioning
+  those sets together.
 
-  Warning: If [30m[47mterm[0m[0m involves macros such as [30m[47m[enable][0m[0m and [30m[47m[disable][0m[0m you
-  will probably not get what you expect!  Those macros are defined
-  relative to the [30m[47m[current-theory][0m[0m.  But in this context you might
-  wish they were defined in terms of the
-  ``[30m[47mCURRENT-ARITHMETIC-THEORY[0m[0m'' which is not actually a defined
-  function.  We do not anticipate that users will repeatedly modify
-  the arithmetic theory.  We expect [30m[47mterm[0m[0m most often to be a constant
-  list of runes and so have not provided ``arithmetic theory
-  manipulation functions'' analogous to [30m[47m[current-theory][0m[0m and
-  [30m[47m[enable][0m[0m.
-
-  See [non-linear-arithmetic].")
+  Warning: The theory set by [30m[47min-arithmetic-theory[0m[0m is used only when
+  inequalities are combined according to the heuristics described in
+  [non-linear-arithmetic].  We do not anticipate that users will
+  repeatedly modify the arithmetic theory and thus have not provided
+  more sophisticated tools for constructing it.  So, for example, you
+  cannot construct it with the usual [theory-functions] or by
+  reference to previously named theories.  Instead, you must
+  explicitly list the runic designators constituting the theory.")
  (IN-PACKAGE
   (PACKAGES ACL2-BUILT-INS)
   "Select current package
@@ -56809,7 +56805,7 @@ Frequent Contributors
   [30m[47m(<= [0m[0m[3mu v[0m[30m[47m)[0m[0m otherwise, with appropriate treatment of infinities.
 
   Then for [30m[47me[0m[0m to be in interval [30m[47mx[0m[0m, it must be the case that [30m[47me[0m[0m satisfies
-  the domain predicate [3mdom[0m (where where [3mdom[0m=[30m[47mnil[0m[0m means there is no
+  the domain predicate [3mdom[0m (where [3mdom[0m=[30m[47mnil[0m[0m means there is no
   restriction on the domain) and [30m[47m(<? [0m[0m[3mlo-rel lo[0m[30m[47m e)[0m[0m and [30m[47m(<? [0m[0m[3mhi-rel[0m[30m[47m e
   [0m[0m[3mhi[0m[30m[47m)[0m[0m.  [Note: ``Appropriate treatment of infinities'' is slightly
   awkward if both infinities are represented by the same object, [30m[47mnil[0m[0m.
@@ -57120,7 +57116,21 @@ Subtopics
   that checks that not both [rune]s are enabled.  See
   [theory-invariant].  Also see [incompatible!] for a variant that
   insists the arguments are indeed runes, not merely having the
-  shapes of runes.")
+  shapes of runes.
+
+  Note that each argument must have the shape of a rune, as defined by
+  [30m[47mweak-runep[0m[0m.
+
+  [31;1mFunction: [0m<weak-runep>
+
+    (defun weak-runep (x)
+      (declare (xargs :guard t))
+      (case-match x
+        ((key sym . rest)
+         (and (member-eq key *rule-tokens*)
+              (symbolp sym)
+              (or (null rest) (posp rest))))
+        (& nil)))")
  (INCOMPATIBLE!
   (THEORIES)
   "Declaring that two rules must exist and should not both be [enable]d
@@ -59487,7 +59497,7 @@ Background and Organization
 
   The current documentation topic takes a slightly more informal
   approach but covers much of the same ground.  In particular, after
-  some preliminary remarks we coach you through a few simple simple
+  some preliminary remarks we coach you through a few simple
   exercises involving [30m[47mapply$[0m[0m and related concepts.  During these
   exercises we draw your attention to some basic lessons to keep in
   mind.  At the end of this topic we list some simple challenge
@@ -63666,7 +63676,7 @@ Subtopics
       [30m[47m(fmt1! str alist col channel state evisc) => (mv col state)[0m[0m
 
   [Fmx]
-      [30m[47m(fmx str &rest args) => state[0m[0m
+      [30m[47m(fmx str &rest args) => (mv col state)[0m[0m
 
   [Fmx-cw]
       [30m[47m(fmx-cw str &rest args) => state[0m[0m
@@ -78834,10 +78844,10 @@ Optional Technical Remarks.
       :rule-classes ((:meta :trigger-fns (my-plus))))
 
   Notice that in the following (silly) conjecture, ACL2 initially does
-  only does the simplification directed by the metafunction; a second
-  goal is generated before the commutativity of addition can be
-  applied.  If the above calls of [30m[47mUNHIDE[0m[0m and [30m[47mHIDE[0m[0m had been stripped
-  off, then [30m[47mGoal'[0m[0m would have been the term printed in [30m[47mGoal''[0m[0m below.
+  only the simplification directed by the metafunction; a second goal
+  is generated before the commutativity of addition can be applied.
+  If the above calls of [30m[47mUNHIDE[0m[0m and [30m[47mHIDE[0m[0m had been stripped off, then
+  [30m[47mGoal'[0m[0m would have been the term printed in [30m[47mGoal''[0m[0m below.
 
     ACL2 !>(thm
             (equal (my-plus b a)
@@ -80216,7 +80226,7 @@ Example and General Forms
   The so-called ``quiet'' versions above do no printing.
 
   Some [30m[47m:rewrite[0m[0m rules are considered ``simple abbreviations''; see
-  [simple].  These can be be monitored, but are only tried at certain
+  [simple].  These can be monitored, but are only tried at certain
   times during the proof.  Monitoring is carried out by code inside
   the rewriter but abbreviation rules may be applied by a special
   purpose simplifier inside the so-called [3mpreprocess[0m phase of a
@@ -80282,14 +80292,13 @@ Background on Rewriting
   the target, the rewriter then attempts to establish the [30m[47mhypi[0m[0m by
   rewriting each of them in turn, instantiating each [30m[47mhypi[0m[0m with the
   substitution.  If the instance of each [30m[47mhypi[0m[0m rewrites to true, we
-  know --- by the theorem justifying this rule --- that that the
-  instance of [30m[47mlhs[0m[0m is equivalent to the corresponding instance of [30m[47mrhs[0m[0m,
-  but the instance of [30m[47mlhs[0m[0m is the target.  So the rewriter is
-  logically justified in replacing the occurrence of the target by
-  the instance of [30m[47mrhs[0m[0m and recursively rewrites that.  Heuristic
-  considerations may prevent such a replacement, e.g., the
-  instantiated [30m[47mrhs[0m[0m is considered ``too complicated,'' a loop might be
-  detected, etc.
+  know --- by the theorem justifying this rule --- that the instance
+  of [30m[47mlhs[0m[0m is equivalent to the corresponding instance of [30m[47mrhs[0m[0m, but the
+  instance of [30m[47mlhs[0m[0m is the target.  So the rewriter is logically
+  justified in replacing the occurrence of the target by the instance
+  of [30m[47mrhs[0m[0m and recursively rewrites that.  Heuristic considerations may
+  prevent such a replacement, e.g., the instantiated [30m[47mrhs[0m[0m is
+  considered ``too complicated,'' a loop might be detected, etc.
 
   We can generalize and summarize this description just by saying that
   each rule has a pattern, some hypotheses, and a result.  We say the
@@ -85897,7 +85906,7 @@ Subtopics
                    (implies (and (op x y) (op y z)) (op x z))
                    :rule-classes :forward-chaining))
 
-    ; fails in Version_2.6; succeeds in in Version_2.7
+    ; fails in Version_2.6; succeeds in Version_2.7
     (thm (implies (and (op a b) (op b c) (op b e)) (op a c)))
 
   Before Version_2.7, the proof of the [30m[47mthm[0m[0m above fails.  When the
@@ -101527,8 +101536,8 @@ EMACS Support
   to Keshav Kini for the suggestion.
 
   For documentation printed at the terminal with [30m[47m:[0m[0m[30m[47m[doc][0m[0m, links
-  (enclosed in in square brackets, ``[..]'') continue to be printed
-  with respect to the [30m[47m\"ACL2\"[0m[0m package (that is, as though the current
+  (enclosed in square brackets, ``[..]'') continue to be printed with
+  respect to the [30m[47m\"ACL2\"[0m[0m package (that is, as though the current
   package were [30m[47m\"ACL2\"[0m[0m).  Now, however, where a link formerly might be
   printed as ``[acl2::foo]'', it is now printed as ``[foo]''; that
   is, a package prefix of [30m[47m\"ACL2\"[0m[0m (regardless of case) is not printed.
@@ -106498,7 +106507,8 @@ Heuristic and Efficiency Improvements
   compiled with each pass.  Now, with a few exceptions, these
   definitions are saved in the first pass of evaluating the
   [30m[47mencapsulate[0m[0m form and retrieved, rather than re-evaluated, in the
-  second pass.  The exceptions include the following.
+  second pass.  The exceptions include the following.  [31;1mWARNING[0m: These
+  restrictions have been removed in later versions; see [note-8-8].
 
       * No definition is stored or retrieved that is within the scope of an
         [30m[47mencapsulate[0m[0m form with a non-empty list of [signature]s.
@@ -106812,8 +106822,37 @@ Changes to Existing Features
                      0))
     => 924  ; GREEK CAPITAL LETTER MU
 
+  Strengthened the checks on the arguments to [30m[47m[incompatible][0m[0m by using a
+  new function, [30m[47mweak-runep[0m[0m, which checks that the keyword specifies
+  one of the known [rule-classes].  This can catch typos such as
+  [30m[47m(:definiitioon foo)[0m[0m.  Thanks to Eric Smith for the idea, which was
+  brought to his attention by Claude Code.
+
+  Improved an error message printed after a hard error that is
+  encountered during macroexpansion.  Now, that message suggests to
+  look [3mabove[0m for an explanation (i.e., the hard error message).  It
+  formerly said ``below'' rather than ``above'', but the only message
+  below it was pointing out ``Evaluation aborted''.
+
+  Improved error messages for ill-formed first and second arguments of
+  [30m[47m[defund][0m[0m, [30m[47m[defun-nx][0m[0m, and [30m[47m[defund-nx][0m[0m.  The case of [30m[47mdefund-nx[0m[0m was
+  reported by Claude Code as showing no error message at all, for
+  example when evaluting the form, [30m[47m(defund-nx 42 (x) x)[0m[0m.  Thanks to
+  Eric Smith for bringing these to our attention.
+
+  Improved the [guard], as well as the guard violation message, for
+  [30m[47m[defevaluator][0m[0m.
+
+  The macro [30m[47m[tau-data][0m[0m now has a guard requiring its argument to be a
+  symbol.  Thanks to Jerome Dubois and Eric Smith for a Zulip
+  discussion leading to this change.
+
 
 New Features
+
+  For [30m[47m[defstobj][0m[0m fields of hash-table type, a new ``keys'' function
+  returns a sorted list of keys of the hash table.  See [defstobj].
+  Thanks to Eric Smith for requesting this enhancement.
 
 
 Heuristic and Efficiency Improvements
@@ -106829,8 +106868,71 @@ Bug Fixes
   relevant to a fix |
   https://acl2.zulip.kestrel.institute/#narrow/channel/19-general/topic/Non-ASCII.20characters.20in.20ACL2.20source.20files/near/40162}.
 
+  Checks were improved to avoid raw Lisp errors in the following
+  situations:
+
+    * when the first argument of a call of [30m[47m[table][0m[0m is not a symbol;
+
+    * when a [computed-hint] evaluates to an expression of the form
+      [30m[47m(:computed-hint-replacement x ...)[0m[0m where [30m[47mx[0m[0m is neither [30m[47mt[0m[0m, [30m[47mnil[0m[0m,
+      nor a true list; and
+
+    * when the second argument of [30m[47m[defevaluator][0m[0m is ill-formed.
+
+  Thanks to Eric Smith for passing along these bug reports from Claude
+  Code (which reported, for the first two: ``Four subagents tested
+  ~270 malformed inputs across nearly every ACL2 event type.... Out
+  of ~270 tests, only 2 bugs were found'').
+
+  Fixed many dozens of typos in comments and error messages, as
+  reported by Eric Smith, who used Claude Code and filtered out some
+  false positives.
+
+  Fixed the behavior of aborts to avoid printing a newline to the
+  terminal when, like everything else, it should be printed to
+  standard output.  Thanks to Eric McCarthy for finding this bug as
+  well as providing a detailed explanation and the fix.
+
+  Fixed bugs in the raw Lisp definitions supporting [30m[47m[mfc-rw+][0m[0m and
+  [30m[47m[mfc-relieve-hyp][0m[0m.  Thanks to Eric Smith for sending a report he
+  produced with Claude Code that points out the bugs and provides the
+  fixes.
+
+  A release note item in [note-8-7] mentions a new feature in the
+  preceding ACL2 release, for which ``definitions are saved in the
+  first pass of evaluating the [30m[47mencapsulate[0m[0m form and retrieved, rather
+  than re-evaluated, in the second pass.'' The implementation of this
+  feature has been significantly modified.  This modification fixes
+  some bugs, as noted in a new test book,
+  [30m[47mbooks/system/tests/encap-defs-ht-input.lsp[0m[0m, which mentions those
+  bugs (search for ``8.7'').  This modification also removes the
+  first two restrictions mentioned in the aforementioned release note
+  item.  The key idea is to avoid saving code for [local] definitions
+  but to save code for most [redundant] definitions.
+
 
 Changes at the System Level
+
+  The built-in [events] [30m[47mInteger-1[0m[0m and [30m[47mcons-equal[0m[0m are now [30m[47m[defthm][0m[0m
+  events instead of [30m[47m[defaxiom][0m[0m events.  Thanks to Eric Smith for
+  showing us a report from Claude Code, which explained how those two
+  formulas are provable from the other axioms.
+
+  Added a capability for collecting times for definitions made during
+  the [30m[47minclude-book[0m[0m pass of [30m[47m[certify-book][0m[0m.  See the comment in the
+  definition of [30m[47m*pass2-def-time-info*[0m[0m in the ACL2 source code.
+  Thanks to Eric Smith for a conversation leading to this
+  enhancement.
+
+  Added a build-time check (incomplete in principle, but perhaps
+  complete in practice) that for ACL2 floating-point operations (see
+  [df]), overflow and division by zero cause errors rather than
+  producing results that are not truly numbers.  Thanks to Camm
+  Maguire for a conversation leading to this check.
+
+  (GCL only) Added code for proper handling of floating-point
+  exceptions on arm and riscv64 platforms.  Thanks to Camm Maguire
+  for major help with this.
 
 
 EMACS Support
@@ -128620,7 +128722,7 @@ Subtopics
 
     (defun n3 () 0)
     (defun n4 () 1)
-    (defun n5 () (> (n3) (n4))) ; body is see normalized to nil
+    (defun n5 () (> (n3) (n4))) ; body is normalized to nil
     (thm (equal (n5) nil)) ; succeeds, trivially
     (set-ld-redefinition-action '(:warn . :overwrite) state)
     (defun n3 () 2)
@@ -129079,7 +129181,7 @@ Some Generic Examples
   In frame 4 we are to maintain [30m[47mFEQ[0m[0m on a call of [30m[47mG[0m[0m.  In frame 5 we are
   rewriting the second argument of [30m[47mG[0m[0m and used [30m[47mG2EQ2-IMPLIES-FEQ-G-2[0m[0m
   to derive the new geneqv containing [30m[47mG2EQ2[0m[0m.  We could get [30m[47mG2EQ1[0m[0m into
-  that new geneqv is only we had a congruence rule that says [30m[47mFEQ[0m[0m is
+  that new geneqv if only we had a congruence rule that says [30m[47mFEQ[0m[0m is
   maintained on [30m[47mG[0m[0m when rewriting the second argument of [30m[47mG[0m[0m maintaining
   [30m[47mG2EQ1[0m[0m.  That's just the ``forgotten'' [30m[47m(DEFCONG G2EQ1 FEQ (G X Y)
   2)[0m[0m.  Of course we could alternatively have chosen to prove [30m[47m(DEFCONG
@@ -137460,11 +137562,11 @@ Example
     (set-inhibit-er string1 string2 ...)
 
   where each string is considered without regard to case.  This macro
-  is is essentially [30m[47m(local (table inhibit-er-table nil 'alist
-  :clear))[0m[0m, where [30m[47malist[0m[0m pairs each supplied string with [30m[47mnil[0m[0m: that is,
-  [30m[47malist[0m[0m is [30m[47m(pairlis$ lst nil)[0m[0m where [30m[47mlst[0m[0m is the list of strings
-  supplied.  This macro is an event (see [table]), but no output
-  results from a [30m[47mset-inhibit-er[0m[0m event.
+  is essentially [30m[47m(local (table inhibit-er-table nil 'alist :clear))[0m[0m,
+  where [30m[47malist[0m[0m pairs each supplied string with [30m[47mnil[0m[0m: that is, [30m[47malist[0m[0m is
+  [30m[47m(pairlis$ lst nil)[0m[0m where [30m[47mlst[0m[0m is the list of strings supplied.  This
+  macro is an event (see [table]), but no output results from a
+  [30m[47mset-inhibit-er[0m[0m event.
 
   ACL2 prints errors that are generally important to see.  This utility
   is appropriate for situations where one prefers not to see all
@@ -137606,7 +137708,7 @@ Example
     (set-inhibit-warnings string1 string2 ...)
 
   where each string is considered without regard to case.  This macro
-  is is essentially [30m[47m(local (table inhibit-warnings-table nil 'alist
+  is essentially [30m[47m(local (table inhibit-warnings-table nil 'alist
   :clear))[0m[0m, where [30m[47malist[0m[0m pairs each supplied string with [30m[47mnil[0m[0m: that is,
   [30m[47malist[0m[0m is [30m[47m(pairlis$ lst nil)[0m[0m where [30m[47mlst[0m[0m is the list of strings
   supplied.  This macro is an event (see [table]), but no output
@@ -144526,7 +144628,7 @@ Subtopics
   in [30m[47mTipCnt[0m[0m, that the formal [30m[47mcounters[0m[0m is used.  From the discussion
   in [stobj-example-1] it has been made clear that [30m[47mTipCnt[0m[0m can only be
   called on the [30m[47mcounters[0m[0m object.  And yet, in that same discussion it
-  was said that an argument is so treated only if it it declared
+  was said that an argument is so treated only if it is declared
   among the [30m[47m:stobjs[0m[0m in the definition of the function.  So why
   doesn't [30m[47mTipCnt[0m[0m include something like [30m[47m(declare (xargs :stobjs
   (counters)))[0m[0m?
@@ -151046,9 +151148,10 @@ Subtopics
   such advice.  But these remarks have helped many users approach
   ACL2 in a constructive and disciplined way.
 
-  We say much more about The Method in the ACL2 book.  See the home
-  page.  Also see [set-gag-mode] for a discussion of a way for ACL2
-  to help you to use The Method.  And again, see
+  We say much more about The Method in the book, [3mComputer-Aided
+  Reasoning: An Approach[0m; see [pubs::pubs-books].  Also see
+  [set-gag-mode] for a discussion of a way for ACL2 to help you to
+  use The Method.  And again, see
   [introduction-to-the-theorem-prover] for a more detailed tutorial.
 
   Learning to read failed proofs is a useful skill.  There are several
@@ -154572,8 +154675,8 @@ Advanced Options (alphabetical list)
   passed to the native Lisp trace (after removing the [30m[47m:native[0m[0m and
   [30m[47m:multiplicity[0m[0m options).  Each trace spec generates its own call of
   Lisp [30m[47mtrace[0m[0m: directly in most cases, but if SBCL is the host Lisp
-  then the SBCL [30m[47mtrace[0m[0m syntax is accommodated by placing the the
-  function symbol last, after any keyword options.  A trust tag (see
+  then the SBCL [30m[47mtrace[0m[0m syntax is accommodated by placing the function
+  symbol last, after any keyword options.  A trust tag (see
   [defttag]) is required in order to use the [30m[47m:native[0m[0m option, because
   arbitrary raw Lisp may be executed by the options!
 
@@ -172274,7 +172377,7 @@ Subtopics
   mathematical logic of the automated reasoning system Nqthm, a.k.a.
   the Boyer-Moore Theorem Prover.  Using this formal description, we
   have mechanically checked the correctness of MC68020 object code
-  programs for for binary search, Hoare's Quick Sort, twenty-one
+  programs for binary search, Hoare's Quick Sort, twenty-one
   functions from the Berkeley Unix C string library, and other
   well-known algorithms.  The object code for these examples was
   generated using the Gnu C, the Verdix Ada, and the AKCL common Lisp

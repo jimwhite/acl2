@@ -1063,7 +1063,7 @@
                                         `(;; Maybe try to relieve the hyp using SMT:
                                           ((mv result state)
                                            (if axe-smtp
-                                               ;; Tries to prove that the rewriten HYP is true or some assumption is false:
+                                               ;; Tries to prove that the rewritten HYP is true or some assumption is false:
                                                (prove-disjunction-with-stp (cons new-nodenum (get-negated-smt-assumptions rewrite-stobj2))
                                                                            (get-dag-array rewrite-stobj2)
                                                                            (get-dag-len rewrite-stobj2)
@@ -1799,7 +1799,7 @@
                   ;; Simplify the size param:
                   ((mv erp simplified-size rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits node-replacement-array)
                    (,simplify-tree-and-add-to-dag-name size-arg
-                                                       nil ;no trees are yet known equal to the the size param
+                                                       nil ;no trees are yet known equal to the size param
                                                        rewrite-stobj2 ,@maybe-state memoization hit-counts tries limits
                                                        node-replacement-array node-replacement-count refined-assumption-alist
                                                        rewrite-stobj (+ -1 count)))
@@ -2391,7 +2391,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -2537,7 +2537,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -2668,7 +2668,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -3189,7 +3189,7 @@
             :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory ;; (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory ;; (e/d (;TAKE-WHEN-<=-OF-LEN
                    ;;       len-of-cadar-when-axe-treep
                    ;;       pseudo-termp-of-cadddr-when-axe-treep
                    ;;       axe-bind-free-result-okayp-rewrite
@@ -3281,7 +3281,7 @@
                      (:forward-chaining axe-bind-free-function-applicationp-forward-to-true-listp)
                      (:forward-chaining bounded-axe-treep-forward-to-axe-treep)
                      (:forward-chaining bounded-dag-constant-alistp-forward-to-dag-constant-alistp)
-                     (:forward-chaining bounded-dag-parent-arrayp-forward-to-bounded-dag-parent-arrayp)
+                     (:forward-chaining bounded-dag-parent-arrayp-forward-to-dag-parent-arrayp)
                      (:forward-chaining bounded-dag-variable-alistp-forward-to-dag-variable-alistp)
                      (:forward-chaining bounded-darg-list-listp-forward-to-true-listp)
                      (:forward-chaining bounded-darg-listp-forward-to-darg-listp)
@@ -3318,12 +3318,12 @@
                      (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-bind-free)
                      (:rewrite alist-suitable-for-hypsp-of-cdr-of-car-when-normal)
                      (:rewrite alist-suitable-for-hypsp-of-unify-terms-and-dag-items-fast-when-stored-axe-rulep)
-                     (:rewrite alist-suitable-for-hypsp-when-axe-sytaxp-car)
+                     (:rewrite alist-suitable-for-hypsp-when-axe-syntaxp-car)
                      (:rewrite alist-suitable-for-hypsp-of-append-and-cdr-when-axe-binding-hyp)
                      ;; (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2)
                      (:rewrite ALIST-SUITABLE-FOR-HYPSP-AFTER-MATCHING-2-special)
                      (:rewrite subsetp-equal-of-free-vars-in-terms-of-fargs-of-cadr-of-car-when-axe-binding-hyp)
-                     (:rewrite alistp-of-cdr)
+                     ;; (:rewrite alistp-of-cdr)
                      (:rewrite alistp-of-for-unify-trees-with-dag-nodes)
                      (:rewrite all-<-of-nil)
                      (:rewrite all-<-transitive-free-2)
@@ -3567,7 +3567,7 @@
                      (:type-prescription wf-dagp)
                      ;; only needed when smtp:
                      ,@(and smtp '(w-of-mv-nth-1-of-prove-disjunction-with-stp)))
-                   :expand ( ;(alist-suitable-for-hypsp alist hyps)
+                   :expand (;(alist-suitable-for-hypsp alist hyps)
                             (:free (memoization ;count
                                      other-hyps alist)
                                    ,call-of-relieve-free-var-hyp-and-all-others)
@@ -3905,7 +3905,7 @@
                     (<= x
                         (get-dag-len (mv-nth 2 ,call-of-simplify-not-tree-and-add-to-dag))))
            :hints (("Goal" :use (:instance ,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))
-                    :in-theory (e/d ( ;member-equal ; split into 2 cases
+                    :in-theory (e/d (;member-equal ; split into 2 cases
                                      )
                                     (,(pack$ 'theorem-for-simplify-not-tree-and-add-to-dag- suffix))))))
 
@@ -4916,7 +4916,7 @@
             :rule-classes (:rewrite :type-prescription) :flag ,simplify-fun-call-and-add-to-dag-name)
 
           :hints (("Goal" :do-not '(generalize eliminate-destructors)
-                   :in-theory (e/d ( ;TAKE-WHEN-<=-OF-LEN
+                   :in-theory (e/d (;TAKE-WHEN-<=-OF-LEN
                                     len-of-cadar-when-axe-treep
                                     pseudo-termp-of-cadddr-when-axe-treep
                                     axe-bind-free-result-okayp-rewrite
@@ -4975,7 +4975,7 @@
                              ;; (axe-treep tree)
                              (myquotep tree)
                              (quotep tree))
-                    :in-theory (e/d (true-list-of-car-when-bounded-darg-list-listp
+                    :in-theory (e/d (true-listp-of-car-when-bounded-darg-list-listp
                                      darg-listp-of-car-when-bounded-darg-list-listp
                                      all-myquotep-when-darg-listp
                                      axe-bind-free-result-okayp-rewrite
@@ -6168,7 +6168,7 @@
                     (initial-array-size (min *max-1d-array-length* (* 2 dag-len))) ; could make this adjustable
                     ;; Start with an array with all the nodes loaded (since we are using contexts):
                     ;; TODO: Opt: Combine these steps?:
-                    (dag-array (make-into-array-with-len 'dag-array dag initial-array-size))
+                    (dag-array (alist-to-array1-with-len 'dag-array dag initial-array-size))
                     ;; Make the auxiliary data structures for the DAG:
                     ((mv dag-parent-array dag-constant-alist dag-variable-alist)
                      (make-dag-indices 'dag-array dag-array 'dag-parent-array dag-len))

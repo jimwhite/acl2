@@ -583,7 +583,7 @@
 ; We have tried to build under ECL (Embeddable Common-Lisp), and with some
 ; modifications, we made progress -- except there appears (as of Sept. 2011) to
 ; be no good way for us to save an executable image.  Specifically, it appears
-; that c:build-program not will suffice for saving state (properties etc.) --
+; that c:build-program will not suffice for saving state (properties etc.) --
 ; it's just for saving specified .o files.  (This impression seems to be
 ; confirmed at http://stackoverflow.com/questions/7686246/saving-lisp-state .)
 
@@ -823,9 +823,9 @@
                  package whose name begins with the ~%four letters ``ACL2'', ~
                  so ACL2 may not work in this Lisp." (package-name p))
         (cond ((package-use-list p)
-               (format t "~%~%Warning:  The package with name ~a ~
-                   USES the packages in the list ~a.  ACL2 will not work ~
-                   in state of affairs."
+               (format t "~%~%Warning:  The package with name ~a USES the ~
+                          packages in the list ~a.  ACL2 will not work in ~
+                          this state of affairs."
                        (package-name p) (package-use-list p)))))))
 
 (or (find-package "ACL2")
@@ -1999,6 +1999,15 @@ ACL2 from scratch.")
                   *my-most-positive-double-float*)
                (error () 0.0d0))
               'double-float))
+
+; For GCL on no-sigfpe machines, avoid getting an error at unexpected times
+; later by flushing out the error now.
+
+     #+(and gcl no-sigfpe)
+     (progn (ignore-errors (si::flush-floating-point-exceptions
+                            nil nil (lambda nil nil)))
+            t)
+
      #+sbcl
      (member :overflow
              (cadr (member :traps
@@ -2913,6 +2922,11 @@ You are using version ~s.~s.~s."
 
 ; See the comment in *rewrite-depth-max* about rewrite stack depth:
 ; (push :acl2-rewrite-meter *features*)
+
+; See the comment in *pass2-def-time-info* about collecting times for
+; definitions made during pass 2 of certify-book, which is accomplished by
+; building ACL2 after uncommenting the following line.
+; (push :acl2-pass2-def-time-info *features*)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            PROMPTS

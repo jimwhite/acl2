@@ -209,8 +209,8 @@
 ; true, compile-acl2 had by default used a file-by-file load/proclaim/compile
 ; process, while load-acl2 had proclaimed all files after loading the compiled
 ; files.  We believe that this process allowed load-acl2 to come up with more
-; specific function types during load-acl2 than had been used by compile-acl2
-; We may have this change in types lead to buggy behavior.
+; specific function types during load-acl2 than had been used by compile-acl2.
+; It is conceivable that this change in types could lead to buggy behavior.
 
 ; So in order to proclaim during the boot-strap, we use steps as shown below.
 ; First, here is the general process, which is currently unused.  But we could
@@ -511,7 +511,7 @@
    ((and (eq (car form) 'quote)
          (consp (cdr form)))
     (cond ((integerp (cadr form))
-           `(integerp ,(cadr form) ,(cadr form)))
+           `(integer ,(cadr form) ,(cadr form)))
           ((rationalp (cadr form))
            `rational)
           ((numberp (cadr form))
@@ -971,7 +971,7 @@ be SPECIAL.")
         ((eq (car x) *comma-atsign*) nil)
 
 ; See backquote comments below.  We could have a more restrictive test for
-; LAMBDA objects but that's probably not worth it.  Returnig nil is safe.
+; LAMBDA objects but that's probably not worth it.  Returning nil is safe.
 
         ((eq (car x) 'lambda) nil)
         (t (constant-backquote-lst-p x))))
@@ -2037,7 +2037,7 @@ notation causes an error and (b) the use of ,. is not permitted."
 
 (defun ser-cons-reader-macro (stream subchar arg)
   (declare (ignorable subchar arg))
-  ;; This is the reader macro for #Y.  When it is called the #Z part has
+  ;; This is the reader macro for #Y.  When it is called the #Y part has
   ;; already been read, so we just want to read the serialized object.
   (ser-decode-from-stream nil :never stream))
 

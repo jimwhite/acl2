@@ -1,7 +1,7 @@
 ; Bit-vector rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,7 +13,7 @@
 (in-package "ACL2")
 
 (include-book "bvcat")
-(include-book "bvxor")
+(include-book "bvxor-def")
 (include-book "bitwise")
 (include-book "bvif")
 (include-book "bvplus")
@@ -52,7 +52,7 @@
   :hints (("Goal"
            :in-theory (e/d (;bvxor
                             )
-                           ( ;BVXOR-TRIM-ARG1 ;BVXOR-CANCEL BVXOR-CANCEL-alt BVXOR-CANCEL-cross-2
+                           (;BVXOR-TRIM-ARG1 ;BVXOR-CANCEL BVXOR-CANCEL-alt BVXOR-CANCEL-cross-2
                             ))) ;why the disables?
           ))
 
@@ -228,8 +228,7 @@
            (equal (EQUAL (LOGEXT 32 (BVPLUS 32 x y))
                          (+ x y))
                   (signed-byte-p 32 (+ x y))))
-  :hints (("Goal" :in-theory (e/d (BVPLUS) (;
-                                            ;logext-of-plus
+  :hints (("Goal" :in-theory (e/d (BVPLUS) (;logext-of-plus
                                             )))))
 
 ;; ;move?
@@ -239,15 +238,14 @@
 ;;                 (natp k)
 ;;                 (natp n))
 ;;            (unsigned-byte-p n (bvplus m k x)))
-;;   :hints (("Goal" :in-theory (e/d (bvplus ;usb-plus-from-bounds
-;;                                    ) (
-;;                                             )))))
+;;   :hints (("Goal" :in-theory (enable bvplus ; usb-plus-from-bounds
+;;                              ))))
 
 ; rules needed to prove the lemmas that result from my tool (mostly size junk)
 
 (theory-invariant (incompatible (:rewrite rewrite-unsigned-byte-p-when-term-size-is-larger) (:rewrite logtail-equal-0)))
 
-;; essentialy, we are subtracting 1, chopping, and then adding 1 back
+;; essentially, we are subtracting 1, chopping, and then adding 1 back
 (defthm +-of-1-and-bvchop-of-ones-and-x
   (implies (integerp x)
            (equal (+ 1 (bvchop 31 (+ 2147483647 x)))

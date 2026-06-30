@@ -40,7 +40,10 @@
     arm::write
     arm::arm32-decode
     arm::pc
+
     arm::step
+    arm::run
+
     arm::reg
     arm::set-reg
     arm::pc
@@ -104,6 +107,23 @@
     arm::cmp-zero
     arm::cmp-carry
     arm::cmp-overflow
+
+    arm::eq-condition
+    arm::ne-condition
+    arm::cs-condition
+    arm::cc-condition
+    arm::mi-condition
+    arm::pl-condition
+    arm::vs-condition
+    arm::vc-condition
+    arm::hi-condition
+    arm::ls-condition
+    arm::ge-condition
+    arm::lt-condition
+    arm::gt-condition
+    arm::le-condition
+
+    arm::update-error ; todo: more
     ))
 
 ;; (defconst *arm-symbols-in-acl2-package*

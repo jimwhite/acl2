@@ -51,11 +51,11 @@
     (xdoc::li
      (xdoc::ahref "https://www.iso.org/standard/82075.html"
                   "ISO/IEC 9899:2024")
-     ", i.e. the C23 standard, which we reference as `[C17]'.")
+     ", i.e. the C23 standard, which we reference as `[C23]'.")
     (xdoc::li
      (xdoc::ahref "https://www.iso.org/standard/74528.html"
                   "ISO/IEC 9899:2018")
-     ", i.e. the C17 standard, which we reference as `[C23]'.")
+     ", i.e. the C17 standard, which we reference as `[C17]'.")
     (xdoc::li
      "The "
      (xdoc::ahref "https://gcc.gnu.org/onlinedocs/gcc/"
@@ -85,7 +85,13 @@
      "The "
      (xdoc::ahref "https://clang.llvm.org/docs/AttributeReference.html"
                   "Attributes in Clang")
-     "document, which we reference as `[CLA]'."))
+     "document, which we reference as `[CLA]'.")
+    (xdoc::li
+     "The "
+     (xdoc::ahref "https://www.cl.cam.ac.uk/techreports/UCAM-CL-TR-877.pdf"
+                  "Capability Hardware Enhanced RISC Instructions:
+                   CHERI Programmer's guide")
+     " technical report, which we reference as `[CHERI]'."))
    (xdoc::p
     "Sections of the above sources are referenced
      by appending their designations separated by colon,

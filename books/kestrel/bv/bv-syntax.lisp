@@ -1,7 +1,7 @@
 ; Syntactic utilities for bit-vector terms
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -23,8 +23,7 @@
 ;ffixme add binary-+, unary--, myif, etc.?
 ;todo: what about myif when bv branches?
 (defconst *trimmable-non-arithmetic-operators*  ; rename to *trimmable-non-arithmetic-bv-operators* ?
-  '(
-    ;; getbit ; would we ever need to trim a getbit?
+  '(;; getbit ; would we ever need to trim a getbit?
     ;; bitxor bitnot bitand bitor  ;could we really trim a one-bit operator?
     ;; bool-to-bit ;todo: think about this
     bvnot bvand bvor bvxor
@@ -51,7 +50,7 @@
 ;; (defconst *non-trimmable-bv-operators*
 ;;   '(sbvdiv sbvrem
 ;;     bvdiv bvmod
-;;     bv-array-read ;added since we are not trimming reads any more ; todo: this is not even a bv opoerator
+;;     bv-array-read ;added since we are not trimming reads any more ; todo: this is not even a bv operator
 ;;     ;; todo: add bvshr?
 ;;     ))
 

@@ -1,6 +1,6 @@
 ; Read and write operations for 32-bit RISC-V code reasoning
 ;
-; Copyright (C) 2025 Kestrel Institute
+; Copyright (C) 2025-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -211,7 +211,7 @@
                         (:instance read-byte-of-bvchop-arg1 (addr (+ x y z))))
            :in-theory (disable read-byte-of-bvchop-arg1))))
 
-(defthm bvchop-of-+-of-bvimunus-arg3
+(defthm bvchop-of-+-of-bvuminus-arg3
   (implies (and (integerp x)
                 (integerp y)
                 (integerp z))
@@ -348,8 +348,7 @@
                 ;(integerp free)
                 )
            (equal (write-byte ad byte stat)
-                  (write-byte free byte stat)))
-  :hints (("Goal" :in-theory (enable))))
+                  (write-byte free byte stat))))
 
 (defthm write-byte-of-write-byte-same
   (equal (write-byte ad byte1 (write-byte ad byte2 stat))
@@ -405,8 +404,7 @@
          (if (equal (bvchop 32 addr1)
                     (bvchop 32 addr2))
              (bvchop 8 byte)
-           (read-byte addr1 stat)))
-  :hints (("Goal" :in-theory (enable))))
+           (read-byte addr1 stat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -429,9 +427,9 @@
 (defthm car-of-read-bytes
   (implies (and (posp n)
                 (integerp addr))
-           (equal (car (read-bytes n addr x86))
-                  (read-byte addr x86)))
-  :hints (("Goal" :expand (read-bytes n addr x86))))
+           (equal (car (read-bytes n addr stat))
+                  (read-byte addr stat)))
+  :hints (("Goal" :expand (read-bytes n addr stat))))
 
 (local
  (defun inc-dec-dec-induct (x y z)
@@ -444,10 +442,10 @@
                 (natp n1)
                 (natp n2)
                 (integerp addr))
-           (equal (nth n1 (read-bytes n2 addr x86))
-                  (read-byte (bvplus 32 addr n1) x86)))
+           (equal (nth n1 (read-bytes n2 addr stat))
+                  (read-byte (bvplus 32 addr n1) stat)))
   :hints (("Goal" :induct (inc-dec-dec-induct addr n1 n2)
-           :expand (read-bytes n2 addr x86)
+           :expand (read-bytes n2 addr stat)
            :in-theory (enable read-bytes
                               acl2::bvplus-of-+-arg3))))
 
@@ -520,7 +518,7 @@
                            (read 1 addr stat)
                            (read 1 0 stat)))))
 
-;; todo: take off 4 bytes at a a time
+;; todo: take off 4 bytes at a time
 (defthmd read-opener-to-4
   (implies (and (syntaxp (quotep n))
                 (< 4 n) ; prevents loops with read-byte-becomes-read ; todo: gen the 4
@@ -596,8 +594,6 @@
            (< (read n addr stat) k))
   :hints (("Goal" :use (:instance unsigned-byte-p-of-read (size (* n 8)))
            :in-theory (disable unsigned-byte-p-of-read))))
-
-(local (include-book "kestrel/bv/ash" :dir :system))
 
 ; see read32-mem-ubyte32-lendian-becomes-read below
 (defthmd read32-mem-ubyte32-lendian-redef
@@ -796,13 +792,10 @@
                                      disjoint-regions32p-of-+-arg4
                                      in-region32p-of-+-arg3))))))
 
-(local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
-
 ;(include-book "kestrel/bv-arrays/bv-array-conversions" :dir :system)
 (include-book "kestrel/bv-lists/bv-list-read-chunk-little" :dir :system)
 
 (local (include-book "kestrel/lists-light/take" :dir :system))
-(local (include-book "kestrel/lists-light/nthcdr" :dir :system))
 
 ;; The next rules get information from hyps of the for (equal (read-bytes ...) XXX).
 ;; The XXX may be a constant list of bytes (e.g., from a section/segment of the executable)
@@ -1467,7 +1460,7 @@
                 )
            (equal (read n1 addr1 (write-byte addr2 byte stat))
                   (read n1 addr1 stat)))
-  :hints ( ;("subgoal *1/2" :cases ((equal n1 1)))
+  :hints (;("subgoal *1/2" :cases ((equal n1 1)))
           ("Goal" :do-not '(generalize eliminate-destructors)
            :induct (read n1 addr1 stat)
            :in-theory (e/d (read bvplus acl2::bvchop-of-sum-cases  bvuminus bvminus equal-of-read-and-read-when-bvchops-agree ifix)
@@ -1497,10 +1490,7 @@
                             ;;ACL2::BVCAT-EQUAL-REWRITE
                             ACL2::BVCAT-EQUAL-REWRITE-ALT)))))
 
-
-
-(local (include-book "kestrel/arithmetic-light/limit-expt" :dir :system))
-(local (acl2::limit-expt))
+(local (acl2::limit-expt)) ;move up?
 
 ;; todo: gen the 1?
 ;rename -bv

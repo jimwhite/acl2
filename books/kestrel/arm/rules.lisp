@@ -251,8 +251,7 @@
 ;dup
 (local
  (defthm equal-of-+-of-bvchop-same-31-32-linear
-   (implies (and (unsigned-byte-p 32 x)
-                 (integerp y))
+   (implies (unsigned-byte-p 32 x)
             (equal x (+ (bvchop 31 x) (* (expt 2 31) (getbit 31 x)))))
    :rule-classes :linear
    :hints (("Goal" :use (:instance acl2::split-bv
@@ -281,21 +280,20 @@
                   (sbvle 32 y x)))
   :hints (("Goal"
            :use (:instance acl2::split-bv (x y) (n 32) (m 31))
-           :in-theory (e/d (cmp-sign
-                            cmp-overflow
-                            addwithcarry-overflow
-                            acl2::sbvlt-rewrite
-                            bvminus
-                            bvplus
-                            acl2::getbit-of-+
-                            bvlt
-                            acl2::bvchop-of-sum-cases
-                            bvnot
-                            ;bvcat
-                            ;logapp
-                            lognot
-                            bvuminus)
-                           ()))))
+           :in-theory (enable cmp-sign
+                              cmp-overflow
+                              addwithcarry-overflow
+                              acl2::sbvlt-rewrite
+                              bvminus
+                              bvplus
+                              acl2::getbit-of-+
+                              bvlt
+                              acl2::bvchop-of-sum-cases
+                              bvnot
+                              ;; bvcat
+                              ;; logapp
+                              lognot
+                              bvuminus))))
 
 (defthm le-condition-cmp-idiom
   (implies (and (unsigned-byte-p 32 x)
@@ -346,7 +344,6 @@
                 (unsigned-byte-p 32 (bvplus 33 carry_in y))
                 (unsigned-byte-p 32 x)
                 (unsigned-byte-p 32 y)
-                (unsigned-byte-p 32 (bvplus 33 carry_in y))
                 (bitp carry_in))
            (equal (mv-nth '1 (addwithcarry '32 x y carry_in))
                   (if (if (sbvle 32 0 x) ; todo: generalize?
@@ -386,3 +383,40 @@
   :hints (("Goal" :in-theory (enable addwithcarry uint))))
 
 ; (defstub foo (x y) t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; or we could make a version of acl2::getbit-identity-axe that "knows" about these function
+(defthm getbit-0-of-cmp-carry
+  (equal (getbit 0 (cmp-carry x y))
+         (cmp-carry x y)))
+
+(defthm getbit-0-of-cmp-zero
+  (equal (getbit 0 (cmp-zero x y))
+         (cmp-zero x y)))
+
+(defthm getbit-0-of-cmp-sign
+  (equal (getbit 0 (cmp-sign x y))
+         (cmp-sign x y)))
+
+(defthm getbit-0-of-cmp-overflow
+  (equal (getbit 0 (cmp-overflow x y))
+         (cmp-overflow x y)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; todo: more like this
+(defthm lt-condition-of-sub-sign-and-sub-overflow
+  (implies (and (unsigned-byte-p 32 x)
+                (unsigned-byte-p 32 y))
+           (equal (lt-condition (sub-sign x y) (sub-overflow x y))
+                  (sbvlt 32 x y)))
+  :hints (("Goal" :in-theory (enable lt-condition sub-sign sub-overflow addwithcarry uint sint
+                                     acl2::bvchop-of-sum-cases
+                                     sbvlt
+                                     bvlt
+                                     bvnot
+                                     bvplus
+                                     lognot
+                                     acl2::logext-cases
+                                     acl2::getbit-of-+))))

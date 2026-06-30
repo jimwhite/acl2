@@ -777,8 +777,7 @@
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT
       acl2::*-of---arg1-gen)
-     (
-;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
+     (;;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
       ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
       acl2::sbvlt-rewrite)))))
@@ -803,8 +802,7 @@
       ACL2::EQUAL-OF-BITXOR-AND-1
       BVCAT LOGAPP LOGEXT acl2::logtail-of-plus
       acl2::logtail-becomes-slice-bind-free)
-     (
-;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
+     (;;ACL2::REWRITE-<-WHEN-SIZES-DONT-MATCH2 ;looped
       ACL2::REWRITE-BV-EQUALITY-WHEN-SIZES-DONT-MATCH-1 ;looped
       ACL2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
       ;ACL2::EQUAL-OF-BVCHOPS-WHEN-EQUAL-OF-GETBITS ;looped
@@ -1901,11 +1899,11 @@
          (not bool))
   :hints (("Goal" :in-theory (enable jnz-condition))))
 
-(defthm jnbe-condition-of-bool-to-bit-arg1
-  (equal (jnbe-condition (bool-to-bit cf-bool) zf)
-         (and (not cf-bool)
-              (equal 0 zf)))
-  :hints (("Goal" :in-theory (enable jnbe-condition))))
+(defthm jbe-condition-of-bool-to-bit-arg1
+  (equal (jbe-condition (bool-to-bit cf-bool) zf)
+         (or (bool-fix cf-bool)
+             (equal 1 zf)))
+  :hints (("Goal" :in-theory (enable jbe-condition))))
 
 (defthm jnbe-condition-of-bool-to-bit-arg1
   (equal (jnbe-condition (bool-to-bit cf-bool) zf)

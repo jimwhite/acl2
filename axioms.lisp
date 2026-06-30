@@ -2233,7 +2233,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; Constant folding is important in processing definitions.  If the user has
 ; written (1- x), we translate that to (binary-+ -1 x) instead of to the more
 ; mechanical (binary-+ (unary-- 1) x).  Note that the type of the former is
-; easier to determine that the latter because type-set knows about the effect
+; easier to determine than the latter because type-set knows about the effect
 ; of adding the constant -1 to a positive, but not about adding the term (- 1).
 
   (if binary-casep
@@ -2274,11 +2274,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (in-theory (disable booleanp))
 
-; integer-abs is just abs if x is an integer and is 0 otherwise.
-; integer-abs is used because we don't know that that (abs x) is a
-; nonnegative integer when x is an integer.  By using integer-abs in
-; the defun of acl2-count below we get that the type-prescription for
-; acl2-count is a nonnegative integer.
+; Integer-abs is just abs if x is an integer and is 0 otherwise.  Integer-abs
+; is used because we don't know that (abs x) is a nonnegative integer when x is
+; an integer.  By using integer-abs in the defun of acl2-count below we get
+; that the type-prescription for acl2-count is a nonnegative integer.
 
 (defun integer-abs (x)
   (declare (xargs :guard t :mode :logic))
@@ -2329,7 +2328,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; But we do the check above, potentially (though unlikely) causing this error,
 ; to be faithful to the ftype declaim form above.
 
-               (error "~s was given a a list whose length is not a fixnum!"
+               (error "~s was given a list whose length is not a fixnum!"
                       'len)
              (incf acc))
         finally (return acc))
@@ -2742,8 +2741,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; This function is actually faster than strip-cars: 5.530 seconds!  That is
 ; surprising because this function does TWICE as many conses, since it conses
 ; up the final answer from the accumulated partial one.  The reason this
-; function beats strip-cars can only be that that the tail-recursive jump is
-; quite a lot faster than a function call.
+; function beats strip-cars can only be that the tail-recursive jump is quite a
+; lot faster than a function call.
 
 ; But Common Lisp allows to avoid consing to do a reverse if we are willing to
 ; smash the existing spine.  And in this case we are, since we have just consed
@@ -2839,6 +2838,19 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (cond ((endp x) nil)
         (t (cons (cdr (car x))
                  (strip-cdrs (cdr x))))))
+
+(defun alist-keys (x)
+
+; This variant of strip-cars does not require an alist as input.  This
+; definition appeared in the book, books/std/alists/alist-keys.lisp, where it
+; remains and is (non-locally) disabled.  We include it here with permission
+; from Sol Swords, an author of that book, because it is useful in supporting
+; the keys function of a stobj hash table or a stobj table.
+
+  (declare (xargs :guard t))
+  (cond ((atom x) nil)
+        ((atom (car x)) (alist-keys (cdr x)))
+        (t (cons (caar x) (alist-keys (cdr x))))))
 
 #-acl2-loop-only
 (progn
@@ -3358,7 +3370,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defaxiom cdr-cons (equal (cdr (cons x y)) y))
 
-(defaxiom cons-equal
+(defthm cons-equal
   (equal (equal (cons x1 y1) (cons x2 y2))
          (and (equal x1 x2)
               (equal y1 y2))))
@@ -3998,7 +4010,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; (disassemble (defun f (x) (declare (type double-float x)) (df+ 5 x)))
 
 ; We use (float x 0.0D0) here, rather than (coerce x 'double-float), since we
-; rely an the float-rational identity discussed in a comment in
+; rely on the float-rational identity discussed in a comment in
 ; constrained-to-df-idempotent.
 
 ; It is however tempting to avoid (float x 0.0D0) in favor of (coerce x
@@ -4470,7 +4482,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;; After adding the non-standard predicates, this number grew to 110.
 
 (defconst *force-xnume*
-  (let ((x 165))
+  (let ((x 164))
     #+:non-standard-analysis
     (+ x 12)
     #-:non-standard-analysis
@@ -4614,7 +4626,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; We don't actually have any reason for (1.a).  The bootstrap process works
 ; fine either way, as of this writing (Aug, 2011) when the tau system was first
-; integrated into ACL2.  But we feel (1.b) is important: it is convenient if  <------ ???? tau to do
+; integrated into ACL2.  But we feel (1.b) is important: it is convenient if
 ; the tau database contains the rules laid down during the bootstrap process,
 ; e.g., the tau signatures of the primitives so that if the user immediately
 ; selects automatic mode for the session, the tau database is up to date as of
@@ -4622,7 +4634,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; After Bootstrapping:
 ; (2.a) tau is disabled -- not available for use in proofs, BUT
-; (2.b) tau is in automatic mode -- makes :tau-system rules out of  <---- ??? actually in manual mode
+; (2.b) tau is in automatic mode -- makes :tau-system rules out of
 ; non-:tau-system rules
 
 ; We feel that after booting, (2.a) is important because of backwards
@@ -4743,14 +4755,22 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
   (integerp 0)
   :rule-classes nil)
 
-(defaxiom Integer-1
-  (integerp 1)
-  :rule-classes nil)
-
 (defaxiom Integer-step
   (implies (integerp x)
            (and (integerp (+ x 1))
                 (integerp (+ x -1))))
+  :rule-classes nil)
+
+(defthm Integer-1
+
+; The following was originally an axiom, but Claude Code noticed its
+; provability as shown below.  We don't actually need the hint, though; ACL2
+; can prove this with type-set reasoning.
+
+  (integerp 1)
+  :hints (("Goal" :use (integer-0
+                        (:instance integer-step
+                                   (x 0)))))
   :rule-classes nil)
 
 (defaxiom Lowest-Terms
@@ -5476,7 +5496,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 (defmacro throw-or-attach (fn formals &optional *1*-p)
 
 ; Warning: this macro assumes that (attachment-symbol fn) is special and, more
-; important, bound.  So it is probably best to lay down calls of of this macro
+; important, bound.  So it is probably best to lay down calls of this macro
 ; using throw-or-attach-call.
 
   (let ((at-fn (attachment-symbol fn))
@@ -6659,7 +6679,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; This variable should always have a non-nil value.  Its only use is in
 ; throw-nonexec-error, so as to defeat a GCL 2.7.0 warning reported by Camm
 ; Maguire.  That warning was about a type mismatch from a term (to-df (non-exec
-; (constrained-df-expt-fn x y))): non-exec was deduces as returning nil.  The
+; (constrained-df-expt-fn x y))): non-exec was deduced as returning nil.  The
 ; reason is that throw-nonexec-error doesn't return: (non-exec X) expands to
 ; (prog2$ (throw-nonexec-error :non-exec 'X) X).  We defeat that warning by
 ; having throw-nonexec-error consult this variable before throwing or causing
@@ -8028,7 +8048,6 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun defun-nx-form (form)
   (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))
                               (member-eq (car form) '(defun-nx defund-nx)))
                   :mode :program))
   (let ((defunx (if (eq (car form) 'defun-nx) 'defun 'defund))
@@ -8043,10 +8062,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 (defun defun-nx-fn (form)
   (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))
                               (member-eq (car form) '(defun-nx defund-nx)))
                   :mode :program))
-  `(with-output :stack :push :off :all
+  `(with-output :stack :push :off :all :on error
        (progn (encapsulate
                 ()
                 (logic)
@@ -8060,14 +8078,14 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                  ',(event-keyword-name (car form) (cadr form)))))))
 
 (defmacro defun-nx (&whole form &rest rest)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))))
+; The weak guard enables helpful error reports from defun.
+  (declare (xargs :guard (true-listp form))
            (ignore rest))
   (defun-nx-fn form))
 
 (defmacro defund-nx (&whole form &rest rest)
-  (declare (xargs :guard (and (true-listp form)
-                              (true-listp (caddr form))))
+; The weak guard enables helpful error reports from defun.
+  (declare (xargs :guard (true-listp form))
            (ignore rest))
   (defun-nx-fn form))
 
@@ -8668,7 +8686,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; nothing wrong with this generalization except that it is hard to
 ; implement.  In order for TRANSLATE to determine whether test-fn
 ; approves of the term it must ev an expression.  If that expression
-; involved STATE then translated must pass in its STATE in that
+; involved STATE then translate must pass in its STATE in that
 ; position.  This requires coercing the state to an object, an act
 ; which is done with some trepidation in trans-eval and which could,
 ; presumably, be allowed earlier in translate.
@@ -13736,7 +13754,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
                          (cdar tl))))))
 
 ; Determine whether l is already in normal form (header first,
-; strictly ascending keys, no default values, n extra header.)
+; strictly ascending keys, no default values, no extra header.)
 
       (setq in-order t)
       (cond ((eq (caar l) :header)
@@ -14349,6 +14367,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     ev-fncall-meta ; *metafunction-context*
     ld-loop ; *ld-level*
     print-summary ; dmr-flush
+    #+acl2-pass2-def-time-info print-time-summary ; *pass2-def-time-info*
 ; WARNING: See chk-logic-subfunctions before removing ev from this list!
     ev ; *ev-shortcut-okp*
     ev-lst ; *ev-shortcut-okp*
@@ -14445,6 +14464,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     add-global-stobj remove-global-stobj
     translate-stobj-type-to-guard
     chk-acceptable-defuns-redundancy
+    #+acl2-rewrite-meter initialize-summary-accumulators
+    defmacro-fn
+    stop-redundant-defconst
     ))
 
 (defconst *initial-logic-fns-with-raw-code*
@@ -14677,6 +14699,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     df<-fn
     df=-fn
     df/=-fn
+    #+acl2-rewrite-meter rewrite-stack-limit
     ))
 
 (defconst *initial-macros-with-raw-code*
@@ -14782,6 +14805,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
     with-current-package
     ec-call
     swap-stobjs
+    #+acl2-rewrite-meter zero-depthp
+    #+acl2-pass2-def-time-info incf-pass2-def-time?
+    with-debug
     ))
 
 (defun untouchable-marker (mac)
@@ -15076,7 +15102,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; to versions in some non-standard form.  In Lisp comments we tend to write
 ; these with an underscore instead of a space before the number.  Thus, `ACL2
 ; Version_2.5' is a fixed reference to that version.  In :DOC strings we tend
-; to write ACL2 Version 2.5.  Note the two spaces.  This is cool because HTML
+; to write ACL2 Version  2.5.  Note the two spaces.  This is cool because HTML
 ; etc removes the redundant spaces so the output of this string is perfect.
 ; Unfortunately, if you use the double space convention in Lisp comments the
 ; double space is collapsed by ctrl-meta-q when comments are formatted.  They
@@ -16611,7 +16637,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
    ((null bindings) body)
    ((not (symbol-doublet-listp bindings))
 
-; This this is a raw Lisp Function, it is reasonable to call error here rather
+; Since this is a raw Lisp Function, it is reasonable to call error here rather
 ; than to use (er hard ...).  This way we avoid depending on the value of
 ; global *hard-error-is-error* for an error to be signaled.
 
@@ -23048,8 +23074,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; (typep (logcount x) 'fixnum)
 
-; Note that  nonstandard integers integers (like (H)) are not an issue
-; because all Common Lisp integers are "real" integers, hence standard.
+; Note that nonstandard integers (like (H)) are not an issue because all Common
+; Lisp integers are "real" integers, hence standard.
 
          nil)
         ((typep x 'symbol)
@@ -23607,9 +23633,9 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 
 ; The length expression below is roughly arity, which could have been used
 ; instead except that it is not defined yet in axioms.lisp.  Note that since
-; (length nil) = 1, this works even when we have do not have a
-; function-symbolp.  Actually we avoid length in order to ease the
-; guard verification process at this point.
+; (length nil) = 1, this works even when we do not have a function-symbolp.
+; Actually we avoid length in order to ease the guard verification process at
+; this point.
 
 ; (= (length formals) 1)...
                 (let ((formals (getpropc (car lst) 'formals nil wrld)))
@@ -24120,6 +24146,12 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 #+(and (not acl2-loop-only) acl2-rewrite-meter) ; for stats on rewriter depth
 (progn
 
+; NOTE: Similar statistics-gathering code may be found for feature
+; :acl2-pass2-def-time-info.  If we are tempted to add a third such block of
+; statistics-gathering code, it might be good instead to add them all in a
+; uniform manner rather than having a distinct statistics-gathering mechanism
+; for each.
+
 ; Here we provide a mechanism for checking the maximum stack depth attained by
 ; the rewrite nest, while at the same time turning off the rewrite-stack depth
 ; limit check.
@@ -24130,7 +24162,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ; executing the following Unix command, where DIR is the acl2-sources
 ; directory:
 
-; find DIR/books -name '*.rstats' -exec cat {} \; > rewrite-depth-stats.lisp
+; find DIR/books -name '*.rstats' -exec cat {} \; > rewrite-depth-stats.lsp
 
 (defparameter *rewrite-depth-max* 0)     ; records max depth per event
 (defparameter *rewrite-depth-alist* nil) ; records max depth per book
@@ -24138,10 +24170,10 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 )
 
 ; We might as well include code here for analyzing the resulting file
-; rewrite-depth-stats.lisp (see comment above).  We comment out this code since
+; rewrite-depth-stats.lsp (see comment above).  We comment out this code since
 ; it will not be used very often.
 
-; (include-book "books/misc/file-io")
+; (include-book "misc/file-io" :dir :system)
 ;
 ; (defun collect-rstats-1 (filename alist acc)
 ;
@@ -24169,7 +24201,7 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
 ;
 ; (defun collect-rstats (infile outfile state)
 ;
-; ; Each object in infile as the form (filename . alist), where alist has
+; ; Each object in infile has the form (filename . alist), where alist has
 ; ; elements of the form (event-name . n), where n is the rewrite stack depth
 ; ; required for event-name.  We write out outfile, which contains a single form
 ; ; whose elements are of the form ((filename . event-name) . n).  the cdr of
@@ -27255,7 +27287,7 @@ Lisp definition."
 ; d    (:definition rewrite-lambda-modep)
 
 ; if e is enabled and d is enabled:
-;    then rewrite-lambda-object does a a recursive rewrite
+;    then rewrite-lambda-object does a recursive rewrite
 ;    of the body.
 
 ; if e is enabled, but d is disabled,

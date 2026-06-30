@@ -32,7 +32,8 @@
                                    standardp
                                    type
                                    typep
-                                   unread-char))
+                                   unread-char
+                                   value))
               '(any
                 assert!-stobj
                 bool
@@ -56,12 +57,14 @@
                 keyword-value-list-to-alist
                 lifix
                 lnfix
+                lposfix
                 make-event-terse
                 maybe-msgp
                 msg$
                 nat
                 nat-list
                 nat-list-fix
+                nat-option
                 nat-optionp
                 nat-option-fix
                 nat-list-measure
@@ -69,6 +72,8 @@
                 packn-pos
                 pos
                 pos-fix
+                pos-option
+                pos-optionp
                 pseudo-event-formp
                 pseudo-event-form-listp
                 reterr

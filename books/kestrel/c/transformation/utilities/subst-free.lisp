@@ -265,8 +265,9 @@
                                  (subst ident-expr-mapp)
                                  (bound-vars ident-setp))
     :returns (result const-exprp)
-    (const-expr (expr-subst-free (const-expr->expr const-expr)
-                                 subst bound-vars))
+    (make-const-expr :expr (expr-subst-free (const-expr->expr const-expr)
+                                            subst bound-vars)
+                     :info (const-expr->info const-expr))
     :measure (const-expr-count const-expr))
 
   (define const-expr-option-subst-free
@@ -357,9 +358,11 @@
      (type-spec-atomic
        (tyname-subst-free (c$::type-spec-atomic->type type-spec)
                           subst bound-vars))
-     :struct (type-spec-struct (struni-spec-subst-free
-                                 (c$::type-spec-struct->spec type-spec)
-                                 subst bound-vars))
+     :struct (c$::make-type-spec-struct
+               :spec (struni-spec-subst-free
+                       (c$::type-spec-struct->spec type-spec)
+                       subst bound-vars)
+               :info type-spec.info)
      :union (type-spec-union (struni-spec-subst-free
                                (c$::type-spec-union->spec type-spec)
                                subst bound-vars))
@@ -575,7 +578,8 @@
      (designor-list-subst-free (c$::desiniter->designors desiniter)
                                subst bound-vars)
      (initer-subst-free (c$::desiniter->initer desiniter)
-                        subst bound-vars))
+                        subst bound-vars)
+     nil)
     :measure (desiniter-count desiniter))
 
   (define desiniter-list-subst-free
@@ -866,7 +870,10 @@
           (param-declor-subst-free
             (c$::param-declon->declor param-declon)
             subst bound-vars)))
-      (mv (param-declon specs declor (c$::param-declon->attribs param-declon))
+      (mv (param-declon specs
+                        declor
+                        (c$::param-declon->attribs param-declon)
+                        (c$::param-declon->info param-declon))
           (ident-set-fix bound-vars)))
     :measure (param-declon-count param-declon))
 

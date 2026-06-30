@@ -188,6 +188,8 @@
             x86isa::ror-spec-32
             ror-spec-64-alt-def ; x86isa::ror-spec-64
 
+            blsi-redef ; exposes tzcnt
+
             x86isa::x86-operand-to-xmm/mem
 
             x86isa::simd-add-spec-base-1 x86isa::simd-add-spec-base-2 x86isa::simd-add-spec-unroll
@@ -410,7 +412,7 @@
 
 (defund region-rules ()
   (declare (xargs :guard t))
-  '( ;; WARNING: Keep in sync with the list for 64 bits below
+  '(;; WARNING: Keep in sync with the list for 64 bits below
     in-region48p-cancel-constants-1-1+
     in-region48p-cancel-constants-1+-1
     in-region48p-cancel-constants-1+-1+
@@ -554,7 +556,7 @@
 ;; Most of these are for the new normal form (fault, etc.)
 (defund read-over-write-rules-common ()
   (declare (xargs :guard t))
-  '( ; rule to intro app-view?
+  '(; rule to intro app-view?
     x86isa::app-view-of-xw ; needed?
     app-view-of-set-flag
     ;; app-view-of-set-ms ;; we don't want to continue once a branch has a call of set-ms
@@ -726,8 +728,7 @@
 ;; to XW, WRITE, and SET-FLAG (todo: update this comment).
 (defund state-rules ()
   (declare (xargs :guard t))
-  '(
-    force ;todo: think about this, could only open force on a constant arg
+  '(force ;todo: think about this, could only open force on a constant arg
     ;x86isa::x86p-of-wb ;  wb-returns-x86p ;targets x86p-of-mv-nth-1-of-wb ;drop if WB will always be rewritten to WRITE
 
     ;; Flags:
@@ -997,7 +998,7 @@
     x86isa::!prefixes->adr$inline
     x86isa::!prefixes->nxt$inline
 
-    ;; are constant-openers better than enabling these funtions? todo: remove once built into x86 evaluator and other evaluators no longer used
+    ;; are constant-openers better than enabling these functions? todo: remove once built into x86 evaluator and other evaluators no longer used
     X86ISA::!PREFIXES->REP$INLINE-CONSTANT-OPENER ; for floating point?
     x86isa::!prefixes->seg$inline-constant-opener
 
@@ -1225,7 +1226,12 @@
     ;;todo: not x86-specific
     acl2::integerp-of-logext
     acl2::signed-byte-p-of-logext
-    acl2::integerp-of--))
+    acl2::integerp-of--
+
+    integerp-of-tzcnt
+    natp-of-tzcnt
+    tzcnt ; these help make tzcnt amenable to SMT
+    ))
 
 ;move?
 (defund arith-to-bv-rules ()
@@ -1255,15 +1261,14 @@
   '(acl2::logand-becomes-bvand-arg1-axe
     acl2::logand-becomes-bvand-arg2-axe
     acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg1
-    acl2::logior-becomes-bvor-arg1-axe ; based on the form of arg2
+    acl2::logior-becomes-bvor-arg2-axe ; based on the form of arg2
     acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg1
-    acl2::logxor-becomes-bvxor-arg1-axe ; based on the form of arg2
+    acl2::logxor-becomes-bvxor-arg2-axe ; based on the form of arg2
     ;acl2::logxor-bvchop-bvchop        ; introduce bvxor
     ;acl2::logxor-of-bvchop-becomes-bvxor-arg1 ; introduce bvxor
     ;;            acl2::bvplus-of-logxor-arg1                     ; introduce bvxor
     ;;            acl2::bvxor-of-logxor-arg2                      ; introduce bvxor
 
-    acl2::loghead-becomes-bvchop
     ;;acl2::bvchop-of-lognot-becomes-bvnot ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logand-becomes-bvand ; now handled by convert-to-bv machinery
     ;;acl2::bvchop-of-logior-becomes-bvor
@@ -1318,7 +1323,8 @@
     acl2::logbit-becomes-getbit
     acl2::b-and-becomes-bitand
     acl2::b-ior-becomes-bitor
-    acl2::b-xor-becomes-bitxor))
+    acl2::b-xor-becomes-bitxor
+    acl2::b-not-becomes-bitnot))
 
 ;; See also bitops-to-bv-rules.
 ;; todo: add more constant openers
@@ -1346,7 +1352,7 @@
 ;todo: classify these
 (defund x86-bv-rules ()
   (declare (xargs :guard t))
-  '( ;acl2::bvlt-of-0-arg3 ;todo: more like this?
+  '(;acl2::bvlt-of-0-arg3 ;todo: more like this?
 
     ;; acl2::logext-of-bvplus-64 ;somewhat unusual
 
@@ -1889,7 +1895,7 @@
 ;; for 32-bit mode, without :stop-pcs
 (defund symbolic-execution-rules32 ()
   (declare (xargs :guard t))
-  '(    ;; newer scheme, 32-bit:
+  '(;; newer scheme, 32-bit:
     run-until-return32
     run-until-esp-is-above-opener-axe ; not for IFs
     run-until-esp-is-above-base-axe ; not for IFs
@@ -2106,8 +2112,7 @@
 
 (defund canonical-rules-bv ()
   (declare (xargs :guard t))
-  '(
-    ;; these are for the full, 64-bit address space:
+  '(;; these are for the full, 64-bit address space:
     ;; WARNING: Keep in sync with the list for 48 bits above
     in-region64p-of-bvchop-arg1
     in-region64p-of-bvchop-arg3
@@ -2286,7 +2291,6 @@
 
 ;; These are for both 32 and 64 bit modes.
 ;; todo: move some of these to lifter-rules32 or lifter-rules64
-;; todo: should this include core-rules-bv (see below)?
 (defund lifter-rules-common ()
   (declare (xargs :guard t))
   (append (read-over-write-rules-common) ; todo: don't use all these?
@@ -3004,6 +3008,27 @@
 
             write-to-segment-of-set-eip
             write-byte-to-segment-of-set-eip
+
+            al-becomes-eax
+            bl-becomes-ebx
+            cl-becomes-ecx
+            dl-becomes-edx
+            ;; sil-becomes-esi
+            ;; dil-becomes-edi
+            spl-becomes-esp
+            bpl-becomes-ebp
+            ah-becomes-eax
+            bh-becomes-ebx
+            ch-becomes-ecx
+            dh-becomes-edx
+            ax-becomes-eax
+            bx-becomes-ebx
+            cx-becomes-ecx
+            dx-becomes-edx
+            ;; si-becomes-esi
+            ;; di-becomes-edi
+            sp-becomes-esp
+            bp-becomes-ebp
             ))
    '(; caused loops with bvplus-of-constant-and-esp-when-overflow.  probably want to go to bvuminus anyway?:
      acl2::bvminus-of-+-arg2
@@ -3616,7 +3641,8 @@
     bvchop-of-decrement-esp-hack
     integerp-of-esp
     unsigned-byte-p-of-esp-when-stack-segment-assumptions32
-    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32
+    slice-63-32-of-+-of-esp-when-stack-segment-assumptions32 ; drop since we have the rule just below?
+    slice-63-32-of-bvplus-64-of-esp-when-stack-segment-assumptions32
     bvchop-of-+-of-esp-becomes-+-of-esp ; new, lets us drop the bvchop ; todo: involved in loops!
     ;; bvplus-32-of-esp-becomes-+-of-esp ; could uncomment if needed
     esp-bound
@@ -4263,7 +4289,27 @@
             set-rip-of-bvif-split ; we must resolve the RIP to keep going
             set-rip-of-bv-array-read-split-cases-smt ; needs acl2::bv-array-read-cases-opener (just below)
             acl2::bv-array-read-cases-opener
-            )))
+
+            al-becomes-rax
+            bl-becomes-rbx
+            cl-becomes-rcx
+            dl-becomes-rdx
+            ;; sil-becomes-rsi
+            ;; dil-becomes-rdi
+            spl-becomes-rsp
+            bpl-becomes-rbp
+            ah-becomes-rax
+            bh-becomes-rbx
+            ch-becomes-rcx
+            dh-becomes-rdx
+            ax-becomes-rax
+            bx-becomes-rbx
+            cx-becomes-rcx
+            dx-becomes-rdx
+            ;; si-becomes-rsi
+            ;; di-becomes-rdi
+            sp-becomes-rsp
+            bp-becomes-rbp)))
 
 (defund new-normal-form-rules64-intro ()
   (declare (xargs :guard t))
@@ -5628,9 +5674,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Try this rule first
-(set-axe-rule-priority read-of-write-irrel -1) ; todo: also below
-
 ;; Wait to try these rules until the read is cleaned up by removing irrelevant inner writes/sets
 ;; (set-axe-rule-priority read-when-program-at 1)
 ;; these are no longer used:
@@ -5744,7 +5787,7 @@
 ;;             unsigned-byte-p-64-of-xr-of-rgf
 ;;             )
 ;; ;;more:
-;;  ( mv-nth-1-of-add-to-*sp-positive-offset
+;;  (mv-nth-1-of-add-to-*sp-positive-offset
 ;;             mv-nth-1-of-add-to-*sp-gen-special
 ;;             read-from-segment-of-write-to-segment-same
 ;;             read-from-segment-of-write-to-segment-irrel
@@ -5850,7 +5893,6 @@
     ;;rflagsbits->af-of-myif
     ;;rflagsbits->af-of-if
 
-    ;; acl2::equal-of-constant-and-bvuminus
     ;; acl2::bvor-of-myif-arg2 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvor-of-myif-arg3 ; introduces bvif (myif can arise from expanding a shift into cases)
     ;; acl2::bvif-of-myif-arg3 ; introduces bvif
@@ -5903,8 +5945,6 @@
     acl2::slice-of-bvand-of-constant
     ;; acl2::myif-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if.
     acl2::if-becomes-boolif-axe ; since stp translation supports disjuncts that are calls to boolif but not if. ; todo: get this to work
-    acl2::equal-of-bvplus-constant-and-constant
-    acl2::equal-of-bvplus-constant-and-constant-alt
     ;; acl2::getbit-of-lognot ; now handled by convert-to-bv machinery
     acl2::bvif-of-if-constants-nil-nonnil
     acl2::bvif-of-if-constants-nonnil-nil
@@ -5973,7 +6013,7 @@
             ;acl2::bvcat-of-0-arg2
             acl2::bvmod-tighten-64-32
             acl2::bvdiv-tighten-64-32
-            acl2::not-bvlt-of-max-when-unsiged-byte-p
+            acl2::not-bvlt-of-max-when-unsigned-byte-p
             ;x86isa::sf-spec32-rewrite ; trying without...
             ;jle-condition-rewrite-1-with-bvif ; this one works on bvif
             ;jle-condition-rewrite-1-with-bvif-and-bvchop
@@ -6294,8 +6334,6 @@
      ;; read-when-program-at-8-bytes ; this is for resolving reads of the program.
      acl2::equal-of-same-cancel-4
      acl2::equal-of-same-cancel-3
-     acl2::equal-of-bvplus-constant-and-constant
-     acl2::equal-of-bvplus-constant-and-constant-alt
      acl2::mod-of-+-of-constant
      xr-of-if
 
@@ -6495,7 +6533,7 @@
 (set-axe-rule-priority read-of-set-rax -2)
 (set-axe-rule-priority read-of-set-rsp -2)
 (set-axe-rule-priority read-of-write-same -1) ; good for this to fire before read-of-write-within
-(set-axe-rule-priority read-of-write-irrel -1)
+(set-axe-rule-priority read-of-write-irrel -1) ; Try this rule first
 (set-axe-rule-priority read-of-write-irrel-bv-axe-smt 1) ; try late, as this uses SMT
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt 1)
 (set-axe-rule-priority read-of-write-when-disjoint-regions48p-gen-smt-alt 1)

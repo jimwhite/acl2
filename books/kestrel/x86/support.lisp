@@ -1,7 +1,7 @@
 ; Mixed x86 supporting material
 ;
 ; Copyright (C) 2016-2019 Kestrel Technology, LLC
-; Copyright (C) 2020-2025 Kestrel Institute
+; Copyright (C) 2020-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -487,8 +487,7 @@
                                    acl2::getbit-of-+
                                    acl2::bvchop-when-top-bit-1-cheap
                                    bvchop-when-signed-byte-p-one-more-and-negative-linear)
-                                  (
-                                   acl2::bvchop-identity-cheap
+                                  (acl2::bvchop-identity-cheap
                                    acl2::bvchop-identity
                                    acl2::bvcat-of-bvchop-low ;looped
                                    acl2::slice-of-bvchop-low ;looped
@@ -618,8 +617,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (
-;;                                   ACL2::BVCAT-OF-+-LOW ;looped
+;;                                  (ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
 ;; ;a bunch of 0's followed by a bunch of 1's
@@ -634,8 +632,7 @@
 ;;                               n
 ;;                               (+ -1 (expt 2 n)))))
 ;;  :hints (("Goal" :in-theory (e/d (acl2::bvplus ACL2::REPEATBIT)
-;;                                  (
-;;                                   ACL2::BVCAT-OF-+-LOW ;looped
+;;                                  (ACL2::BVCAT-OF-+-LOW ;looped
 ;;                                   )))))
 
 
@@ -1219,8 +1216,6 @@
 
 ;; todo: more
 (defthmd n64-becomes-bvchop (equal (x86isa::n64 x) (acl2::bvchop 64 x)))
-
-(local (include-book "kestrel/bv/rules3" :dir :system)) ;drop?
 
 ;todo: gen the 2
 (defthm idiv-64-by-2-no-error

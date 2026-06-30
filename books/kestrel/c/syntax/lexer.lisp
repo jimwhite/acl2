@@ -13,8 +13,6 @@
 (include-book "reader")
 (include-book "abstract-syntax-irrelevants")
 
-(include-book "../language/keywords")
-
 (include-book "kestrel/utilities/strings/strings-codes" :dir :system)
 
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
@@ -137,7 +135,7 @@
      we just lex grammatical identifiers,
      but return a keyword lexeme if the grammatical identifier
      matches a keyword.
-     We use the C version to determine the keywords to be matched.")
+     We use the C dialect to determine the keywords to be matched.")
    (xdoc::p
     "Given that the first character (a letter or underscore)
      has already been read,
@@ -165,7 +163,7 @@
        (span (make-span :start first-pos :end last-pos))
        (chars (cons first-char rest-chars))
        (string (acl2::nats=>string chars)))
-    (if (member-equal string (c::keywords-for (parstate->version parstate)))
+    (if (member-equal string (parstate->keywords parstate))
         (retok (lexeme-token (token-keyword string)) span parstate)
       (retok (lexeme-token (token-ident (ident string))) span parstate)))
 
@@ -765,7 +763,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define lex-character-constant ((cprefix? cprefix-optionp)
+(define lex-character-constant ((prefix? eprefix-optionp)
                                 (first-pos positionp)
                                 (parstate parstatep))
   :returns (mv erp
@@ -793,7 +791,7 @@
         (reterr-msg :where closing-squote-pos
                     :expected "one or more characters and escape sequences"
                     :found "none")))
-    (retok (lexeme-token (token-const (const-char (cconst cprefix? cchars))))
+    (retok (lexeme-token (token-const (const-char (cconst prefix? cchars))))
            span
            parstate))
 
@@ -2555,7 +2553,7 @@
            (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
-                       :extra (msg "The block comment starting at (~@1) ~
+                       :extra (msg "The block comment starting at (~@0) ~
                                     never ends."
                                    (position-to-msg first-pos))))
           ((utf8-= char (char-code #\*)) ; *
@@ -2576,7 +2574,7 @@
            (reterr-msg :where pos
                        :expected "a character"
                        :found (char-to-msg char)
-                       :extra (msg "The block comment starting at (~@1) ~
+                       :extra (msg "The block comment starting at (~@0) ~
                                     never ends."
                                    (position-to-msg first-pos))))
           ((utf8-= char (char-code #\/)) ; /
@@ -2676,7 +2674,7 @@
          (reterr-msg :where pos
                      :expected "a character"
                      :found (char-to-msg char)
-                     :extra (msg "The line comment starting at (~@1) ~
+                     :extra (msg "The line comment starting at (~@0) ~
                                   never ends."
                                  (position-to-msg first-pos))))
         ((utf8-= char 10) ; new-line
@@ -2761,7 +2759,7 @@
          (reterr-msg :where pos
                      :expected "a character"
                      :found (char-to-msg char)
-                     :extra (msg "The preprocessing directive starting at (~@1) ~
+                     :extra (msg "The preprocessing directive starting at (~@0) ~
                                   never ends."
                                  (position-to-msg first-pos))))
         ((utf8-= char 10) ; new-line
@@ -2846,7 +2844,11 @@
              (t nil)))
      :measure (nfix i)
      :hints (("Goal" :in-theory (enable nfix)))
-     :guard-hints (("Goal" :in-theory (enable nfix))))))
+     :guard-hints
+     (("Goal"
+       :in-theory (enable nfix)
+       :use (:instance natp-when-unicharp
+                       (x (char+position->char (parstate->char i parstate)))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3026,7 +3028,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; u '
-          (lex-character-constant (cprefix-locase-u) first-pos parstate))
+          (lex-character-constant (eprefix-locase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; u "
           (lex-string-literal (eprefix-locase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\8)) ; u 8
@@ -3054,7 +3056,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; U '
-          (lex-character-constant (cprefix-upcase-u) first-pos parstate))
+          (lex-character-constant (eprefix-upcase-u) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; U "
           (lex-string-literal (eprefix-upcase-u) first-pos parstate))
          (t ; U other
@@ -3069,7 +3071,7 @@
                  (make-span :start first-pos :end first-pos)
                  parstate))
          ((utf8-= char2 (char-code #\')) ; L '
-          (lex-character-constant (cprefix-upcase-l) first-pos parstate))
+          (lex-character-constant (eprefix-upcase-l) first-pos parstate))
          ((utf8-= char2 (char-code #\")) ; L "
           (lex-string-literal (eprefix-upcase-l) first-pos parstate))
          (t ; L other
@@ -3540,8 +3542,7 @@
                                            unsigned-byte-p
                                            integer-range-p
                                            dec-digit-char-p
-                                           natp
-                                           the-check)))
+                                           natp)))
 
   ///
 

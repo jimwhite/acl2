@@ -11,8 +11,8 @@
 (in-package "ACL2")
 
 (include-book "bvand-def")
-(include-book "bvor")
-(include-book "bvxor")
+(include-book "bvor-def")
+(include-book "bvxor-def")
 (include-book "bvplus-def")
 (include-book "bvminus")
 (include-book "bv-syntax")
@@ -26,6 +26,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "bvand"))
+(local (include-book "bvor"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
 (local (include-book "logand-b"))
@@ -132,14 +133,14 @@
 ;;   (equal (logand y (bvchop width x))
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable))))
+;;            )))
 
 ;; ;; subsumed?
 ;; (defthmd logand-of-bvchop-becomes-bvand-alt
 ;;   (equal (logand (bvchop width x) y)
 ;;          (bvand width y x))
 ;;   :hints (("Goal" :use (:instance logand-becomes-bvand (size width) (x (bvchop width x)))
-;;            :in-theory (disable))))
+;;            )))
 
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg1
@@ -155,7 +156,7 @@
 (defthmd logand-becomes-bvand-when-unsigned-byte-p-arg2
   (implies (and (unsigned-byte-p size y) ;size is a free var
                 ;(unsigned-byte-p size x)
-                (integerp y))
+                )
            (equal (logand x y)
                   (bvand size x y)))
   :hints (("Goal" :use logand-becomes-bvand-alt
@@ -167,7 +168,7 @@
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
                 (unsigned-byte-p-forced size y)
                 (unsigned-byte-p-forced size x) ; should never fail
-                (integerp y))
+                )
            (equal (logior x y)
                   (bvor size x y)))
   :hints (("Goal" :in-theory (enable bvor))))
@@ -176,7 +177,7 @@
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
                 (unsigned-byte-p-forced size x)
                 (unsigned-byte-p-forced size y) ; should never fail
-                (integerp x))
+                )
            (equal (logior x y)
                   (bvor size x y)))
   :hints (("Goal" :use (:instance logior-becomes-bvor (x y) (y x))
@@ -184,8 +185,7 @@
 
 (defthmd logior-becomes-bvor-when-unsigned-byte-p-arg1
   (implies (and (unsigned-byte-p size x) ;size is a free var
-                (unsigned-byte-p size y)
-                (integerp y))
+                (unsigned-byte-p size y))
            (equal (logior x y)
                   (bvor size x y)))
   :hints (("Goal" :use logior-becomes-bvor
@@ -194,8 +194,7 @@
 
 (defthmd logior-becomes-bvor-when-unsigned-byte-p-arg2
   (implies (and (unsigned-byte-p size y) ;size is a free var
-                (unsigned-byte-p size x)
-                (integerp y))
+                (unsigned-byte-p size x))
            (equal (logior x y)
                   (bvor size x y)))
   :hints (("Goal" :use logior-becomes-bvor-alt
@@ -208,7 +207,7 @@
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
                 (unsigned-byte-p-forced size y)
                 (unsigned-byte-p-forced size x) ; should never fail
-                (integerp y))
+                )
            (equal (logxor x y)
                   (bvxor size x y)))
   :hints (("Goal" :in-theory (enable bvxor))))
@@ -217,7 +216,7 @@
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
                 (unsigned-byte-p-forced size x)
                 (unsigned-byte-p-forced size y) ; should never fail
-                (integerp x))
+                )
            (equal (logxor x y)
                   (bvxor size x y)))
   :hints (("Goal" :use (:instance logxor-becomes-bvxor (x y) (y x))
@@ -226,7 +225,7 @@
 (defthmd logxor-becomes-bvxor-when-unsigned-byte-p-arg1
   (implies (and (unsigned-byte-p size x) ;size is a free var
                 (unsigned-byte-p size y)
-                (integerp y))
+                )
            (equal (logxor x y)
                   (bvxor size x y)))
   :hints (("Goal" :use logxor-becomes-bvxor
@@ -236,7 +235,7 @@
 (defthmd logxor-becomes-bvxor-when-unsigned-byte-p-arg2
   (implies (and (unsigned-byte-p size y) ;size is a free var
                 (unsigned-byte-p size x)
-                (integerp y))
+                )
            (equal (logxor x y)
                   (bvxor size x y)))
   :hints (("Goal" :use logxor-becomes-bvxor-alt

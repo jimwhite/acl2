@@ -1,7 +1,7 @@
 ; Utilities to merge terms into dags, with no simplification or evaluation
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -561,7 +561,8 @@
            :in-theory (disable merge-terms-into-dag-array-simple-return-type ;wf-dagp-of-merge-terms-into-dag-array-simple
                                merge-terms-into-dag-array-simple-return-type))))
 
-(defthm alen1-of-of-merge-terms-into-dag-array-simple-parent-array
+;rename?
+(defthm alen1-of-merge-terms-into-dag-array-simple-parent-array
   (implies (and (pseudo-term-listp terms)
                 (true-listp terms)
                 (wf-dagp dag-array-name dag-array dag-len dag-parent-array-name dag-parent-array dag-constant-alist dag-variable-alist)
@@ -651,7 +652,7 @@
                               ))))
     :flag merge-term-into-dag-array-simple)
   :skip-others t
-  :hints (("Goal" :in-theory (e/d ( ;merge-term-into-dag-array-simple
+  :hints (("Goal" :in-theory (e/d (;merge-term-into-dag-array-simple
                                    merge-terms-into-dag-array-simple
                                    consp-of-lookup-equal-when-all-myquotep-of-strip-cdrs)
                                   (natp))

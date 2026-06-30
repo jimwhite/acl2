@@ -1,7 +1,7 @@
 ; Mixed Axe rules
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -91,7 +91,7 @@
            (equal (+ x (- y))
                   (bvplus xsize x (bvuminus xsize y))))
   :hints (("Goal" :use ((:instance minus-becomes-bv (free xsize)))
-           :in-theory (e/d (unsigned-byte-p-forced) ( minus-becomes-bv)))))
+           :in-theory (e/d (unsigned-byte-p-forced) (minus-becomes-bv)))))
 
 ;rename
 (defthmd plus-of-minus-becomes-bv-dag-alt
@@ -248,7 +248,7 @@
                   (if (equal x 0) (+ -1 y) (+ y (bvplus xsize -1 x)))))
   :hints (("Goal" :use (:instance +-of-minus-1-and-bv2 (free xsize))
            :in-theory (e/d (unsigned-byte-p-forced natp ;yuck
-                                                   ) ( +-of-minus-1-and-bv2)))))
+                                                   ) (+-of-minus-1-and-bv2)))))
 
 (defthmd <-of-+-of-minus-becomes-bvlt
   (implies (and (axe-bind-free (bind-bv-size-axe y 'ysize dag-array) '(ysize))
@@ -320,7 +320,7 @@
                 (< ysize 32)
                 (natp ysize)
                 (integerp k)
-                (< (bvchop 32 k) (- (expt 2 30) (expt 2 ysize))) ;should get computed (shows that there is no oveflow)
+                (< (bvchop 32 k) (- (expt 2 30) (expt 2 ysize))) ;should get computed (shows that there is no overflow)
                 (unsigned-byte-p-forced ysize y)
                 )
            (equal (bvplus '32 x (bvplus '30 k y))

@@ -564,7 +564,7 @@
                                       (append assumptions-for-region acc)))))
 
 (local
-  (defthm true-list-of-mv-nth-1-of-assumptions-for-memory-regions
+  (defthm true-listp-of-mv-nth-1-of-assumptions-for-memory-regions
     (implies (true-listp acc)
              (true-listp (mv-nth 1 (assumptions-for-memory-regions regions base-address-var state-var stack-slots-needed existing-stack-slots position-independentp assume-bytes acc))))
     :hints (("Goal" :in-theory (enable assumptions-for-memory-regions)))))
@@ -621,7 +621,7 @@
        ;; Make the standard assumptions:
        (standard-assumptions (make-standard-assumptions64-new stack-slots-needed existing-stack-slots state-var base-address-var target-offset position-independentp feature-flags))
        ;; Gather memory-regions to assume loaded:
-       ((mv erp regions-to-load) (acl2::elf64-regions-to-load parsed-elf)) ; these use absolute addresses
+       ((mv erp regions-to-load) (acl2::elf-regions-to-load parsed-elf)) ; these use absolute addresses
        ((when erp) (mv erp nil nil))
        ;; Checks that there is at least one load segment:
        ((when (not (consp regions-to-load)))
@@ -668,7 +668,7 @@
                 input-assumptions)
         input-assumption-vars)))
 
-(defthm true-list-of-mv-nth-1-of-assumptions-elf64-new
+(defthm true-listp-of-mv-nth-1-of-assumptions-elf64-new
   (true-listp (mv-nth 1 (assumptions-elf64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-elf)))
   :hints (("Goal" :in-theory (enable assumptions-elf64-new))))
 
@@ -771,7 +771,7 @@
                 input-assumptions)
         input-assumption-vars)))
 
-(defthm true-list-of-mv-nth-1-of-assumptions-macho64-new
+(defthm true-listp-of-mv-nth-1-of-assumptions-macho64-new
   (true-listp (mv-nth 1 (assumptions-macho64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-macho)))
   :hints (("Goal" :in-theory (enable assumptions-macho64-new))))
 
@@ -889,7 +889,7 @@
                 input-assumptions)
         input-assumption-vars)))
 
-(defthm true-list-of-mv-nth-1-of-assumptions-pe64-new
+(defthm true-listp-of-mv-nth-1-of-assumptions-pe64-new
   (true-listp (mv-nth 1 (assumptions-pe64-new target position-independentp feature-flags stack-slots-needed existing-stack-slots state-var inputs type-assumptions-for-array-varsp inputs-disjoint-from assume-bytes parsed-pe)))
   :hints (("Goal" :in-theory (enable assumptions-pe64-new))))
 

@@ -127,6 +127,15 @@
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+   (xdoc::h4 (xdoc::seetopic "data::data-lib" "Data-lib"))
+
+   (xdoc::p
+    "A new data structure,"
+    (xdoc::seetopic "treemap::treemap" "treemaps")
+    ", was introduced, representing finite maps with ordered keys.")
+
+   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
    (xdoc::h3 "Documentation")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -140,6 +149,10 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
+
+   (xdoc::p
+     "More tests have been added to the book
+      @('system/check-system-guards.lisp').")
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -787,7 +800,7 @@
 
    (xdoc::p
     "A new summary of implemented and unimplemented instructions has been added.
-     at @(see x86isa::sdm-instruction-set-summary).
+     at @(see x86isa::implemented-instructions).
      It is organized according to the sections of
      Chapter 5 of Volume 1 of Intel's Software Development Manual (SFM).
      The summary is generated from the opcode maps,
@@ -796,7 +809,7 @@
    (xdoc::p
     "Support for several instructions has been added.
      Currently supported instructions can be seen at
-     @(see x86isa::sdm-instruction-set-summary).")
+     @(see x86isa::implemented-instructions).")
 
    (xdoc::p "Several instruction bugs were fixed:")
    (xdoc::ul
@@ -5040,7 +5053,7 @@ specialization of @(tsee r1cs::verify-r1cs).")
      argument, @(':enable'), specifying whether the generated @(tsee defthm)
      event is enabled.  In addition to Boolean values, it allows the default
      value, @(':auto'), specifying that the new rule is enabled if and only if
-     the original defintion is enabled.  This is a change in default behavior,
+     the original definition is enabled.  This is a change in default behavior,
      since before, the new rule was always enabled.")
 
    ))

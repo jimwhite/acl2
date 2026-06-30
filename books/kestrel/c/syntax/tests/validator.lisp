@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; INPUT is an ACL2 string with the text to parse and validate.
-;; GCC flag says whether GCC extensions are enabled.
+;; DIALECT indicates the C dialect.
 ;; SHORT-BYTES is the number of bytes of shorts (default 2).
 ;; INT-BYTES is the number of bytes of ints (default 4).
 ;; LONG-BYTES is the number of bytes of longs (default 8).
@@ -27,8 +27,7 @@
 ;; Optional COND may be over variables AST.
 
 (defconst *test-valid-allowed-options*
-  '(:std
-    :extensions
+  '(:dialect
     :short-bytes
     :int-bytes
     :long-bytes
@@ -37,8 +36,7 @@
     :cond))
 
 (defconst *test-valid-fail-allowed-options*
-  '(:std
-    :extensions
+  '(:dialect
     :short-bytes
     :int-bytes
     :long-bytes
@@ -46,7 +44,7 @@
     :plain-char-signedp
     :cond))
 
-(define make-dummy-filepath-filedata-map ((filepath-names true-listp) input)
+(define make-dummy-filepath-filedata-map ((filepath-names string-listp) input)
   :returns (map filepath-filedata-mapp)
   (b* (((when (endp filepath-names))
         (raise "Too many translation units provided."))
@@ -82,42 +80,30 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
-       (std (or (cdr (assoc-eq :std options)) 17))
-       (extensions (cdr (assoc-eq :extensions options)))
+       (dialect (or (cdr (assoc-eq :dialect options))
+                    '(c::make-dialect :std (c::standard-c17))))
        (cond (cdr (assoc-eq :cond options)))
        (bool-bytes 1)
        (float-bytes 4)
        (double-bytes 8)
        (ldouble-bytes 16)
        (pointer-bytes 8)
-       (version (cond ((eq extensions nil)
-                       (if (equal std 17)
-                           (c::version-c17)
-                         (c::version-c23)))
-                      ((eq extensions :gcc)
-                       (if (equal std 17)
-                           (c::version-c17+gcc)
-                         (c::version-c23+gcc)))
-                      (t (if (equal std 17)
-                             (c::version-c17+clang)
-                           (c::version-c23+clang)))))
-       (ienv (make-ienv :version version
-                        :bool-bytes bool-bytes
-                        :short-bytes short-bytes
-                        :int-bytes int-bytes
-                        :long-bytes long-bytes
-                        :llong-bytes llong-bytes
-                        :float-bytes float-bytes
-                        :double-bytes double-bytes
-                        :ldouble-bytes ldouble-bytes
-                        :pointer-bytes pointer-bytes
-                        :plain-char-signedp plain-char-signedp))
-       (gcc/clang (and extensions t))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc/clang nil))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
+       (b* ((ienv (make-ienv :dialect ,dialect
+                             :bool-bytes ,bool-bytes
+                             :short-bytes ,short-bytes
+                             :int-bytes ,int-bytes
+                             :long-bytes ,long-bytes
+                             :llong-bytes ,llong-bytes
+                             :float-bytes ,float-bytes
+                             :double-bytes ,double-bytes
+                             :ldouble-bytes ,ldouble-bytes
+                             :pointer-bytes ,pointer-bytes
+                             :plain-char-signedp ,plain-char-signedp))
+            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
+            ((mv erp2 ast) (dimb-trans-ensemble ast ienv nil))
+            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
          (cond (erp1 (cw "~%PARSER ERROR: ~@0~%" erp1))
                (erp2 (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2))
                (erp3 (cw "~%VALIDATOR ERROR: ~@0~%" erp3))
@@ -137,41 +123,29 @@
        (long-bytes (or (cdr (assoc-eq :long-bytes options)) 4))
        (llong-bytes (or (cdr (assoc-eq :llong-bytes options)) 8))
        (plain-char-signedp (cdr (assoc-eq :plain-char-signedp options)))
-       (std (or (cdr (assoc-eq :std options)) 17))
-       (extensions (cdr (assoc-eq :extensions options)))
+       (dialect (or (cdr (assoc-eq :dialect options))
+                    '(c::make-dialect :std (c::standard-c17))))
        (bool-bytes 1)
        (float-bytes 4)
        (double-bytes 8)
        (ldouble-bytes 16)
        (pointer-bytes 8)
-       (version (cond ((eq extensions nil)
-                       (if (equal std 17)
-                           (c::version-c17)
-                         (c::version-c23)))
-                      ((eq extensions :gcc)
-                       (if (equal std 17)
-                           (c::version-c17+gcc)
-                         (c::version-c23+gcc)))
-                      (t (if (equal std 17)
-                             (c::version-c17+clang)
-                           (c::version-c23+clang)))))
-       (ienv (make-ienv :version version
-                        :bool-bytes bool-bytes
-                        :short-bytes short-bytes
-                        :int-bytes int-bytes
-                        :long-bytes long-bytes
-                        :llong-bytes llong-bytes
-                        :float-bytes float-bytes
-                        :double-bytes double-bytes
-                        :ldouble-bytes ldouble-bytes
-                        :pointer-bytes pointer-bytes
-                        :plain-char-signedp plain-char-signedp))
-       (gcc/clang (and extensions t))
        (fileset (make-dummy-fileset inputs)))
     `(assert-event
-       (b* (((mv erp1 ast) (parse-fileset ',fileset ',version t nil))
-            ((mv erp2 ast) (dimb-transunit-ensemble ast ,gcc/clang nil))
-            ((mv erp3 ?ast) (valid-transunit-ensemble ast ',ienv nil)))
+       (b* ((ienv (make-ienv :dialect ,dialect
+                             :bool-bytes ,bool-bytes
+                             :short-bytes ,short-bytes
+                             :int-bytes ,int-bytes
+                             :long-bytes ,long-bytes
+                             :llong-bytes ,llong-bytes
+                             :float-bytes ,float-bytes
+                             :double-bytes ,double-bytes
+                             :ldouble-bytes ,ldouble-bytes
+                             :pointer-bytes ,pointer-bytes
+                             :plain-char-signedp ,plain-char-signedp))
+            ((mv erp1 ast) (parse-fileset ',fileset ,dialect t nil))
+            ((mv erp2 ast) (dimb-trans-ensemble ast ienv nil))
+            ((mv erp3 ?ast) (valid-trans-ensemble ast ienv nil)))
          (cond (erp1 (not (cw "~%PARSER ERROR: ~@0~%" erp1)))
                (erp2 (not (cw "~%DISAMBIGUATOR ERROR: ~@0~%" erp2)))
                (erp3 (not (cw "~%VALIDATOR ERROR: ~@0~%" erp3)))
@@ -244,7 +218,7 @@ void f() {
   if (0 < &a) {}
 }
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "int * x;
@@ -278,8 +252,8 @@ void f() {
   int y = sizeof(x);
   }
 "
- :cond (b* ((transunit (omap::head-val (transunit-ensemble->units ast)))
-            (items (transunit->items transunit))
+ :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+            (items (trans-unit->items tunit))
             (item (cadr items))
             (edecl (trans-item-declon->declon item))
             (fundef (ext-declon-fundef->fundef edecl))
@@ -294,9 +268,9 @@ void f() {
             (expr-xp (expr-unary->arg expr-sizeof))
             (expr-x (expr-paren->inner expr-xp)))
          (and (expr-case expr-x :ident)
-              (equal (var-info->type (expr-ident->info expr-x))
+              (equal (var-vinfo->type (expr-ident->info expr-x))
                      (type-sint))
-              (equal (var-info->linkage (expr-ident->info expr-x))
+              (equal (var-vinfo->linkage (expr-ident->info expr-x))
                      (linkage-external)))))
 
 (test-valid
@@ -304,11 +278,6 @@ void f() {
   void f() {
   int y = sizeof(x);
   }
-")
-
-(test-valid
- "int x;
-  void f(x) {}
 ")
 
 (test-valid
@@ -632,7 +601,7 @@ __bswap_16 (__uint16_t __bsx)
   return 0;
 }
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "typedef unsigned char uint8_t;
@@ -642,41 +611,41 @@ static uint8_t g_2[2][1][1] = {{{0UL}},{{0UL}}};
 (test-valid
  "__int128 x;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "unsigned __int128 x;
 __int128 unsigned y;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128 x;
 signed __int128 y;
 __int128 signed z;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128 x;
 __signed __int128 y;
 __int128 __signed z;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128 x;
 __signed__ __int128 y;
 __int128 __signed__ z;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "__int128_t x;
 __int128 y;
 unsigned __int128_t z;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "void main(void) {
@@ -684,21 +653,21 @@ unsigned __int128_t z;
   int y = ({ int a = 1; a; });
 }
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "int foo (void);
 int bar (void);
 typeof(bar) foo;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "int foo (void);
 typeof(foo) bar;
 int bar (void);
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "_Thread_local int x;
@@ -707,7 +676,7 @@ int bar (void);
 (test-valid
  "_Thread_local int x;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid-fail
  "__thread int x;
@@ -716,7 +685,7 @@ int bar (void);
 (test-valid
  "__thread int x;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid-fail
   "int foo(void) {
@@ -897,43 +866,43 @@ void bar(void) {
   return bar;
 }
 "
-  :cond (b* ((filepath-transunit-map (transunit-ensemble->units ast))
-             (transunit1 (omap::head-val filepath-transunit-map))
-             (transunit2 (omap::head-val (omap::tail filepath-transunit-map)))
-             (items1 (transunit->items transunit1))
+  :cond (b* ((filepath-trans-unit-map (trans-ensemble->units ast))
+             (tunit1 (omap::head-val filepath-trans-unit-map))
+             (tunit2 (omap::head-val (omap::tail filepath-trans-unit-map)))
+             (items1 (trans-unit->items tunit1))
              (foo-init1 (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items1))))))
-             (foo-init1-uid (init-declor-info->uid? (init-declor->info foo-init1)))
+             (foo-init1-uid (init-declor-vinfo->uid (init-declor->info foo-init1)))
              ;; (- (cw "foo-init1 uid: ~x0~%" foo-init1-uid))
              (bar-fundef (ext-declon-fundef->fundef (trans-item-declon->declon (second items1))))
-             (bar-fundef-uid (fundef-info->uid (fundef->info bar-fundef)))
+             (bar-fundef-uid (type+uid-vinfo->uid (fundef->info bar-fundef)))
              ;; (- (cw "bar-fundef uid: ~x0~%" bar-fundef-uid))
              (bar-params (dirdeclor-function-params->params (declor->direct (fundef->declor bar-fundef))))
              (bar-param-declon (param-declon->declor (first bar-params)))
-             (x-param-uid (param-declor-nonabstract-info->uid (param-declor-nonabstract->info bar-param-declon)))
+             (x-param-uid (type+uid-vinfo->uid (param-declor-nonabstract->info bar-param-declon)))
              ;; (- (cw "x-param uid: ~x0~%" x-param-uid))
              (bar-body-decl1 (first (comp-stmt->items (fundef->body bar-fundef))))
              (foo-init2 (first (declon-declon->declors (block-item-declon->declon bar-body-decl1))))
-             (foo-init2-uid (init-declor-info->uid? (init-declor->info foo-init2)))
+             (foo-init2-uid (init-declor-vinfo->uid (init-declor->info foo-init2)))
              ;; (- (cw "foo-init2 uid: ~x0~%" foo-init2-uid))
              (x-expr (initer-single->expr (init-declor->initer? foo-init2)))
-             (x-expr-uid (var-info->uid (expr-ident->info x-expr)))
+             (x-expr-uid (var-vinfo->uid (expr-ident->info x-expr)))
              ;; (- (cw "x-expr uid: ~x0~%" x-expr-uid))
              (bar-body-decl2 (first (comp-stmt->items (stmt-compound->stmt (block-item-stmt->stmt (second (comp-stmt->items (fundef->body bar-fundef))))))))
              (foo-init3 (first (declon-declon->declors (block-item-declon->declon bar-body-decl2))))
-             (foo-init3-uid (init-declor-info->uid? (init-declor->info foo-init3)))
+             (foo-init3-uid (init-declor-vinfo->uid (init-declor->info foo-init3)))
              ;; (- (cw "foo-init3 uid: ~x0~%" foo-init3-uid))
              (bar-return-stmt (block-item-stmt->stmt (third (comp-stmt->items (fundef->body bar-fundef)))))
-             (foo-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
+             (foo-expr-uid (var-vinfo->uid (expr-ident->info (stmt-return->expr? bar-return-stmt))))
              ;; (- (cw "foo-expr uid: ~x0~%" foo-expr-uid))
-             (items2 (transunit->items transunit2))
+             (items2 (trans-unit->items tunit2))
              (bar-init (first (declon-declon->declors (ext-declon-declon->declon (trans-item-declon->declon (first items2))))))
-             (bar-init-uid (init-declor-info->uid? (init-declor->info bar-init)))
+             (bar-init-uid (init-declor-vinfo->uid (init-declor->info bar-init)))
              ;; (- (cw "bar-init uid: ~x0~%" bar-init-uid))
              (foo-fundef (ext-declon-fundef->fundef (trans-item-declon->declon (second items2))))
-             (foo-fundef-uid (fundef-info->uid (fundef->info foo-fundef)))
+             (foo-fundef-uid (type+uid-vinfo->uid (fundef->info foo-fundef)))
              ;; (- (cw "foo-fundef uid: ~x0~%" foo-fundef-uid))
              (foo-return-stmt (block-item-stmt->stmt (first (comp-stmt->items (fundef->body foo-fundef)))))
-             (bar-expr-uid (var-info->uid (expr-ident->info (stmt-return->expr? foo-return-stmt))))
+             (bar-expr-uid (var-vinfo->uid (expr-ident->info (stmt-return->expr? foo-return-stmt))))
              ;; (- (cw "bar-expr uid: ~x0~%" bar-expr-uid))
              )
           (and (equal foo-init1-uid foo-init3-uid)
@@ -968,13 +937,13 @@ int main(void) {
 "
   ;; Looking up "foo" in the first translation unit validation table should
   ;; show a UID value of "0".
-  :cond (b* ((transunit-test0
+  :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
-                                 (transunit-ensemble->units ast))))
-             (info? (transunit->info transunit-test0))
-             ((unless (transunit-infop info?))
+                                 (trans-ensemble->units ast))))
+             (info? (trans-unit->info tunit-test0))
+             ((unless (trans-unit-vinfop info?))
               nil)
-             (table (transunit-info->table-end info?))
+             (table (trans-unit-vinfo->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -992,13 +961,13 @@ void foo(void) {
 "
   ;; Looking up "foo" in the first translation unit validation table should
   ;; show a UID value of "0".
-  :cond (b* ((transunit-test0
+  :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
-                                 (transunit-ensemble->units ast))))
-             (info? (transunit->info transunit-test0))
-             ((unless (transunit-infop info?))
+                                 (trans-ensemble->units ast))))
+             (info? (trans-unit->info tunit-test0))
+             ((unless (trans-unit-vinfop info?))
               nil)
-             (table (transunit-info->table-end info?))
+             (table (trans-unit-vinfo->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -1016,13 +985,13 @@ static void foo(void) {
 "
   ;; Looking up "foo" in the first translation unit validation table should
   ;; show a UID value of "0".
-  :cond (b* ((transunit-test0
+  :cond (b* ((tunit-test0
                (cdr (omap::assoc (filepath "test0")
-                                 (transunit-ensemble->units ast))))
-             (info? (transunit->info transunit-test0))
-             ((unless (transunit-infop info?))
+                                 (trans-ensemble->units ast))))
+             (info? (trans-unit->info tunit-test0))
+             ((unless (trans-unit-vinfop info?))
               nil)
-             (table (transunit-info->table-end info?))
+             (table (trans-unit-vinfo->table-end info?))
              ((mv ord-info? currentp)
               (valid-lookup-ord (ident "foo") table)))
           (and ord-info?
@@ -1159,6 +1128,10 @@ void foo () {
 ")
 
 (test-valid
+  "unsigned char hello_world[] = \"Hello World!\";
+")
+
+(test-valid
   "struct s { int x; };
    struct s arr[10] = {[0] = {.x = 1}, [1] = {.x = 2}};
 ")
@@ -1210,12 +1183,12 @@ struct s arr[] = {1, [0].y = 2, {.x = 3, 4}, 5};
 (test-valid
  "_Complex _Float128 x;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "_Float128 x;
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
  "void (*f(float x, double y))(int z) {
@@ -1308,7 +1281,7 @@ void bar() {
   foo(y);
 }
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid-fail
  "typedef union __attribute__((transparent_union))
@@ -1326,7 +1299,7 @@ void bar() {
 (test-valid
  "register int *foo asm (\"r12\");
 "
- :extensions :gcc)
+ :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
   "typedef float _Float32;
@@ -1335,17 +1308,17 @@ void bar() {
 (test-valid-fail
   "typedef float _Float32;
 "
-  :extensions :gcc)
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
   "typedef float _Float32;
 "
-  :extensions :clang)
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid-fail
   "typedef float _Float16;
 "
-  :extensions :clang)
+  :dialect (c::make-dialect :std (c::standard-c17) :clang t))
 
 (test-valid
   "int f(void) {
@@ -1359,7 +1332,7 @@ foo:
    return 0;
 }
 "
-  :extensions :gcc)
+  :dialect (c::make-dialect :std (c::standard-c17) :gcc t))
 
 (test-valid
   "struct s {
@@ -1498,7 +1471,7 @@ void g(void) {
    f(x);
 }
 "
-  :std 23)
+  :dialect (c::make-dialect :std (c::standard-c23)))
 
 (test-valid
   "struct s;
@@ -1619,4 +1592,289 @@ void main(void) {
 };
 
 struct foo bar;
+")
+
+(test-valid
+  "char str[32] = { \"hello\" };
+")
+
+(test-valid
+  "struct foo_s {
+  float x;
+  int : 5;
+  float y;
+} foo = { 0.0, 1.0 };
+")
+
+(test-valid
+  "struct foo_s { int x; };
+
+void f(void) {
+  struct foo_s foo;
+  struct bar_s {
+    float x;
+    int : 5;
+    struct foo_s y;
+  } bar = { 0.0, foo };
+}
+")
+
+(test-valid
+  "char f(void) {
+  return (char []){\"bar\"}[0];
+}
+")
+
+(test-valid
+  "int x;
+
+void f(void) {
+  x = (int){42};
+}
+")
+
+(test-valid
+  "struct foo_s { int x; };
+
+struct bar_s {
+  float x;
+  int : 5;
+  struct foo_s y;
+};
+
+int f(void) {
+  struct foo_s foo;
+  return (struct bar_s){ 0.0, foo }.y.x;
+}
+")
+
+;; The anonymous struct in this example is in fact undefined behavior.
+;; We allow it here, treating it as an unnamed member.
+;; GCC and Clang both choose to reject the program.
+(test-valid
+  "struct foo_s { int x; };
+
+struct bar_s {
+  float x;
+  struct {
+    int : 5;
+    int : 3;
+  };
+  struct foo_s y;
+};
+
+int f(void) {
+  struct foo_s foo;
+  return (struct bar_s){ 0.0, foo }.y.x;
+}
+")
+
+;; Struct with two scalar members, undesignated list initializer.
+(test-valid
+  "struct s { int x; int y; } a = { 1, 2 };
+")
+
+;; Union initialized via its first member (no designator).
+(test-valid
+  "union u { int x; float y; } a = { 42 };
+")
+
+;; Union initialized via a named member designator.
+(test-valid
+  "union u { int x; float y; } a = { .y = 3.14f };
+")
+
+;; Flat list init of an array of structs (implicit subobject traversal).
+(test-valid
+  "struct s { int x; int y; };
+struct s arr[2] = { 1, 2, 3, 4 };
+")
+
+;; Static-storage local variable initialized with a list.
+(test-valid
+  "void f(void) {
+  static int a[2] = { 1, 2 };
+}
+")
+
+;; Designator names a field that does not exist in the struct.
+(test-valid-fail
+  "struct s { int x; } a = { .y = 42 };
+")
+
+;; Scalar initialized with a list containing more than one element.
+(test-valid-fail
+  "int x = { 1, 2 };
+")
+
+;; Struct with one member initialized with a two-element list.
+(test-valid-fail
+  "struct s { int x; } a = { 1, 2 };
+")
+
+;; Struct with two members initialized with a one-element list.
+(test-valid
+  "struct s { int x; int y; } a = { 1 };
+")
+
+;; File-scope struct variable initialized from another struct object
+;; (requires auto storage duration, but file scope is static).
+(test-valid-fail
+  "struct s { int x; };
+struct s g;
+struct s h = g;
+")
+
+;; Static-local struct initialized from a struct object
+;; (same constraint as above).
+(test-valid-fail
+  "struct s { int x; };
+void f(void) {
+  struct s a;
+  static struct s b = a;
+}
+")
+
+(test-valid
+  "struct myStruct {
+  int a;
+  int b : 4;
+  union { int c; int d; };
+  _Bool e;
+  int : 4;
+  unsigned long int f;
+};
+
+static struct myStruct my = { 1, 1, 1, 1, 1 };
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (my-declon (ext-declon-declon->declon
+                          (trans-item-declon->declon (second items))))
+             (my-init-declor (car (declon-declon->declors my-declon)))
+             (initer (init-declor->initer? my-init-declor))
+             (desiniters (initer-list->elems initer)))
+          (and (equal (desiniter-vinfo->designors (desiniter->info (first desiniters)))
+                      (list (designor-dot (ident "a"))))
+               (equal (desiniter-vinfo->designors (desiniter->info (second desiniters)))
+                      (list (designor-dot (ident "b"))))
+               (equal (desiniter-vinfo->designors (desiniter->info (third desiniters)))
+                      (list (designor-dot (ident "c"))))
+               (equal (desiniter-vinfo->designors (desiniter->info (fourth desiniters)))
+                      (list (designor-dot (ident "e"))))
+               (equal (desiniter-vinfo->designors (desiniter->info (fifth desiniters)))
+                      (list (designor-dot (ident "f")))))))
+
+;; Valid null pointer constants
+(test-valid
+  "int * a = 0;
+int * b = (void *)0;
+int * c = (void *)(1 - 1);
+int * d = 1 - 1;
+")
+
+;; Not a valid null pointer constant (expression does not evaluate to 0).
+(test-valid-fail
+  "int * x = 2 - 1;
+")
+
+;; Typedef UIDs.
+
+;; A typedef redefined in the same scope, with a compatible type, reuses the
+;; same UID as the original declaration.
+(test-valid
+  "typedef int T;
+typedef int T;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (info1 (init-declor->info
+                      (first (declon-declon->declors declon1))))
+             (info2 (init-declor->info
+                      (first (declon-declon->declors declon2)))))
+          (and (init-declor-vinfo->typedefp info1)
+               (init-declor-vinfo->typedefp info2)
+               (equal (init-declor-vinfo->uid info1)
+                      (init-declor-vinfo->uid info2)))))
+
+;; Distinct typedef names get distinct UIDs.
+(test-valid
+  "typedef int T;
+typedef int U;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (info1 (init-declor->info
+                      (first (declon-declon->declors declon1))))
+             (info2 (init-declor->info
+                      (first (declon-declon->declors declon2)))))
+          (not (equal (init-declor-vinfo->uid info1)
+                      (init-declor-vinfo->uid info2)))))
+
+;; A typedef name used as a type specifier is annotated with the UID of its
+;; declaration.
+(test-valid
+  "typedef int T;
+T x;
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (declon1 (ext-declon-declon->declon
+                        (trans-item-declon->declon (first items))))
+             (declon2 (ext-declon-declon->declon
+                        (trans-item-declon->declon (second items))))
+             (decl-uid (init-declor-vinfo->uid
+                         (init-declor->info
+                           (first (declon-declon->declors declon1)))))
+             (tyspec (decl-spec-typespec->spec
+                       (first (declon-declon->specs declon2))))
+             (use-uid (type+uid-vinfo->uid
+                        (type-spec-typedef->info tyspec))))
+          (equal decl-uid use-uid)))
+
+;; A typedef shadowed in an inner scope gets a fresh UID distinct from the
+;; outer typedef, and uses within the inner scope refer to the inner UID.
+(test-valid
+  "typedef int T;
+void f(void) {
+  typedef int T;
+  T x;
+}
+"
+  :cond (b* ((tunit (omap::head-val (trans-ensemble->units ast)))
+             (items (trans-unit->items tunit))
+             (outer-declon (ext-declon-declon->declon
+                             (trans-item-declon->declon (first items))))
+             (outer-uid (init-declor-vinfo->uid
+                          (init-declor->info
+                            (first (declon-declon->declors outer-declon)))))
+             (fundef (ext-declon-fundef->fundef
+                       (trans-item-declon->declon (second items))))
+             (block-items (comp-stmt->items (fundef->body fundef)))
+             (inner-declon (block-item-declon->declon (first block-items)))
+             (inner-uid (init-declor-vinfo->uid
+                          (init-declor->info
+                            (first (declon-declon->declors inner-declon)))))
+             (use-declon (block-item-declon->declon (second block-items)))
+             (use-tyspec (decl-spec-typespec->spec
+                           (first (declon-declon->specs use-declon))))
+             (use-uid (type+uid-vinfo->uid
+                        (type-spec-typedef->info use-tyspec))))
+          (and (not (equal outer-uid inner-uid))
+               (equal inner-uid use-uid))))
+
+(test-valid
+  "int f();
+
+void g(void) {
+  f(3);
+}
 ")

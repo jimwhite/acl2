@@ -1,7 +1,7 @@
 ; Versions of functions with guards of t
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -24,8 +24,8 @@
 (include-book "kestrel/bv-arrays/bv-array-read" :dir :system)
 (include-book "kestrel/bv-arrays/bv-array-write" :dir :system)
 (include-book "kestrel/bv/bvplus-def" :dir :system)
-(include-book "kestrel/bv/bvmult" :dir :system)
-(include-book "kestrel/bv/bvxor" :dir :system)
+(include-book "kestrel/bv/bvmult-def" :dir :system)
+(include-book "kestrel/bv/bvxor-def" :dir :system)
 (include-book "kestrel/bv/leftrotate" :dir :system)
 (include-book "kestrel/bv/leftrotate32" :dir :system)
 ;(include-book "kestrel/bv/bvlt" :dir :system)
@@ -41,7 +41,7 @@
 (include-book "kestrel/bv/bvsx-def" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
 (include-book "kestrel/bv/bvshr-def" :dir :system)
-(include-book "kestrel/bv/bvashr" :dir :system)
+(include-book "kestrel/bv/bvashr-def" :dir :system)
 (include-book "kestrel/bv/bvequal" :dir :system)
 (include-book "kestrel/bv/bvminus-def" :dir :system)
 (include-book "kestrel/bv/sbvdiv" :dir :system)
