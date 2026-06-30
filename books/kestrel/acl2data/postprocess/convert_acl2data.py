@@ -641,7 +641,6 @@ def process_file(fname, db):
 
     if pathlib.Path(fname).suffix == '.tgz':
         logging.info(">> " + fname)
-        info = []
         tar = tarfile.open(fname, "r:gz")
         for member in tar.getmembers():
             if not member.name.endswith("acl2data.out"):
@@ -650,10 +649,12 @@ def process_file(fname, db):
             if f is not None:
                 logging.info("> " + member.name)
                 content = f.read().decode('latin-1')
-                info.extend(process_content(content, db))
-        if not TEST_CHECKPOINT_TO_CLAUSE:
-            with open(mlifile, "w", encoding='latin-1') as out:
-                json.dump(info, out, indent=2)
+                info = process_content(content, db)
+                if not TEST_CHECKPOINT_TO_CLAUSE:
+                    member_path = pathlib.Path(member.name)
+                    member_mlifile = fullname.parent / member_path.with_suffix(".mli").name
+                    with open(member_mlifile, "w", encoding='latin-1') as out:
+                        json.dump(info, out, indent=2)
         return
 
     if not str(pathlib.Path(fname)).endswith("acl2data.out"):
