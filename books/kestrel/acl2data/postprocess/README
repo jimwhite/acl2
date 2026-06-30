@@ -22,21 +22,182 @@ as ACL2, i.e., based on the BSD-3-Clause.
 	Learning Input) file. The MLI file format is specified in the Kestrel PEARLS
 	project documentation.
 
+	Usage:
+	  python convert_acl2data.py [OPTIONS] <input>
+	
+	Arguments:
+	  <input>               .tgz file, directory, or individual .out file
+	
+	Options:
+	  -j, --workers N        Number of parallel workers (default: nproc).
+	                          Use 1 for serial processing.
+	  --no-incremental       Force reprocessing even if .mli already exists.
+	                          By default, existing .mli files are skipped.
+	  --log-level LEVEL      Logging level: DEBUG, INFO, WARNING, ERROR
+	                          (default: DEBUG)
+	
+	Examples:
+	  # Process a .tgz archive (uses all cores, skips existing):
+	  python convert_acl2data.py /path/to/acl2data.tgz
+	
+	  # Process with 4 workers, force reprocessing, less output:
+	  python convert_acl2data.py -j 4 --no-incremental --log-level WARNING \\
+	       /path/to/acl2data.tgz
+	
+	Output:
+	  For a .tgz input, .mli files are written alongside the .tgz preserving
+	  the tar's internal directory structure.  For a directory input, .mli
+	  files are written next to each .out file.  Each .mli file is a JSON
+	  array of records with this structure:
+	
+	  {
+	    "metadata": {
+	      "file": "[books]/path/to/book.lisp",
+	      "rune": "EVENT-NAME",
+	      "rule-classes": "(:REWRITE)",
+	      "goal": <translated goal term>,
+	      "goal-str": "string form of goal",
+	      "broken-goal": <translated broken goal>,
+	      "broken-goal-str": "string form of broken goal"
+	    },
+	    "input": {
+	      "checkpoint-type": "top" | "induction",
+	      "checkpoint": ["clause1", "clause2", ...],
+	      "checkpoint-acl2": <untranslated checkpoint>,
+	      "checkpoint-structure": <parsed checkpoint with renamed vars>,
+	      "checkpoint-sequence": ["(", "NOT", "NATP", "var-0", ")", ...],
+	      "symbol-map": {"original-var": "var-0", ...}
+	    },
+	    "output": {
+	      "action": "human-readable description",
+	      "action-type": "use-lemma" | "add-hyp" | "add-hint" |
+	                      "add-use-hint" | "add-by-hint" |
+	                      "add-enable-hint" | "add-disable-hint" |
+	                      "add-expand-hint" | "add-do-not-hint" |
+	                      "add-nonlinearp-hint" | "add-induct-hint" |
+	                      "add-cases-hint" | "add-library" |
+	                      "advice <type>",
+	      "action-obj": "the specific lemma/hint/rune/hypothesis string"
+	    }
+	  }
+	
+	Bug fixes and enhancements (branch fix-acl2data-converter, 2026-06-30):
+	  - Added missing "import tarfile" (was NameError).
+	  - Fixed tarfile member.name access (TarInfo objects are not strings).
+	  - Decoded tarfile content from bytes to latin-1.
+	  - Skip :HASH and :EXPANSION-STACK sections silently (were ERROR logs).
+	  - Handle :HINT-SETTING-ALIST entries with 6 or 7 elements (was crash).
+	  - Moved regex compilations to module level in parse_acl2.py (was
+	    recompiling on every recursive call, causing stack pressure).
+	  - Changed .tgz handler to write .mli files incrementally per-member
+	    instead of accumulating everything in memory (was OOM killed).
+	  - Preserved tar directory structure in output .mli paths.
+	  - Added ProcessPoolExecutor for parallel .tgz processing (-j flag).
+	  - Added incremental mode (skip existing .mli files, --no-incremental
+	    to override).
+	  - Added argparse-based CLI (--help for usage).
+
 * fix_defpkg.py -- finds duplicate/conflicting package information in the ACL2
 	community books. This depends on the package database produced with
 	collect_defpkg.py. Run with --help for details.
 
-* ld_instr.py -- (very) poor man's "gather" process. Executes and ACL2 file and
+* ld_instr.py -- (very) poor man's "gather" process. Executes an ACL2 file and
 	collects information about the hints and lemmas used to feed a very simple
 	machine learning model. Strictly a prototyping tool.
 
 * learn_enable.py -- uses the data gathered by ld_instr.py to train a machine
 	learning model in enabling runes. Strictly a prototyping tool.
+	
+	This is an early prototype that trains a scikit-learn DecisionTreeClassifier
+	on .summ files (produced by ld_instr.py).  It predicts whether a rune
+	should be enabled or disabled based on function symbols present in the
+	theorem form.  This is a simpler approach than training on the full .mli
+	checkpoint structure.
 
 * parse_acl2.py -- Python parser for ACL2 S-expressions.
+	
+	Bug fix (2026-06-30): moved regex compilations (FRACTION_REGEX,
+	DECIMAL_REGEX) to module level.  Previously re.compile() was called
+	inside the recursive get_sexpr() function, recompiling on every call.
 
 * pkg_consts.py -- definition of common package constants used in defpkg commands.
 
 * slurp_runes.py -- collects rule names in an ACL2 file
 
-* summarize_mli.py -- collects basic information about the data in an .mli file.
+* summarize_mli.py -- collects basic information about the data in .mli files.
+	Counts occurrences of each (action-type, action-obj) pair across all
+	.mli files in a directory tree.
+	
+	Usage:
+	  python summarize_mli.py [OPTIONS] <dir1> [dir2 ...]
+	
+	Options:
+	  -j, --workers N        Number of parallel workers (default: nproc).
+	  --log-level LEVEL      Logging level (default: DEBUG)
+	
+	Example:
+	  python summarize_mli.py --log-level INFO \\
+	       /workspaces/acl2-jupyter/data/books
+	
+	Output: per action-type, total count and top-5 most frequent action-obj.
+	
+	Bug fixes and enhancements (2026-06-30):
+	  - Fixed TypeError on unhashable list action-obj (e.g., (:INSTANCE ...)).
+	  - Added parallel processing with ProcessPoolExecutor (-j flag).
+	  - Switched from recursive directory walk to os.walk.
+	  - Added argparse CLI (--help for usage).
+
+
+============================================
+Machine Learning Pipeline Overview
+============================================
+
+The overall ML pipeline has three phases:
+
+Phase 1: GATHER (Lisp side, already done)
+  - ACL2 is patched to record "retry experiments" when proofs fail.
+  - For each failing theorem, ACL2 tries removing hypotheses, hint
+    settings, book runes, and individual runes one at a time.
+  - Results (checkpoints, success/failure) are written to
+    *__acl2data.out files.
+  - These are collected into acl2data.tgz (1.4GB compressed, 5692 files).
+
+Phase 2: POSTPROCESS (Python side — this directory)
+  - convert_acl2data.py: .out → .mli JSON
+    Each record maps a checkpoint (the failing proof state) to an action
+    (the lemma/hint/rune that must be added back to fix the proof).
+    Variables are normalized to "var-0", "var-1", etc.
+    Output: ~5692 .mli files alongside the .tgz.
+  
+  - summarize_mli.py: aggregate statistics
+    Counts which action-types and lemmas appear most frequently.
+    Helps understand the dataset distribution.
+
+Phase 3: TRAINING (not yet implemented)
+  The training/ directory (referenced in the top-level README) was
+  planned but not yet built.  The .mli format supports training models
+  that predict what fix to apply given a checkpoint.
+
+  Training approaches to explore:
+  
+  a) Token-based classifier (simpler, faster):
+     - Tokenize the checkpoint-sequence
+     - Train a classifier (XGBoost, Random Forest, etc.) to predict
+       (action-type, action-obj) pairs
+     - Input features: checkpoint tokens + goal-str tokens + action-type
+     - This is what learn_enable.py prototyped at a smaller scale
+  
+  b) Tree-LSTM / Transformer (more powerful):
+     - Encode the S-expression structure of the checkpoint
+     - Captures term structure and variable relationships
+     - Requires more data and compute
+  
+  c) Graph Neural Network:
+     - Represent the checkpoint as a term DAG with shared sub-expressions
+     - Most expressive, but most complex
+  
+  Integration with ACL2:
+     - When a proof fails, extract the checkpoint
+     - Query the trained model: "what action fixes this?"
+     - Apply top-N predicted hints and retry
+     - Use active learning to improve over time
