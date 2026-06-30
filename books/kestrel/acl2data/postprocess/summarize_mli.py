@@ -6,6 +6,7 @@ import argparse
 import re
 import logging
 import multiprocessing
+import ijson
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from collections import Counter
 
@@ -20,20 +21,73 @@ def make_hashable(obj):
     return str(obj)
 
 def process_one_mli(mli_path):
-    """Read a single .mli file and return a dict of action_type -> Counter of action_obj."""
+    """Stream-read a single .mli file (can be many GB) using ijson.
+    Returns a dict of action_type -> Counter of action_obj."""
     counts = {}
     try:
-        with open(mli_path, encoding='latin-1') as f:
-            content = json.load(f)
-        for item in content:
-            action_type = item["output"]["action-type"]
-            action_obj = make_hashable(item["output"]["action-obj"])
-            if action_type not in counts:
-                counts[action_type] = Counter()
-            counts[action_type][action_obj] += 1
+        with open(mli_path, 'rb') as f:
+            parser = ijson.parse(f)
+            in_output = False
+            in_action_type = False
+            in_action_obj = False
+            current_type = None
+            current_obj = None
+            for prefix, event, value in parser:
+                # e.g. prefix='item.output.action-type', event='string', value='use-lemma'
+                if event == 'map_key' and prefix.endswith('.output'):
+                    if value == 'action-type':
+                        in_action_type = True
+                        in_action_obj = False
+                    elif value == 'action-obj':
+                        in_action_type = False
+                        in_action_obj = True
+                    else:
+                        in_action_type = False
+                        in_action_obj = False
+                elif event == 'end_map' and prefix == 'item.output':
+                    in_action_type = False
+                    in_action_obj = False
+                elif in_action_type and event == 'string':
+                    current_type = value
+                    in_action_type = False
+                elif in_action_obj and isinstance(value, str):
+                    current_obj = value
+                    in_action_obj = False
+                elif in_action_obj and event == 'start_array':
+                    # action-obj is a list, e.g. [":SYSTEM",".","\"std/basic/defs.lisp\""]
+                    current_obj = _read_list_value(parser, prefix)
+                    in_action_obj = False
+
+                if current_type is not None and current_obj is not None:
+                    if current_type not in counts:
+                        counts[current_type] = Counter()
+                    counts[current_type][current_obj] += 1
+                    current_type = None
+                    current_obj = None
     except Exception as e:
         logging.warning(f"Skipping {mli_path}: {e}")
     return counts
+
+def _read_list_value(parser, prefix):
+    """Accumulate tokens from a JSON array into a string representation."""
+    parts = []
+    depth = 0
+    for pfx, evt, val in parser:
+        if pfx == prefix and evt == 'end_array':
+            break
+        if evt == 'start_array':
+            depth += 1
+            parts.append('[')
+        elif evt == 'end_array':
+            depth -= 1
+            parts.append(']')
+        elif evt == 'string':
+            parts.append(json.dumps(val, separators=(',', ':')))
+        elif evt in ('number', 'boolean', 'null'):
+            parts.append(str(val).lower() if evt in ('boolean', 'null') else str(val))
+        elif evt == 'map_key':
+            parts.append(json.dumps(val, separators=(',', ':')))
+    return json.dumps(parts, separators=(',', ':')) if parts else '[]'
 
 def merge_counts(target, source):
     """Merge source counters into target dict of Counters."""
