@@ -1,8 +1,9 @@
 import re
 
+FRACTION_REGEX = re.compile("^[-+]?\\d+(/\\d+)?$")
+DECIMAL_REGEX = re.compile("^([-+]?)(\\d*)\\.(\\d*)$")
+
 def get_sexpr (pkg, code, i, canon=None, level=0):
-    fraction_regex = re.compile("^[-+]?\\d+(/\\d+)?$")
-    decimal_regex = re.compile("^([-+]?)(\\d*)\\.(\\d*)$")
     tree = None
     sexp = ""
     i = skip_whitespace(code, i)
@@ -39,10 +40,10 @@ def get_sexpr (pkg, code, i, canon=None, level=0):
             else:
                 token += code[i].upper()
                 i += 1
-        m = decimal_regex.match(token)
+        m = DECIMAL_REGEX.match(token)
         if m and len(m.group(2) + m.group(3)) > 0:
             token += m.group(1) + m.group(2) + m.group(3) + "/1" + (len(m.group(3)) * "0")
-        elif not (fraction_regex.match(token) or token[0] == ':'):
+        elif not (FRACTION_REGEX.match(token) or token[0] == ':'):
             if pkg_index is not None:
                 token = pkg + "::" + token
             if canon is not None:
@@ -84,12 +85,12 @@ def get_sexpr (pkg, code, i, canon=None, level=0):
                     token += code[i]
                     i += 1
                     x, child, i = get_sexpr(pkg, code, i, canon, level)
-                    if isinstance(child, str) and fraction_regex.match(child):
+                    if isinstance(child, str) and FRACTION_REGEX.match(child):
                         token += x
                         token += " "
                         i = skip_whitespace(code, i)
                         y, child, i = get_sexpr(pkg, code, i, canon, level)
-                        if isinstance(child, str) and fraction_regex.match(child):
+                        if isinstance(child, str) and FRACTION_REGEX.match(child):
                             token += y
                             if i < len(code) and code[i] == ')':
                                 token += code[i]

@@ -5,6 +5,7 @@ import json
 import copy
 import re
 import logging
+import tarfile
 
 from parse_acl2 import get_sexpr
 import checkpoint_to_clause as ctc
@@ -483,6 +484,8 @@ def process_sexpr(sexpr):
                 logging.error("Invalid section inside acl2data: " + stringify_sexpr(section))
                 continue
             action = section[0]
+            if action in (":HASH", ":EXPANSION-STACK"):
+                continue
             if action not in (":GOAL", ":GOAL-CLAUSES", ":EVENT", ":RULE-CLASSES", ":USED-INDUCTION", ":HYP-ALIST", ":HINT-SETTING-ALIST", ":RUNE-ALIST", ":BOOK-RUNES-ALIST", ":SYMBOL-TABLE"):
                 logging.error("Invalid action inside acl2data:" + stringify_sexpr(action))
                 continue
@@ -559,10 +562,14 @@ def process_sexpr(sexpr):
                     #     print (file, rune, action, reason, reason2)
                     #     sys.exit(-1)
                 elif action == ":HINT-SETTING-ALIST":
-                    if len(exp) != 7:
-                        logging.error("Length of item in section inside acl2data is not exactly 6: " + action + " " + stringify_sexpr(exp))
+                    if len(exp) == 7:
+                        reason, ck_top, ck_top_acl2, ck_induction, ck_induction_acl2, mod_event, advice = exp
+                    elif len(exp) == 6:
+                        reason, ck_top, ck_top_acl2, ck_induction, ck_induction_acl2, mod_event = exp
+                        advice = None
+                    else:
+                        logging.error("Length of item in section inside acl2data is not 6 or 7: " + action + " " + stringify_sexpr(exp))
                         continue
-                    reason, ck_top, ck_top_acl2, ck_induction, ck_induction_acl2, mod_event, advice = exp
                 elif action in (":BOOK-RUNES-ALIST", ":RUNE-ALIST"):
                     if len(exp) != 5:
                         logging.error("Length of item in section inside acl2data is not exactly 5: " + action + " " + stringify_sexpr(exp))
@@ -637,12 +644,12 @@ def process_file(fname, db):
         info = []
         tar = tarfile.open(fname, "r:gz")
         for member in tar.getmembers():
-            if not member.endswith("acl2data.out"):
+            if not member.name.endswith("acl2data.out"):
                 continue
             f = tar.extractfile(member)
             if f is not None:
-                logging.info("> " + member)
-                content = f.read()
+                logging.info("> " + member.name)
+                content = f.read().decode('latin-1')
                 info.extend(process_content(content, db))
         if not TEST_CHECKPOINT_TO_CLAUSE:
             with open(mlifile, "w", encoding='latin-1') as out:
