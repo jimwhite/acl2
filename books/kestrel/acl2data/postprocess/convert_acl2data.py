@@ -652,7 +652,10 @@ def process_file(fname, db):
                 info = process_content(content, db)
                 if not TEST_CHECKPOINT_TO_CLAUSE:
                     member_path = pathlib.Path(member.name)
-                    member_mlifile = fullname.parent / member_path.with_suffix(".mli").name
+                    if member_path.parts and member_path.parts[0] == '.':
+                        member_path = pathlib.Path(*member_path.parts[1:])
+                    member_mlifile = fullname.parent / member_path.with_suffix(".mli")
+                    member_mlifile.parent.mkdir(parents=True, exist_ok=True)
                     with open(member_mlifile, "w", encoding='latin-1') as out:
                         json.dump(info, out, indent=2)
         return
@@ -669,7 +672,7 @@ def process_file(fname, db):
             json.dump(info, out, indent=2)
 
 if __name__ == "__main__":
-    # logging.basicConfig(level=logging.DEBUG, filename='example.log', encoding='utf-8')
+    # logging.basicConfig(level=logging.DEBUG, filename='debug.log', encoding='utf-8')
     logging.basicConfig(level=logging.DEBUG)
 
     sys.setrecursionlimit(1500)
