@@ -6,6 +6,9 @@ import copy
 import re
 import logging
 import tarfile
+import argparse
+import multiprocessing
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 from parse_acl2 import get_sexpr
 import checkpoint_to_clause as ctc
@@ -15,6 +18,8 @@ import collect_runes
 TEST_CHECKPOINT_TO_CLAUSE = False
 TESTS_PASSED = 0
 TESTS_MADE = 0
+
+DEFAULT_MAX_WORKERS = max(1, multiprocessing.cpu_count())
 
 rune_symtab = {}
 
@@ -622,6 +627,29 @@ def process_content(content, db):
                 return process_sexpr(sexpr)
         i = next_i
 
+def process_tar_member(args):
+    """Process a single tar member and write its .mli file.  Returns (member_name, count, error)."""
+    tgz_path, member_name, output_dir, incremental = args
+    try:
+        member_path = pathlib.Path(member_name)
+        if member_path.parts and member_path.parts[0] == '.':
+            member_path = pathlib.Path(*member_path.parts[1:])
+        mli_path = output_dir / member_path.with_suffix(".mli")
+        if incremental and mli_path.exists():
+            return (member_name, 0, None)
+        mli_path.parent.mkdir(parents=True, exist_ok=True)
+        with tarfile.open(tgz_path, "r:gz") as tar:
+            f = tar.extractfile(member_name)
+            if f is None:
+                return (member_name, 0, f"extractfile returned None")
+            content = f.read().decode('latin-1')
+        info = process_content(content, None)
+        with open(mli_path, "w", encoding='latin-1') as out:
+            json.dump(info, out, indent=2)
+        return (member_name, len(info), None)
+    except Exception as e:
+        return (member_name, 0, str(e))
+
 def process_file(fname, db):
     if os.path.isdir(fname):
         logging.info(">>> " + fname)
@@ -641,23 +669,33 @@ def process_file(fname, db):
 
     if pathlib.Path(fname).suffix == '.tgz':
         logging.info(">> " + fname)
-        tar = tarfile.open(fname, "r:gz")
-        for member in tar.getmembers():
-            if not member.name.endswith("acl2data.out"):
-                continue
-            f = tar.extractfile(member)
-            if f is not None:
-                logging.info("> " + member.name)
-                content = f.read().decode('latin-1')
-                info = process_content(content, db)
-                if not TEST_CHECKPOINT_TO_CLAUSE:
-                    member_path = pathlib.Path(member.name)
-                    if member_path.parts and member_path.parts[0] == '.':
-                        member_path = pathlib.Path(*member_path.parts[1:])
-                    member_mlifile = fullname.parent / member_path.with_suffix(".mli")
-                    member_mlifile.parent.mkdir(parents=True, exist_ok=True)
-                    with open(member_mlifile, "w", encoding='latin-1') as out:
-                        json.dump(info, out, indent=2)
+        output_dir = fullname.parent
+        incremental = getattr(process_file, '_incremental', True)
+        max_workers = getattr(process_file, '_max_workers', DEFAULT_MAX_WORKERS)
+        with tarfile.open(fname, "r:gz") as tar:
+            members = [m.name for m in tar.getmembers() if m.name.endswith("acl2data.out")]
+        total = len(members)
+        logging.info(f"  {total} .out files found, max_workers={max_workers}, incremental={incremental}")
+        if max_workers == 1:
+            for member in members:
+                result = process_tar_member((fname, member, output_dir, incremental))
+                member_name, count, error = result
+                status = f"({count} items)" if error is None else f"ERROR: {error}"
+                logging.info(f"> {member_name} {status}")
+        else:
+            with ProcessPoolExecutor(max_workers=max_workers) as executor:
+                futures = {executor.submit(process_tar_member, (fname, member, output_dir, incremental)): member for member in members}
+                completed = 0
+                for future in as_completed(futures):
+                    completed += 1
+                    member = futures[future]
+                    try:
+                        member_name, count, error = future.result()
+                    except Exception as e:
+                        logging.error(f"> {member} EXECUTOR ERROR: {e}")
+                        continue
+                    status = f"({count} items)" if error is None else f"ERROR: {error}"
+                    logging.info(f"> {member} {status} [{completed}/{total}]")
         return
 
     if not str(pathlib.Path(fname)).endswith("acl2data.out"):
@@ -672,18 +710,29 @@ def process_file(fname, db):
             json.dump(info, out, indent=2)
 
 if __name__ == "__main__":
-    # logging.basicConfig(level=logging.DEBUG, filename='debug.log', encoding='utf-8')
-    logging.basicConfig(level=logging.DEBUG)
+    parser = argparse.ArgumentParser(
+        description="Convert ACL2 acl2data.out files to .mli (Machine Learning Input) format.")
+    parser.add_argument("inputs", nargs="*", default=["acl2data"],
+                        help=".tgz file, directory, or individual .out files to process")
+    parser.add_argument("-j", "--workers", type=int, default=DEFAULT_MAX_WORKERS,
+                        help=f"Number of parallel workers (default: {DEFAULT_MAX_WORKERS}, use 1 for serial)")
+    parser.add_argument("--no-incremental", action="store_true",
+                        help="Reprocess all files even if .mli already exists")
+    parser.add_argument("--log-level", default="DEBUG", choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+                        help="Logging level (default: DEBUG)")
+    args = parser.parse_args()
+
+    # attach settings to process_file so the worker can read them
+    process_file._incremental = not args.no_incremental
+    process_file._max_workers = args.workers
+
+    logging.basicConfig(level=getattr(logging, args.log_level))
 
     sys.setrecursionlimit(1500)
 
-    # db = PackageDB("pkgdefs.json")
     db = None
 
-    args = sys.argv
-    if len(args) == 1:
-        args = ["acl2data"]
-    for fname in args:
+    for fname in args.inputs:
         process_file(fname, db)
     if TEST_CHECKPOINT_TO_CLAUSE:
         print(f"Tests passed: {TESTS_PASSED}/{TESTS_MADE} {100*TESTS_PASSED/TESTS_MADE:.2f}%")
