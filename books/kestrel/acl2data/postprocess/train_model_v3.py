@@ -40,7 +40,7 @@ from sklearn.linear_model import SGDClassifier
 DEFAULT_OUTPUT_DIR = "./models_v3"
 DEFAULT_N_FEATURES = 2**18
 DEFAULT_NEGATIVES = 19       # 1 positive + 19 negatives = 20 candidates per group
-DEFAULT_MAX_QUERIES = 0      # 0 = use all available
+DEFAULT_MAX_QUERIES = 200000  # per action-type, 0 = all
 PER_TYPE_CLASSIFIERS = ["use-lemma", "add-enable-hint", "add-hyp", "add-use-hint"]
 MIN_CANDIDATES = 20          # need at least this many distinct action-objs
 
