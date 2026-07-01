@@ -208,16 +208,16 @@ class PerTypeModel:
         mask = y >= 0
         if not mask.any(): return
         X, y = X[mask], y[mask]
-        # recompute class weights each chunk from this chunk's distribution
-        if len(set(y)) > 1:
-            cw = compute_class_weight("balanced", classes=np.unique(y), y=y)
-            self.clf.class_weight = dict(zip(np.unique(y), cw))
+        # compute per-sample weights from this chunk's class distribution
+        class_counts = Counter(y.tolist())
+        total = sum(class_counts.values())
+        sample_weight = np.array([total / max(class_counts[yi], 1) for yi in y], dtype=np.float32)
         if not self._fitted:
             self.n_classes = len(self.enc)
-            self.clf.partial_fit(X, y, classes=np.arange(self.n_classes))
+            self.clf.partial_fit(X, y, classes=np.arange(self.n_classes), sample_weight=sample_weight)
         else:
             known = y < self.n_classes
-            if known.any(): self.clf.partial_fit(X[known], y[known])
+            if known.any(): self.clf.partial_fit(X[known], y[known], sample_weight=sample_weight[known])
         self._fitted = True
 
     def predict(self, texts, top_k=5):
