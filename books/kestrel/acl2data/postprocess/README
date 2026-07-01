@@ -173,11 +173,48 @@ Phase 2: POSTPROCESS (Python side — this directory)
     Counts which action-types and lemmas appear most frequently.
     Helps understand the dataset distribution.
 
-Phase 3: TRAINING (not yet implemented)
-  The training/ directory (referenced in the top-level README) was
-  planned but not yet built.  The .mli format supports training models
-  that predict what fix to apply given a checkpoint.
-
+Phase 3: TRAINING
+  train_model.py implements a two-stage ML classifier using scikit-learn:
+  
+  Stage 1: ActionTypeModel — SGDClassifier predicting which action-type
+            to apply (use-lemma, add-hyp, add-enable-hint, etc.)
+  Stage 2: PerTypeModel — one SGDClassifier per action-type, predicting
+            which specific lemma/hint/hypothesis to use.
+  
+  Both stages use HashingVectorizer (sparse token hashing) + SGDClassifier
+  (hinge loss, L2 penalty) with partial_fit for online, incremental
+  training.  The entire 4.7M-record dataset is streamed via ijson, never
+  fully loaded into memory.
+  
+  Usage:
+    # Container training (defaults):
+    /home/acl2/.venv/bin/python train_model.py \\
+        /workspaces/acl2-jupyter/data/books \\
+        --output-dir ./models --eval-fraction 0.05
+  
+    # Host training (Mac Studio, see train_on_host.sh):
+    DATA_DIR=/Volumes/.../data/books bash train_on_host.sh
+  
+  Options:
+    --output-dir DIR     Where to save models (default: ./models)
+    --resume DIR         Continue training from saved models
+    --eval-fraction F    Fraction for hold-out evaluation (default: 0.05)
+    --max-samples N      Max samples to train on (0 = all, 4.7M total)
+    --n-features N       Hash space size (default: 262144 = 2^18)
+    --log-level LEVEL    DEBUG|INFO|WARNING|ERROR (default: INFO)
+  
+  Host training with Apple Silicon (Mac Studio M3 Ultra 256GB):
+    The train_on_host.sh script handles venv setup and installs
+    dependencies.  scikit-learn automatically uses Apple's Accelerate
+    framework for BLAS operations — 10-50x faster than numpy loops.
+    With 256GB RAM you can use much larger hash spaces:
+    
+      N_FEATURES=524288 bash train_on_host.sh   # 2^19 — 512K features
+      N_FEATURES=1048576 bash train_on_host.sh  # 2^20 — 1M features
+  
+  To transfer data to host:
+    rsync -avP /workspaces/acl2-jupyter/data/books/ user@mac:/Volumes/.../data/books/
+  
   Training approaches to explore:
   
   a) Token-based classifier (simpler, faster):
