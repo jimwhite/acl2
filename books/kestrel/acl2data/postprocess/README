@@ -354,16 +354,48 @@ Trained on 4,420,770 samples, evaluated on 319,887 hold-out samples.
 
   Analysis:
     - Stage 1 is strong enough for practical use — it correctly
-      narrows the fix to the right action type in 67% of cases.
+      narrows the fix to the right action type for 2/3 of cases.
     - Stage 2 improves over frequency baseline for use-lemma
-      (9.1% vs 4.3%) and other common types, showing the model
-      learns meaningful patterns.
-    - The frequency baseline is strong because the label
-      distribution is extremely skewed — CDR-CONS alone is 4% of
-      all use-lemma predictions.  A well-calibrated model should
-      predict these high-frequency lemmas often, and the model
-      does better than random at identifying when a less common
-      lemma is needed.
+      (9.1% vs 4.3%), showing the model learns meaningful patterns
+      despite the extreme label skew.
+    - But the linear model has been pushed to its ceiling.  See
+      v2 results below.
+
+============================================
+v2 Model Results (log-loss, 3 epochs, richer features)
+============================================
+
+Trained on 4,420,770 samples, evaluated on 319,887 hold-out samples.
+3 epochs of streaming training with sample weighting, broken-goal
+delta features, top-level symbol features, and rule-class features.
+
+  Stage 1 (action-type):
+    Accuracy: 67.0% — unchanged from v1.  The linear model already
+    saturated at this accuracy with the hinge loss.
+
+  Stage 2 (action-obj):
+    Recall@5 (model):         6.2%
+    Recall@10 (model):        6.2%
+    MRR:                      0.0459
+    Frequency baseline R@5:   12.3%
+    
+    Per-type breakdown:
+      use-lemma:        R@5=8.8% (freq baseline 4.3%)
+      add-hyp:          R@5=2.8% (freq baseline 0.4%)
+      add-enable-hint:  R@5=1.7% (freq baseline 0.3%)
+      add-use-hint:     R@5=0.0% (freq baseline 0.5%)
+
+  Key finding: The linear SGDClassifier has hit a ceiling.  Three
+  epochs, log-loss, sample weighting, broken-goal delta features,
+  top-level symbol features, and rule-class features produced zero
+  improvement over v1.  The frequency baseline (12.3%) outperforms
+  the model (6.2% R@5) because a linear model cannot discriminate
+  among 70K+ classes with extreme power-law distribution.
+
+  The problem is properly framed as a contextual ranking problem
+  over a large, power-law-distributed label set — not flat
+  classification.  See ml_analysis.md for the recommended path
+  forward (LightGBM LambdaRank, then bi-encoder retrieval).
 
 ============================================
 Next Steps: Using the Model with Coding Agents
