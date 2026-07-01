@@ -45,6 +45,19 @@ fi
 # Activate
 source "$VENV_DIR/bin/activate"
 
+# Multi-core: scikit-learn uses scipy/numpy BLAS under the hood.
+# On macOS Apple Accelerate auto-uses all cores.  On Linux, set:
+if [[ "$(uname -s)" == "Linux" ]]; then
+    NPROC=$(nproc)
+    export OMP_NUM_THREADS="${OMP_NUM_THREADS:-$NPROC}"
+    export OPENBLAS_NUM_THREADS="${OPENBLAS_NUM_THREADS:-$NPROC}"
+    echo "  OMP threads:   $OMP_NUM_THREADS"
+    echo "  OpenBLAS:      $OPENBLAS_NUM_THREADS"
+else
+    NPROC=$(sysctl -n hw.ncpu 2>/dev/null || echo "unknown")
+    echo "  Apple Accelerate will use all $NPROC cores automatically"
+fi
+
 # Install dependencies
 echo "=== Installing dependencies ==="
 pip install --quiet scikit-learn ijson numpy
