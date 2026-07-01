@@ -28,7 +28,7 @@ from collections import Counter
 import numpy as np
 
 from train_model import (
-    ActionTypeModel, PerTypeModel, FrequencyBaseline,
+    ActionTypeModel, PerTypeModel, FrequencyBaseline, Encoding,
     features_from_item, PER_TYPE_CLASSIFIERS,
 )
 
