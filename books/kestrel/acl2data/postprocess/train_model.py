@@ -176,7 +176,7 @@ class PerTypeModel:
         data = {
             "action_type": self.action_type,
             "vectorizer": self.vectorizer,
-            "label_encoder": self.label_encoder,
+            "label_encoder": _serialize_encoding(self.label_encoder),
             "clf": self.clf,
             "freq": dict(self.freq.counts),
         }
@@ -189,13 +189,26 @@ class PerTypeModel:
             data = pickle.load(f)
         inst = cls(data["action_type"])
         inst.vectorizer = data["vectorizer"]
-        inst.label_encoder = data["label_encoder"]
+        inst.label_encoder = _deserialize_encoding(data["label_encoder"])
         inst.clf = data["clf"]
         inst.freq = FrequencyBaseline()
         inst.freq.counts = Counter(data["freq"])
         inst._fitted = True
         inst._n_classes = len(inst.label_encoder)
         return inst
+
+
+def _serialize_encoding(enc):
+    """Serialise Encoding to a plain dict so pickle doesn't need the class."""
+    return {"label_to_int": enc.label_to_int, "int_to_label": {str(k): v for k, v in enc.int_to_label.items()}}
+
+def _deserialize_encoding(data):
+    if isinstance(data, Encoding):
+        return data  # already an Encoding (old model file)
+    enc = Encoding()
+    enc.label_to_int = data["label_to_int"]
+    enc.int_to_label = {int(k): v for k, v in data["int_to_label"].items()}
+    return enc
 
 
 class Encoding:
@@ -282,7 +295,7 @@ class ActionTypeModel:
     def save(self, path):
         data = {
             "vectorizer": self.vectorizer,
-            "label_encoder": self.label_encoder,
+            "label_encoder": _serialize_encoding(self.label_encoder),
             "clf": self.clf,
         }
         with open(path, "wb") as f:
@@ -294,7 +307,7 @@ class ActionTypeModel:
             data = pickle.load(f)
         inst = cls()
         inst.vectorizer = data["vectorizer"]
-        inst.label_encoder = data["label_encoder"]
+        inst.label_encoder = _deserialize_encoding(data["label_encoder"])
         inst.clf = data["clf"]
         inst._fitted = True
         inst._n_classes = len(inst.label_encoder)
