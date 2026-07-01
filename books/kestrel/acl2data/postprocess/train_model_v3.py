@@ -39,8 +39,9 @@ from sklearn.linear_model import SGDClassifier
 
 DEFAULT_OUTPUT_DIR = "./models_v3"
 DEFAULT_N_FEATURES = 2**18
-DEFAULT_NEGATIVES = 19       # 1 positive + 19 negatives = 20 candidates per group
-DEFAULT_MAX_QUERIES = 200000  # per action-type, 0 = all
+DEFAULT_NEGATIVES = 9         # 1 + 9 = 10 candidates per query group
+DEFAULT_MAX_QUERIES = 50000   # per action-type, 0 = all
+DEFAULT_NUM_ROUNDS = 100      # boosting rounds for LambdaRank
 PER_TYPE_CLASSIFIERS = ["use-lemma", "add-enable-hint", "add-hyp", "add-use-hint"]
 MIN_CANDIDATES = 20          # need at least this many distinct action-objs
 
@@ -174,30 +175,32 @@ class LambdaRankModel:
 
         # collect all distinct action-objs for negative sampling
         all_objs = list(self.action_obj_freqs.keys())
-        if not all_objs: return None, None, None
+        if not all_objs or len(all_objs) < 2: return None, None, None
+        all_objs_arr = np.array(all_objs, dtype=object)
 
         rng = np.random.RandomState(42)
         texts = []; labels = []; groups = []
 
         for rec in records:
             ao = rec["action_obj"]
-            feats = rec["features"]  # text features string
+            feats = rec["features"]
 
             # positive candidate
-            candidate_text = feats + " __CANDIDATE__ " + ao
-            texts.append(candidate_text)
+            texts.append(feats + " __CANDIDATE__ " + ao)
             labels.append(1)
 
-            # negative candidates (random other action-objs)
-            negs = [o for o in all_objs if o != ao]
-            if len(negs) > self.n_negatives:
-                negs = rng.choice(negs, self.n_negatives, replace=False)
+            # negative candidates: sample from all_objs, skip the positive
+            n_needed = self.n_negatives
+            negs = []
+            while len(negs) < n_needed:
+                candidates = rng.choice(all_objs_arr, n_needed, replace=False)
+                negs.extend(o for o in candidates if str(o) != ao)
+            negs = negs[:n_needed]
             for neg in negs:
-                candidate_text = feats + " __CANDIDATE__ " + str(neg)
-                texts.append(candidate_text)
+                texts.append(feats + " __CANDIDATE__ " + str(neg))
                 labels.append(0)
 
-            groups.append(self.n_negatives + 1)
+            groups.append(n_needed + 1)
 
             if max_queries and len(groups) >= max_queries:
                 break
@@ -239,8 +242,23 @@ class LambdaRankModel:
             "seed": 42,
         }
 
-        logging.info(f"  {self.action_type}: training LambdaRank on {len(groups)} queries, {len(y)} candidates")
-        self.model = lgb.train(params, train_data, num_boost_round=200)
+        logging.info(f"  {self.action_type}: training LambdaRank on {len(groups)} queries, {len(y)} candidates "
+                      f"({DEFAULT_NUM_ROUNDS} rounds)")
+
+        # progress callback
+        callbacks = []
+        if logging.getLogger().isEnabledFor(logging.INFO):
+            def _log_progress(env):
+                if env.iteration % 20 == 0 or env.iteration == env.end_iteration - 1:
+                    try:
+                        logging.info(f"    round {env.iteration+1}/{env.end_iteration} "
+                                     f"ndcg@1={env.evaluation_result_list[0][2]:.4f}")
+                    except Exception:
+                        pass
+            callbacks.append(_log_progress)
+
+        self.model = lgb.train(params, train_data, num_boost_round=DEFAULT_NUM_ROUNDS,
+                               callbacks=callbacks)
         self._fitted = True
 
     def predict(self, query_features, top_k=5):
