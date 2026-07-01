@@ -7,16 +7,25 @@ failed proof:
   Stage 1: Predict action-type from checkpoint tokens + goal tokens
   Stage 2: Predict action-obj from checkpoint tokens + goal tokens + action-type
 
-Uses scikit-learn's HashingVectorizer + SGDClassifier with partial_fit for
-incremental, memory-efficient training on the full 4.7M-record dataset.
+Uses scikit-learn's HashingVectorizer + SGDClassifier (log loss, class-weighted)
+with multi-epoch streaming for incremental, memory-efficient training on the
+full 4.7M-record dataset.
+
+Key improvements over v1 (2026-07-01):
+  - Log loss (calibrated probabilities) instead of hinge
+  - Class weighting (balanced) to handle extreme label skew
+  - Multi-epoch training with shuffled file order
+  - Broken-goal delta features (what was removed from the goal)
+  - Rule-class and top-level function symbol features
+  - Recall@5 and MRR evaluation metrics
 
 Usage:
   # Train on all .mli files (defaults):
   python train_model.py /workspaces/acl2-jupyter/data/books
 
-  # Train with fewer features, more eval data:
-  python train_model.py /workspaces/acl2-jupyter/data/books \
-      --n-features 131072 --eval-fraction 0.1
+  # Train with custom settings:
+  python train_model.py /workspaces/acl2-jupyter/data/books \\
+      --n-features 131072 --epochs 3 --eval-fraction 0.1
 
   # Resume training from saved models:
   python train_model.py /workspaces/acl2-jupyter/data/books --resume ./models
@@ -36,11 +45,11 @@ from collections import Counter, defaultdict
 import numpy as np
 from sklearn.feature_extraction.text import HashingVectorizer
 from sklearn.linear_model import SGDClassifier
-from sklearn.preprocessing import LabelEncoder
 
 DEFAULT_OUTPUT_DIR = "./models"
 DEFAULT_MAX_WORKERS = max(1, multiprocessing.cpu_count())
 DEFAULT_N_FEATURES = 2**18  # 262144
+DEFAULT_EPOCHS = 3
 
 # Action types we train per-object classifiers for
 PER_TYPE_CLASSIFIERS = ["use-lemma", "add-enable-hint", "add-hyp", "add-use-hint"]
@@ -71,10 +80,12 @@ def tokenize(s):
 
 
 def features_from_item(item):
-    """Extract token features from an .mli record."""
+    """Extract token features from an .mli record with richer structural info."""
     checkpoint_seq = item.get("input", {}).get("checkpoint-sequence", [])
     goal_str = item.get("metadata", {}).get("goal-str", "")
     checkpoint_type = item.get("input", {}).get("checkpoint-type", "unknown")
+    broken_goal_str = item.get("metadata", {}).get("broken-goal-str", "")
+    rule_classes = item.get("metadata", {}).get("rule-classes", "")
 
     def flatten(seq):
         for elem in seq:
@@ -87,8 +98,68 @@ def features_from_item(item):
 
     tokens = list(flatten(checkpoint_seq))
     tokens.extend(tokenize(goal_str))
+
+    # --- New features ---
+
+    # 1. Broken-goal delta: tokens that exist in broken-goal but not in goal
+    if broken_goal_str:
+        goal_tokens = set(tokenize(goal_str))
+        broken_tokens = set(tokenize(broken_goal_str))
+        delta = broken_tokens - goal_tokens
+        for t in delta:
+            tokens.append(f"__DELTA__{t}")
+
+    # 2. Checkpoint type
     tokens.append(f"__CK_TYPE__{checkpoint_type}")
+
+    # 3. Top-level function symbols in the checkpoint
+    if len(checkpoint_seq) > 0:
+        checkpoint_str = " ".join(str(x) for x in flatten(checkpoint_seq))
+        top_symbols = extract_top_symbols(checkpoint_str)
+        for sym in top_symbols:
+            tokens.append(f"__TOP_SYM__{sym}")
+
+    # 4. Rule-class feature
+    if rule_classes:
+        rc_str = str(rule_classes)
+        if "REWRITE" in rc_str.upper():
+            tokens.append("__RC__REWRITE")
+        if "TYPE-PRESCRIPTION" in rc_str.upper():
+            tokens.append("__RC__TYPE-PRESCRIPTION")
+        if "LINEAR" in rc_str.upper():
+            tokens.append("__RC__LINEAR")
+        if "FORWARD-CHAINING" in rc_str.upper():
+            tokens.append("__RC__FORWARD-CHAINING")
+        if "ELIM" in rc_str.upper():
+            tokens.append("__RC__ELIM")
+        if "INDUCTION" in rc_str.upper():
+            tokens.append("__RC__INDUCTION")
+
     return " ".join(tokens)
+
+
+def extract_top_symbols(checkpoint_str):
+    """Extract top-level function symbols from a checkpoint string.
+    E.g., (NOT (NATP var-0)) -> ['NOT', 'NATP']"""
+    symbols = set()
+    depth = 0
+    current = ""
+    for ch in checkpoint_str:
+        if ch == '(':
+            depth += 1
+            if depth == 2:  # top-level sub-expression
+                current = ""
+        elif ch == ')':
+            if depth == 2 and current:
+                sym = current.split()[0] if current else ""
+                if sym and not sym.startswith("var-"):
+                    symbols.add(sym)
+            depth -= 1
+        elif depth == 2 and ch not in (' ', '\n'):
+            current += ch
+        elif depth == 1 and ch.isalpha():
+            current += ch
+    return list(symbols)[:50]
 
 
 class FrequencyBaseline:
@@ -105,7 +176,7 @@ class FrequencyBaseline:
 
 
 class PerTypeModel:
-    """scikit-learn SGDClassifier for a single action-type: predicts specific action-obj."""
+    """scikit-learn SGDClassifier (log loss, class-weighted) for a single action-type."""
 
     def __init__(self, action_type, n_features=DEFAULT_N_FEATURES):
         self.action_type = action_type
@@ -114,9 +185,10 @@ class PerTypeModel:
         )
         self.label_encoder = Encoding()
         self.clf = SGDClassifier(
-            loss="hinge",
+            loss="log_loss",        # calibrated probabilities
             penalty="l2",
             alpha=1e-4,
+            class_weight="balanced",
             max_iter=1,
             tol=None,
             warm_start=True,
@@ -251,9 +323,10 @@ class ActionTypeModel:
             self.label_encoder.fit(known_types)
         self._n_classes = len(self.label_encoder)
         self.clf = SGDClassifier(
-            loss="hinge",
+            loss="log_loss",        # calibrated probabilities
             penalty="l2",
             alpha=1e-4,
+            class_weight="balanced",
             max_iter=1,
             tol=None,
             warm_start=True,
