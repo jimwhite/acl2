@@ -139,7 +139,6 @@ class PerTypeModel:
         texts_f, labels_f = zip(*filtered)
         # Incrementally add new labels
         self.label_encoder.fit(labels_f)
-        self._n_classes = len(self.label_encoder)
         X = self.vectorizer.transform(texts_f)
         y = self.label_encoder.transform(labels_f)
         mask = y >= 0
@@ -147,7 +146,14 @@ class PerTypeModel:
             return
         X = X[mask]
         y = y[mask]
-        self.clf.partial_fit(X, y, classes=np.arange(self._n_classes))
+        if not self._fitted:
+            self._n_classes = len(self.label_encoder)
+            self.clf.partial_fit(X, y, classes=np.arange(self._n_classes))
+        else:
+            known_mask = y < self._n_classes
+            if not known_mask.any():
+                return
+            self.clf.partial_fit(X[known_mask], y[known_mask])
         self._fitted = True
 
     def predict(self, texts, top_k=5):
@@ -222,11 +228,15 @@ class Encoding:
 class ActionTypeModel:
     """Stage 1: scikit-learn SGDClassifier predicting action-type."""
 
-    def __init__(self, n_features=DEFAULT_N_FEATURES):
+    def __init__(self, n_features=DEFAULT_N_FEATURES, known_types=None):
         self.vectorizer = HashingVectorizer(
             n_features=n_features, alternate_sign=False, norm="l2", dtype=np.float32
         )
         self.label_encoder = Encoding()
+        # Pre-populate with discovered types so classes= is always consistent
+        if known_types:
+            self.label_encoder.fit(known_types)
+        self._n_classes = len(self.label_encoder)
         self.clf = SGDClassifier(
             loss="hinge",
             penalty="l2",
@@ -238,14 +248,10 @@ class ActionTypeModel:
             n_jobs=1,
         )
         self._fitted = False
-        self._n_classes = 0
 
     def partial_fit(self, texts, labels):
         if len(texts) == 0:
             return
-        # Incrementally add new labels to encoder
-        self.label_encoder.fit(labels)
-        self._n_classes = len(self.label_encoder)
         X = self.vectorizer.transform(texts)
         y = self.label_encoder.transform(labels)
         mask = y >= 0
@@ -253,6 +259,7 @@ class ActionTypeModel:
             return
         X = X[mask]
         y = y[mask]
+        # classes= is always the full known set — consistent across all calls
         self.clf.partial_fit(X, y, classes=np.arange(self._n_classes))
         self._fitted = True
 
@@ -394,6 +401,20 @@ def evaluate_models(type_model, per_type_models, eval_items, freq_models=None, t
     return results
 
 
+def discover_action_types(root_dir, max_files=200):
+    """Quick pre-scan using the summarizer to discover all action types."""
+    from summarize_mli import walk_mli_files, process_one_mli
+    types = set()
+    count = 0
+    for mli_path in sorted(Path(root_dir).rglob("*.mli")):
+        if count >= max_files:
+            break
+        counts = process_one_mli(str(mli_path))
+        types.update(counts.keys())
+        count += 1
+    return sorted(types)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Train ML models to predict ACL2 proof fixes from .mli data.")
@@ -432,7 +453,11 @@ def main():
             per_type_models[pt.action_type] = pt
         logging.info(f"  Loaded action-type model + {len(per_type_models)} per-type models")
     else:
-        type_model = ActionTypeModel(n_features=args.n_features)
+        # Pre-scan to discover all action types in the data
+        logging.info("Pre-scanning to discover action types ...")
+        discovered_types = discover_action_types(args.data_dir)
+        logging.info(f"  Found {len(discovered_types)} action types: {discovered_types}")
+        type_model = ActionTypeModel(n_features=args.n_features, known_types=discovered_types)
         per_type_models = {}
 
     # Streaming data
