@@ -7,21 +7,19 @@ failed proof:
   Stage 1: Predict action-type from checkpoint tokens + goal tokens
   Stage 2: Predict action-obj from checkpoint tokens + goal tokens + action-type
 
-Uses streaming (ijson) for memory-efficient training on the full dataset.
-Models: HashingVectorizer + SGDClassifier with partial_fit for incremental
-learning.
+Uses scikit-learn's HashingVectorizer + SGDClassifier with partial_fit for
+incremental, memory-efficient training on the full 4.7M-record dataset.
 
 Usage:
   # Train on all .mli files (defaults):
   python train_model.py /workspaces/acl2-jupyter/data/books
 
-  # Train on specific directory with custom settings:
-  python train_model.py /workspaces/acl2-jupyter/data/books/defsort \
-      --output-dir ./models --eval-fraction 0.1
+  # Train with fewer features, more eval data:
+  python train_model.py /workspaces/acl2-jupyter/data/books \
+      --n-features 131072 --eval-fraction 0.1
 
   # Resume training from saved models:
-  python train_model.py /workspaces/acl2-jupyter/data/books \
-      --resume ./models
+  python train_model.py /workspaces/acl2-jupyter/data/books --resume ./models
 """
 
 import sys
@@ -36,34 +34,24 @@ from pathlib import Path
 from collections import Counter, defaultdict
 
 import numpy as np
+from sklearn.feature_extraction.text import HashingVectorizer
+from sklearn.linear_model import SGDClassifier
+from sklearn.preprocessing import LabelEncoder
 
 DEFAULT_OUTPUT_DIR = "./models"
 DEFAULT_MAX_WORKERS = max(1, multiprocessing.cpu_count())
+DEFAULT_N_FEATURES = 2**18  # 262144
 
-# Action types we build per-type classifiers for (covers ~95% of data).
-# The rest fall through to a "top-N frequency" fallback.
-PER_TYPE_CLASSIFIERS = [
-    "use-lemma",
-    "add-hyp",
-    "add-use-hint",
-    "add-enable-hint",
-    "add-expand-hint",
-    "add-disable-hint",
-    "add-induct-hint",
-    "add-library",
-]
+# Action types we train per-object classifiers for
+PER_TYPE_CLASSIFIERS = ["use-lemma", "add-enable-hint", "add-hyp", "add-use-hint"]
 
-# Minimum examples required to train a per-type classifier.
-MIN_SAMPLES_PER_TYPE = 500
-
-# Maximum number of unique action-obj values per type before we fall back
-# to frequency-only prediction.
-MAX_UNIQUE_OBJS = 50000
+# Minimum examples to train a per-type classifier
+MIN_SAMPLES_PER_TYPE = 1000
 
 
 def tokenize(s):
-    """Split a string into tokens on whitespace and parentheses."""
-    if s is None:
+    """Split a string into tokens."""
+    if not s:
         return []
     tokens = []
     for ch in s:
@@ -72,7 +60,7 @@ def tokenize(s):
     for part in s.split():
         if part:
             tokens.append(part)
-    # deduplicate simple approach
+    # deduplicate
     seen = set()
     result = []
     for t in tokens:
@@ -103,36 +91,11 @@ def features_from_item(item):
     return " ".join(tokens)
 
 
-class HashingTextVectorizer:
-    """Simple hashing vectorizer that works incrementally."""
-
-    def __init__(self, n_features=2**18, norm="l2"):
-        self.n_features = n_features
-        self.norm = norm
-
-    def transform_one(self, text):
-        """Hash a single text string into a sparse feature vector."""
-        vec = np.zeros(self.n_features, dtype=np.float32)
-        for token in text.split():
-            h = int(hashlib.md5(token.encode()).hexdigest(), 16)
-            idx = h % self.n_features
-            vec[idx] += 1.0
-        if self.norm == "l2":
-            norm = np.linalg.norm(vec)
-            if norm > 0:
-                vec /= norm
-        return vec
-
-    def transform_batch(self, texts):
-        return np.array([self.transform_one(t) for t in texts], dtype=np.float32)
-
-
 class FrequencyBaseline:
-    """Fallback: predict by frequency distribution."""
+    """Predict by frequency distribution."""
 
     def __init__(self):
         self.counts = Counter()
-        self.top_k = 100
 
     def fit(self, labels):
         self.counts = Counter(labels)
@@ -141,182 +104,158 @@ class FrequencyBaseline:
         return [item for item, _ in self.counts.most_common(k)]
 
 
-class PerTypeClassifier:
-    """Classifier for a single action-type: predicts specific action-obj."""
+class PerTypeModel:
+    """scikit-learn SGDClassifier for a single action-type: predicts specific action-obj."""
 
-    def __init__(self, action_type, n_features=2**18):
+    def __init__(self, action_type, n_features=DEFAULT_N_FEATURES):
         self.action_type = action_type
-        self.n_features = n_features
-        self.vectorizer = HashingTextVectorizer(n_features=n_features)
-        self.label_index = {}
-        self.index_label = {}
-        self.weights = None  # will be (n_classes, n_features)
-        self.bias = None     # (n_classes,)
-        self.n_samples = 0
+        self.vectorizer = HashingVectorizer(
+            n_features=n_features, alternate_sign=False, norm="l2", dtype=np.float32
+        )
+        self.label_encoder = LabelEncoder()
+        self.clf = SGDClassifier(
+            loss="hinge",
+            penalty="l2",
+            alpha=1e-4,
+            max_iter=1,
+            tol=None,
+            warm_start=True,
+            random_state=42,
+            n_jobs=1,
+        )
         self.freq = FrequencyBaseline()
         self._fitted = False
+        self._n_classes = 0
 
     def partial_fit(self, texts, labels):
-        """Incrementally update weights using averaged perceptron."""
         if len(texts) == 0:
             return
-
-        # Build label index
-        for label in labels:
-            if label not in self.label_index:
-                idx = len(self.label_index)
-                self.label_index[label] = idx
-                self.index_label[idx] = label
-
-        n_classes = len(self.label_index)
-        if self.weights is None:
-            self.weights = np.zeros((n_classes, self.n_features), dtype=np.float32)
-            self.bias = np.zeros(n_classes, dtype=np.float32)
-        elif n_classes > self.weights.shape[0]:
-            old_w = self.weights
-            old_b = self.bias
-            self.weights = np.zeros((n_classes, self.n_features), dtype=np.float32)
-            self.bias = np.zeros(n_classes, dtype=np.float32)
-            self.weights[:old_w.shape[0], :] = old_w
-            self.bias[:old_b.shape[0]] = old_b
-
-        self.n_features = self.vectorizer.n_features
-
-        for text, label in zip(texts, labels):
-            self.n_samples += 1
-            x = self.vectorizer.transform_one(text)
-            y_true = self.label_index[label]
-            # Predict with current weights
-            scores = np.dot(self.weights, x) + self.bias
-            y_pred = int(np.argmax(scores))
-            if y_pred != y_true:
-                # Perceptron update
-                self.weights[y_true, :] += x
-                self.weights[y_pred, :] -= x
-                self.bias[y_true] += 1.0
-                self.bias[y_pred] -= 1.0
-
         self.freq.fit(labels)
+        # Only train on classes with enough samples
+        label_counts = Counter(labels)
+        valid_labels = {lb for lb, cnt in label_counts.items() if cnt >= 5}
+        filtered = [(t, lb) for t, lb in zip(texts, labels) if lb in valid_labels]
+        if len(filtered) < MIN_SAMPLES_PER_TYPE:
+            return
+        texts_f, labels_f = zip(*filtered)
+        if not self._fitted:
+            self.label_encoder.fit(labels_f)
+            self._n_classes = len(self.label_encoder.classes_)
+        X = self.vectorizer.transform(texts_f)
+        y = self.label_encoder.transform(labels_f)
+        self.clf.partial_fit(X, y, classes=np.arange(self._n_classes))
         self._fitted = True
 
-    def predict(self, text, top_k=5):
-        """Return top-k predicted action-obj values."""
-        if not self._fitted or self.weights is None:
+    def predict(self, texts, top_k=5):
+        if not self._fitted:
             return self.freq.predict_top(top_k)
-        x = self.vectorizer.transform_one(text)
-        scores = np.dot(self.weights, x) + self.bias
-        top_indices = np.argsort(-scores)[:top_k]
-        return [self.index_label.get(i, f"UNK_{i}") for i in top_indices if scores[i] > 0] or self.freq.predict_top(top_k)
+        X = self.vectorizer.transform(texts)
+        scores = self.clf.decision_function(X)
+        if scores.ndim == 1:
+            scores = scores.reshape(1, -1)
+        results = []
+        for row in scores:
+            top = np.argsort(-row)[:top_k]
+            results.append([self.label_encoder.inverse_transform([int(i)])[0] for i in top if row[i] > 0] or self.freq.predict_top(top_k))
+        return results
+
+    def predict_one(self, text, top_k=5):
+        return self.predict([text], top_k=top_k)[0]
 
     def save(self, path):
         data = {
             "action_type": self.action_type,
-            "n_features": self.n_features,
-            "label_index": self.label_index,
-            "index_label": self.index_label,
-            "weights": self.weights,
-            "bias": self.bias,
-            "n_samples": self.n_samples,
+            "vectorizer": self.vectorizer,
+            "label_encoder": self.label_encoder,
+            "clf": self.clf,
             "freq": dict(self.freq.counts),
         }
         with open(path, "wb") as f:
             pickle.dump(data, f)
 
-    def load(self, path):
+    @classmethod
+    def load(cls, path):
         with open(path, "rb") as f:
             data = pickle.load(f)
-        self.action_type = data["action_type"]
-        self.n_features = data["n_features"]
-        self.vectorizer = HashingTextVectorizer(n_features=self.n_features)
-        self.label_index = data["label_index"]
-        self.index_label = {int(k): v for k, v in data["index_label"].items()}
-        self.weights = data.get("weights")
-        self.bias = data.get("bias")
-        self.n_samples = data.get("n_samples", 0)
-        self.freq = FrequencyBaseline()
-        if "freq" in data:
-            self.freq.counts = Counter(data["freq"])
-        self._fitted = self.weights is not None and self.n_samples > 0
-        return self
+        inst = cls(data["action_type"])
+        inst.vectorizer = data["vectorizer"]
+        inst.label_encoder = data["label_encoder"]
+        inst.clf = data["clf"]
+        inst.freq = FrequencyBaseline()
+        inst.freq.counts = Counter(data["freq"])
+        inst._fitted = True
+        inst._n_classes = len(inst.label_encoder.classes_)
+        return inst
 
 
-class ActionTypeClassifier:
-    """Stage 1: Predict which action-type to use."""
+class ActionTypeModel:
+    """Stage 1: scikit-learn SGDClassifier predicting action-type."""
 
-    def __init__(self, n_features=2**18):
-        self.n_features = n_features
-        self.vectorizer = HashingTextVectorizer(n_features=n_features)
-        self.label_index = {}
-        self.index_label = {}
-        self.weights = None
-        self.bias = None
-        self.n_samples = 0
+    def __init__(self, n_features=DEFAULT_N_FEATURES):
+        self.vectorizer = HashingVectorizer(
+            n_features=n_features, alternate_sign=False, norm="l2", dtype=np.float32
+        )
+        self.label_encoder = LabelEncoder()
+        self.clf = SGDClassifier(
+            loss="hinge",
+            penalty="l2",
+            alpha=1e-4,
+            max_iter=1,
+            tol=None,
+            warm_start=True,
+            random_state=42,
+            n_jobs=1,
+        )
         self._fitted = False
+        self._n_classes = 0
 
     def partial_fit(self, texts, labels):
         if len(texts) == 0:
             return
-        for label in labels:
-            if label not in self.label_index:
-                idx = len(self.label_index)
-                self.label_index[label] = idx
-                self.index_label[idx] = label
-        n_classes = len(self.label_index)
-        if self.weights is None:
-            self.weights = np.zeros((n_classes, self.n_features), dtype=np.float32)
-            self.bias = np.zeros(n_classes, dtype=np.float32)
-        elif n_classes > self.weights.shape[0]:
-            old_w = self.weights; old_b = self.bias
-            self.weights = np.zeros((n_classes, self.n_features), dtype=np.float32)
-            self.bias = np.zeros(n_classes, dtype=np.float32)
-            self.weights[:old_w.shape[0]] = old_w
-            self.bias[:old_b.shape[0]] = old_b
-        self.n_features = self.vectorizer.n_features
-        for text, label in zip(texts, labels):
-            self.n_samples += 1
-            x = self.vectorizer.transform_one(text)
-            y_true = self.label_index[label]
-            scores = np.dot(self.weights, x) + self.bias
-            y_pred = int(np.argmax(scores))
-            if y_pred != y_true:
-                self.weights[y_true] += x
-                self.weights[y_pred] -= x
-                self.bias[y_true] += 1.0
-                self.bias[y_pred] -= 1.0
+        if not self._fitted:
+            self.label_encoder.fit(labels)
+            self._n_classes = len(self.label_encoder.classes_)
+        X = self.vectorizer.transform(texts)
+        y = self.label_encoder.transform(labels)
+        self.clf.partial_fit(X, y, classes=np.arange(self._n_classes))
         self._fitted = True
 
-    def predict(self, text, top_k=3):
-        if not self._fitted or self.weights is None:
-            return ["use-lemma"]  # safe default
-        x = self.vectorizer.transform_one(text)
-        scores = np.dot(self.weights, x) + self.bias
-        top_indices = np.argsort(-scores)[:top_k]
-        return [self.index_label[i] for i in top_indices if scores[i] > 0] or ["use-lemma"]
+    def predict(self, texts, top_k=3):
+        if not self._fitted:
+            return [["use-lemma"]] * len(texts)
+        X = self.vectorizer.transform(texts)
+        scores = self.clf.decision_function(X)
+        if scores.ndim == 1:
+            scores = scores.reshape(1, -1)
+        results = []
+        for row in scores:
+            top = np.argsort(-row)[:top_k]
+            results.append([self.label_encoder.inverse_transform([int(i)])[0] for i in top if row[i] > 0] or ["use-lemma"])
+        return results
+
+    def predict_one(self, text, top_k=3):
+        return self.predict([text], top_k=top_k)[0]
 
     def save(self, path):
         data = {
-            "label_index": self.label_index,
-            "index_label": self.index_label,
-            "n_features": self.n_features,
-            "weights": self.weights,
-            "bias": self.bias,
-            "n_samples": self.n_samples,
+            "vectorizer": self.vectorizer,
+            "label_encoder": self.label_encoder,
+            "clf": self.clf,
         }
         with open(path, "wb") as f:
             pickle.dump(data, f)
 
-    def load(self, path):
+    @classmethod
+    def load(cls, path):
         with open(path, "rb") as f:
             data = pickle.load(f)
-        self.label_index = data["label_index"]
-        self.index_label = {int(k): v for k, v in data["index_label"].items()}
-        self.n_features = data["n_features"]
-        self.vectorizer = HashingTextVectorizer(n_features=self.n_features)
-        self.weights = data.get("weights")
-        self.bias = data.get("bias")
-        self.n_samples = data.get("n_samples", 0)
-        self._fitted = self.weights is not None and self.n_samples > 0
-        return self
+        inst = cls()
+        inst.vectorizer = data["vectorizer"]
+        inst.label_encoder = data["label_encoder"]
+        inst.clf = data["clf"]
+        inst._fitted = True
+        inst._n_classes = len(inst.label_encoder.classes_)
+        return inst
 
 
 def stream_mli_items(root_dir, eval_frac=0.1, seed=42):
@@ -337,8 +276,8 @@ def stream_mli_items(root_dir, eval_frac=0.1, seed=42):
             logging.warning(f"Skipping {mli_path}: {e}")
 
 
-def evaluate_classifier(type_clf, per_type_clfs, eval_items, freq_models=None, top_k_action_type=3, top_k_obj=5):
-    """Evaluate on eval set. Returns accuracy metrics."""
+def evaluate_models(type_model, per_type_models, eval_items, freq_models=None, top_k_action_type=3, top_k_obj=5):
+    """Evaluate on eval set using batch prediction. Returns accuracy metrics."""
     type_correct = 0
     type_total = 0
     obj_correct = defaultdict(int)
@@ -346,30 +285,33 @@ def evaluate_classifier(type_clf, per_type_clfs, eval_items, freq_models=None, t
     freq_correct = defaultdict(int)
     full_correct = 0
 
-    for item in eval_items:
+    # Batch-predict action-types
+    eval_features = [features_from_item(item) for item in eval_items]
+    batch_size = 2000
+    all_pred_types = []
+    for i in range(0, len(eval_features), batch_size):
+        batch = eval_features[i:i + batch_size]
+        all_pred_types.extend(type_model.predict(batch, top_k=top_k_action_type))
+
+    for idx, item in enumerate(eval_items):
         action_type = item.get("output", {}).get("action-type", "")
         action_obj = item.get("output", {}).get("action-obj", "")
         if isinstance(action_obj, list):
             action_obj = json.dumps(action_obj, separators=(",", ":"))
-        features = features_from_item(item)
+        features = eval_features[idx]
+        pred_types = all_pred_types[idx]
 
-        # Stage 1: predict action-type
-        pred_types = type_clf.predict(features, top_k=top_k_action_type)
         type_total += 1
         if action_type in pred_types:
             type_correct += 1
 
-        # Stage 2: predict action-obj (if we have a classifier for this type)
         obj_total[action_type] += 1
-
-        # Per-type classifier prediction
-        if action_type in per_type_clfs:
-            pred_objs = per_type_clfs[action_type].predict(features, top_k=top_k_obj)
+        if action_type in per_type_models:
+            pred_objs = per_type_models[action_type].predict_one(features, top_k=top_k_obj)
             if action_obj in pred_objs:
                 obj_correct[action_type] += 1
                 full_correct += 1
 
-        # Frequency baseline prediction (most common obj for this type)
         if freq_models and action_type in freq_models:
             top_freq = freq_models[action_type].predict_top(k=top_k_obj)
             if action_obj in top_freq:
@@ -421,17 +363,15 @@ def main():
     if args.resume:
         logging.info(f"Resuming from {args.resume}")
         resume_dir = Path(args.resume)
-        type_clf = ActionTypeClassifier(n_features=args.n_features)
-        type_clf.load(resume_dir / "action_type_model.pkl")
-        per_type_clfs = {}
+        type_model = ActionTypeModel.load(resume_dir / "action_type_model.pkl")
+        per_type_models = {}
         for p in resume_dir.glob("pertype_*.pkl"):
-            pt = PerTypeClassifier("")
-            pt.load(p)
-            per_type_clfs[pt.action_type] = pt
-        logging.info(f"  Loaded action-type model + {len(per_type_clfs)} per-type classifiers")
+            pt = PerTypeModel.load(p)
+            per_type_models[pt.action_type] = pt
+        logging.info(f"  Loaded action-type model + {len(per_type_models)} per-type models")
     else:
-        type_clf = ActionTypeClassifier(n_features=args.n_features)
-        per_type_clfs = {}
+        type_model = ActionTypeModel(n_features=args.n_features)
+        per_type_models = {}
 
     # Streaming data
     logging.info(f"Streaming .mli files from {args.data_dir} (eval_fraction={args.eval_fraction})")
@@ -449,15 +389,15 @@ def main():
         if not train_texts:
             return
         # Stage 1: fit action-type
-        type_clf.partial_fit(train_texts, train_types)
-        # Stage 2: fit per-type classifiers
+        type_model.partial_fit(train_texts, train_types)
+        # Stage 2: fit per-type models
         for at in PER_TYPE_CLASSIFIERS:
-            if at in train_objs and len(train_objs[at]) >= MIN_SAMPLES_PER_TYPE and len(set(train_objs[at])) <= MAX_UNIQUE_OBJS:
-                if at not in per_type_clfs:
-                    per_type_clfs[at] = PerTypeClassifier(at, n_features=args.n_features)
-                per_type_clfs[at].partial_fit(train_features[at], train_objs[at])
+            if at in train_objs and len(train_objs[at]) >= MIN_SAMPLES_PER_TYPE:
+                if at not in per_type_models:
+                    per_type_models[at] = PerTypeModel(at, n_features=args.n_features)
+                per_type_models[at].partial_fit(train_features[at], train_objs[at])
         total_train += len(train_texts)
-        logging.info(f"  trained on {total_train} samples, {len(per_type_clfs)} per-type models")
+        logging.info(f"  trained on {total_train} samples, {len(per_type_models)} per-type models")
         train_texts.clear()
         train_types.clear()
         train_objs.clear()
@@ -507,7 +447,7 @@ def main():
     # Evaluate
     if total_eval > 0:
         logging.info("Evaluating on hold-out set ...")
-        results = evaluate_classifier(type_clf, per_type_clfs, eval_items, freq_models)
+        results = evaluate_models(type_model, per_type_models, eval_items, freq_models)
         logging.info(f"  Stage 1 (action-type) accuracy: {results['type_accuracy']:.4f} "
                       f"({results['type_correct']}/{results['type_total']})")
         logging.info(f"  Stage 2 (action-obj) accuracy: {results['obj_correct']/max(results['obj_total'],1):.4f} "
@@ -529,8 +469,8 @@ def main():
 
     # Save models
     logging.info(f"Saving models to {output_dir}")
-    type_clf.save(output_dir / "action_type_model.pkl")
-    for at, clf in per_type_clfs.items():
+    type_model.save(output_dir / "action_type_model.pkl")
+    for at, clf in per_type_models.items():
         clf.save(output_dir / f"pertype_{at.replace('/', '_').replace(':', '_')}.pkl")
     # Save frequency baselines
     with open(output_dir / "frequency_baselines.pkl", "wb") as f:
@@ -540,7 +480,7 @@ def main():
     summary = {
         "total_train_samples": total_train,
         "total_eval_samples": total_eval,
-        "action_types_trained": sorted(per_type_clfs.keys()),
+        "action_types_trained": sorted(per_type_models.keys()),
         "action_types_seen": sorted(freq_models.keys()),
         "n_features": args.n_features,
     }
