@@ -277,7 +277,7 @@ def stream_mli_items(root_dir, eval_frac=0.1, seed=42):
 
 
 def evaluate_models(type_model, per_type_models, eval_items, freq_models=None, top_k_action_type=3, top_k_obj=5):
-    """Evaluate on eval set using batch prediction. Returns accuracy metrics."""
+    """Evaluate on eval set using full batch prediction. Returns accuracy metrics."""
     type_correct = 0
     type_total = 0
     obj_correct = defaultdict(int)
@@ -293,12 +293,37 @@ def evaluate_models(type_model, per_type_models, eval_items, freq_models=None, t
         batch = eval_features[i:i + batch_size]
         all_pred_types.extend(type_model.predict(batch, top_k=top_k_action_type))
 
+    # Batch-predict per-type models: group by action_type
+    per_type_features = defaultdict(list)
+    per_type_indices = defaultdict(list)
+    per_type_objs = {}
+    for idx, item in enumerate(eval_items):
+        at = item.get("output", {}).get("action-type", "")
+        ao = item.get("output", {}).get("action-obj", "")
+        if isinstance(ao, list):
+            ao = json.dumps(ao, separators=(",", ":"))
+        if at in per_type_models:
+            per_type_features[at].append(eval_features[idx])
+            per_type_indices[at].append(idx)
+            if at not in per_type_objs:
+                per_type_objs[at] = []
+            per_type_objs[at].append(ao)
+
+    per_type_preds = {}
+    for at, features_list in per_type_features.items():
+        model = per_type_models[at]
+        all_preds = []
+        for i in range(0, len(features_list), batch_size):
+            batch = features_list[i:i + batch_size]
+            all_preds.extend(model.predict(batch, top_k=top_k_obj))
+        per_type_preds[at] = all_preds
+
+    # Compute metrics
     for idx, item in enumerate(eval_items):
         action_type = item.get("output", {}).get("action-type", "")
         action_obj = item.get("output", {}).get("action-obj", "")
         if isinstance(action_obj, list):
             action_obj = json.dumps(action_obj, separators=(",", ":"))
-        features = eval_features[idx]
         pred_types = all_pred_types[idx]
 
         type_total += 1
@@ -306,8 +331,9 @@ def evaluate_models(type_model, per_type_models, eval_items, freq_models=None, t
             type_correct += 1
 
         obj_total[action_type] += 1
-        if action_type in per_type_models:
-            pred_objs = per_type_models[action_type].predict_one(features, top_k=top_k_obj)
+        if action_type in per_type_models and action_type in per_type_preds:
+            local_idx = per_type_indices[action_type].index(idx)
+            pred_objs = per_type_preds[action_type][local_idx]
             if action_obj in pred_objs:
                 obj_correct[action_type] += 1
                 full_correct += 1
