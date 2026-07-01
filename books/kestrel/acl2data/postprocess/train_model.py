@@ -112,7 +112,7 @@ class PerTypeModel:
         self.vectorizer = HashingVectorizer(
             n_features=n_features, alternate_sign=False, norm="l2", dtype=np.float32
         )
-        self.label_encoder = LabelEncoder()
+        self.label_encoder = Encoding()
         self.clf = SGDClassifier(
             loss="hinge",
             penalty="l2",
@@ -131,18 +131,22 @@ class PerTypeModel:
         if len(texts) == 0:
             return
         self.freq.fit(labels)
-        # Only train on classes with enough samples
         label_counts = Counter(labels)
         valid_labels = {lb for lb, cnt in label_counts.items() if cnt >= 5}
         filtered = [(t, lb) for t, lb in zip(texts, labels) if lb in valid_labels]
         if len(filtered) < MIN_SAMPLES_PER_TYPE:
             return
         texts_f, labels_f = zip(*filtered)
-        if not self._fitted:
-            self.label_encoder.fit(labels_f)
-            self._n_classes = len(self.label_encoder.classes_)
+        # Incrementally add new labels
+        self.label_encoder.fit(labels_f)
+        self._n_classes = len(self.label_encoder)
         X = self.vectorizer.transform(texts_f)
         y = self.label_encoder.transform(labels_f)
+        mask = y >= 0
+        if not mask.any():
+            return
+        X = X[mask]
+        y = y[mask]
         self.clf.partial_fit(X, y, classes=np.arange(self._n_classes))
         self._fitted = True
 
@@ -184,8 +188,35 @@ class PerTypeModel:
         inst.freq = FrequencyBaseline()
         inst.freq.counts = Counter(data["freq"])
         inst._fitted = True
-        inst._n_classes = len(inst.label_encoder.classes_)
+        inst._n_classes = len(inst.label_encoder)
         return inst
+
+
+class Encoding:
+    """Like LabelEncoder but supports previously unseen labels (maps to -1, skipped)."""
+    def __init__(self):
+        self.label_to_int = {}
+        self.int_to_label = {}
+
+    def fit(self, labels):
+        for lb in labels:
+            if lb not in self.label_to_int:
+                idx = len(self.label_to_int)
+                self.label_to_int[lb] = idx
+                self.int_to_label[idx] = lb
+
+    def transform(self, labels):
+        return np.array([self.label_to_int.get(lb, -1) for lb in labels])
+
+    def inverse_transform(self, indices):
+        return [self.int_to_label.get(int(i), "UNKNOWN") for i in indices]
+
+    @property
+    def classes_(self):
+        return [self.int_to_label[i] for i in sorted(self.int_to_label)]
+
+    def __len__(self):
+        return len(self.label_to_int)
 
 
 class ActionTypeModel:
@@ -195,7 +226,7 @@ class ActionTypeModel:
         self.vectorizer = HashingVectorizer(
             n_features=n_features, alternate_sign=False, norm="l2", dtype=np.float32
         )
-        self.label_encoder = LabelEncoder()
+        self.label_encoder = Encoding()
         self.clf = SGDClassifier(
             loss="hinge",
             penalty="l2",
@@ -212,11 +243,16 @@ class ActionTypeModel:
     def partial_fit(self, texts, labels):
         if len(texts) == 0:
             return
-        if not self._fitted:
-            self.label_encoder.fit(labels)
-            self._n_classes = len(self.label_encoder.classes_)
+        # Incrementally add new labels to encoder
+        self.label_encoder.fit(labels)
+        self._n_classes = len(self.label_encoder)
         X = self.vectorizer.transform(texts)
         y = self.label_encoder.transform(labels)
+        mask = y >= 0
+        if not mask.any():
+            return
+        X = X[mask]
+        y = y[mask]
         self.clf.partial_fit(X, y, classes=np.arange(self._n_classes))
         self._fitted = True
 
@@ -254,7 +290,7 @@ class ActionTypeModel:
         inst.label_encoder = data["label_encoder"]
         inst.clf = data["clf"]
         inst._fitted = True
-        inst._n_classes = len(inst.label_encoder.classes_)
+        inst._n_classes = len(inst.label_encoder)
         return inst
 
 
