@@ -265,10 +265,47 @@ Phase 3: TRAINING
   
   The Acl2ProofFixer.format_for_acl2() method converts predictions
   into ACL2 hint syntax that can be directly used in proof attempts.
+  
+  Known limitation (2026-07-01): the model currently predicts the same
+  top-5 lemmas (CDR-CONS, TAKE, CAR-CONS, LEN, ZP-COMPOUND-RECOGNIZER)
+  for most inputs due to frequency-baseline dominance.  The model
+  improves over frequency for use-lemma (9.1% vs 4.3%) but the
+  single-pass SGDClassifier with no class weighting is overwhelmed by
+  the extreme label skew.  See Phase E below for improvement plans.
+
+* test_predict.py — standalone test script that runs predictions on
+  three real checkpoint examples from the eval data.  Useful for
+  verifying model loading and prediction output after changes.
+
+* migrate_models.py — one-time migration script to convert model files
+  from the old pickle format (Encoding objects embedded in pickle) to
+  the new dict-based format.  Run once after updating train_model.py:
+    python migrate_models.py
 
 * train_on_host.sh — convenience script for running training on a
   Mac Studio or other host with Apple Silicon.  Handles venv creation,
   dependency installation, and sets BLAS threading environment variables.
+
+============================================
+Bug Fixes and Implementation Notes
+============================================
+
+Pickle serialization (2026-07-01):
+  The Encoding class (custom LabelEncoder replacement) was embedded
+  directly in pickle files, causing AttributeError when loading from
+  external scripts.  Fixed by serializing Encoding as a plain dict
+  (label_to_int + int_to_label) via _serialize_encoding() and
+  _deserialize_encoding().  Backward-compatible: old model files with
+  Encoding objects are handled transparently.
+
+ACL2 MCP Integration (2026-07-01):
+  Verified the full pipeline using the ACL2 MCP server:
+    1. Defined (defun my-rev ...) via mcp_acl2-mcp_evaluate
+    2. Proved (defthm my-rev-length ...) via mcp_acl2-mcp_admit
+    3. Intentionally failed (defthm natp-of-cdr-test ...) to generate
+       a checkpoint for the model to predict fixes for
+  This demonstrates the agent loop: write proof → ACL2 fails →
+  extract checkpoint → model predicts fix → retry.
 
 ============================================
 Dataset Statistics (from summarize_mli.py, 2026-07-01)
