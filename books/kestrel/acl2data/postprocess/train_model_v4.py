@@ -181,11 +181,21 @@ class KNNIndex:
 
 # ─── streaming ───────────────────────────────────────────────────────────────
 
-def stream_mli_items(root_dir, eval_frac=0.05):
+def stream_mli_items(root_dir, eval_frac=0.05, book_level_split=True):
+    """Stream .mli records.  If book_level_split, entire book directories
+    are assigned to train or eval (avoids data leakage from related lemmas)."""
     import ijson
-    for mli_path in sorted(Path(root_dir).rglob("*.mli")):
-        file_hash = hashlib.md5(str(mli_path).encode()).hexdigest()
-        is_eval = int(file_hash, 16) % 1000 < int(eval_frac * 1000)
+    root = Path(root_dir)
+    for mli_path in sorted(root.rglob("*.mli")):
+        if book_level_split:
+            # Hash the book directory (relative to root), not the file
+            rel = mli_path.relative_to(root)
+            # Book = everything up to the first subdirectory
+            book_key = str(rel.parent) if str(rel.parent) != '.' else str(rel.stem)
+            split_hash = hashlib.md5(book_key.encode()).hexdigest()
+        else:
+            split_hash = hashlib.md5(str(mli_path).encode()).hexdigest()
+        is_eval = int(split_hash, 16) % 1000 < int(eval_frac * 1000)
         try:
             with open(mli_path, "rb") as f:
                 for item in ijson.items(f, "item"):

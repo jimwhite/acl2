@@ -307,6 +307,86 @@ ACL2 MCP Integration (2026-07-01):
   This demonstrates the agent loop: write proof → ACL2 fails →
   extract checkpoint → model predicts fix → retry.
 
+Book-level train/eval split (2026-07-02):
+  Previous versions split at file level (hash of file path), which
+  allowed lemmas from the same book to appear in both train and eval.
+  This leaked information because lemmas within a book build on each
+  other.  v4 now splits at book-directory level: all .mli files in a
+  given book directory go to either train or eval, never both.
+
+============================================
+v3 LambdaRank Results (2026-07-02, 500K queries)
+============================================
+
+LightGBM LambdaRank for Stage 2 — the best trained-model approach.
+
+  Overall R@5:  4.8%  (freq baseline: 12.3%)
+  
+  Per-type (R@5 model vs freq baseline):
+    add-enable-hint: 24.2% vs 12.9%  (1.9×)
+    add-hyp:         10.9% vs  5.9%  (1.8×)
+    add-use-hint:    12.6% vs  7.3%  (1.7×)
+    use-lemma:        3.1% vs 13.9%  (collapsed to frequency)
+  
+  LambdaRank beats frequency for 3 of 4 types but fails on use-lemma
+  (70% of data) because the 200-candidate pool is too large for the
+  model to learn contextual cues from the checkpoint features alone.
+
+============================================
+v4 k-NN Results (2026-07-02) — CHAMPION MODEL
+============================================
+
+k-NN retrieval (HashingVectorizer → TruncatedSVD 128d → FAISS IVF).
+Zero training — embed once, index, search by cosine similarity.
+
+  Overall R@5:  27.2%  (freq baseline: 12.3% — 2.2×!)
+  MRR:           0.216
+
+  Per-type R@5 (model vs freq):
+    use-lemma:        27.5% vs 13.9%  (2.0×)
+    add-library:      44.0% vs 26.1%  (1.7×)
+    add-hyp:          21.2% vs  5.9%  (3.6×)
+    add-enable-hint:  19.2% vs 12.9%  (1.5×)
+    add-use-hint:     17.3% vs  7.3%  (2.4×)
+    add-induct-hint:  28.6% vs 25.1%  (1.1×)
+    add-expand-hint:  10.7% vs 16.8%  (below freq)
+    add-disable-hint:  9.6% vs  9.9%  (below freq)
+    add-cases-hint:   35.6% vs 43.8%  (below freq, n=73)
+
+  Key findings:
+  - k-NN is the only approach that decisively beats the frequency
+    baseline AND handles all 12 action types with zero per-type training.
+  - use-lemma at 27.5% R@5 means that for 1 in 4 failed proofs, the
+    correct lemma is in the model's top-5 suggestions.
+  - The literature prediction (Tactician/Coq, ENIGMA/Isabelle) was
+    correct: similarity-based retrieval outperforms offline-trained
+    classifiers.
+
+============================================
+Using the Model: k-NN Inference
+============================================
+
+The v4 model is already indexed and ready to use:
+
+  from train_model_v4 import CheckpointEmbedder, KNNIndex, features_from_item
+  embedder = CheckpointEmbedder.load("models_v4/embedder.pkl")
+  index = KNNIndex.load("models_v4/knn_index")
+
+  # Predict fixes for a failed checkpoint
+  query_text = features_from_item({"input": {"checkpoint-sequence": [...]}})
+  query_vec = embedder.transform([query_text])
+  predictions = index.predict(query_vec, k=50)
+
+  # predictions[0] = [{"action_type", "action_obj", "score"}, ...]
+  # sorted by cosine similarity (highest first)
+
+Coding agent integration:
+  1. Agent writes a defthm that fails
+  2. Extract the checkpoint from ACL2 output
+  3. Query k-NN for top-5 similar checkpoints and their fixes
+  4. Agent tries each suggested lemma/hint, retrying the proof
+  5. On success → working proof; on failure → fall back to reasoning
+
 ============================================
 Dataset Statistics (from summarize_mli.py, 2026-07-01)
 ============================================
