@@ -181,12 +181,28 @@ class KNNIndex:
 
 # ─── streaming ───────────────────────────────────────────────────────────────
 
-def stream_mli_items(root_dir, eval_frac=0.05, book_level_split=True):
+def stream_mli_items(root_dir, eval_frac=0.05, book_level_split=True, exclude_dirs=None):
     """Stream .mli records.  If book_level_split, entire book directories
     are assigned to train or eval (avoids data leakage from related lemmas)."""
     import ijson
     root = Path(root_dir)
+    if exclude_dirs is None:
+        exclude_dirs = set()
     for mli_path in sorted(root.rglob("*.mli")):
+        # Skip excluded directories
+        try:
+            rel = mli_path.relative_to(root)
+        except ValueError:
+            continue
+        parts = rel.parts
+        excluded = False
+        for exc in exclude_dirs:
+            exc_parts = tuple(exc.strip('/').split('/'))
+            if parts[:len(exc_parts)] == exc_parts:
+                excluded = True
+                break
+        if excluded:
+            continue
         if book_level_split:
             # Hash the book directory (relative to root), not the file
             rel = mli_path.relative_to(root)
@@ -284,6 +300,8 @@ def main():
     p.add_argument("--eval-fraction", type=float, default=0.05)
     p.add_argument("--n-components", type=int, default=DEFAULT_N_COMPONENTS)
     p.add_argument("--n-neighbors", type=int, default=DEFAULT_N_NEIGHBORS)
+    p.add_argument("--exclude", nargs="*", default=["kestrel/helpers"],
+                   help="Directories to exclude (default: kestrel/helpers)")
     p.add_argument("--log-level", default="INFO",
                    choices=["DEBUG","INFO","WARNING","ERROR"])
     args = p.parse_args()
@@ -306,7 +324,8 @@ def main():
         eval_items = []; total_eval = 0
         total_train = 0
 
-        for is_eval, item in stream_mli_items(args.data_dir, eval_frac=args.eval_fraction):
+        for is_eval, item in stream_mli_items(args.data_dir, eval_frac=args.eval_fraction,
+                                               exclude_dirs=set(args.exclude)):
             at = item.get("output", {}).get("action-type", "")
             ao = item.get("output", {}).get("action-obj", "")
             if isinstance(ao, list): ao = json.dumps(ao, separators=(",", ":"))

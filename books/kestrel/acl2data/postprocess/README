@@ -313,6 +313,14 @@ Book-level train/eval split (2026-07-02):
   This leaked information because lemmas within a book build on each
   other.  v4 now splits at book-directory level: all .mli files in a
   given book directory go to either train or eval, never both.
+  
+  With file-level split: 27.2% R@5 (inflated — related lemmas leaked)
+  With book-level split: 18.6% R@5 (honest — 4.63M train, 110K eval)
+  
+  The 18.6% is a 1.37× improvement over the frequency baseline (13.6%)
+  and represents the true generalization performance: the model finds
+  the correct fix in its top-5 for 1 in 5 proof failures from books it
+  has never seen before.
 
 ============================================
 v3 LambdaRank Results (2026-07-02, 500K queries)
