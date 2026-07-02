@@ -262,18 +262,35 @@ class LambdaRankModel:
         self._fitted = True
 
     def predict(self, query_features, top_k=5):
-        """Rank candidates for a query (checkpoint features string)."""
+        """Rank candidates for a single query."""
+        return self.predict_batch([query_features], top_k=top_k)[0]
+
+    def predict_batch(self, query_features_list, top_k=5, chunk_size=500):
+        """Batch-rank candidates for multiple queries.  Chunked for memory."""
         if not self._fitted or self.model is None:
-            return self.top_candidates[:top_k]
+            return [self.top_candidates[:top_k]] * len(query_features_list)
 
-        # create candidate feature vectors
-        candidate_texts = [query_features + " __CANDIDATE__ " + c
-                          for c in self.top_candidates]
-        X = self.vec.transform(candidate_texts)
+        # Pre-compute candidate features once (same for all queries)
+        cand_texts = [f"__CANDIDATE__ {c}" for c in self.top_candidates]
+        # We'll build per-query features: query_feats + cand_text
 
-        scores = self.model.predict(X)
-        ranked_idx = np.argsort(-scores)[:top_k]
-        return [self.top_candidates[i] for i in ranked_idx]
+        all_results = []
+        for start in range(0, len(query_features_list), chunk_size):
+            chunk = query_features_list[start:start + chunk_size]
+            texts = []
+            for qf in chunk:
+                for ct in cand_texts:
+                    texts.append(qf + " " + ct)
+            X = self.vec.transform(texts)
+            scores = self.model.predict(X)
+            # Reshape: (n_queries, n_candidates)
+            n_queries = len(chunk)
+            n_cands = len(self.top_candidates)
+            scores = scores.reshape(n_queries, n_cands)
+            for row in scores:
+                ranked = np.argsort(-row)[:top_k]
+                all_results.append([self.top_candidates[i] for i in ranked])
+        return all_results
 
     def save(self, path):
         model_bytes = None
@@ -354,8 +371,8 @@ def evaluate_models(type_model, per_type_models, eval_items, freq_models=None,
     per_type_preds = {}
     for at, feat_list in per_type_feats.items():
         model = per_type_models[at]
-        preds = [model.predict(f, top_k=top_k_obj) for f in feat_list]
-        per_type_preds[at] = preds
+        logging.info(f"    predicting {len(feat_list)} {at} items...")
+        per_type_preds[at] = model.predict_batch(feat_list, top_k=top_k_obj)
 
     at_correct = at_total = 0
     obj_recall5 = defaultdict(int); obj_recall10 = defaultdict(int)
