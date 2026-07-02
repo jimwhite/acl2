@@ -339,15 +339,16 @@ def evaluate_models(type_model, per_type_models, eval_items, freq_models=None,
 
     # stage 2: group by type and predict
     per_type_feats = defaultdict(list)
-    per_type_indices = defaultdict(list)
+    per_type_idx_map = {}  # global_idx -> (action_type, local_idx)
     per_type_objs = {}
     for idx, item in enumerate(eval_items):
         at = item.get("output", {}).get("action-type", "")
         ao = item.get("output", {}).get("action-obj", "")
         if isinstance(ao, list): ao = json.dumps(ao, separators=(",", ":"))
         if at in per_type_models:
+            local_idx = len(per_type_feats[at])
             per_type_feats[at].append(eval_features[idx])
-            per_type_indices[at].append(idx)
+            per_type_idx_map[idx] = (at, local_idx)
             per_type_objs.setdefault(at, []).append(ao)
 
     per_type_preds = {}
@@ -370,8 +371,9 @@ def evaluate_models(type_model, per_type_models, eval_items, freq_models=None,
         if at in all_pred_types[idx]: at_correct += 1
         obj_total[at] += 1
 
-        if at in per_type_models and at in per_type_preds:
-            preds = per_type_preds[at][per_type_indices[at].index(idx)]
+        if at in per_type_models and idx in per_type_idx_map:
+            ptype, local_idx = per_type_idx_map[idx]
+            preds = per_type_preds[ptype][local_idx]
             if ao in preds[:5]: obj_recall5[at] += 1
             if ao in preds[:10]: obj_recall10[at] += 1
             try: obj_mrr_sum[at] += 1.0 / (preds.index(ao) + 1)
