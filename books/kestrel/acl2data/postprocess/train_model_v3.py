@@ -426,39 +426,51 @@ def main():
         for f in rd.glob("lambdarank_*.pkl"):
             m = LambdaRankModel.load(f); per_type_models[m.action_type] = m
         logging.info(f"  Loaded type model + {len(per_type_models)} LambdaRank models")
+        skip_phase1 = True
     else:
         discovered = discover_action_types(args.data_dir)
         logging.info(f"Discovered {len(discovered)} action types: {discovered}")
         type_model = ActionTypeModel(n_features=args.n_features, known_types=discovered)
         per_type_models = {}
+        skip_phase1 = False
 
     # ── Phase 1: Train Stage 1 (action-type classifier) ──
-    logging.info("=== Phase 1: Training action-type classifier ===")
     eval_items = []
     total_train = 0; total_eval = 0
-    chunk_size = 5000
-    train_texts = []; train_types = []
 
-    def flush_type():
-        nonlocal total_train
-        if not train_texts: return
-        type_model.partial_fit(train_texts, train_types)
-        total_train += len(train_texts)
-        logging.info(f"  type model: {total_train} samples")
-        train_texts.clear(); train_types.clear()
+    if skip_phase1:
+        logging.info("=== Phase 1: SKIPPED (resuming from saved model) ===")
+        for is_eval, item in stream_mli_items(args.data_dir, eval_frac=args.eval_fraction):
+            if is_eval: eval_items.append(item); total_eval += 1
+            else: total_train += 1
+        logging.info(f"  collected {total_eval} eval items (train skipped)")
+    else:
+        logging.info("=== Phase 1: Training action-type classifier ===")
+        chunk_size = 5000
+        train_texts = []; train_types = []
 
-    for is_eval, item in stream_mli_items(args.data_dir, eval_frac=args.eval_fraction):
-        at = item.get("output", {}).get("action-type", "")
-        if not at: continue
-        feats = features_from_item(item)
-        if is_eval:
-            eval_items.append(item); total_eval += 1
-        else:
-            train_texts.append(feats); train_types.append(at)
-            if len(train_texts) >= chunk_size: flush_type()
+        def flush_type():
+            nonlocal total_train
+            if not train_texts: return
+            type_model.partial_fit(train_texts, train_types)
+            total_train += len(train_texts)
+            logging.info(f"  type model: {total_train} samples")
+            train_texts.clear(); train_types.clear()
 
-    flush_type()
-    logging.info(f"Stage 1 done: {total_train} train, {total_eval} eval")
+        for is_eval, item in stream_mli_items(args.data_dir, eval_frac=args.eval_fraction):
+            at = item.get("output", {}).get("action-type", "")
+            if not at: continue
+            feats = features_from_item(item)
+            if is_eval:
+                eval_items.append(item); total_eval += 1
+            else:
+                train_texts.append(feats); train_types.append(at)
+                if len(train_texts) >= chunk_size: flush_type()
+
+        flush_type()
+        logging.info(f"Stage 1 done: {total_train} train, {total_eval} eval")
+        type_model.save(out / "action_type_model.pkl")
+        logging.info(f"  saved action_type_model to {out}")
 
     # ── Phase 2: Train Stage 2 (LambdaRank per action-type) ──
     logging.info("=== Phase 2: Training LambdaRank models ===")
