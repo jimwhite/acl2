@@ -38,4 +38,4 @@ fi
 echo "Running k-NN evaluation..."
 echo
 
-exec acl2 < eval-builtin.lisp
+exec acl2 < eval-knn.lisp

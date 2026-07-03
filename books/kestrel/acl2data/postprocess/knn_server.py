@@ -112,36 +112,21 @@ class KNNModelServer:
         return preds[0][:n]
 
     def format_recommendation(self, action_type, action_obj, score, rank):
-        """Format a prediction as an ACL2 recommendation string.
+        """Format a prediction as a dict for the advice framework.
 
-        The expected format is a 5-element list as a string:
-        (NAME TYPE OBJECT CONFIDENCE BOOK-MAP)
+        The framework's parse-recommendation expects JSON objects with keys:
+          type, object, confidence (0–1), book_map
+        See *rec-to-symbol-alist* in kestrel/helpers/recommendations.lisp
+        for valid type strings.
         """
-        # Normalize score to a confidence 0-100
-        confidence = min(100, max(0, int(score * 100)))
-        # Map action-type to the keyword format expected by ACL2
-        at_map = {
-            "use-lemma": ":USE-LEMMA",
-            "add-hyp": ":ADD-HYP",
-            "add-enable-hint": ":ADD-ENABLE-HINT",
-            "add-disable-hint": ":ADD-DISABLE-HINT",
-            "add-use-hint": ":ADD-USE-HINT",
-            "add-by-hint": ":ADD-BY-HINT",
-            "add-expand-hint": ":ADD-EXPAND-HINT",
-            "add-do-not-hint": ":ADD-DO-NOT-HINT",
-            "add-nonlinearp-hint": ":ADD-NONLINEARP-HINT",
-            "add-induct-hint": ":ADD-INDUCT-HINT",
-            "add-cases-hint": ":ADD-CASES-HINT",
-            "add-library": ":ADD-LIBRARY",
+        # FAISS scores are distances; normalize to 0–1 based on rank
+        confidence = max(0.0, min(1.0, 1.0 / (1.0 + float(score))))
+        return {
+            "type": action_type,
+            "object": str(action_obj),
+            "confidence": confidence,
+            "book_map": {},
         }
-        acl2_type = at_map.get(action_type, f":{action_type.upper().replace('-', '_')}")
-        name = f"{action_obj}"
-
-        # Book-map: empty for simplicity (the eval framework looks up lemmas
-        # in the current ACL2 world, so book-map isn't strictly needed)
-        book_map = "NIL"
-
-        return f"({name} {acl2_type} {action_obj} {confidence} {book_map})"
 
 
 # ─── HTTP Server ────────────────────────────────────────────────────────────
