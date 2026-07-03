@@ -13,6 +13,11 @@
 ;  4. The calling function must be :mode :program and use b* for state.
 ;  5. Return (mv nil `(value-triple ',parsed-json) state) — note the quote
 ;     before the parsed JSON to prevent ACL2 from evaluating it.
+;  6. Server MUST send Content-Length and Connection: close headers.
+;     Without these, dexador times out on the SECOND request to the same
+;     server (first request works, subsequent ones break pipe).
+;  7. Unset http_proxy/HTTP_PROXY before running — Docker Squid proxy
+;     intercepts localhost traffic and dexador doesn't respect no_proxy.
 ;
 ; Prerequisite: k-NN server on port 8765.
 ; Run:

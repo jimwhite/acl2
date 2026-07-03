@@ -1,10 +1,64 @@
-This directory contains various Python tools that work on the ACL2 books in 
+This directory contains various Python tools that work on the ACL2 books in
 support of extracting actionable data from the books for training machine
 learning models. The most important file is convert_acl2data.py, which is the
 entry point into the postprocess phase.
 
 ALL programs in this directory are in the public domain, under the same license
 as ACL2, i.e., based on the BSD-3-Clause.
+
+━━━ k-NN Model Evaluation ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Quick start:
+  1. Start the k-NN server:
+       python knn_server.py --index /path/to/models_v4 --port 8765
+  2. Run evaluation:
+       bash eval-knn.sh
+
+Key files:
+  eval-knn.lisp          — ACL2 script: registers server model, calls eval-models
+  eval-knn.sh            — Shell wrapper: unsets proxy, verifies server, runs ACL2
+  eval-builtin.lisp      — Built-in model evaluation (no server needed)
+  knn_server.py          — Python/FAISS k-NN HTTP server
+  test-htclient-make-event.lisp — Connectivity test: post-light from make-event
+  test-post-light.lisp   — Connectivity test: post-light from raw Lisp (:q)
+  test-knn-server.lisp   — Fallback test: sys-call+ + curl (superseded)
+
+Hard-won learnings for server model integration (2026-07-03):
+
+  Calling post-light (HTCLIENT/dexador) from make-event:
+    1. kwds must be doublet-listp — proper lists, NOT dotted pairs/alists.
+       Broken:  '((:connect-timeout . 5) (:read-timeout . 5))
+       Working: (list (list :connect-timeout 5) (list :read-timeout 5))
+       Working: `((:connect-timeout ,n) (:read-timeout ,n)) via backtick
+    2. Do NOT use (set-guard-checking :none). It breaks include-raw dispatch
+       for functions like post-light. The guard violation is the real problem.
+    3. Use the framework's help::post-and-parse-response-as-json — it handles
+       kwds correctly via backtick.
+    4. Calling function must be :mode :program with b* for state threading.
+    5. Return (mv nil `(value-triple ',parsed) state) — quote the parsed JSON.
+
+  Server response format:
+    6. The framework's parse-recommendation expects JSON objects with keys:
+       {"type": "use-lemma", "object": "LEMMA-NAME",
+        "confidence": 0.53, "book_map": {}}
+       Valid type strings are in *rec-to-symbol-alist*:
+       use-lemma, add-hyp, add-enable-hint, add-disable-hint, add-use-hint,
+       add-by-hint, add-expand-hint, add-do-not-hint, add-nonlinearp-hint,
+       add-induct-hint, add-cases-hint, add-library, exact-hints
+    7. Confidence must be 0–1 (rational). Normalize FAISS scores
+       (e.g., 1/(1+score)).
+
+  HTTP/network:
+    8. Server MUST send Content-Length and Connection: close headers.
+       Without these, dexador times out on the SECOND request (first works,
+       subsequent ones get "I/O timeout" / BrokenPipeError on server side).
+    9. Unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY before running.
+       Docker Squid proxy intercepts localhost; dexador ignores no_proxy.
+
+  Server registration:
+   10. URL in table entry must include full path:
+       (table acl2::advice-server :knn '("http://127.0.0.1:8765/predict" "knn"))
+       NOT just "http://127.0.0.1:8765" (framework POSTs to the URL as-is).
 
 * checkpoint_to_clause.py -- attempts to convert an ACL2 checkpoint (as printed 
 	to the user) into clausal form as used for machine learning.
