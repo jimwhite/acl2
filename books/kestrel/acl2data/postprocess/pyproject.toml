@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "advice-knn"
+version = "0.1.0"
+description = "k-NN training and serving tools for ACL2 acl2data postprocess"
+readme = "README"
+requires-python = ">=3.10"
+license = { text = "BSD-3-Clause" }
+dependencies = [
+    "numpy",
+    "scipy",
+    "scikit-learn",
+    "ijson",
+    "faiss-cpu",
+]
+
+[project.scripts]
+advice-knn-server = "knn_server:main"
+advice-train-model-v4 = "train_model_v4:main"
+
+[tool.setuptools]
+py-modules = ["knn_server", "train_model_v4"]
