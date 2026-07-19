@@ -14,7 +14,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."   # cd to acl2data/
 
-DATA_DIR="${DATA_DIR:-../data/books}"
+DATA_DIR="${DATA_DIR:-../../../../../data/books}"
 OUTPUT_DIR="${OUTPUT_DIR:-./models_v5_smoke}"
 
 echo "=== Graph2Tocopo Smoke Test ==="

@@ -6,8 +6,9 @@ How to train Graph2Tocopo on the Mac Studio with GPU acceleration.
 
 - Mac Studio with Apple Silicon (MPS GPU) or NVIDIA GPU (CUDA)
 - Python 3.10+
-- ACL2 community books `.mli` dataset at `../data/books/` relative to `acl2data/`
-- This repository synced to the host
+- ACL2 community books `.mli` dataset at `data/books/` in the parent workspace
+  (`/workspaces/acl2-jupyter/data/books` in devcontainer)
+- This repository synced to the host at `context/acl2/` (submodule)
 
 ## Quick Start
 
@@ -60,7 +61,7 @@ Environment variables (all optional, defaults set):
 
 | Variable | Default | Scripts |
 |----------|---------|---------|
-| `DATA_DIR` | `../data/books` | smoke, train |
+| `DATA_DIR` | `../../../../../data/books` | smoke, train |
 | `OUTPUT_DIR` | `./models_v5` | smoke, train |
 | `MODEL` | `./models_v5/best_model.pt` | server |
 | `PORT` | `8765` | server |
