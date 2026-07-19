@@ -285,22 +285,55 @@ def train_epoch(model, dataloader, optimizer, device, epoch,
 
 
 @torch.no_grad()
-def evaluate(model, dataloader, device, vocab):
-    """Evaluate model: compute exact match accuracy."""
+def evaluate_fast(model, dataloader, device, vocab):
+    """Fast evaluation: token prediction accuracy on eval set (no generation).
+
+    This runs in seconds even on large eval sets.  Measures whether the
+    model assigns highest probability to the correct next token given
+    teacher-forced context — a reliable proxy for model quality.
+    """
+    model.eval()
+    total_tokens = 0
+    correct_tokens = 0
+
+    for batch in dataloader:
+        batch_t = {k: v.to(device) if isinstance(v, torch.Tensor) else v
+                    for k, v in batch.items()}
+        tgt_in = batch_t["tgt_tokens"][:, :-1]
+        tgt_out = batch_t["tgt_tokens"][:, 1:]
+        batch_t["tgt_tokens"] = tgt_in
+
+        with torch.no_grad():
+            out = model(batch_t)
+        # Token logits: (B, S, V) — argmax over vocab
+        preds = out["token_logits"].argmax(dim=-1)  # (B, S)
+        mask = tgt_out != 0  # ignore padding
+        correct_tokens += (preds[mask] == tgt_out[mask]).sum().item()
+        total_tokens += mask.sum().item()
+
+    return correct_tokens / max(total_tokens, 1)
+
+
+@torch.no_grad()
+def evaluate_full(model, dataloader, device, vocab, max_items: int = None):
+    """Full evaluation: autoregressive generation, measures exact match.
+
+    Slow — use sparingly (every N epochs, or at the end).
+    Set max_items to cap eval examples."""
     model.eval()
     correct_top1 = 0
     correct_action_type = 0
     total = 0
 
-    for batch in tqdm(dataloader, desc="Eval"):
+    for batch in tqdm(dataloader, desc="Eval (gen)"):
         batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                  for k, v in batch.items()}
 
-        # Generate for each example (batch_size=1 for generation)
         for i in range(len(batch["action_types"])):
             total += 1
+            if max_items and total > max_items:
+                break
 
-            # Build single-example batch
             single = {
                 k: v[i:i+1] if isinstance(v, torch.Tensor) else [v[i]]
                 for k, v in batch.items()
@@ -308,16 +341,14 @@ def evaluate(model, dataloader, device, vocab):
 
             try:
                 output_ids = model.generate(single, temperature=1.0)
-                # Decode prediction
                 pred_tokens = []
                 for tok_id, is_copy, _ in output_ids:
                     if is_copy:
                         pred_tokens.append("<COPY>")
                     else:
-                        pred_tokens.append(vocab.id_to_token.get(tok_id, "<unk>"))
+                        pred_tokens.append(
+                            vocab.id_to_token.get(tok_id, "<unk>"))
 
-                # Check if matches ground truth
-                # (simplified: compare action type only for now)
                 pred_str = " ".join(pred_tokens)
                 action_type = batch["action_types"][i]
                 action_obj = str(batch["action_objs"][i])
@@ -328,15 +359,15 @@ def evaluate(model, dataloader, device, vocab):
                     correct_top1 += 1
 
             except Exception as e:
-                logger.warning(f"  Generation failed: {e}")
+                logger.debug(f"  Generation failed: {e}")
                 continue
+
+        if max_items and total >= max_items:
+            break
 
     top1_acc = correct_top1 / max(total, 1)
     at_acc = correct_action_type / max(total, 1)
-    logger.info(
-        f"  Eval: Top-1={top1_acc:.4f}, ActionType={at_acc:.4f} "
-        f"({total} examples)")
-    return {"top1": top1_acc, "action_type": at_acc}
+    return {"top1": top1_acc, "action_type": at_acc, "total": total}
 
 
 # ── main ─────────────────────────────────────────────────────────────────────
@@ -360,6 +391,11 @@ def main():
     p.add_argument("--max-items", type=int, default=None,
                    help="Max items to load (for testing)")
     p.add_argument("--num-workers", type=int, default=2)
+    p.add_argument("--eval-full-every", type=int, default=5,
+                   help="Run full generation eval every N epochs (0=never, "
+                        "default: every 5)")
+    p.add_argument("--eval-max-items", type=int, default=200,
+                   help="Max items for full generation eval (default: 200)")
     p.add_argument("--encoder-type", default="ggnn",
                    choices=["ggnn", "great"])
     p.add_argument("--log-level", default="INFO",
@@ -496,8 +532,23 @@ def main():
             warmup_steps=10000, global_step=global_step)
         logger.info(f"  Avg train loss: {avg_loss:.4f}")
 
-        # Evaluate
-        metrics = evaluate(model, eval_loader, device, vocab)
+        # Fast eval every epoch (token accuracy — runs in seconds)
+        token_acc = evaluate_fast(model, eval_loader, device, vocab)
+        metrics = {"token_acc": token_acc}
+
+        # Full generation eval every N epochs (slow but meaningful)
+        if args.eval_full_every > 0 and epoch % args.eval_full_every == 0:
+            gen_metrics = evaluate_full(
+                model, eval_loader, device, vocab,
+                max_items=args.eval_max_items)
+            metrics.update(gen_metrics)
+            logger.info(
+                f"  Eval: token_acc={token_acc:.4f}  "
+                f"Top-1={gen_metrics['top1']:.4f}  "
+                f"ActionType={gen_metrics['action_type']:.4f}  "
+                f"({gen_metrics['total']} items)")
+        else:
+            logger.info(f"  Eval: token_acc={token_acc:.4f}")
 
         # Save checkpoint
         checkpoint = {
