@@ -25,7 +25,7 @@ echo ""
 source training/.venv/bin/activate
 
 echo "1. Installing package..."
-pip install -q -e training/
+uv pip install -q -e training/
 
 echo "2. Running unit tests..."
 python training/test_model.py

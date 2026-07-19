@@ -33,8 +33,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader, IterableDataset
 from tqdm import tqdm
+import ijson
 
 # Add parent to path for imports
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -58,40 +59,6 @@ DEFAULT_LR = 1e-4
 DEFAULT_WARMUP_STEPS = 10000
 DEFAULT_MAX_NODES = 512
 DEFAULT_EVAL_FRAC = 0.05
-
-
-# ── dataset ──────────────────────────────────────────────────────────────────
-
-class Acl2ProofDataset(Dataset):
-    """PyTorch dataset wrapping .mli records as graph tensors."""
-
-    def __init__(self, items: list, graph_builder: GraphBuilder,
-                 vocab: FixVocab, max_nodes: int = 512, max_seq_len: int = 256):
-        self.items = items
-        self.graph_builder = graph_builder
-        self.vocab = vocab
-        self.max_nodes = max_nodes
-        self.max_seq_len = max_seq_len
-
-    def __len__(self):
-        return len(self.items)
-
-    def __getitem__(self, idx):
-        item = self.items[idx]
-
-        # Build graph
-        graph = self.graph_builder.build_graph(item, max_nodes=self.max_nodes)
-
-        # Build target sequence
-        tgt_tokens = build_target_sequence(item)
-        tgt_ids = self.vocab.encode(tgt_tokens[:self.max_seq_len])
-
-        return {
-            "graph": graph,
-            "tgt_ids": tgt_ids,
-            "action_type": item.get("output", {}).get("action-type", ""),
-            "action_obj": item.get("output", {}).get("action-obj", ""),
-        }
 
 
 def collate_graphs(batch):
@@ -177,22 +144,90 @@ def _node_type_to_int(nt: str) -> int:
     return {"token": 0, "subtoken": 1, "root": 2}.get(nt, 0)
 
 
-# ── data loading ─────────────────────────────────────────────────────────────
+# ── streaming dataset ────────────────────────────────────────────────────────
 
-def load_items(data_dir: str, eval_frac: float = 0.05,
-               exclude_dirs: set = None, max_items: int = None):
-    """Stream .mli files and split into train/eval by book hash."""
-    import ijson
+def _yield_items_from_file(mli_path, max_items=None, item_count=0):
+    """Generator: yield valid items from a single .mli file."""
+    try:
+        with open(mli_path, "rb") as f:
+            for item in ijson.items(f, "item"):
+                at = item.get("output", {}).get("action-type", "")
+                ao = item.get("output", {}).get("action-obj", "")
+                if not at or not ao:
+                    continue
+                yield item
+                item_count += 1
+                if max_items and item_count >= max_items:
+                    return
+    except Exception:
+        pass  # skip corrupted files
+
+
+class StreamingMliDataset(torch.utils.data.IterableDataset):
+    """IterableDataset that streams .mli files from disk — never loads
+    all items into memory.  File list is shuffled each epoch.
+    Multi-worker safe via worker_init_fn splitting files across workers."""
+
+    def __init__(self, file_manifest, graph_builder, vocab,
+                 max_nodes=512, max_seq_len=256, max_items=None):
+        self.file_manifest = file_manifest  # list of Path
+        self.graph_builder = graph_builder
+        self.vocab = vocab
+        self.max_nodes = max_nodes
+        self.max_seq_len = max_seq_len
+        self.max_items = max_items
+
+    def __iter__(self):
+        worker_info = torch.utils.data.get_worker_info()
+        if worker_info is None:
+            files = self.file_manifest
+        else:
+            # Split files across workers: each worker gets a subset
+            per_worker = len(self.file_manifest) // worker_info.num_workers
+            start = worker_info.id * per_worker
+            end = start + per_worker if worker_info.id < worker_info.num_workers - 1 else len(self.file_manifest)
+            files = self.file_manifest[start:end]
+
+        # Shuffle files for this epoch (different seed per epoch via worker)
+        rng = np.random.RandomState()
+        rng.shuffle(files)
+
+        count = 0
+        for mli_path in files:
+            for item in _yield_items_from_file(mli_path):
+                graph = self.graph_builder.build_graph(item, max_nodes=self.max_nodes)
+                tgt_tokens = build_target_sequence(item)
+                tgt_ids = self.vocab.encode(tgt_tokens[:self.max_seq_len])
+                count += 1
+
+                yield {
+                    "graph": graph,
+                    "tgt_ids": tgt_ids,
+                    "action_type": item.get("output", {}).get("action-type", ""),
+                    "action_obj": item.get("output", {}).get("action-obj", ""),
+                }
+
+                if self.max_items and count >= self.max_items:
+                    return
+
+
+# ── file manifest ────────────────────────────────────────────────────────────
+
+def build_file_manifest(data_dir, eval_frac=0.05, exclude_dirs=None):
+    """Scan .mli files, return (train_files, eval_files) lists.
+
+    Does NOT read file contents — just checks paths and book-level hash.
+    Returns immediately.
+    """
+    import hashlib
     root = Path(data_dir)
     if exclude_dirs is None:
         exclude_dirs = {"kestrel/helpers"}
 
-    train_items = []
-    eval_items = []
-    count = 0
+    train_files = []
+    eval_files = []
 
     for mli_path in sorted(root.rglob("*.mli")):
-        # Check exclusion
         try:
             rel = mli_path.relative_to(root)
         except ValueError:
@@ -205,44 +240,41 @@ def load_items(data_dir: str, eval_frac: float = 0.05,
         if excluded:
             continue
 
-        # Book-level split
         book_key = str(rel.parent) if str(rel.parent) != "." else str(rel.stem)
         split_hash = hashlib.md5(book_key.encode()).hexdigest()
         is_eval = int(split_hash, 16) % 1000 < int(eval_frac * 1000)
 
-        # Stream items from file
-        try:
-            with open(mli_path, "rb") as f:
-                for item in ijson.items(f, "item"):
-                    at = item.get("output", {}).get("action-type", "")
-                    ao = item.get("output", {}).get("action-obj", "")
-                    if not at or not ao:
-                        continue
-                    if is_eval:
-                        eval_items.append(item)
-                    else:
-                        train_items.append(item)
-                    count += 1
-                    if max_items and count >= max_items:
-                        logger.info(
-                            f"  Reached max_items={max_items}, stopping.")
-                        return train_items, eval_items
-        except Exception as e:
-            logger.warning(f"  Skipping {mli_path}: {e}")
-
-        if count % 100000 == 0:
-            logger.info(
-                f"  Loaded {count} items ({len(train_items)} train, "
-                f"{len(eval_items)} eval)")
+        if is_eval:
+            eval_files.append(mli_path)
+        else:
+            train_files.append(mli_path)
 
     logger.info(
-        f"  Total: {len(train_items):,} train, {len(eval_items):,} eval items")
-    if len(eval_items) == 0:
-        logger.warning(
-            "  WARNING: No eval items! Book-level split may put all early "
-            "books in training.  Increase --max-items or remove it for "
-            "proper eval coverage.")
-    return train_items, eval_items
+        f"  File manifest: {len(train_files):,} train files, "
+        f"{len(eval_files):,} eval files")
+    return train_files, eval_files
+
+
+def build_vocab_from_stream(file_manifest, max_items=None):
+    """Stream .mli files to build vocabulary from target sequences.
+
+    Only accumulates token strings (tiny), not full items.
+    """
+    vocab = FixVocab()
+    count = 0
+
+    for mli_path in tqdm(file_manifest, desc="Vocab (streaming)"):
+        for item in _yield_items_from_file(mli_path):
+            tgt = build_target_sequence(item)
+            for tok in tgt:
+                vocab.add_token(tok)
+            count += 1
+            if max_items and count >= max_items:
+                logger.info(f"  Vocab built from {count:,} items")
+                return vocab
+
+    logger.info(f"  Vocab built from {count:,} items, size={len(vocab):,}")
+    return vocab
 
 
 # ── training loop ────────────────────────────────────────────────────────────
@@ -424,39 +456,36 @@ def main():
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Load data
-    logger.info("Loading data...")
-    train_items, eval_items = load_items(
+    # ── Build file manifest (scans paths only, no data read) ─────────────
+    logger.info("Building file manifest...")
+    train_files, eval_files = build_file_manifest(
         args.data_dir, eval_frac=args.eval_frac,
-        exclude_dirs=set(args.exclude), max_items=args.max_items)
-
-    # Build vocabulary from training data
-    logger.info("Building vocabulary...")
-    vocab = FixVocab()
+        exclude_dirs=set(args.exclude))
     graph_builder = GraphBuilder(max_nodes=args.max_nodes)
 
-    for item in tqdm(train_items, desc="Vocab"):
-        tgt = build_target_sequence(item)
-        for tok in tgt:
-            vocab.add_token(tok)
-    logger.info(f"  Vocab size: {len(vocab)}")
+    # ── Build vocab from training files (streaming, no memory accumulation)
+    logger.info("Building vocabulary...")
+    vocab = build_vocab_from_stream(train_files, max_items=args.max_items)
+    graph_builder.subtoken_to_id = {}  # reset after vocab pass (graph builder state not needed)
 
-    # Create datasets
-    logger.info("Creating datasets...")
-    train_dataset = Acl2ProofDataset(
-        train_items, graph_builder, vocab, max_nodes=args.max_nodes)
-    eval_dataset = Acl2ProofDataset(
-        eval_items, graph_builder, vocab, max_nodes=args.max_nodes)
+    # ── Create streaming datasets ────────────────────────────────────────
+    logger.info("Creating streaming datasets...")
+    train_dataset = StreamingMliDataset(
+        train_files, graph_builder, vocab,
+        max_nodes=args.max_nodes, max_items=args.max_items)
+    eval_dataset = StreamingMliDataset(
+        eval_files, graph_builder, vocab,
+        max_nodes=args.max_nodes, max_items=args.max_items)
 
     train_loader = DataLoader(
-        train_dataset, batch_size=args.batch_size, shuffle=True,
+        train_dataset, batch_size=args.batch_size,
         collate_fn=collate_graphs, num_workers=args.num_workers,
-        pin_memory=True)
+        pin_memory=(device.type != "mps"))  # MPS doesn't support pin_memory
 
     eval_loader = DataLoader(
-        eval_dataset, batch_size=args.batch_size, shuffle=False,
-        collate_fn=collate_graphs, num_workers=args.num_workers,
-        pin_memory=True)
+        eval_dataset, batch_size=args.batch_size,
+        collate_fn=collate_graphs, num_workers=0,  # eval single-process
+        pin_memory=(device.type != "mps"))
 
     # Determine num_edge_types from first batch
     first_batch = next(iter(train_loader))

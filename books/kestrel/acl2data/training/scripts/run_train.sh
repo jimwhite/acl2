@@ -22,10 +22,10 @@ echo "Data dir:   $DATA_DIR"
 echo "Output dir: $OUTPUT_DIR"
 echo ""
 
-source training/.venv/bin/activate
+# source training/.venv/bin/activate
 
 echo "1. Installing package..."
-pip install -q -e training/
+uv pip install -q -e training/
 
 echo "2. Running unit tests..."
 python training/test_model.py
