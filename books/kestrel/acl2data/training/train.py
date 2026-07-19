@@ -439,11 +439,56 @@ def main():
     for pg in optimizer.param_groups:
         pg["initial_lr"] = args.lr
 
-    # Training
+    # ── resume / auto-resume ─────────────────────────────────────────────
+    start_epoch = 1
     global_step = 0
     best_acc = 0.0
 
-    for epoch in range(1, args.epochs + 1):
+    # Auto-detect latest checkpoint if --resume not specified
+    resume_path = args.resume
+    if resume_path is None and out_dir.exists():
+        epoch_ckpts = sorted(out_dir.glob("checkpoint_epoch*.pt"))
+        if epoch_ckpts:
+            resume_path = str(epoch_ckpts[-1])
+            logger.info(f"Auto-resuming from {resume_path}")
+
+    if resume_path:
+        resume_path = Path(resume_path)
+        if resume_path.exists():
+            logger.info(f"Loading checkpoint: {resume_path}")
+            ckpt = torch.load(resume_path, map_location=device, weights_only=False)
+
+            model.load_state_dict(ckpt["model_state"])
+            optimizer.load_state_dict(ckpt["optimizer_state"])
+            # Restore optimizer state to correct device
+            for pg_state in optimizer.state.values():
+                for k, v in pg_state.items():
+                    if isinstance(v, torch.Tensor):
+                        pg_state[k] = v.to(device)
+
+            # Restore vocab from checkpoint (vocab is serialized as dict)
+            if "vocab" in ckpt:
+                vocab.token_to_id = ckpt["vocab"]
+                vocab.id_to_token = {v: k for k, v in vocab.token_to_id.items()}
+                vocab.next_id = max(vocab.token_to_id.values()) + 1
+
+            # Restore training state
+            old_epoch = ckpt.get("epoch", 0)
+            start_epoch = old_epoch + 1
+            best_acc = ckpt.get("metrics", {}).get("action_type", 0.0)
+            global_step = old_epoch * len(train_loader)  # approximate
+
+            logger.info(f"  Resumed from epoch {old_epoch}, "
+                         f"best_acc={best_acc:.4f}, "
+                         f"starting at epoch {start_epoch}")
+        else:
+            logger.warning(f"Resume path not found: {resume_path}")
+
+    if start_epoch > args.epochs:
+        logger.info("All epochs already completed.  Done.")
+        return
+
+    for epoch in range(start_epoch, args.epochs + 1):
         logger.info(f"\n=== Epoch {epoch}/{args.epochs} ===")
 
         avg_loss, global_step = train_epoch(
