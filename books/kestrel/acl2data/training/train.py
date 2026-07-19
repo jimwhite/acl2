@@ -236,7 +236,12 @@ def load_items(data_dir: str, eval_frac: float = 0.05,
                 f"{len(eval_items)} eval)")
 
     logger.info(
-        f"  Total: {len(train_items)} train, {len(eval_items)} eval items")
+        f"  Total: {len(train_items):,} train, {len(eval_items):,} eval items")
+    if len(eval_items) == 0:
+        logger.warning(
+            "  WARNING: No eval items! Book-level split may put all early "
+            "books in training.  Increase --max-items or remove it for "
+            "proper eval coverage.")
     return train_items, eval_items
 
 
@@ -303,15 +308,16 @@ def evaluate_fast(model, dataloader, device, vocab):
         tgt_out = batch_t["tgt_tokens"][:, 1:]
         batch_t["tgt_tokens"] = tgt_in
 
-        with torch.no_grad():
-            out = model(batch_t)
+        out = model(batch_t)
         # Token logits: (B, S, V) — argmax over vocab
         preds = out["token_logits"].argmax(dim=-1)  # (B, S)
         mask = tgt_out != 0  # ignore padding
         correct_tokens += (preds[mask] == tgt_out[mask]).sum().item()
         total_tokens += mask.sum().item()
 
-    return correct_tokens / max(total_tokens, 1)
+    if total_tokens == 0:
+        return -1.0  # signal: no eval data
+    return correct_tokens / total_tokens
 
 
 @torch.no_grad()
@@ -534,6 +540,12 @@ def main():
 
         # Fast eval every epoch (token accuracy — runs in seconds)
         token_acc = evaluate_fast(model, eval_loader, device, vocab)
+        if token_acc < 0:
+            logger.info("  Eval: (no eval items — book-level split may "
+                         "put all early books in training)")
+            token_acc = 0.0  # placeholder
+        else:
+            logger.info(f"  Eval: token_acc={token_acc:.4f}")
         metrics = {"token_acc": token_acc}
 
         # Full generation eval every N epochs (slow but meaningful)
@@ -542,13 +554,14 @@ def main():
                 model, eval_loader, device, vocab,
                 max_items=args.eval_max_items)
             metrics.update(gen_metrics)
-            logger.info(
-                f"  Eval: token_acc={token_acc:.4f}  "
-                f"Top-1={gen_metrics['top1']:.4f}  "
-                f"ActionType={gen_metrics['action_type']:.4f}  "
-                f"({gen_metrics['total']} items)")
-        else:
-            logger.info(f"  Eval: token_acc={token_acc:.4f}")
+            if gen_metrics["total"] == 0:
+                logger.info("  Eval (gen): (no eval items)")
+            else:
+                logger.info(
+                    f"  Eval: token_acc={token_acc:.4f}  "
+                    f"Top-1={gen_metrics['top1']:.4f}  "
+                    f"ActionType={gen_metrics['action_type']:.4f}  "
+                    f"({gen_metrics['total']} items)")
 
         # Save checkpoint
         checkpoint = {
@@ -565,8 +578,9 @@ def main():
         logger.info(f"  Saved checkpoint to {checkpoint_path}")
 
         # Save best
-        if metrics["action_type"] > best_acc:
-            best_acc = metrics["action_type"]
+        current_acc = metrics.get("action_type", best_acc)
+        if current_acc > best_acc:
+            best_acc = current_acc
             best_path = out_dir / "best_model.pt"
             torch.save(checkpoint, best_path)
             logger.info(f"  New best model (accuracy={best_acc:.4f})")
