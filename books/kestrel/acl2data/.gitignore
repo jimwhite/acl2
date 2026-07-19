@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Models
+models/
+*.pkl
+*.faiss
+*.records
+*.pt
+*.bin
+
+# Data
+*.out
+*.mli
+*.tgz
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Common Lisp / ACL2
+*.fasl
+*.core
+*.dx64fsl
+*.lx64fsl
+.sys/
+
+# Large thesis/doc files
+Deep Learning Recommendations for the ACL2 Interactive Theorem Pr.md
