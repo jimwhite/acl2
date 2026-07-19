@@ -33,6 +33,7 @@ Thumbs.db
 .venv/
 venv/
 env/
+training/.venv/
 
 # Common Lisp / ACL2
 *.fasl
@@ -43,3 +44,6 @@ env/
 
 # Large thesis/doc files
 Deep Learning Recommendations for the ACL2 Interactive Theorem Pr.md
+
+# Jupyter kernel logs
+postprocess/common-lisp-jupyter/

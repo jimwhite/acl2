@@ -76,7 +76,7 @@ Tests run on CPU — no GPU needed:
 
 ```bash
 cd /workspaces/acl2-jupyter/context/acl2/books/kestrel/acl2data
-source /workspaces/acl2-jupyter/.venv/bin/activate
+source training/.venv/bin/activate
 
 # Install (editable mode — needed once after dependency changes)
 pip install -e training/

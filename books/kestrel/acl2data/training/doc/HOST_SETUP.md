@@ -15,7 +15,7 @@ All paths are baked into the scripts — no manual flags needed:
 
 ```bash
 cd /path/to/acl2-jupyter/context/acl2/books/kestrel/acl2data
-source ../../../../../.venv/bin/activate
+source training/.venv/bin/activate
 
 # 1. Smoke test (10K items, ~5 min)
 bash training/scripts/run_smoke_test.sh
@@ -36,8 +36,8 @@ DATA_DIR=/other/path/to/data bash training/scripts/run_train.sh
 
 ```bash
 cd /path/to/acl2data
-python3.12 -m venv .venv
-source .venv/bin/activate
+python3.12 -m venv training/.venv
+source training/.venv/bin/activate
 pip install -e training/
 python training/test_model.py
 ```

@@ -22,7 +22,7 @@ echo "Data dir:   $DATA_DIR"
 echo "Output dir: $OUTPUT_DIR"
 echo ""
 
-source ../../../../../.venv/bin/activate 2>/dev/null || source .venv/bin/activate
+source training/.venv/bin/activate
 
 echo "1. Installing package..."
 pip install -q -e training/

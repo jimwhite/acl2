@@ -28,7 +28,7 @@ if [ ! -f "$MODEL" ]; then
     exit 1
 fi
 
-source ../../../../../.venv/bin/activate 2>/dev/null || source .venv/bin/activate
+source training/.venv/bin/activate
 
 python -m training.server \
     --model "$MODEL" \
