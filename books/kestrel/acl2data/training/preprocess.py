@@ -222,7 +222,8 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
                                      max_items=max_items)
     vocab_path = output_dir / "vocab.json"
     output_dir.mkdir(parents=True, exist_ok=True)
-    json.dump({"token_to_id": token_to_id}, vocab_path)
+    with open(vocab_path, "w") as f:
+        json.dump({"token_to_id": token_to_id}, f)
     logger.info(
         f"  Vocab size: {len(token_to_id):,} → {vocab_path} "
         f"({time.time()-t0:.1f}s)")
@@ -296,7 +297,8 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
                 if p.is_file())
 
     manifest_path = output_dir / "manifest.json"
-    json.dump(manifest, manifest_path, indent=2)
+    with open(manifest_path, "w") as f:
+        json.dump(manifest, f, indent=2)
     logger.info(f"  Manifest → {manifest_path}")
     for k, v in manifest.items():
         logger.info(f"    {k}: {len(v)} files")
