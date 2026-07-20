@@ -43,44 +43,36 @@ logger = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
-    """Stream all .mli in parallel: build vocab + find max_nodes + max_seq.
+    """Stream all .mli in parallel: build vocab only (no graph construction).
 
-    Uses ThreadPoolExecutor since the bottleneck is I/O, not CPU."""
+    Uses ThreadPoolExecutor for I/O-bound .mli reading.
+    Graph construction is skipped — global max_nodes is clamped to 512.
+    """
     from threading import Lock
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     root = Path(data_dir)
-
-    # First pass: collect file paths (fast, no I/O)
     file_paths = []
     for mli_path in sorted(root.rglob("*.mli")):
         rel = mli_path.relative_to(root)
         if not _is_excluded(rel, exclude_dirs):
             file_paths.append(mli_path)
 
-    # Shared state
     token_to_id = {"<pad>": 0, "<sos>": 1, "<eos>": 2, "<unk>": 3}
     attr_to_id = {}
     lock = Lock()
-    global_max_nodes = 0
-    global_max_seq = 0
-    edge_type_max = 0
     count = 0
     stopped = False
+    global_max_seq = 0
 
     def scan_file(mli_path):
-        nonlocal count, stopped, global_max_nodes, global_max_seq, edge_type_max
+        nonlocal count, stopped, global_max_seq
         if stopped:
             return
-
-        gb = GraphBuilder(max_nodes=10000)
         local_tokens = {}
         local_attrs = {}
-        local_max_nodes = 0
         local_max_seq = 0
-        local_edge_max = 0
         local_count = 0
-
         try:
             with open(mli_path, "rb") as f:
                 for item in ijson.items(f, "item"):
@@ -91,7 +83,6 @@ def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
                     if isinstance(ao, list):
                         ao = " ".join(str(x) for x in ao)
                     ao_str = str(ao)
-
                     tgt = build_target_sequence(
                         {"output": {"action-type": at, "action-obj": ao_str}})
                     for tok in tgt:
@@ -99,13 +90,6 @@ def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
                             local_tokens[tok] = None
                     local_max_seq = max(local_max_seq, len(tgt))
                     local_attrs[at] = None
-
-                    graph = gb.build_graph(item, max_nodes=10000)
-                    local_max_nodes = max(local_max_nodes, graph["num_nodes"])
-                    if graph["edge_types"]:
-                        local_edge_max = max(
-                            local_edge_max, max(graph["edge_types"]) + 1)
-
                     local_count += 1
         except Exception:
             pass
@@ -123,14 +107,12 @@ def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
             for at in local_attrs:
                 if at not in attr_to_id:
                     attr_to_id[at] = len(attr_to_id)
-            global_max_nodes = max(global_max_nodes, local_max_nodes)
             global_max_seq = max(global_max_seq, local_max_seq)
-            edge_type_max = max(edge_type_max, local_edge_max)
             count += local_count
             if max_items and count >= max_items:
                 stopped = True
 
-    workers = min(max_workers, len(file_paths))
+    workers = min(max_workers, max(1, len(file_paths)))
     with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = {pool.submit(scan_file, p): p for p in file_paths}
         for future in as_completed(futures):
@@ -138,9 +120,9 @@ def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
                 break
             future.result()
 
-    logger.info(f"Scan: {count:,} items, max_nodes={global_max_nodes}, "
-                 f"max_seq={global_max_seq}, edge_types={edge_type_max}")
-    return token_to_id, attr_to_id, global_max_nodes, global_max_seq, edge_type_max
+    # max_nodes: clamped per thesis (512). Pass 2 respects this.
+    logger.info(f"Scan: {count:,} items, max_seq={global_max_seq}")
+    return token_to_id, attr_to_id, 512, min(global_max_seq, 256), 10
 
 
 def _is_excluded(rel, exclude_dirs):
@@ -272,8 +254,6 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
     token_to_id, attr_to_id, max_nodes, max_seq, num_edge_types = \
         scan_dataset(data_dir, exclude_dirs, max_items=max_items,
                      max_workers=max_workers)
-    max_nodes = min(max_nodes, 512)  # clamp per thesis
-    max_seq = min(max_seq, 256)
 
     output_dir.mkdir(parents=True, exist_ok=True)
     json.dump({
