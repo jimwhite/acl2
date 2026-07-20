@@ -42,24 +42,45 @@ logger = logging.getLogger(__name__)
 # Pass 1: vocab + global stats
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def scan_dataset(data_dir, exclude_dirs, max_items=None):
-    """Stream all .mli: build vocab + find max_nodes + max_seq."""
+def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
+    """Stream all .mli in parallel: build vocab + find max_nodes + max_seq.
+
+    Uses ThreadPoolExecutor since the bottleneck is I/O, not CPU."""
+    from threading import Lock
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     root = Path(data_dir)
-    token_to_id = {"<pad>": 0, "<sos>": 1, "<eos>": 2, "<unk>": 3}
-    next_tid = 4
-    attr_to_id = {}    # action type → id
-    aobj_to_id = {}    # action obj token → id
-    edge_type_max = 0
-    global_max_nodes = 0
-    global_max_seq = 0
-    count = 0
 
-    gb = GraphBuilder(max_nodes=10000)  # no limit during scan
-
+    # First pass: collect file paths (fast, no I/O)
+    file_paths = []
     for mli_path in sorted(root.rglob("*.mli")):
         rel = mli_path.relative_to(root)
-        if _is_excluded(rel, exclude_dirs):
-            continue
+        if not _is_excluded(rel, exclude_dirs):
+            file_paths.append(mli_path)
+
+    # Shared state
+    token_to_id = {"<pad>": 0, "<sos>": 1, "<eos>": 2, "<unk>": 3}
+    attr_to_id = {}
+    lock = Lock()
+    global_max_nodes = 0
+    global_max_seq = 0
+    edge_type_max = 0
+    count = 0
+    stopped = False
+
+    def scan_file(mli_path):
+        nonlocal count, stopped, global_max_nodes, global_max_seq, edge_type_max
+        if stopped:
+            return
+
+        gb = GraphBuilder(max_nodes=10000)
+        local_tokens = {}
+        local_attrs = {}
+        local_max_nodes = 0
+        local_max_seq = 0
+        local_edge_max = 0
+        local_count = 0
+
         try:
             with open(mli_path, "rb") as f:
                 for item in ijson.items(f, "item"):
@@ -67,41 +88,55 @@ def scan_dataset(data_dir, exclude_dirs, max_items=None):
                     ao = item.get("output", {}).get("action-obj", "")
                     if not at or not ao:
                         continue
-
-                    # Vocab for action type
-                    if at not in attr_to_id:
-                        attr_to_id[at] = len(attr_to_id)
-
-                    # Vocab for output tokens
                     if isinstance(ao, list):
                         ao = " ".join(str(x) for x in ao)
                     ao_str = str(ao)
+
                     tgt = build_target_sequence(
                         {"output": {"action-type": at, "action-obj": ao_str}})
                     for tok in tgt:
-                        if tok not in token_to_id:
-                            token_to_id[tok] = next_tid
-                            next_tid += 1
+                        if tok not in local_tokens:
+                            local_tokens[tok] = None
+                    local_max_seq = max(local_max_seq, len(tgt))
+                    local_attrs[at] = None
 
-                    # Track max seq len
-                    global_max_seq = max(global_max_seq, len(tgt))
-
-                    # Build graph to track node count
                     graph = gb.build_graph(item, max_nodes=10000)
-                    global_max_nodes = max(global_max_nodes,
-                                           graph["num_nodes"])
-                    edge_type_max = max(edge_type_max,
-                                        max(graph["edge_types"]) + 1
-                                        if graph["edge_types"] else 0)
+                    local_max_nodes = max(local_max_nodes, graph["num_nodes"])
+                    if graph["edge_types"]:
+                        local_edge_max = max(
+                            local_edge_max, max(graph["edge_types"]) + 1)
 
-                    count += 1
-                    if max_items and count >= max_items:
-                        logger.info(f"Scan: {count:,} items")
-                        return token_to_id, attr_to_id, global_max_nodes, \
-                            global_max_seq, edge_type_max
-
+                    local_count += 1
         except Exception:
-            continue
+            pass
+
+        if local_count == 0:
+            return
+
+        with lock:
+            nonlocal token_to_id, attr_to_id
+            next_tid = len(token_to_id)
+            for tok in local_tokens:
+                if tok not in token_to_id:
+                    token_to_id[tok] = next_tid
+                    next_tid += 1
+            for at in local_attrs:
+                if at not in attr_to_id:
+                    attr_to_id[at] = len(attr_to_id)
+            global_max_nodes = max(global_max_nodes, local_max_nodes)
+            global_max_seq = max(global_max_seq, local_max_seq)
+            edge_type_max = max(edge_type_max, local_edge_max)
+            count += local_count
+            if max_items and count >= max_items:
+                stopped = True
+
+    workers = min(max_workers, len(file_paths))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(scan_file, p): p for p in file_paths}
+        for future in as_completed(futures):
+            if stopped:
+                break
+            future.result()
 
     logger.info(f"Scan: {count:,} items, max_nodes={global_max_nodes}, "
                  f"max_seq={global_max_seq}, edge_types={edge_type_max}")
@@ -235,7 +270,8 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
     logger.info("=== Pass 1: vocab + global stats ===")
     t0 = time.time()
     token_to_id, attr_to_id, max_nodes, max_seq, num_edge_types = \
-        scan_dataset(data_dir, exclude_dirs, max_items=max_items)
+        scan_dataset(data_dir, exclude_dirs, max_items=max_items,
+                     max_workers=max_workers)
     max_nodes = min(max_nodes, 512)  # clamp per thesis
     max_seq = min(max_seq, 256)
 
