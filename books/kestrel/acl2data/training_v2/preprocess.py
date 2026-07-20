@@ -247,8 +247,8 @@ def _nt(nt: str) -> int:
 # Orchestration
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
-                   test_frac=0.05, exclude_dirs=None, max_workers=None,
+def run_preprocess(data_dir, output_dir, train_frac=0.80, val_frac=0.10,
+                   test_frac=0.10, exclude_dirs=None, max_workers=None,
                    max_items=None):
     if max_workers is None:
         max_workers = max(4, multiprocessing.cpu_count() // 2)
@@ -278,10 +278,11 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
         f"max_nodes={max_nodes} max_seq={max_seq} "
         f"({time.time()-t0:.1f}s)")
 
-    # ── Scan files + assign splits ───────────────────────────────────────
+    # ── Group files by book dir, count items, assign splits ─────────────
     logger.info(f"=== Pass 2: convert to fixed-size .pt ({max_workers} workers) ===")
-    tasks = []
 
+    # Group .mli files by book directory
+    book_files = {}  # book_key → list of (mli_path, rel_path)
     for mli_path in sorted(root.rglob("*.mli")):
         try:
             rel = mli_path.relative_to(root)
@@ -289,23 +290,55 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
             continue
         if _is_excluded(rel, exclude_dirs):
             continue
-
         book_key = str(rel.parent) if str(rel.parent) != "." else str(rel.stem)
-        h = int(hashlib.md5(book_key.encode()).hexdigest(), 16) % 1000
-        if h < train_frac * 1000:
-            split = "train"
-        elif h < (train_frac + val_frac) * 1000:
-            split = "val"
+        book_files.setdefault(book_key, []).append((mli_path, rel))
+
+    # Quick scan: count items per book using first file as estimate
+    book_item_counts = {}
+    for book_key, files in book_files.items():
+        # Scan first file to estimate items per file in this book
+        try:
+            with open(files[0][0], "rb") as f:
+                count = sum(1 for _ in ijson.items(f, "item"))
+            book_item_counts[book_key] = count * len(files)
+        except Exception:
+            book_item_counts[book_key] = 0
+
+    # Sort books by hash (deterministic ordering), then assign splits
+    # by cumulative item count to hit target ratios
+    sorted_books = sorted(book_item_counts.keys(),
+                          key=lambda k: int(hashlib.md5(k.encode()).hexdigest(), 16))
+    total_items = sum(book_item_counts.values())
+    train_target = int(total_items * train_frac)
+    val_target = int(total_items * (train_frac + val_frac))
+
+    book_split = {}
+    cumulative = 0
+    for bk in sorted_books:
+        if cumulative < train_target:
+            book_split[bk] = "train"
+        elif cumulative < val_target:
+            book_split[bk] = "val"
         else:
-            split = "test"
+            book_split[bk] = "test"
+        cumulative += book_item_counts[bk]
 
-        out_path = output_dir / split / rel.with_suffix(".pt")
-        tasks.append((str(mli_path), str(out_path)))
+    # Build task list
+    tasks = []
+    for book_key in sorted_books:
+        split = book_split[book_key]
+        for mli_path, rel in book_files[book_key]:
+            out_path = output_dir / split / rel.with_suffix(".pt")
+            tasks.append((str(mli_path), str(out_path)))
 
-        if max_items and len(tasks) >= max_items // 50:
-            break
-
-    logger.info(f"  {len(tasks)} files, {max_workers} workers")
+    train_books = sum(1 for v in book_split.values() if v == "train")
+    val_books = sum(1 for v in book_split.values() if v == "val")
+    test_books = sum(1 for v in book_split.values() if v == "test")
+    logger.info(
+        f"  {len(tasks)} files in {len(sorted_books)} books: "
+        f"train={train_books} val={val_books} test={test_books}")
+    logger.info(
+        f"  Target item ratios: {train_frac:.0%}/{val_frac:.0%}/{test_frac:.0%}")
 
     # ── Process in parallel ──────────────────────────────────────────────
     t0 = time.time()
@@ -350,8 +383,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--data-dir", required=True)
     p.add_argument("--output-dir", required=True)
-    p.add_argument("--train-frac", type=float, default=0.90)
-    p.add_argument("--val-frac", type=float, default=0.05)
+    p.add_argument("--train-frac", type=float, default=0.80)
+    p.add_argument("--val-frac", type=float, default=0.10)
     p.add_argument("--test-frac", type=float, default=0.05)
     p.add_argument("--max-workers", type=int, default=None)
     p.add_argument("--max-items", type=int, default=None)
