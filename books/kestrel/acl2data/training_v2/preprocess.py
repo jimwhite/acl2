@@ -42,37 +42,14 @@ logger = logging.getLogger(__name__)
 # Pass 1: vocab + global stats
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
-    """Stream all .mli in parallel: build vocab only (no graph construction).
-
-    Uses ThreadPoolExecutor for I/O-bound .mli reading.
-    Graph construction is skipped — global max_nodes is clamped to 512.
-    """
-    from threading import Lock
-    from concurrent.futures import ThreadPoolExecutor, as_completed
-
-    root = Path(data_dir)
-    file_paths = []
-    for mli_path in sorted(root.rglob("*.mli")):
-        rel = mli_path.relative_to(root)
-        if not _is_excluded(rel, exclude_dirs):
-            file_paths.append(mli_path)
-
-    token_to_id = {"<pad>": 0, "<sos>": 1, "<eos>": 2, "<unk>": 3}
+def _scan_worker(mli_paths):
+    """Scan a subset of .mli files — runs in a worker process."""
+    token_to_id = {}
     attr_to_id = {}
-    lock = Lock()
+    max_seq = 0
     count = 0
-    stopped = False
-    global_max_seq = 0
 
-    def scan_file(mli_path):
-        nonlocal count, stopped, global_max_seq
-        if stopped:
-            return
-        local_tokens = {}
-        local_attrs = {}
-        local_max_seq = 0
-        local_count = 0
+    for mli_path in mli_paths:
         try:
             with open(mli_path, "rb") as f:
                 for item in ijson.items(f, "item"):
@@ -86,42 +63,64 @@ def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
                     tgt = build_target_sequence(
                         {"output": {"action-type": at, "action-obj": ao_str}})
                     for tok in tgt:
-                        if tok not in local_tokens:
-                            local_tokens[tok] = None
-                    local_max_seq = max(local_max_seq, len(tgt))
-                    local_attrs[at] = None
-                    local_count += 1
+                        if tok not in token_to_id:
+                            token_to_id[tok] = None
+                    max_seq = max(max_seq, len(tgt))
+                    if at not in attr_to_id:
+                        attr_to_id[at] = None
+                    count += 1
         except Exception:
             pass
 
-        if local_count == 0:
-            return
+    return {"tokens": token_to_id, "attrs": attr_to_id,
+            "max_seq": max_seq, "count": count}
 
-        with lock:
-            nonlocal token_to_id, attr_to_id
-            next_tid = len(token_to_id)
-            for tok in local_tokens:
-                if tok not in token_to_id:
-                    token_to_id[tok] = next_tid
-                    next_tid += 1
-            for at in local_attrs:
-                if at not in attr_to_id:
-                    attr_to_id[at] = len(attr_to_id)
-            global_max_seq = max(global_max_seq, local_max_seq)
-            count += local_count
-            if max_items and count >= max_items:
-                stopped = True
 
-    workers = min(max_workers, max(1, len(file_paths)))
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(scan_file, p): p for p in file_paths}
+def scan_dataset(data_dir, exclude_dirs, max_items=None, max_workers=4):
+    """Parallel scan: split .mli files across processes, merge results.
+
+    Each process scans its own subset independently (no GIL contention).
+    Vocab + attr IDs are merged after all workers complete."""
+    root = Path(data_dir)
+    file_paths = []
+    for mli_path in sorted(root.rglob("*.mli")):
+        rel = mli_path.relative_to(root)
+        if not _is_excluded(rel, exclude_dirs):
+            file_paths.append(mli_path)
+
+    # Split files across workers
+    nw = min(max_workers, len(file_paths))
+    chunk_size = (len(file_paths) + nw - 1) // nw
+    chunks = [file_paths[i:i + chunk_size]
+              for i in range(0, len(file_paths), chunk_size)]
+
+    # Parallel scan
+    all_tokens = {}
+    all_attrs = {}
+    global_max_seq = 0
+    total_count = 0
+
+    with ProcessPoolExecutor(max_workers=nw) as pool:
+        futures = {pool.submit(_scan_worker, chunk): i
+                   for i, chunk in enumerate(chunks)}
         for future in as_completed(futures):
-            if stopped:
-                break
-            future.result()
+            result = future.result()
+            all_tokens.update(result["tokens"])
+            all_attrs.update(result["attrs"])
+            global_max_seq = max(global_max_seq, result["max_seq"])
+            total_count += result["count"]
 
-    # max_nodes: clamped per thesis (512). Pass 2 respects this.
-    logger.info(f"Scan: {count:,} items, max_seq={global_max_seq}")
+    # Assign global IDs
+    token_to_id = {"<pad>": 0, "<sos>": 1, "<eos>": 2, "<unk>": 3}
+    next_tid = 4
+    for tok in sorted(all_tokens):
+        if tok not in token_to_id:
+            token_to_id[tok] = next_tid
+            next_tid += 1
+
+    attr_to_id = {at: i for i, at in enumerate(sorted(all_attrs))}
+
+    logger.info(f"Scan: {total_count:,} items, max_seq={global_max_seq}")
     return token_to_id, attr_to_id, 512, min(global_max_seq, 256), 10
 
 
