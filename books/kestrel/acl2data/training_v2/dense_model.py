@@ -77,16 +77,18 @@ class DenseGGNN(nn.Module):
         h = self.layer_norms[0](h)
 
         for t in range(self.num_timesteps):
-            # Dense message passing — PLUR-style einsum
-            # edges: (B, E, N, N), kernels: (E, H, H), h: (B, N, H)
-            # → messages: (B, N, H)
-            #   messages[b,n,h] = sum_{e,m} edges[b,e,m,n] * (h[b,m] @ kernel[e])
-            messages = torch.einsum(
-                'bemv,ehi,bmh->bvi', edges, self.edge_kernels, h)
+            # Step 1: project h through per-edge-type kernels
+            # h: (B, N, H), edge_kernels: (E, H, H)
+            # → h_proj: (B, E, N, H)
+            h_proj = torch.einsum('bnh,ehi->beni', h, self.edge_kernels)
 
-            # Bias: sum over incoming edge counts per edge type
-            # incoming[b,v,e] = sum_{m} edges[b,e,m,v]
-            incoming = torch.einsum('bemv->bev', edges)  # (B, E, N)
+            # Step 2: edge-weighted sum over source nodes
+            # edges: (B, E, N, N), h_proj: (B, E, N, H)
+            # → messages: (B, N, H) = sum over edge_type + source node
+            messages = torch.einsum('benv,beni->bvi', edges, h_proj)
+
+            # Bias: weighted by incoming edge count per type
+            incoming = torch.einsum('benv->bev', edges)  # (B, E, N)
             bias = torch.einsum('bev,eh->bvh', incoming, self.edge_biases)
             messages = messages + bias
 
