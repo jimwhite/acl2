@@ -208,7 +208,7 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
                    test_frac=0.05, exclude_dirs=None, max_nodes=512,
                    max_workers=None, max_items=None):
     if max_workers is None:
-        max_workers = max(1, multiprocessing.cpu_count() // 2)
+        max_workers = max(4, multiprocessing.cpu_count() // 2)
 
     root = Path(data_dir)
     output_dir = Path(output_dir)
@@ -216,7 +216,7 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
         exclude_dirs = {"kestrel/helpers"}
 
     # ── Pass 1: global vocab ─────────────────────────────────────────────
-    logger.info("=== Pass 1: Building global vocabulary ===")
+    logger.info("=== Pass 1: Building global vocabulary (single-threaded) ===")
     t0 = time.time()
     token_to_id = build_global_vocab(data_dir, exclude_dirs,
                                      max_items=max_items)
@@ -228,7 +228,8 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
         f"({time.time()-t0:.1f}s)")
 
     # ── Scan files + assign splits ───────────────────────────────────────
-    logger.info("=== Pass 2: Preprocessing .mli → .pt ===")
+    logger.info("=== Pass 2: Preprocessing .mli → .pt (%d workers) ===",
+                 max_workers)
     tasks = []
 
     for mli_path in sorted(root.rglob("*.mli")):
@@ -251,7 +252,11 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
         out_path = output_dir / split / rel.with_suffix(".pt")
         tasks.append((str(mli_path), str(out_path)))
 
-    logger.info(f"  {len(tasks)} files ({max_workers} workers)")
+        # If max_items is set, limit files (~50 items/file avg)
+        if max_items and len(tasks) >= max_items // 50:
+            break
+
+    logger.info(f"  {len(tasks)} files, {max_workers} workers")
 
     # ── Process in parallel ──────────────────────────────────────────────
     t0 = time.time()
