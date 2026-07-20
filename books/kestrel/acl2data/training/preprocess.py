@@ -287,7 +287,7 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
         f"in {elapsed:.1f}m")
 
     # ── Manifest ────────────────────────────────────────────────────────
-    manifest = {}
+    manifest = {"train": [], "val": [], "test": []}
     for split_name in ("train", "val", "test"):
         split_dir = output_dir / split_name
         if split_dir.exists():

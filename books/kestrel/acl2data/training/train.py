@@ -416,15 +416,20 @@ def main():
             return [self.token_to_id.get(t, 3) for t in tokens]
     vocab = MinimalVocab()
     logger.info(
-        f"  Manifest: train={len(manifest['train'])} val={len(manifest['val'])}"
-        f" test={len(manifest['test'])} files, vocab={vocab_size}")
+        f"  Manifest: train={len(manifest.get('train',[]))} "
+        f"val={len(manifest.get('val',[]))} "
+        f"test={len(manifest.get('test',[]))} files, vocab={vocab_size}")
 
     # ── Create datasets from preprocessed .pt files ──────────────────────
     logger.info("Creating preprocessed datasets...")
     train_dataset = PreprocessedDataset(
-        manifest["train"], preproc_dir, max_items=args.max_items)
+        manifest.get("train", []), preproc_dir, max_items=args.max_items)
+    val_files = manifest.get("val", [])
+    if not val_files:
+        logger.warning("  No validation split — using test files for eval.")
+        val_files = manifest.get("test", [])
     val_dataset = PreprocessedDataset(
-        manifest["val"], preproc_dir, max_items=args.max_items)
+        val_files, preproc_dir, max_items=args.max_items)
 
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size,
