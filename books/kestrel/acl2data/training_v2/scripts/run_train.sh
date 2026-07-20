@@ -47,7 +47,7 @@ python training_v2/train.py \
     --num-workers 8 \
     --valid-steps 5000 \
     --log-steps 1000 \
-    --checkpoint-steps 50000
+    --checkpoint-steps 10000
 
 echo ""
 echo "=== Training complete ==="
