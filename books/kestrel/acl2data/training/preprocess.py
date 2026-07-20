@@ -150,49 +150,32 @@ def _process_one_file(args):
     if not items:
         return mli_path_str, 0
 
-    # Collate into batched tensors
+    # Save items individually — no batching in preprocessing.
+    # Training collate will handle batching.
     n_items = len(items)
-    max_n = max(it["graph"]["num_nodes"] for it in items)
-    max_s = max(len(it["tgt_ids"]) for it in items)
 
-    all_nt, all_st = [], []
-    all_ei0, all_ei1, all_et = [], [], []
-    all_nn, all_tgt, all_at, all_ao, all_cm = [], [], [], [], []
-    off = 0
-
+    # Build tensors per item
+    packed = []
     for it in items:
         g = it["graph"]
         n = g["num_nodes"]
-        all_nt.extend(_nt(nt) for nt in g["node_types"])
-        all_st.extend(g["subtoken_ids"])
-        all_ei0.extend(e + off for e in g["edge_index"][0])
-        all_ei1.extend(e + off for e in g["edge_index"][1])
-        all_et.extend(g["edge_types"])
-        all_nn.append(n)
-        off += n
 
-        t = it["tgt_ids"][:max_s]
-        all_tgt.append(t + [0] * (max_s - len(t)))
-        all_at.append(it["action_type"])
-        all_ao.append(it["action_obj"])
-        cm = [1 if nt == "token" else 0 for nt in g["node_types"]]
-        all_cm.append(cm + [0] * (max_n - len(cm)))
+        packed.append({
+            "node_types": torch.tensor(
+                [_nt(nt) for nt in g["node_types"]], dtype=torch.long),
+            "subtoken_ids": torch.tensor(g["subtoken_ids"], dtype=torch.long),
+            "edge_index": torch.tensor(g["edge_index"], dtype=torch.long),
+            "edge_types": torch.tensor(g["edge_types"], dtype=torch.long),
+            "num_nodes": n,
+            "tgt_ids": torch.tensor(it["tgt_ids"], dtype=torch.long),
+            "action_type": it["action_type"],
+            "action_obj": it["action_obj"],
+            "copy_mask": torch.tensor(
+                [1 if nt == "token" else 0 for nt in g["node_types"]],
+                dtype=torch.bool),
+        })
 
-    data = {
-        "node_types": torch.tensor(all_nt, dtype=torch.long),
-        "subtoken_ids": torch.tensor(all_st, dtype=torch.long),
-        "edge_index": torch.tensor([all_ei0, all_ei1], dtype=torch.long),
-        "edge_types": torch.tensor(all_et, dtype=torch.long),
-        "num_nodes": all_nn,
-        "tgt_ids": torch.tensor(all_tgt, dtype=torch.long),
-        "action_types": all_at,
-        "action_objs": all_ao,
-        "copy_masks": torch.tensor(all_cm, dtype=torch.bool),
-        "max_nodes": max_n,
-        "max_seq_len": max_s,
-        "n_items": n_items,
-    }
-    torch.save(data, output_path)
+    torch.save({"items": packed, "n_items": n_items}, output_path)
     return mli_path_str, n_items
 
 

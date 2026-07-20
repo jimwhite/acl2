@@ -62,71 +62,53 @@ DEFAULT_EVAL_FRAC = 0.05
 
 
 def collate_graphs(batch):
-    """Collate pre-built items into flat batched tensors.
-
-    Each item has individual tensors extracted from a .pt file.
-    We rebuild the flat layout (all node_types concatenated, etc.)
-    needed by the GGNN encoder.  Nodes are padded to max_n per item
-    so the decoder can reshape total_nodes → (B, max_n, H)."""
+    """Standard collate: merge individual item dicts into flat batched tensors."""
     max_n = max(b["num_nodes"] for b in batch)
     max_s = max(len(b["tgt_ids"]) for b in batch)
     B = len(batch)
 
     all_nt = []
     all_st = []
-    all_ei0 = []
-    all_ei1 = []
-    all_et = []
-    num_nodes = []
-    tgt_padded = []
-    all_at = []
-    all_ao = []
-    copy_masks = []
+    all_ei0, all_ei1, all_et = [], [], []
+    all_nn = []
+    all_tgt = []
+    all_at, all_ao, all_cm = [], [], []
+    off = 0
 
-    for i, b in enumerate(batch):
+    for b in batch:
         nn = b["num_nodes"]
-        num_nodes.append(nn)
-        node_offset = i * max_n
+        all_nn.append(nn)
 
-        # Node data — pad to max_n
-        nt_list = b["node_types"].tolist()
-        st_list = b["subtoken_ids"].tolist()
-        all_nt.extend(nt_list + [0] * (max_n - nn))
-        all_st.extend(st_list + [-1] * (max_n - nn))
+        # Pad node data to max_n
+        nt = b["node_types"].tolist()
+        st = b["subtoken_ids"].tolist()
+        all_nt.extend(nt + [0] * (max_n - nn))
+        all_st.extend(st + [-1] * (max_n - nn))
 
-        # Edge data — filter to this item, offset by node_offset
-        item_start = b["item_start_node"]
-        item_end = item_start + nn
-        ei = b["all_edge_index"]
-        et = b["all_edge_types"]
+        # Offset edge indices
+        ei = b["edge_index"]
+        all_ei0.extend((ei[0] + off).tolist())
+        all_ei1.extend((ei[1] + off).tolist())
+        all_et.extend(b["edge_types"].tolist())
+        off += max_n
 
-        for e in range(ei.size(1)):
-            src = ei[0, e].item()
-            dst = ei[1, e].item()
-            if item_start <= src < item_end and item_start <= dst < item_end:
-                all_ei0.append(src - item_start + node_offset)
-                all_ei1.append(dst - item_start + node_offset)
-                all_et.append(et[e].item())
-
-        # Target
+        # Pad target
         t = b["tgt_ids"].tolist()
-        tgt_padded.append(t + [0] * (max_s - len(t)))
+        all_tgt.append(t + [0] * (max_s - len(t)))
 
         all_at.append(b["action_type"])
         all_ao.append(b["action_obj"])
-
-        # Copy mask: TOKEN nodes can be copied
-        cm = [1 if nt == 0 else 0 for nt in nt_list]
-        copy_masks.append(cm + [0] * (max_n - len(cm)))
+        cm = b["copy_mask"].tolist()
+        all_cm.append(cm + [0] * (max_n - len(cm)))
 
     return {
         "node_types": torch.tensor(all_nt, dtype=torch.long),
         "subtoken_ids": torch.tensor(all_st, dtype=torch.long),
         "edge_index": torch.tensor([all_ei0, all_ei1], dtype=torch.long),
         "edge_types": torch.tensor(all_et, dtype=torch.long),
-        "num_nodes": num_nodes,
-        "tgt_tokens": torch.tensor(tgt_padded, dtype=torch.long),
-        "copy_mask": torch.tensor(copy_masks, dtype=torch.bool),
+        "num_nodes": all_nn,
+        "tgt_tokens": torch.tensor(all_tgt, dtype=torch.long),
+        "copy_mask": torch.tensor(all_cm, dtype=torch.bool),
         "action_types": all_at,
         "action_objs": all_ao,
     }
@@ -137,27 +119,18 @@ def collate_graphs(batch):
 class PreprocessedDataset(torch.utils.data.IterableDataset):
     """IterableDataset over pre-built .pt files.
 
-    Loads batched tensors with torch.load (fast binary I/O).
-    No graph construction, no ijson — pure tensor loading.
-    Shuffles file order each epoch; splits files across workers.
-    """
+    Each .pt file contains `{"items": [item1, item2, ...]}` where each item
+    is a dict with its own graph tensors (node_types, edge_index, etc.).
+    Yields individual items — collate handles batching."""
 
     def __init__(self, file_list, output_dir, max_items=None):
-        self.file_list = file_list     # relative paths from manifest
+        self.file_list = list(file_list)
         self.output_dir = Path(output_dir)
         self.max_items = max_items
 
     def __iter__(self):
         worker_info = torch.utils.data.get_worker_info()
-        if worker_info is None:
-            files = list(self.file_list)
-        else:
-            per_worker = len(self.file_list) // worker_info.num_workers
-            start = worker_info.id * per_worker
-            end = (start + per_worker
-                   if worker_info.id < worker_info.num_workers - 1
-                   else len(self.file_list))
-            files = list(self.file_list[start:end])
+        files = self._split_files(worker_info)
 
         rng = np.random.RandomState()
         rng.shuffle(files)
@@ -169,42 +142,19 @@ class PreprocessedDataset(torch.utils.data.IterableDataset):
                 data = torch.load(pt_path, weights_only=True)
             except Exception:
                 continue
-
-            n_items = data["n_items"]
-            for i in range(n_items):
-                # Extract single item from the batched file
-                nn = data["num_nodes"][i]
-                seq_len = 0
-                tgt = data["tgt_ids"][i]
-                # Find actual seq len (trim trailing zeros beyond EOS)
-                for s in range(len(tgt)):
-                    if tgt[s].item() == 2:  # <eos>
-                        seq_len = s + 1
-                        break
-                if seq_len == 0:
-                    seq_len = len(tgt)
-
-                # Find node slice for this item
-                start_node = sum(data["num_nodes"][:i])
-                end_node = start_node + nn
-
-                yield {
-                    "node_types": data["node_types"][start_node:end_node],
-                    "subtoken_ids": data["subtoken_ids"][start_node:end_node],
-                    "num_nodes": nn,
-                    "tgt_ids": tgt[:seq_len],
-                    "action_type": data["action_types"][i],
-                    "action_obj": data["action_objs"][i],
-                    # We'll build edge index + copy mask in collate
-                    "all_edge_index": data["edge_index"],
-                    "all_edge_types": data["edge_types"],
-                    "item_start_node": start_node,
-                    "all_num_nodes": data["num_nodes"],
-                }
-
+            for item in data["items"]:
+                yield item
                 count += 1
                 if self.max_items and count >= self.max_items:
                     return
+
+    def _split_files(self, worker_info):
+        if worker_info is None:
+            return list(self.file_list)
+        per = len(self.file_list) // worker_info.num_workers
+        start = worker_info.id * per
+        end = start + per if worker_info.id < worker_info.num_workers - 1 else len(self.file_list)
+        return list(self.file_list[start:end])
 
 
 # ── training loop ────────────────────────────────────────────────────────────
