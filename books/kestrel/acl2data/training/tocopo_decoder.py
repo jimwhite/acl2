@@ -69,23 +69,18 @@ class TocopoDecoder(nn.Module):
         self.dropout = dropout
 
     def forward(self, encoder_output, tgt_tokens, copy_candidates_mask,
-                edge_index=None, encoder_node_labels=None):
+                edge_index=None, encoder_node_labels=None,
+                src_key_padding_mask=None):
         """
         Args:
-            encoder_output: (total_nodes, hidden_dim) from GGNN
+            encoder_output: (batch, max_nodes, hidden_dim) — padded uniform
             tgt_tokens: (batch, seq_len) token ids (shifted right)
-            copy_candidates_mask: (batch, total_nodes) mask of copyable nodes
-            edge_index: not used, for interface consistency
-            encoder_node_labels: (total_nodes) subtoken ids for copying
-
-        Returns:
-            dict with:
-              - token_logits: (batch, seq_len, vocab_size)
-              - copy_logits: (batch, seq_len, 1)
-              - pointer_logits: (batch, seq_len, total_nodes) or None
+            copy_candidates_mask: (batch, max_nodes) bool, True=copyable
+            src_key_padding_mask: (batch, max_nodes) bool, True=ignore
         """
         batch_size, seq_len = tgt_tokens.shape
         device = tgt_tokens.device
+        memory = encoder_output  # already (B, N, H)
 
         # Token + positional embedding
         tok_emb = self.token_embed(tgt_tokens)  # (B, S, H)
@@ -95,35 +90,23 @@ class TocopoDecoder(nn.Module):
         tgt_emb = F.dropout(tgt_emb, p=self.dropout, training=self.training)
 
         # Causal mask (no look-ahead)
-        causal_mask = torch.triu(
-            torch.ones(seq_len, seq_len, device=device) * float("-inf"),
-            diagonal=1)
+        causal_mask = nn.Transformer.generate_square_subsequent_mask(
+            seq_len, device=device)
 
-        # Pad encoder output for batched attention
-        # We need (B, N, H) for encoder memory
-        # But we have (total_nodes, H). We need to handle varying graphs.
-        # For simplicity, we use a fixed max_nodes approach:
-
-        # Reshape encoder to (B, N_max, H)
-        # We assume encoder_output is already padded to max_nodes
-        max_nodes = encoder_output.size(0) // batch_size
-        memory = encoder_output.view(batch_size, max_nodes, self.hidden_dim)
-
-        # Decoder transformer
+        # Decoder transformer — memory_key_padding_mask ignores dummy nodes
         decoded = self.transformer(
             tgt_emb, memory,
             tgt_mask=causal_mask,
-            tgt_key_padding_mask=None,
+            memory_key_padding_mask=src_key_padding_mask,
         )  # (B, S, H)
 
         # Token logits
         token_logits = self.token_head(decoded)  # (B, S, V)
 
-        # Copy logits (binary probability)
+        # Copy logits
         copy_logits = self.copy_head(decoded)  # (B, S, 1)
 
-        # Pointer logits: attention over all input nodes
-        # Score each node against the decoded representation
+        # Pointer logits: attention over input nodes
         pointer_flat = self.pointer_head(decoded)  # (B, S, H)
         pointer_logits = torch.bmm(
             pointer_flat,
@@ -131,7 +114,7 @@ class TocopoDecoder(nn.Module):
 
         # Mask non-copyable nodes
         if copy_candidates_mask is not None:
-            cm = copy_candidates_mask.view(batch_size, 1, max_nodes)
+            cm = copy_candidates_mask.unsqueeze(1)  # (B, 1, N)
             pointer_logits = pointer_logits.masked_fill(
                 cm == 0, float("-inf"))
 

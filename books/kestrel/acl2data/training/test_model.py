@@ -104,11 +104,9 @@ def test_tocopo_decoder():
     dec = TocopoDecoder(
         hidden_dim=64, vocab_size=100, num_heads=4, num_layers=2)
 
-    # encoder output: flat (total_nodes, dim) = (5, 64) — what GGNN produces
-    enc = torch.randn(5, 64)
-    # tgt_tokens: batch=1, seq_len=5
+    # encoder output: padded (B, N, H) = (1, 5, 64)
+    enc = torch.randn(1, 5, 64)
     tgt = torch.tensor([[1, 4, 5, 6, 2]])
-    # copy_mask: batch=1, max_nodes=5
     cm = torch.ones(1, 5, dtype=torch.bool)
 
     with torch.no_grad():

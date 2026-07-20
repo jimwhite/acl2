@@ -98,35 +98,53 @@ class Graph2Tocopo(nn.Module):
                 - copy_logits: (B, S, 1)
                 - pointer_logits: (B, S, max_nodes)
         """
-        # Encode
+        # ── Encode (GGNN on real nodes only, no padding waste) ───────────
         node_embeddings = self.encoder(
             batch["node_types"],
             batch["subtoken_ids"],
             batch["edge_index"],
             batch["edge_types"],
             batch["num_nodes"],
-        )
+        )  # (total_nodes, H) — no padding
 
-        # Decode
+        # ── Pad ONLY for decoder ─────────────────────────────────────────
+        num_nodes = batch["num_nodes"]
+        B = len(num_nodes)
+        max_n = max(num_nodes)
+        H = node_embeddings.size(-1)
+
+        # Split flat embeddings by graph, pad each to max_n
+        padded_emb = node_embeddings.new_zeros(B, max_n, H)
+        src_padding_mask = torch.ones(B, max_n, dtype=torch.bool,
+                                       device=node_embeddings.device)
+        copy_mask_padded = torch.zeros(B, max_n, dtype=torch.bool,
+                                        device=node_embeddings.device)
+        # ── Get copy masks (handle both old single-tensor and new list format)
+        raw_cm = batch.get("copy_masks", batch.get("copy_mask"))
+        if isinstance(raw_cm, torch.Tensor):
+            # Old format: single (B, N) tensor — split into list
+            raw_cm = [raw_cm[i] for i in range(raw_cm.size(0))]
+
+        start = 0
+        for i, n in enumerate(num_nodes):
+            padded_emb[i, :n] = node_embeddings[start:start + n]
+            src_padding_mask[i, :n] = False
+            cm = raw_cm[i]
+            copy_mask_padded[i, :len(cm)] = cm
+            start += n
+
+        # Decode with padding mask so transformer ignores dummy nodes
         decoder_out = self.decoder(
-            node_embeddings,
+            padded_emb,
             batch["tgt_tokens"],
-            batch["copy_mask"],
+            copy_mask_padded,
+            src_key_padding_mask=src_padding_mask,
         )
 
         return decoder_out
 
     def generate(self, batch, temperature=1.0, max_len=None):
-        """Generate a fix recommendation from a single example.
-
-        Args:
-            batch: dict with graph data (batch_size=1)
-            temperature: sampling temperature
-            max_len: max output length
-
-        Returns:
-            list of (token_id, is_copy, copy_node_idx)
-        """
+        """Generate a fix recommendation from a single example."""
         device = next(self.parameters()).device
 
         node_embeddings = self.encoder(
@@ -135,15 +153,20 @@ class Graph2Tocopo(nn.Module):
             batch["edge_index"],
             batch["edge_types"],
             batch["num_nodes"],
-        )
+        )  # (N, H) — no padding for single example
 
-        # Reshape to (1, N, H)
-        max_nodes = node_embeddings.size(0)
         memory = node_embeddings.unsqueeze(0)  # (1, N, H)
-        copy_mask = batch["copy_mask"].unsqueeze(0)  # (1, N)
+        # copy_mask: handle both old (copy_mask) and new (copy_masks list) formats
+        if "copy_masks" in batch and isinstance(batch["copy_masks"], list):
+            cm = batch["copy_masks"][0].unsqueeze(0)
+        elif "copy_mask" in batch:
+            cm = batch["copy_mask"].unsqueeze(0)
+        else:
+            cm = torch.ones(1, node_embeddings.size(0), dtype=torch.bool,
+                           device=device)
 
         return self.decoder.generate(
-            memory, copy_mask,
+            memory, cm,
             temperature=temperature, max_len=max_len,
         )
 

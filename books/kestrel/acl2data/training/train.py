@@ -62,10 +62,12 @@ DEFAULT_EVAL_FRAC = 0.05
 
 
 def collate_graphs(batch):
-    """Standard collate: merge individual item dicts into flat batched tensors."""
-    max_n = max(b["num_nodes"] for b in batch)
+    """Collate: concatenate without padding (PyG diagonal-stacking pattern).
+
+    Node data is flat-concatenated.  Edge indices are offset.  num_nodes list
+    tracks per-graph sizes.  Padding happens only for the decoder, AFTER the
+    GGNN encoder — so the expensive message passing skips dummy nodes."""
     max_s = max(len(b["tgt_ids"]) for b in batch)
-    B = len(batch)
 
     all_nt = []
     all_st = []
@@ -79,27 +81,24 @@ def collate_graphs(batch):
         nn = b["num_nodes"]
         all_nn.append(nn)
 
-        # Pad node data to max_n
-        nt = b["node_types"].tolist()
-        st = b["subtoken_ids"].tolist()
-        all_nt.extend(nt + [0] * (max_n - nn))
-        all_st.extend(st + [-1] * (max_n - nn))
+        # Concatenate without padding — GGNN only processes real nodes
+        all_nt.extend(b["node_types"].tolist())
+        all_st.extend(b["subtoken_ids"].tolist())
 
-        # Offset edge indices
+        # Offset edge indices by cumulative node count
         ei = b["edge_index"]
         all_ei0.extend((ei[0] + off).tolist())
         all_ei1.extend((ei[1] + off).tolist())
         all_et.extend(b["edge_types"].tolist())
-        off += max_n
+        off += nn
 
-        # Pad target
+        # Pad target sequences to uniform length
         t = b["tgt_ids"].tolist()
         all_tgt.append(t + [0] * (max_s - len(t)))
 
         all_at.append(b["action_type"])
         all_ao.append(b["action_obj"])
-        cm = b["copy_mask"].tolist()
-        all_cm.append(cm + [0] * (max_n - len(cm)))
+        all_cm.append(b["copy_mask"])  # vary-size, padded later
 
     return {
         "node_types": torch.tensor(all_nt, dtype=torch.long),
@@ -108,7 +107,7 @@ def collate_graphs(batch):
         "edge_types": torch.tensor(all_et, dtype=torch.long),
         "num_nodes": all_nn,
         "tgt_tokens": torch.tensor(all_tgt, dtype=torch.long),
-        "copy_mask": torch.tensor(all_cm, dtype=torch.bool),
+        "copy_masks": all_cm,  # list of 1D tensors
         "action_types": all_at,
         "action_objs": all_ao,
     }
