@@ -300,17 +300,30 @@ def main():
             model.eval()
             val_loss = 0.0
             val_count = 0
+            correct_tok = 0
+            total_tok = 0
             with torch.no_grad():
                 for val_batch in val_loader:
                     val_batch = {k: v.to(device) if isinstance(v, torch.Tensor) else v
                                  for k, v in val_batch.items()}
                     vd = model(val_batch)
-                    val_loss += compute_loss(vd, val_batch["tgt_ids"][:, 1:]).item()
+                    tgt_out = val_batch["tgt_ids"][:, 1:]
+                    val_loss += compute_loss(vd, tgt_out).item()
                     val_count += 1
-                    if val_count >= 50:  # PLUR: max 50 validation batches
+
+                    # Token accuracy
+                    preds = vd["token_logits"].argmax(dim=-1)
+                    mask = tgt_out != 0
+                    correct_tok += (preds[mask] == tgt_out[mask]).sum().item()
+                    total_tok += mask.sum().item()
+
+                    if val_count >= 50:
                         break
             val_loss /= max(val_count, 1)
-            logger.info(f"  val_step={global_step} val_loss={val_loss:.4f}")
+            tok_acc = correct_tok / max(total_tok, 1)
+
+            logger.info(f"  val_step={global_step} val_loss={val_loss:.4f} "
+                         f"tok_acc={tok_acc:.4f}")
             if val_loss < best_loss:
                 best_loss = val_loss
                 torch.save({
