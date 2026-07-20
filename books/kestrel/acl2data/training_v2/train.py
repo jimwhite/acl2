@@ -96,20 +96,17 @@ class FixedDataset(Dataset):
             "subtoken_ids": self.subtoken_ids[idx],
             "edges": dense,
             "tgt_ids": self.tgt_ids[idx],
-            "action_type": self.action_types[idx],
             "copy_mask": self.copy_mask[idx],
-            "num_nodes": (self.node_types[idx] != 0).sum().item(),
         }
 
 
 def collate_fixed(batch):
-    """Stack + remove num_nodes (not needed for dense GGNN)."""
+    """Stack tensors (all items same shape).  model ignores action_type."""
     return {
         "node_types": torch.stack([b["node_types"] for b in batch]),
         "subtoken_ids": torch.stack([b["subtoken_ids"] for b in batch]),
         "edges": torch.stack([b["edges"] for b in batch]),
         "tgt_ids": torch.stack([b["tgt_ids"] for b in batch]),
-        "action_types": torch.stack([b["action_types"] for b in batch]),
         "copy_mask": torch.stack([b["copy_mask"] for b in batch]),
     }
 
