@@ -193,7 +193,8 @@ def _process_one_file(args):
         et_all.extend(graph["edge_types"])
         edge_counts[i] = len(graph["edge_types"])
 
-        tgt[i, :len(tgt_ids)] = torch.tensor(tgt_ids, dtype=torch.long)
+        tgt[i, :len(tgt_ids)] = torch.tensor(
+            tgt_ids[:max_s], dtype=torch.long)
         at_ids[i] = attr_vocab.get(at, 0)
         token_mask = [1 if nt == "token" else 0 for nt in graph["node_types"]]
         cm[i, :nn] = torch.tensor(token_mask, dtype=torch.bool)
