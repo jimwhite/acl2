@@ -66,7 +66,8 @@ def collate_graphs(batch):
 
     Each item has individual tensors extracted from a .pt file.
     We rebuild the flat layout (all node_types concatenated, etc.)
-    needed by the GGNN encoder."""
+    needed by the GGNN encoder.  Nodes are padded to max_n per item
+    so the decoder can reshape total_nodes → (B, max_n, H)."""
     max_n = max(b["num_nodes"] for b in batch)
     max_s = max(len(b["tgt_ids"]) for b in batch)
     B = len(batch)
@@ -81,18 +82,19 @@ def collate_graphs(batch):
     all_at = []
     all_ao = []
     copy_masks = []
-    node_offset = 0
 
-    for b in batch:
+    for i, b in enumerate(batch):
         nn = b["num_nodes"]
         num_nodes.append(nn)
+        node_offset = i * max_n
 
-        # Node data — already contiguous slices
-        all_nt.extend(b["node_types"].tolist())
-        all_st.extend(b["subtoken_ids"].tolist())
+        # Node data — pad to max_n
+        nt_list = b["node_types"].tolist()
+        st_list = b["subtoken_ids"].tolist()
+        all_nt.extend(nt_list + [0] * (max_n - nn))
+        all_st.extend(st_list + [-1] * (max_n - nn))
 
-        # Edge data — need to find edges for this item within the file's batch
-        # Filter edges belonging to this item (based on node range in file)
+        # Edge data — filter to this item, offset by node_offset
         item_start = b["item_start_node"]
         item_end = item_start + nn
         ei = b["all_edge_index"]
@@ -106,8 +108,6 @@ def collate_graphs(batch):
                 all_ei1.append(dst - item_start + node_offset)
                 all_et.append(et[e].item())
 
-        node_offset += nn
-
         # Target
         t = b["tgt_ids"].tolist()
         tgt_padded.append(t + [0] * (max_s - len(t)))
@@ -116,7 +116,7 @@ def collate_graphs(batch):
         all_ao.append(b["action_obj"])
 
         # Copy mask: TOKEN nodes can be copied
-        cm = [1 if nt == 0 else 0 for nt in b["node_types"].tolist()]
+        cm = [1 if nt == 0 else 0 for nt in nt_list]
         copy_masks.append(cm + [0] * (max_n - len(cm)))
 
     return {
