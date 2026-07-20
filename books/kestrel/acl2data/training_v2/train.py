@@ -131,6 +131,8 @@ def main():
     p.add_argument("--log-steps", type=int, default=1000)
     p.add_argument("--checkpoint-steps", type=int, default=10000)
     p.add_argument("--max-items", type=int, default=None)
+    p.add_argument("--resume", default=None,
+                   help="Resume from checkpoint path (auto-detect if not set)")
     p.add_argument("--log-level", default="INFO")
     args = p.parse_args()
 
@@ -211,9 +213,34 @@ def main():
     warmup_steps = int(args.steps * args.warmup_frac)
     base_lr = args.lr
 
-    # Training loop (PLUR-style: fixed steps, n
+    # ── Resume / auto-resume ────────────────────────────────────────────
     global_step = 0
     best_loss = float("inf")
+
+    resume_path = args.resume
+    if resume_path is None:
+        ckpts = sorted(out_dir.glob("checkpoint_step*.pt"))
+        if ckpts:
+            resume_path = str(ckpts[-1])
+            logger.info(f"Auto-resuming from {resume_path}")
+
+    if resume_path and Path(resume_path).exists():
+        logger.info(f"Loading checkpoint: {resume_path}")
+        ckpt = torch.load(resume_path, map_location=device, weights_only=False)
+        model.load_state_dict(ckpt["model_state"])
+        optimizer.load_state_dict(ckpt["optimizer_state"])
+        for pg_state in optimizer.state.values():
+            for k, v in pg_state.items():
+                if isinstance(v, torch.Tensor):
+                    pg_state[k] = v.to(device)
+        global_step = ckpt.get("step", 0)
+        best_loss = ckpt.get("val_loss", float("inf"))
+        logger.info(f"  Resumed from step {global_step}, "
+                     f"best_loss={best_loss:.4f}")
+
+    if global_step >= args.steps:
+        logger.info("All steps already completed.  Done.")
+        return
     pbar = tqdm(total=args.steps, desc="Training")
 
     model.train()
