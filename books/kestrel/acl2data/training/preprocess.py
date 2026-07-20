@@ -206,7 +206,7 @@ def _nt(nt: str) -> int:
 
 def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
                    test_frac=0.05, exclude_dirs=None, max_nodes=512,
-                   max_workers=None):
+                   max_workers=None, max_items=None):
     if max_workers is None:
         max_workers = max(1, multiprocessing.cpu_count() // 2)
 
@@ -218,7 +218,8 @@ def run_preprocess(data_dir, output_dir, train_frac=0.90, val_frac=0.05,
     # ── Pass 1: global vocab ─────────────────────────────────────────────
     logger.info("=== Pass 1: Building global vocabulary ===")
     t0 = time.time()
-    token_to_id = build_global_vocab(data_dir, exclude_dirs)
+    token_to_id = build_global_vocab(data_dir, exclude_dirs,
+                                     max_items=max_items)
     vocab_path = output_dir / "vocab.json"
     output_dir.mkdir(parents=True, exist_ok=True)
     json.dump({"token_to_id": token_to_id}, vocab_path)
@@ -308,6 +309,8 @@ def main():
     p.add_argument("--test-frac", type=float, default=0.05)
     p.add_argument("--max-nodes", type=int, default=512)
     p.add_argument("--max-workers", type=int, default=None)
+    p.add_argument("--max-items", type=int, default=None,
+                   help="Max items (for smoke testing)")
     p.add_argument("--exclude", nargs="*", default=["kestrel/helpers"])
     p.add_argument("--log-level", default="INFO")
     args = p.parse_args()
@@ -327,48 +330,7 @@ def main():
         exclude_dirs=set(args.exclude),
         max_nodes=args.max_nodes,
         max_workers=args.max_workers,
-    )
-
-
-if __name__ == "__main__":
-    main()
-
-
-def main():
-    p = argparse.ArgumentParser(
-        description="Preprocess .mli files into graph tensors")
-    p.add_argument("--data-dir", required=True,
-                   help="Root .mli directory")
-    p.add_argument("--output-dir", required=True,
-                   help="Output directory for .pt files")
-    p.add_argument("--train-frac", type=float, default=0.90)
-    p.add_argument("--val-frac", type=float, default=0.05)
-    p.add_argument("--test-frac", type=float, default=0.05)
-    p.add_argument("--max-nodes", type=int, default=512)
-    p.add_argument("--max-workers", type=int, default=None)
-    p.add_argument("--exclude", nargs="*", default=["kestrel/helpers"])
-    p.add_argument("--log-level", default="INFO")
-    args = p.parse_args()
-
-    logging.basicConfig(
-        level=getattr(logging, args.log_level),
-        format="%(asctime)s [%(levelname)s] %(message)s",
-        datefmt="%H:%M:%S")
-
-    assert abs(args.train_frac + args.val_frac + args.test_frac - 1.0) < 0.01, \
-        "train/val/test fractions must sum to 1.0"
-
-    output_dir = Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    build_split(
-        args.data_dir, output_dir,
-        train_frac=args.train_frac,
-        val_frac=args.val_frac,
-        test_frac=args.test_frac,
-        exclude_dirs=set(args.exclude),
-        max_nodes=args.max_nodes,
-        max_workers=args.max_workers,
+        max_items=args.max_items,
     )
 
 

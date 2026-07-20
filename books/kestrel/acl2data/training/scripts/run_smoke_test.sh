@@ -34,6 +34,7 @@ echo "3. Preprocessing 10K items..."
 python training/preprocess.py \
     --data-dir "$MLI_DIR" \
     --output-dir "$PREPROC_DIR" \
+    --max-items 10000 \
     --max-workers 4
 
 echo ""
