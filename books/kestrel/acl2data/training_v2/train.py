@@ -117,6 +117,7 @@ class FixedDataset(Dataset):
                     "edges": dense,
                     "tgt_ids": data["tgt_ids"][i],
                     "copy_mask": data["copy_mask"][i],
+                    "action_type": data["action_types"][i].item(),
                 }
         raise IndexError(f"Index {idx} out of range ({self._total})")
 
