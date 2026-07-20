@@ -21,10 +21,10 @@ echo "Preproc dir:  $PREPROC_DIR"
 echo "Output dir:   $OUTPUT_DIR"
 echo ""
 
-source training/.venv/bin/activate
+# source training/.venv/bin/activate
 
 echo "1. Installing package..."
-uv pip install -q -e training/
+# uv pip install -q -e training/
 
 echo "2. Running unit tests..."
 python training/test_model.py
@@ -35,7 +35,7 @@ python training/preprocess.py \
     --data-dir "$MLI_DIR" \
     --output-dir "$PREPROC_DIR" \
     --max-items 10000 \
-    --max-workers 4
+    --max-workers 20
 
 echo ""
 echo "4. Training 3 epochs..."
@@ -46,7 +46,7 @@ python training/train.py \
     --epochs 3 \
     --batch-size 8 \
     --hidden-dim 256 \
-    --num-workers 4
+    --num-workers 20
 
 echo ""
 echo "=== Smoke test complete ==="

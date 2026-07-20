@@ -330,6 +330,7 @@ def main():
         device = torch.device("mps")
     else:
         device = torch.device("cpu")
+    # device = torch.device("cpu")
     logger.info(f"Using device: {device}")
 
     out_dir = Path(args.output_dir)
@@ -383,12 +384,12 @@ def main():
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size,
         collate_fn=collate_graphs, num_workers=args.num_workers,
-        pin_memory=(device.type != "mps"))
+        pin_memory=(device.type == "cuda"))
 
     val_loader = DataLoader(
         val_dataset, batch_size=args.batch_size,
         collate_fn=collate_graphs, num_workers=0,
-        pin_memory=(device.type != "mps"))
+        pin_memory=(device.type == "cuda"))
 
     # Determine num_edge_types from first batch
     first_batch = next(iter(train_loader))
