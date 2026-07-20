@@ -51,53 +51,74 @@ def compute_loss(dec_out, tgt_out, pad_idx=0):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class FixedDataset(Dataset):
-    """Map-style Dataset over globally-padded .pt files.
+    """Map-style Dataset over globally-padded .pt files.  Lazy load.
 
-    Edges are stored sparsely per-file.  __getitem__ builds a dense
-    (E, N, N) adjacency for the single item — small and fast."""
+    Builds an index at init (item counts per file).  __getitem__ loads
+    the needed .pt file on demand, caches the last one."""
 
     def __init__(self, file_list, preproc_dir, num_edge_types=10):
-        tensors = []
-        for rel_path in file_list:
-            data = torch.load(Path(preproc_dir) / rel_path,
-                              weights_only=True)
-            tensors.append(data)
-
-        self.node_types = torch.cat([t["node_types"] for t in tensors])
-        self.subtoken_ids = torch.cat([t["subtoken_ids"] for t in tensors])
-        self.tgt_ids = torch.cat([t["tgt_ids"] for t in tensors])
-        self.action_types = torch.cat([t["action_types"] for t in tensors])
-        self.copy_mask = torch.cat([t["copy_mask"] for t in tensors])
-        self.edge_counts = torch.cat([t["edge_counts"] for t in tensors])
-        self.edge_index = torch.cat(
-            [t["edge_index"] for t in tensors], dim=1)
-        self.edge_types = torch.cat([t["edge_types"] for t in tensors])
-
-        self.N = self.node_types.size(1)
+        self.preproc_dir = Path(preproc_dir)
         self.E = num_edge_types
+        self.N = None  # set on first load
+
+        # Build index: (file_path, n_items)
+        counts = []
+        for rel_path in file_list:
+            pt_path = self.preproc_dir / rel_path
+            # Quick peek: just read n_items from file header
+            try:
+                data = torch.load(pt_path, weights_only=True)
+                counts.append((pt_path, len(data["node_types"])))
+            except Exception:
+                continue
+
+        # Cumulative offsets for fast index lookup
+        self.index = []
+        self._total = 0
+        for pt_path, n in counts:
+            self.index.append((pt_path, n, self._total))
+            self._total += n
+
+        self._cache_path = None
+        self._cache_data = None
 
     def __len__(self):
-        return len(self.node_types)
+        return self._total
+
+    def _load_file(self, pt_path):
+        if self._cache_path != pt_path:
+            self._cache_data = torch.load(pt_path, weights_only=True)
+            self._cache_path = pt_path
+            self.N = self._cache_data["node_types"].size(1)
+        return self._cache_data
 
     def __getitem__(self, idx):
-        # Build dense edges for this one item (fast — just scatter)
-        start = self.edge_counts[:idx].sum().item()
-        count = self.edge_counts[idx].item()
-        dense = torch.zeros(self.E, self.N, self.N, dtype=torch.float32)
-        if count > 0:
-            ei = self.edge_index[:, start:start + count]
-            et = self.edge_types[start:start + count]
-            # Only include edges within N bounds
-            valid = (ei[0] < self.N) & (ei[1] < self.N)
-            dense[et[valid], ei[0, valid], ei[1, valid]] = 1.0
+        # Binary search to find which file contains this index
+        for pt_path, n, offset in self.index:
+            if idx < offset + n:
+                data = self._load_file(pt_path)
+                i = idx - offset
 
-        return {
-            "node_types": self.node_types[idx],
-            "subtoken_ids": self.subtoken_ids[idx],
-            "edges": dense,
-            "tgt_ids": self.tgt_ids[idx],
-            "copy_mask": self.copy_mask[idx],
-        }
+                # Build dense edges for this one item
+                start = data["edge_counts"][:i].sum().item()
+                count = data["edge_counts"][i].item()
+                dense = torch.zeros(self.E, self.N, self.N,
+                                     dtype=torch.float32)
+                if count > 0:
+                    ei = data["edge_index"][:, start:start + count]
+                    et = data["edge_types"][start:start + count]
+                    valid = (ei[0] < self.N) & (ei[1] < self.N)
+                    if valid.any():
+                        dense[et[valid], ei[0, valid], ei[1, valid]] = 1.0
+
+                return {
+                    "node_types": data["node_types"][i],
+                    "subtoken_ids": data["subtoken_ids"][i],
+                    "edges": dense,
+                    "tgt_ids": data["tgt_ids"][i],
+                    "copy_mask": data["copy_mask"][i],
+                }
+        raise IndexError(f"Index {idx} out of range ({self._total})")
 
 
 def collate_fixed(batch):
@@ -173,12 +194,7 @@ def main():
         manifest.get("train", []), preproc_dir,
         num_edge_types=num_edge_types)
     if args.max_items and len(train_ds) > args.max_items:
-        train_ds.node_types = train_ds.node_types[:args.max_items]
-        train_ds.subtoken_ids = train_ds.subtoken_ids[:args.max_items]
-        train_ds.edges = train_ds.edges[:args.max_items]
-        train_ds.tgt_ids = train_ds.tgt_ids[:args.max_items]
-        train_ds.action_types = train_ds.action_types[:args.max_items]
-        train_ds.copy_mask = train_ds.copy_mask[:args.max_items]
+        train_ds._total = args.max_items
 
     val_files = manifest.get("val", manifest.get("test", []))
     val_ds = FixedDataset(val_files, preproc_dir,
