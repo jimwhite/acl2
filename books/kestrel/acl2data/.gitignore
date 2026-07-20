@@ -16,10 +16,9 @@ models/
 *.pt
 *.bin
 
-# Data
-*.out
-*.mli
-*.tgz
+# Preprocessed data
+preprocessed/
+preprocessed_smoke/
 
 # IDE
 .vscode/

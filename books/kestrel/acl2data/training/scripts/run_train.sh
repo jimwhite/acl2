@@ -2,27 +2,25 @@
 # ──────────────────────────────────────────────────────────────────────────────
 # Graph2Tocopo: Full Training
 #
-# Trains the GGNN + Tocopo decoder model on the full ACL2 community books
-# dataset.  Equivalent to the training run in Thompson (2023) thesis (~2 days).
+# 1. Preprocess all .mli → .pt tensors (multicore)
+# 2. Train 20 epochs on GPU
 #
-# Usage:
-#   bash training/scripts/run_train.sh
-#
-# Override data path:
-#   DATA_DIR=/my/path bash training/scripts/run_train.sh
+# The preprocess step is skipped if preprocessed data already exists.
 # ──────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 cd "$(dirname "$0")/../.."   # cd to acl2data/
 
-DATA_DIR="${DATA_DIR:-../../../../../data/books}"
+MLI_DIR="${MLI_DIR:-../../../../../data/books}"
+PREPROC_DIR="${PREPROC_DIR:-../../../../../data/preprocessed}"
 OUTPUT_DIR="${OUTPUT_DIR:-./models_v5}"
 
 echo "=== Graph2Tocopo Full Training ==="
-echo "Data dir:   $DATA_DIR"
-echo "Output dir: $OUTPUT_DIR"
+echo "MLI dir:      $MLI_DIR"
+echo "Preproc dir:  $PREPROC_DIR"
+echo "Output dir:   $OUTPUT_DIR"
 echo ""
 
-# source training/.venv/bin/activate
+source training/.venv/bin/activate
 
 echo "1. Installing package..."
 uv pip install -q -e training/
@@ -31,9 +29,20 @@ echo "2. Running unit tests..."
 python training/test_model.py
 
 echo ""
-echo "3. Full training..."
+if [ -f "$PREPROC_DIR/manifest.json" ]; then
+    echo "3. Preprocessed data found — skipping preprocess."
+else
+    echo "3. Preprocessing (this may take a while)..."
+    python training/preprocess.py \
+        --data-dir "$MLI_DIR" \
+        --output-dir "$PREPROC_DIR" \
+        --max-workers 16
+fi
+
+echo ""
+echo "4. Training 20 epochs..."
 python training/train.py \
-    --data-dir "$DATA_DIR" \
+    --data-dir "$PREPROC_DIR" \
     --output-dir "$OUTPUT_DIR" \
     --epochs 20 \
     --batch-size 8 \

@@ -62,219 +62,149 @@ DEFAULT_EVAL_FRAC = 0.05
 
 
 def collate_graphs(batch):
-    """Collate function: merges variable-size graphs into batched tensors."""
+    """Collate pre-built items into flat batched tensors.
 
-    # Collect graph data
-    all_node_types = []
-    all_subtoken_ids = []
-    all_edge_index_0 = []
-    all_edge_index_1 = []
-    all_edge_types = []
+    Each item has individual tensors extracted from a .pt file.
+    We rebuild the flat layout (all node_types concatenated, etc.)
+    needed by the GGNN encoder."""
+    max_n = max(b["num_nodes"] for b in batch)
+    max_s = max(len(b["tgt_ids"]) for b in batch)
+    B = len(batch)
+
+    all_nt = []
+    all_st = []
+    all_ei0 = []
+    all_ei1 = []
+    all_et = []
     num_nodes = []
-    node_offsets = [0]
-
-    # Target sequences
-    max_seq_len = max(len(b["tgt_ids"]) for b in batch)
     tgt_padded = []
-    copy_masks = []  # per graph, per node
+    all_at = []
+    all_ao = []
+    copy_masks = []
+    node_offset = 0
 
     for b in batch:
-        g = b["graph"]
-        n = len(g["node_types"])
-        num_nodes.append(n)
+        nn = b["num_nodes"]
+        num_nodes.append(nn)
 
-        # Accumulate with offset
-        all_node_types.extend(
-            _node_type_to_int(nt) for nt in g["node_types"])
-        all_subtoken_ids.extend(g["subtoken_ids"])
-        offset = node_offsets[-1]
-        all_edge_index_0.extend(e + offset for e in g["edge_index"][0])
-        all_edge_index_1.extend(e + offset for e in g["edge_index"][1])
-        all_edge_types.extend(g["edge_types"])
-        node_offsets.append(offset + n)
+        # Node data — already contiguous slices
+        all_nt.extend(b["node_types"].tolist())
+        all_st.extend(b["subtoken_ids"].tolist())
+
+        # Edge data — need to find edges for this item within the file's batch
+        # Filter edges belonging to this item (based on node range in file)
+        item_start = b["item_start_node"]
+        item_end = item_start + nn
+        ei = b["all_edge_index"]
+        et = b["all_edge_types"]
+
+        for e in range(ei.size(1)):
+            src = ei[0, e].item()
+            dst = ei[1, e].item()
+            if item_start <= src < item_end and item_start <= dst < item_end:
+                all_ei0.append(src - item_start + node_offset)
+                all_ei1.append(dst - item_start + node_offset)
+                all_et.append(et[e].item())
+
+        node_offset += nn
 
         # Target
-        tgt_ids = b["tgt_ids"][:max_seq_len]
-        pad_len = max_seq_len - len(tgt_ids)
-        tgt_padded.append(tgt_ids + [0] * pad_len)
+        t = b["tgt_ids"].tolist()
+        tgt_padded.append(t + [0] * (max_s - len(t)))
 
-        # Copy mask: which nodes can be copied (TOKEN nodes)
-        mask = [1 if nt == "token" else 0
-                for nt in g["node_types"]]
-        copy_masks.append(torch.tensor(mask, dtype=torch.bool))
+        all_at.append(b["action_type"])
+        all_ao.append(b["action_obj"])
 
-    # Stack targets
-    tgt_tokens = torch.tensor(tgt_padded, dtype=torch.long)
-
-    # Pad copy masks to same max_nodes
-    max_n = max(num_nodes)
-    copy_mask_padded = torch.zeros(len(batch), max_n, dtype=torch.bool)
-    for i, mask in enumerate(copy_masks):
-        copy_mask_padded[i, :len(mask)] = mask
-
-    # Pad node types + subtoken_ids to max_n * batch_size
-    padded_node_types = torch.zeros(
-        len(batch) * max_n, dtype=torch.long)
-    padded_subtoken_ids = torch.full(
-        (len(batch) * max_n,), -1, dtype=torch.long)
-    for i, (n, b) in enumerate(zip(num_nodes, batch)):
-        g = b["graph"]
-        start = i * max_n
-        padded_node_types[start:start + n] = torch.tensor(
-            [_node_type_to_int(nt) for nt in g["node_types"]],
-            dtype=torch.long)
-        padded_subtoken_ids[start:start + n] = torch.tensor(
-            g["subtoken_ids"], dtype=torch.long)
+        # Copy mask: TOKEN nodes can be copied
+        cm = [1 if nt == 0 else 0 for nt in b["node_types"].tolist()]
+        copy_masks.append(cm + [0] * (max_n - len(cm)))
 
     return {
-        "node_types": padded_node_types,
-        "subtoken_ids": padded_subtoken_ids,
-        "edge_index": torch.tensor(
-            [all_edge_index_0, all_edge_index_1], dtype=torch.long),
-        "edge_types": torch.tensor(all_edge_types, dtype=torch.long),
+        "node_types": torch.tensor(all_nt, dtype=torch.long),
+        "subtoken_ids": torch.tensor(all_st, dtype=torch.long),
+        "edge_index": torch.tensor([all_ei0, all_ei1], dtype=torch.long),
+        "edge_types": torch.tensor(all_et, dtype=torch.long),
         "num_nodes": num_nodes,
-        "tgt_tokens": tgt_tokens,
-        "copy_mask": copy_mask_padded,
-        "action_types": [b["action_type"] for b in batch],
-        "action_objs": [b["action_obj"] for b in batch],
+        "tgt_tokens": torch.tensor(tgt_padded, dtype=torch.long),
+        "copy_mask": torch.tensor(copy_masks, dtype=torch.bool),
+        "action_types": all_at,
+        "action_objs": all_ao,
     }
 
 
-def _node_type_to_int(nt: str) -> int:
-    return {"token": 0, "subtoken": 1, "root": 2}.get(nt, 0)
+# ── data loading (preprocessed) ──────────────────────────────────────────────
 
+class PreprocessedDataset(torch.utils.data.IterableDataset):
+    """IterableDataset over pre-built .pt files.
 
-# ── streaming dataset ────────────────────────────────────────────────────────
+    Loads batched tensors with torch.load (fast binary I/O).
+    No graph construction, no ijson — pure tensor loading.
+    Shuffles file order each epoch; splits files across workers.
+    """
 
-def _yield_items_from_file(mli_path, max_items=None, item_count=0):
-    """Generator: yield valid items from a single .mli file."""
-    try:
-        with open(mli_path, "rb") as f:
-            for item in ijson.items(f, "item"):
-                at = item.get("output", {}).get("action-type", "")
-                ao = item.get("output", {}).get("action-obj", "")
-                if not at or not ao:
-                    continue
-                yield item
-                item_count += 1
-                if max_items and item_count >= max_items:
-                    return
-    except Exception:
-        pass  # skip corrupted files
-
-
-class StreamingMliDataset(torch.utils.data.IterableDataset):
-    """IterableDataset that streams .mli files from disk — never loads
-    all items into memory.  File list is shuffled each epoch.
-    Multi-worker safe via worker_init_fn splitting files across workers."""
-
-    def __init__(self, file_manifest, graph_builder, vocab,
-                 max_nodes=512, max_seq_len=256, max_items=None):
-        self.file_manifest = file_manifest  # list of Path
-        self.graph_builder = graph_builder
-        self.vocab = vocab
-        self.max_nodes = max_nodes
-        self.max_seq_len = max_seq_len
+    def __init__(self, file_list, output_dir, max_items=None):
+        self.file_list = file_list     # relative paths from manifest
+        self.output_dir = Path(output_dir)
         self.max_items = max_items
 
     def __iter__(self):
         worker_info = torch.utils.data.get_worker_info()
         if worker_info is None:
-            files = self.file_manifest
+            files = list(self.file_list)
         else:
-            # Split files across workers: each worker gets a subset
-            per_worker = len(self.file_manifest) // worker_info.num_workers
+            per_worker = len(self.file_list) // worker_info.num_workers
             start = worker_info.id * per_worker
-            end = start + per_worker if worker_info.id < worker_info.num_workers - 1 else len(self.file_manifest)
-            files = self.file_manifest[start:end]
+            end = (start + per_worker
+                   if worker_info.id < worker_info.num_workers - 1
+                   else len(self.file_list))
+            files = list(self.file_list[start:end])
 
-        # Shuffle files for this epoch (different seed per epoch via worker)
         rng = np.random.RandomState()
         rng.shuffle(files)
 
         count = 0
-        for mli_path in files:
-            for item in _yield_items_from_file(mli_path):
-                graph = self.graph_builder.build_graph(item, max_nodes=self.max_nodes)
-                tgt_tokens = build_target_sequence(item)
-                tgt_ids = self.vocab.encode(tgt_tokens[:self.max_seq_len])
-                count += 1
+        for rel_path in files:
+            pt_path = self.output_dir / rel_path
+            try:
+                data = torch.load(pt_path, weights_only=True)
+            except Exception:
+                continue
+
+            n_items = data["n_items"]
+            for i in range(n_items):
+                # Extract single item from the batched file
+                nn = data["num_nodes"][i]
+                seq_len = 0
+                tgt = data["tgt_ids"][i]
+                # Find actual seq len (trim trailing zeros beyond EOS)
+                for s in range(len(tgt)):
+                    if tgt[s].item() == 2:  # <eos>
+                        seq_len = s + 1
+                        break
+                if seq_len == 0:
+                    seq_len = len(tgt)
+
+                # Find node slice for this item
+                start_node = sum(data["num_nodes"][:i])
+                end_node = start_node + nn
 
                 yield {
-                    "graph": graph,
-                    "tgt_ids": tgt_ids,
-                    "action_type": item.get("output", {}).get("action-type", ""),
-                    "action_obj": item.get("output", {}).get("action-obj", ""),
+                    "node_types": data["node_types"][start_node:end_node],
+                    "subtoken_ids": data["subtoken_ids"][start_node:end_node],
+                    "num_nodes": nn,
+                    "tgt_ids": tgt[:seq_len],
+                    "action_type": data["action_types"][i],
+                    "action_obj": data["action_objs"][i],
+                    # We'll build edge index + copy mask in collate
+                    "all_edge_index": data["edge_index"],
+                    "all_edge_types": data["edge_types"],
+                    "item_start_node": start_node,
+                    "all_num_nodes": data["num_nodes"],
                 }
 
+                count += 1
                 if self.max_items and count >= self.max_items:
                     return
-
-
-# ── file manifest ────────────────────────────────────────────────────────────
-
-def build_file_manifest(data_dir, eval_frac=0.05, exclude_dirs=None):
-    """Scan .mli files, return (train_files, eval_files) lists.
-
-    Does NOT read file contents — just checks paths and book-level hash.
-    Returns immediately.
-    """
-    import hashlib
-    root = Path(data_dir)
-    if exclude_dirs is None:
-        exclude_dirs = {"kestrel/helpers"}
-
-    train_files = []
-    eval_files = []
-
-    for mli_path in sorted(root.rglob("*.mli")):
-        try:
-            rel = mli_path.relative_to(root)
-        except ValueError:
-            continue
-        parts = rel.parts
-        excluded = any(
-            parts[:len(tuple(exc.strip("/").split("/")))] ==
-            tuple(exc.strip("/").split("/"))
-            for exc in exclude_dirs)
-        if excluded:
-            continue
-
-        book_key = str(rel.parent) if str(rel.parent) != "." else str(rel.stem)
-        split_hash = hashlib.md5(book_key.encode()).hexdigest()
-        is_eval = int(split_hash, 16) % 1000 < int(eval_frac * 1000)
-
-        if is_eval:
-            eval_files.append(mli_path)
-        else:
-            train_files.append(mli_path)
-
-    logger.info(
-        f"  File manifest: {len(train_files):,} train files, "
-        f"{len(eval_files):,} eval files")
-    return train_files, eval_files
-
-
-def build_vocab_from_stream(file_manifest, max_items=None):
-    """Stream .mli files to build vocabulary from target sequences.
-
-    Only accumulates token strings (tiny), not full items.
-    """
-    vocab = FixVocab()
-    count = 0
-
-    for mli_path in tqdm(file_manifest, desc="Vocab (streaming)"):
-        for item in _yield_items_from_file(mli_path):
-            tgt = build_target_sequence(item)
-            for tok in tgt:
-                vocab.add_token(tok)
-            count += 1
-            if max_items and count >= max_items:
-                logger.info(f"  Vocab built from {count:,} items")
-                return vocab
-
-    logger.info(f"  Vocab built from {count:,} items, size={len(vocab):,}")
-    return vocab
 
 
 # ── training loop ────────────────────────────────────────────────────────────
@@ -413,8 +343,8 @@ def evaluate_full(model, dataloader, device, vocab, max_items: int = None):
 def main():
     p = argparse.ArgumentParser(
         description="Train Graph2Tocopo model for ACL2 proof fixing")
-    p.add_argument("--data-dir", default="/workspaces/acl2-jupyter/data/books",
-                   help="Root .mli directory")
+    p.add_argument("--data-dir", default="../../../../../data/preprocessed",
+                   help="Preprocessed .pt directory (output of preprocess.py)")
     p.add_argument("--output-dir", default="./models_v5",
                    help="Output directory for model checkpoints")
     p.add_argument("--resume", default=None,
@@ -456,40 +386,58 @@ def main():
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Build file manifest (scans paths only, no data read) ─────────────
-    logger.info("Building file manifest...")
-    train_files, eval_files = build_file_manifest(
-        args.data_dir, eval_frac=args.eval_frac,
-        exclude_dirs=set(args.exclude))
-    graph_builder = GraphBuilder(max_nodes=args.max_nodes)
+    # ── Load preprocessed data (manifest + vocab) ────────────────────────
+    preproc_dir = Path(args.data_dir)  # now points to preprocessed dir
+    manifest_path = preproc_dir / "manifest.json"
+    vocab_path = preproc_dir / "vocab.json"
 
-    # ── Build vocab from training files (streaming, no memory accumulation)
-    logger.info("Building vocabulary...")
-    vocab = build_vocab_from_stream(train_files, max_items=args.max_items)
-    graph_builder.subtoken_to_id = {}  # reset after vocab pass (graph builder state not needed)
+    if not manifest_path.exists():
+        logger.error(
+            "Manifest not found at %s.  Run preprocessing first:\n"
+            "  python training/preprocess.py --data-dir /path/to/books "
+            "--output-dir /path/to/preprocessed", manifest_path)
+        sys.exit(1)
 
-    # ── Create streaming datasets ────────────────────────────────────────
-    logger.info("Creating streaming datasets...")
-    train_dataset = StreamingMliDataset(
-        train_files, graph_builder, vocab,
-        max_nodes=args.max_nodes, max_items=args.max_items)
-    eval_dataset = StreamingMliDataset(
-        eval_files, graph_builder, vocab,
-        max_nodes=args.max_nodes, max_items=args.max_items)
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+    with open(vocab_path) as f:
+        vocab_data = json.load(f)
+
+    token_to_id = vocab_data["token_to_id"]
+    id_to_token = {v: k for k, v in token_to_id.items()}
+    vocab_size = len(token_to_id)
+
+    # Create minimal vocab wrapper for eval functions
+    class MinimalVocab:
+        def __init__(self):
+            self.id_to_token = id_to_token
+            self.token_to_id = token_to_id
+        def encode(self, tokens):
+            return [self.token_to_id.get(t, 3) for t in tokens]
+    vocab = MinimalVocab()
+    logger.info(
+        f"  Manifest: train={len(manifest['train'])} val={len(manifest['val'])}"
+        f" test={len(manifest['test'])} files, vocab={vocab_size}")
+
+    # ── Create datasets from preprocessed .pt files ──────────────────────
+    logger.info("Creating preprocessed datasets...")
+    train_dataset = PreprocessedDataset(
+        manifest["train"], preproc_dir, max_items=args.max_items)
+    val_dataset = PreprocessedDataset(
+        manifest["val"], preproc_dir, max_items=args.max_items)
 
     train_loader = DataLoader(
         train_dataset, batch_size=args.batch_size,
         collate_fn=collate_graphs, num_workers=args.num_workers,
-        pin_memory=(device.type != "mps"))  # MPS doesn't support pin_memory
+        pin_memory=(device.type != "mps"))
 
-    eval_loader = DataLoader(
-        eval_dataset, batch_size=args.batch_size,
-        collate_fn=collate_graphs, num_workers=0,  # eval single-process
+    val_loader = DataLoader(
+        val_dataset, batch_size=args.batch_size,
+        collate_fn=collate_graphs, num_workers=0,
         pin_memory=(device.type != "mps"))
 
     # Determine num_edge_types from first batch
     first_batch = next(iter(train_loader))
-    # Count distinct edge types used
     num_edge_types = max(10, first_batch["edge_types"].max().item() + 1)
     logger.info(f"  Num edge types: {num_edge_types}")
 
@@ -497,7 +445,7 @@ def main():
     logger.info("Creating model...")
     model = Graph2Tocopo(
         hidden_dim=args.hidden_dim,
-        vocab_size=len(vocab),
+        vocab_size=vocab_size,
         num_edge_types=num_edge_types,
         encoder_type=args.encoder_type,
     ).to(device)
@@ -568,7 +516,7 @@ def main():
         logger.info(f"  Avg train loss: {avg_loss:.4f}")
 
         # Fast eval every epoch (token accuracy — runs in seconds)
-        token_acc = evaluate_fast(model, eval_loader, device, vocab)
+        token_acc = evaluate_fast(model, val_loader, device, vocab)
         if token_acc < 0:
             logger.info("  Eval: (no eval items — book-level split may "
                          "put all early books in training)")
@@ -580,7 +528,7 @@ def main():
         # Full generation eval every N epochs (slow but meaningful)
         if args.eval_full_every > 0 and epoch % args.eval_full_every == 0:
             gen_metrics = evaluate_full(
-                model, eval_loader, device, vocab,
+                model, val_loader, device, vocab,
                 max_items=args.eval_max_items)
             metrics.update(gen_metrics)
             if gen_metrics["total"] == 0:
