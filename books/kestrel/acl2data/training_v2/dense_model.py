@@ -137,14 +137,25 @@ class DenseGraph2Tocopo(nn.Module):
         batch: {
           node_types: (B, N), subtoken_ids: (B, N),
           edges: (B, E, N, N), copy_mask: (B, N),
+          node_labels: (B, N), num_nodes: (B,),
           tgt_ids: (B, S)
         }
         """
         B, N = batch["node_types"].shape
         device = batch["node_types"].device
 
-        # Build node mask (True = padding)
-        node_mask = (batch["node_types"] == 0) & (batch["subtoken_ids"] < 0)
+        # Build node mask: True = padding (ignore in cross-attn)
+        # num_nodes tells us how many real nodes each item has
+        positions = torch.arange(N, device=device).unsqueeze(0)  # (1, N)
+        num_nodes = batch.get("num_nodes")
+        if num_nodes is not None:
+            node_mask = positions >= num_nodes.unsqueeze(1)  # (B, N), True=pad
+        else:
+            # Fallback: mask where node_type==0 AND subtoken<0 AND copy_mask==False
+            # (hits only pure padding, not real token nodes)
+            node_mask = ((batch["node_types"] == 0) &
+                         (batch["subtoken_ids"] < 0) &
+                         ~batch["copy_mask"])
 
         # Encode
         node_emb = self.encoder(

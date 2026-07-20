@@ -69,15 +69,24 @@ def evaluate(model, dataset, device, attr_to_id, id_to_token,
 
         # Ground truth
         gt_tokens = item["tgt_ids"].tolist()
-        gt_clean = [t for t in gt_tokens if t > 0]
+        gt_clean = [t for t in gt_tokens if t > 1]  # strip <pad> + <sos>
 
         with torch.no_grad():
             try:
-                # Run encoder
-                node_emb = model.encoder(node_types, subtoken_ids, edges)
+                # Build node mask from num_nodes
+                num_n = item.get("num_nodes", torch.tensor(node_types.size(1)))
+                positions = torch.arange(node_types.size(1))
+                node_mask = (positions >= num_n.item()).unsqueeze(0).to(device)
+
+                # Run encoder with correct mask
+                node_emb = model.encoder(
+                    node_types, subtoken_ids, edges, node_mask=node_mask)
                 # Autoregressive generation through Tocopo decoder
                 gen_out = model.decoder.generate(
-                    node_emb, copy_mask, temperature=1.0)
+                    node_emb, copy_mask, temperature=1.0,
+                    src_key_padding_mask=node_mask,
+                    encoder_node_labels=item.get("node_labels",
+                        torch.zeros_like(node_types)).unsqueeze(0).to(device))
                 pred_tokens = [tid for tid, _, _ in gen_out]
 
                 pred_at, pred_ao = decode_action(

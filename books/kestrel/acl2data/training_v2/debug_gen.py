@@ -51,15 +51,26 @@ def main():
         cm = item["copy_mask"].unsqueeze(0).to(device)
         gt_ids = item["tgt_ids"].tolist()
 
+        num_n = item.get("num_nodes", torch.tensor(nt.size(1)))
+        positions = torch.arange(nt.size(1))
+        node_mask = (positions >= num_n.item()).unsqueeze(0).to(device)
+
         with torch.no_grad():
-            emb = model.encoder(nt, st, edges)
-            gen = model.decoder.generate(emb, cm, temperature=1.0)
+            emb = model.encoder(nt, st, edges, node_mask=node_mask)
+            gen = model.decoder.generate(emb, cm, temperature=1.0,
+                                         src_key_padding_mask=node_mask,
+                                         encoder_node_labels=item.get(
+                                             "node_labels",
+                                             torch.zeros_like(nt)
+                                         ).unsqueeze(0).to(device))
 
         pred_ids = [tid for tid, _, _ in gen]
         pred_tokens = [id_to_token.get(t, f"<{t}>") for t in pred_ids
-                       if t not in (0,)]
+                       if t not in (0, 1)]  # skip <pad>, <sos>
         gt_tokens = [id_to_token.get(t, f"<{t}>") for t in gt_ids
-                     if t not in (0,)]
+                     if t not in (0, 1)]
+        pred_clean = [t for t in pred_ids if t not in (0, 1)]
+        gt_clean = [t for t in gt_ids if t not in (0, 1)]
 
         pred_at, pred_ao = decode_action(pred_ids, attr_to_id, id_to_token)
         gt_at, gt_ao = decode_action(gt_ids, attr_to_id, id_to_token)
@@ -69,7 +80,7 @@ def main():
         print(f"GT tokens: {gt_tokens}")
         print(f"Pred tokens: {pred_tokens}")
         print(f"Pred at={pred_at} ao={pred_ao}")
-        print(f"Match: {pred_ids == gt_ids}  at_match: {pred_at == gt_at}")
+        print(f"Match: {pred_clean == gt_clean}  at_match: {pred_at == gt_at}")
 
 
 if __name__ == "__main__":

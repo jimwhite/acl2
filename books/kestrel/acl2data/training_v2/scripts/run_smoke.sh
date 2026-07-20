@@ -36,12 +36,14 @@ echo "3. Training 10K steps..."
 python training_v2/train.py \
     --data-dir "$PREPROC_DIR" \
     --output-dir "$OUTPUT_DIR" \
-    --steps 10000 \
+    --steps 1000 \
     --batch-size 8 \
-    --hidden-dim 128 \
-    --num-workers 4 \
-    --valid-steps 5000 \
-    --log-steps 1000
+    --valid-steps 500
+
+    python training_v2/train.py \
+    --data-dir /path/to/preprocessed_v3 \
+    --output-dir ./models_v7 \
+    --steps 1000 --batch-size 8 --valid-steps 500
 
 echo ""
 echo "=== Smoke test complete ==="

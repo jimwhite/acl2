@@ -190,6 +190,8 @@ def _process_one_file(args):
     n = len(items)
     nt = torch.full((n, max_n), 0, dtype=torch.long)
     st = torch.full((n, max_n), -1, dtype=torch.long)
+    nl = torch.zeros((n, max_n), dtype=torch.long)  # node_labels: vocab token id
+    num_nodes = torch.zeros(n, dtype=torch.long)
     # Store sparse edges: (2, total_E) + (total_E,) edge types per item
     ei0_all, ei1_all, et_all = [], [], []
     edge_counts = torch.zeros(n, dtype=torch.long)  # edges per item
@@ -199,9 +201,14 @@ def _process_one_file(args):
 
     for i, (at, ao_str, tgt_ids, graph) in enumerate(items):
         nn = graph["num_nodes"]
+        num_nodes[i] = nn
         nt[i, :nn] = torch.tensor(
             [_nt(ntype) for ntype in graph["node_types"]], dtype=torch.long)
         st[i, :nn] = torch.tensor(graph["subtoken_ids"], dtype=torch.long)
+
+        # Node labels → vocab token IDs (for copy mechanism)
+        for j, label in enumerate(graph["node_labels"][:nn]):
+            nl[i, j] = vocab.get(label, 3)  # 3 = <unk>
 
         # Sparse edges
         ei0_all.extend(graph["edge_index"][0])
@@ -212,12 +219,16 @@ def _process_one_file(args):
         tgt[i, :len(tgt_ids)] = torch.tensor(
             tgt_ids[:max_s], dtype=torch.long)
         at_ids[i] = attr_vocab.get(at, 0)
-        token_mask = [1 if nt == "token" else 0 for nt in graph["node_types"]]
-        cm[i, :nn] = torch.tensor(token_mask, dtype=torch.bool)
+        # Copy mask: subtoken nodes are copyable (they hold symbol pieces)
+        sub_mask = [1 if nt == "subtoken" else 0
+                     for nt in graph["node_types"]]
+        cm[i, :nn] = torch.tensor(sub_mask, dtype=torch.bool)
 
     torch.save({
         "node_types": nt,
         "subtoken_ids": st,
+        "node_labels": nl,
+        "num_nodes": num_nodes,
         "edge_index": torch.tensor([ei0_all, ei1_all], dtype=torch.long),
         "edge_types": torch.tensor(et_all, dtype=torch.long),
         "edge_counts": edge_counts,

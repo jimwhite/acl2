@@ -19,6 +19,7 @@ from pathlib import Path
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
@@ -37,12 +38,56 @@ logger = logging.getLogger(__name__)
 # DenseGraph2Tocopo handles all batching internally (pure einsum, no Python loops)
 
 
-def compute_loss(dec_out, tgt_out, pad_idx=0):
-    token_logits = dec_out["token_logits"]  # (B, S, V)
-    loss = nn.functional.cross_entropy(
-        token_logits.reshape(-1, token_logits.size(-1)),
+def compute_plur_loss(dec_out, batch, pad_idx=0):
+    """PLUR combined loss: token generation + copy mechanism.
+
+    At each output step the decoder can either generate a token from
+    vocabulary OR copy a node label from the input graph. The combined
+    probability is:
+
+        p(y_t) = p_gen * p_vocab(y_t) + p_copy * sum_{i: label_i==y_t} p_ptr(i)
+
+    All three heads (token, copy gate, pointer) are trained jointly.
+    Without this, the copy mechanism stays random and derails generation.
+    """
+    token_logits = dec_out["token_logits"]   # (B, S, V)
+    copy_logits = dec_out["copy_logits"]     # (B, S, 1)
+    pointer_logits = dec_out["pointer_logits"]  # (B, S, N)
+    node_labels = batch["node_labels"]       # (B, N) — vocab token ids
+    tgt_out = batch["tgt_ids"][:, 1:]        # (B, S)
+
+    B, S, V = token_logits.shape
+    device = token_logits.device
+
+    # Copy gate: σ(copy_logit) = p_copy, 1-σ(copy_logit) = p_gen
+    p_copy_val = torch.sigmoid(copy_logits)   # (B, S, 1)
+    p_gen_val = 1.0 - p_copy_val
+
+    # Vocab distribution (scaled by generate probability)
+    vocab_probs = F.softmax(token_logits, dim=-1) * p_gen_val  # (B, S, V)
+
+    # Pointer distribution (scaled by copy probability)
+    ptr_probs = F.softmax(pointer_logits, dim=-1) * p_copy_val  # (B, S, N)
+
+    # Mask out pad-label nodes (their pointer mass goes nowhere useful)
+    node_label_mask = (node_labels != pad_idx).unsqueeze(1)  # (B, 1, N)
+    ptr_probs = ptr_probs * node_label_mask
+
+    # Scatter pointer probs into vocab positions using node_labels as indices
+    # node_labels[b][n] = token_id → scatter ptr_probs[b][s][n] into pos token_id
+    nl_expanded = node_labels.unsqueeze(1).expand(-1, S, -1)  # (B, S, N)
+    copy_probs = torch.zeros(B, S, V, device=device)
+    copy_probs.scatter_add_(2, nl_expanded, ptr_probs)        # (B, S, V)
+
+    # Combined distribution
+    combined = vocab_probs + copy_probs + 1e-12
+
+    # NLL loss
+    loss = F.nll_loss(
+        combined.log().reshape(-1, V),
         tgt_out.reshape(-1),
         ignore_index=pad_idx)
+
     return loss
 
 
@@ -111,12 +156,25 @@ class FixedDataset(Dataset):
                     if valid.any():
                         dense[et[valid], ei[0, valid], ei[1, valid]] = 1.0
 
+                # Fallbacks for old preprocessed data missing new fields
+                max_n = data["node_types"].size(1)
+                if "node_labels" in data:
+                    node_labels = data["node_labels"][i]
+                else:
+                    node_labels = torch.zeros(max_n, dtype=torch.long)
+                if "num_nodes" in data:
+                    num_nodes = data["num_nodes"][i]
+                else:
+                    num_nodes = torch.tensor(max_n)
+
                 return {
                     "node_types": data["node_types"][i],
                     "subtoken_ids": data["subtoken_ids"][i],
                     "edges": dense,
                     "tgt_ids": data["tgt_ids"][i],
                     "copy_mask": data["copy_mask"][i],
+                    "node_labels": node_labels,
+                    "num_nodes": num_nodes,
                     "action_type": data["action_types"][i].item(),
                 }
         raise IndexError(f"Index {idx} out of range ({self._total})")
@@ -130,6 +188,8 @@ def collate_fixed(batch):
         "edges": torch.stack([b["edges"] for b in batch]),
         "tgt_ids": torch.stack([b["tgt_ids"] for b in batch]),
         "copy_mask": torch.stack([b["copy_mask"] for b in batch]),
+        "node_labels": torch.stack([b["node_labels"] for b in batch]),
+        "num_nodes": torch.stack([b["num_nodes"] for b in batch]),
     }
 
 
@@ -274,8 +334,7 @@ def main():
                  for k, v in batch.items()}
 
         dec_out = model(batch)
-        tgt_out = batch["tgt_ids"][:, 1:]
-        loss = compute_loss(dec_out, tgt_out)
+        loss = compute_plur_loss(dec_out, batch)
 
         optimizer.zero_grad()
         loss.backward()
@@ -309,7 +368,7 @@ def main():
                                  for k, v in val_batch.items()}
                     vd = model(val_batch)
                     tgt_out = val_batch["tgt_ids"][:, 1:]
-                    val_loss += compute_loss(vd, tgt_out).item()
+                    val_loss += compute_plur_loss(vd, val_batch).item()
                     val_count += 1
 
                     # Token accuracy

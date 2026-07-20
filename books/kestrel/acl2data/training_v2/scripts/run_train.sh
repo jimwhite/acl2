@@ -11,8 +11,8 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."   # cd to acl2data/
 
 MLI_DIR="../../../../../data/books"
-PREPROC_DIR="../../../../../data/preprocessed_v2"
-OUTPUT_DIR="./models_v6"
+PREPROC_DIR="../../../../../data/preprocessed_v3"
+OUTPUT_DIR="./models_v7"
 
 echo "=== Graph2Tocopo v2 Full Training ==="
 echo "MLI dir:      $MLI_DIR"
@@ -35,6 +35,20 @@ else
         --output-dir "$PREPROC_DIR" \
         --max-workers 16
 fi
+
+
+python training_v2/train.py \
+    --data-dir "$PREPROC_DIR" \
+    --output-dir "$OUTPUT_DIR" \
+    --steps 1000 \
+    --batch-size 8 \
+    --valid-steps 500
+
+python training_v2/evaluate.py \
+    --data-dir "$PREPROC_DIR" \
+    --model "$OUTPUT_DIR/best_model.pt" \
+    --max-items 100
+
 
 echo ""
 echo "3. Training 50K steps..."

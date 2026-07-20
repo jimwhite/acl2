@@ -126,7 +126,8 @@ class TocopoDecoder(nn.Module):
 
     def generate(self, encoder_output, copy_candidates_mask,
                  start_token=1, end_token=2, max_len=None,
-                 temperature=1.0, encoder_node_labels=None):
+                 temperature=1.0, encoder_node_labels=None,
+                 src_key_padding_mask=None):
         """Greedy/autoregressive generation.
 
         Args:
@@ -136,6 +137,8 @@ class TocopoDecoder(nn.Module):
             end_token: eos token id
             max_len: max generation length
             temperature: sampling temperature (1.0 = greedy)
+            encoder_node_labels: (1, max_nodes) vocab token ids for each node
+            src_key_padding_mask: (1, max_nodes) True=padding
 
         Returns:
             list of (token_id, is_copy, copy_node_idx) tuples
@@ -150,55 +153,51 @@ class TocopoDecoder(nn.Module):
         output = []
         # Start with sos token
         current_tokens = torch.tensor([[start_token]], device=device)
+        max_nodes = encoder_output.size(1)
+        V = self.vocab_size
 
         for step in range(max_len):
             # Forward pass
             result = self.forward(
                 encoder_output, current_tokens,
-                copy_candidates_mask)
+                copy_candidates_mask,
+                src_key_padding_mask=src_key_padding_mask)
 
             # Get last step predictions
             tk = result["token_logits"][:, -1, :] / temperature  # (1, V)
-            cp = result["copy_logits"][:, -1, :]  # (1, 1)
+            cp = result["copy_logits"][:, -1, :]    # (1, 1)
             pt = result["pointer_logits"][:, -1, :]  # (1, N)
 
-            # Composite probability: copy vs generate
-            tk_probs = F.softmax(tk, dim=-1)
-            cp_prob = torch.sigmoid(cp)  # (1, 1)
-            pt_probs = F.softmax(pt, dim=-1)  # (1, N)
+            # PLUR combined distribution (same as training loss):
+            # p(y) = p_gen * p_vocab(y) + p_copy * Σ p_ptr(i) where label_i=y
+            p_copy_val = torch.sigmoid(cp)         # σ(copy_logit) = p_copy
+            p_gen_val = 1.0 - p_copy_val            # probability to generate
+            vocab_probs = F.softmax(tk, dim=-1) * p_gen_val      # (1, V)
+            ptr_probs = F.softmax(pt, dim=-1) * p_copy_val       # (1, N)
 
-            # Decision: generate token or copy
-            if temperature == 1.0:
-                # Greedy
-                max_tk_val, max_tk_idx = tk_probs.max(dim=-1)
-                max_pt_val, max_pt_idx = pt_probs.max(dim=-1)
-
-                if cp_prob.item() > 0.5 and max_pt_val.item() > max_tk_val.item():
-                    # Copy
-                    next_token = -1  # special copy token
-                    copy_idx = max_pt_idx.item()
-                    output.append((next_token, True, copy_idx))
-                else:
-                    next_token = max_tk_idx.item()
-                    output.append((next_token, False, -1))
-                    if next_token == end_token:
-                        break
+            # Scatter pointer probs into vocab using node_labels
+            if encoder_node_labels is not None:
+                nl = encoder_node_labels  # (1, N)
+                copy_probs_v = torch.zeros(1, V, device=device)
+                copy_probs_v.scatter_add_(1, nl, ptr_probs)  # (1, V)
             else:
-                # Sampling
-                if torch.rand(1).item() < cp_prob.item():
-                    # Sample a node to copy
-                    pt_sampled = torch.multinomial(pt_probs.squeeze(0), 1)
-                    output.append((-1, True, pt_sampled.item()))
-                else:
-                    tk_sampled = torch.multinomial(tk_probs.squeeze(0), 1)
-                    tok_id = tk_sampled.item()
-                    output.append((tok_id, False, -1))
-                    if tok_id == end_token:
-                        break
+                copy_probs_v = torch.zeros(1, V, device=device)
+
+            combined = vocab_probs + copy_probs_v  # (1, V)
+
+            # Pick best token
+            if temperature == 1.0:
+                next_token = combined.argmax(dim=-1).item()
+            else:
+                next_token = torch.multinomial(
+                    combined.squeeze(0), 1).item()
+
+            output.append((next_token, False, -1))
+            if next_token == end_token:
+                break
 
             # Append to current tokens
-            next_ids = torch.tensor(
-                [[next_token if next_token >= 0 else 0]], device=device)
+            next_ids = torch.tensor([[next_token]], device=device)
             current_tokens = torch.cat([current_tokens, next_ids], dim=1)
 
         return output
