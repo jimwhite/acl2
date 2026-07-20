@@ -53,40 +53,57 @@ def compute_loss(dec_out, tgt_out, pad_idx=0):
 class FixedDataset(Dataset):
     """Map-style Dataset over globally-padded .pt files.
 
-    All items have identical shapes — just torch.cat the .pt tensors
-    and index into them."""
+    Edges are stored sparsely per-file.  __getitem__ builds a dense
+    (E, N, N) adjacency for the single item — small and fast."""
 
-    def __init__(self, file_list, preproc_dir):
+    def __init__(self, file_list, preproc_dir, num_edge_types=10):
         tensors = []
         for rel_path in file_list:
             data = torch.load(Path(preproc_dir) / rel_path,
                               weights_only=True)
             tensors.append(data)
 
-        # Concatenate all items across all files
         self.node_types = torch.cat([t["node_types"] for t in tensors])
         self.subtoken_ids = torch.cat([t["subtoken_ids"] for t in tensors])
-        self.edges = torch.cat([t["edges"] for t in tensors])
         self.tgt_ids = torch.cat([t["tgt_ids"] for t in tensors])
         self.action_types = torch.cat([t["action_types"] for t in tensors])
         self.copy_mask = torch.cat([t["copy_mask"] for t in tensors])
+        self.edge_counts = torch.cat([t["edge_counts"] for t in tensors])
+        self.edge_index = torch.cat(
+            [t["edge_index"] for t in tensors], dim=1)
+        self.edge_types = torch.cat([t["edge_types"] for t in tensors])
+
+        self.N = self.node_types.size(1)
+        self.E = num_edge_types
 
     def __len__(self):
         return len(self.node_types)
 
     def __getitem__(self, idx):
+        # Build dense edges for this one item (fast — just scatter)
+        start = self.edge_counts[:idx].sum().item()
+        count = self.edge_counts[idx].item()
+        dense = torch.zeros(self.E, self.N, self.N, dtype=torch.float32)
+        if count > 0:
+            ei = self.edge_index[:, start:start + count]
+            et = self.edge_types[start:start + count]
+            # Only include edges within N bounds
+            valid = (ei[0] < self.N) & (ei[1] < self.N)
+            dense[et[valid], ei[0, valid], ei[1, valid]] = 1.0
+
         return {
             "node_types": self.node_types[idx],
             "subtoken_ids": self.subtoken_ids[idx],
-            "edges": self.edges[idx],
+            "edges": dense,
             "tgt_ids": self.tgt_ids[idx],
             "action_type": self.action_types[idx],
             "copy_mask": self.copy_mask[idx],
+            "num_nodes": (self.node_types[idx] != 0).sum().item(),
         }
 
 
 def collate_fixed(batch):
-    """Trivial collate — just stack (all items same shape)."""
+    """Stack + remove num_nodes (not needed for dense GGNN)."""
     return {
         "node_types": torch.stack([b["node_types"] for b in batch]),
         "subtoken_ids": torch.stack([b["subtoken_ids"] for b in batch]),
@@ -152,7 +169,9 @@ def main():
     # Load datasets (into memory — global padding makes this feasible)
     logger.info("Loading training data...")
     t0 = time.time()
-    train_ds = FixedDataset(manifest.get("train", []), preproc_dir)
+    train_ds = FixedDataset(
+        manifest.get("train", []), preproc_dir,
+        num_edge_types=num_edge_types)
     if args.max_items and len(train_ds) > args.max_items:
         train_ds.node_types = train_ds.node_types[:args.max_items]
         train_ds.subtoken_ids = train_ds.subtoken_ids[:args.max_items]
@@ -162,7 +181,8 @@ def main():
         train_ds.copy_mask = train_ds.copy_mask[:args.max_items]
 
     val_files = manifest.get("val", manifest.get("test", []))
-    val_ds = FixedDataset(val_files, preproc_dir) if val_files else None
+    val_ds = FixedDataset(val_files, preproc_dir,
+                          num_edge_types=num_edge_types) if val_files else None
 
     logger.info(f"  {len(train_ds):,} train items ({time.time()-t0:.1f}s)")
 

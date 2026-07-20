@@ -174,9 +174,9 @@ def _process_one_file(args):
     n = len(items)
     nt = torch.full((n, max_n), 0, dtype=torch.long)
     st = torch.full((n, max_n), -1, dtype=torch.long)
-    edges = torch.zeros(
-        (n, 10, max_n, max_n),
-        dtype=torch.float32)  # 10 edge types
+    # Store sparse edges: (2, total_E) + (total_E,) edge types per item
+    ei0_all, ei1_all, et_all = [], [], []
+    edge_counts = torch.zeros(n, dtype=torch.long)  # edges per item
     tgt = torch.full((n, max_s), 0, dtype=torch.long)
     at_ids = torch.zeros(n, dtype=torch.long)
     cm = torch.zeros((n, max_n), dtype=torch.bool)
@@ -187,12 +187,11 @@ def _process_one_file(args):
             [_nt(ntype) for ntype in graph["node_types"]], dtype=torch.long)
         st[i, :nn] = torch.tensor(graph["subtoken_ids"], dtype=torch.long)
 
-        # Edges: fill (n, edge_types, max_nodes, max_nodes)
-        ei0 = graph["edge_index"][0]
-        ei1 = graph["edge_index"][1]
-        for e_idx, etyp in enumerate(graph["edge_types"]):
-            if etyp < 10 and ei0[e_idx] < max_n and ei1[e_idx] < max_n:
-                edges[i, etyp, ei0[e_idx], ei1[e_idx]] = 1.0
+        # Sparse edges
+        ei0_all.extend(graph["edge_index"][0])
+        ei1_all.extend(graph["edge_index"][1])
+        et_all.extend(graph["edge_types"])
+        edge_counts[i] = len(graph["edge_types"])
 
         tgt[i, :len(tgt_ids)] = torch.tensor(tgt_ids, dtype=torch.long)
         at_ids[i] = attr_vocab.get(at, 0)
@@ -202,7 +201,9 @@ def _process_one_file(args):
     torch.save({
         "node_types": nt,
         "subtoken_ids": st,
-        "edges": edges,
+        "edge_index": torch.tensor([ei0_all, ei1_all], dtype=torch.long),
+        "edge_types": torch.tensor(et_all, dtype=torch.long),
+        "edge_counts": edge_counts,
         "tgt_ids": tgt,
         "action_types": at_ids,
         "copy_mask": cm,
