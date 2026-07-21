@@ -24,9 +24,13 @@
 ;; Test on books from our test split with hinted theorems.
 ;; Use :all to test every hinted theorem in each book.
 (eval-models-on-books
-  '(("kestrel/utilities/acl2-count.lisp" . :all)
-    ("kestrel/utilities/assoc-keyword.lisp" . :all)
-    ("kestrel/utilities/myif.lisp" . :all))
+  '(
+    ("centaur/vl2014/loader/parser/programs.lisp" . :all)
+    ("std/io/read-ints.lisp" . :all)
+    ("std/io/read-file-characters.lisp" . :all)
+    ("rtl/rel4/support/fadd.lisp" . :all)
+    ("rtl/rel11/rel9-rtl-pkg/arithmetic/fp2.lisp" . :all)
+    )
   "/home/acl2/books"
   10        ; num-recs-per-model
   t         ; print
@@ -36,7 +40,7 @@
   40        ; model-query-timeout
   :goal-partial  ; breakage-plan
   0         ; done-book-count
-  3         ; total-book-count
+  5         ; total-book-count
   nil       ; result-alist-acc
   1         ; rand seed
   state)
