@@ -1,41 +1,18 @@
-"""
-Generate ACL2 eval test forms from known-good test books.
+"""Generate ACL2 eval test forms from the test split.
 
-Scans the test split to find books with data, then maps them to
-actual .lisp files in the ACL2 books directory.
+Maps .pt paths directly to .lisp source:
+  test/centaur/tutorial/booth-support__acl2data.pt
+  -> /home/acl2/books/centaur/tutorial/booth-support.lisp
 
 Usage:
-  python training_v2/gen-eval-tests.py \
-      --preproc-dir /path/to/preprocessed_v4 \
-      --max-books 5 --seed 42
-
-Output: eval-models-on-book calls for eval-graph2tocopo.lisp
+  python training_v2/gen-eval-tests.py --preproc-dir /path --max-books 5
 """
 
 import json
 import random
 import argparse
-import subprocess
 from pathlib import Path
 from collections import defaultdict
-
-
-def find_lisp_file(book_name, books_dir="/home/acl2/books/kestrel"):
-    """Find a .lisp file matching a book name from the preprocessed data."""
-    book_path = Path(books_dir) / book_name
-    
-    # Try direct .lisp file
-    candidates = list(book_path.parent.glob(f"{book_path.name}.lisp"))
-    if candidates:
-        return str(candidates[0])
-    
-    # Try subdirectories
-    if book_path.is_dir():
-        candidates = list(book_path.glob("*.lisp"))
-        if candidates:
-            return str(candidates[0])
-    
-    return None
 
 
 def main():
@@ -51,48 +28,42 @@ def main():
     with open(preproc_dir / "manifest.json") as f:
         manifest = json.load(f)
 
-    # Group test files by book, count items
-    book_counts = defaultdict(int)
-    for rel_path in manifest["test"]:
-        parts = Path(rel_path).parts
-        if len(parts) >= 2:
-            book_counts[parts[1]] += 1
+    books_dir = Path("/home/acl2/books")
+    book_lisp_files = defaultdict(set)
 
-    # Shuffle and pick books that have matching .lisp files
-    books = sorted(book_counts.keys())
+    for rel_path in manifest["test"]:
+        p = Path(rel_path)
+        stem = p.stem
+        if not stem.endswith("__acl2data"):
+            continue
+        source_name = stem[:-len("__acl2data")]
+        parts = p.parts[1:-1]
+        lisp_path = books_dir / Path(*parts) / (source_name + ".lisp")
+        if lisp_path.exists():
+            book_lisp_files[str(lisp_path)].add(rel_path)
+
+    books = sorted(book_lisp_files.keys())
     random.shuffle(books)
 
     found = 0
-    for book in books:
+    entries = []
+    for lisp_path in books:
         if found >= args.max_books:
             break
-        
-        lisp_file = find_lisp_file(book)
-        if not lisp_file:
-            continue
-        
-        # Check it has theorems with hints (quick grep)
-        try:
-            result = subprocess.run(
-                ["grep", "-c", ":hints", lisp_file],
-                capture_output=True, text=True, timeout=5)
-            hint_count = int(result.stdout.strip() or 0)
-        except Exception:
-            hint_count = 0
-        
-        if hint_count == 0:
-            continue
-        
+        pt_count = len(book_lisp_files[lisp_path])
+        rel = str(Path(lisp_path).relative_to(books_dir))
         found += 1
-        print(f'; {book}: {book_counts[book]} test files, {hint_count} hinted theorems')
-        print(f'(eval-models-on-book')
-        print(f'  "{lisp_file}"')
-        print(f'  :all 10 t nil nil nil')
-        print(f'  (help::make-model-info-alist :all (w state))')
-        print(f'  40 :goal-partial 1 state)')
-        print()
+        print("; {}: {} test files".format(rel, pt_count))
+        entries.append('("{}" . :all)'.format(rel))
 
-    print(f'; Generated {found} eval forms (seed={args.seed})')
+    if entries:
+        print("")
+        for ent in entries:
+            print("    {}".format(ent))
+
+    print("")
+    print("; Generated {} eval forms (seed={}, from {} test books)".format(
+        found, args.seed, len(book_lisp_files)))
 
 
 if __name__ == "__main__":
