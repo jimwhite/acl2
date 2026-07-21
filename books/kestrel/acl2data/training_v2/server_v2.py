@@ -71,26 +71,33 @@ class AdviceModelV2:
     def predict(self, clauses, broken_theorem, n=10):
         """Generate proof fix recommendations."""
         if not clauses:
+            logger.warning("  No clauses provided")
             return []
 
         # Parse clauses as S-expressions
+        logger.info(f"  Parsing {len(clauses)} clauses...")
         parsed = []
-        for clause in clauses:
+        for i, clause in enumerate(clauses):
             try:
-                parsed.append(self._parse_clause(clause))
+                p = self._parse_clause(clause)
+                parsed.append(p)
+                logger.debug(f"    clause {i}: {str(clause)[:80]}... → {str(p)[:80]}...")
             except Exception as e:
-                logger.warning(f"  Parse failed: {e}")
+                logger.warning(f"  Parse failed for clause {i}: {e}")
 
         if not parsed:
+            logger.warning("  No clauses parsed successfully")
             return []
 
         # Build graph
+        logger.info(f"  Building graph from {len(parsed)} parsed clauses...")
         item = {
             "input": {"checkpoint-sequence": parsed},
             "metadata": {"goal-str": broken_theorem},
         }
         graph = self.graph_builder.build_graph(item)
         nn = graph["num_nodes"]
+        logger.info(f"  Graph: {nn} nodes, {len(graph['edge_types'])} edges")
 
         # Build tensors (B=1)
         node_types = torch.zeros(1, self.max_nodes, dtype=torch.long)
@@ -157,18 +164,36 @@ class AdviceModelV2:
             tokens.append(tok)
 
         if not tokens:
-            return []
+            logger.warning("  No tokens generated")
+            return [{"type": "use-lemma", "object": "NIL",
+                     "confidence": 0.0, "book_map": {}}] * n
 
         # Parse action type + object from tokens
-        action_type = tokens[0] if tokens else ""
+        action_type = tokens[0] if tokens else "use"
         action_obj = " ".join(tokens[1:]) if len(tokens) > 1 else ""
 
-        return [{
-            "type": action_type,
-            "object": action_obj,
+        # Map our action types to ACL2 recommendation type strings
+        TYPE_MAP = {
+            "use": "use-lemma",
+            "add": "add-hyp",
+        }
+        acl2_type = TYPE_MAP.get(action_type, action_type)
+
+        # Format object as a single S-expression string for ACL2 parser
+        # e.g., "-lemma CDR -CONS" → "(:LEMMA CDR-CONS)" or just the symbol
+        acl2_object = action_obj.replace(" ", "-").strip("-") if action_obj else "NIL"
+        if not acl2_object:
+            acl2_object = "NIL"
+
+        # Return n recommendations (ACL2 framework expects exactly n)
+        rec = {
+            "type": acl2_type,
+            "object": acl2_object,
             "confidence": 0.5,
             "book_map": {},
-        }]
+        }
+        logger.info(f"  Returning {n} recs: type={acl2_type} obj={acl2_object}")
+        return [rec] * n
 
     @staticmethod
     def _parse_clause(clause_str):
@@ -234,11 +259,12 @@ class AdviceHandler(BaseHTTPRequestHandler):
             broken_theorem = params.get("broken-theorem", [""])[0]
 
             clauses = []
+            # ACL2 sends checkpoint clauses with keys like "checkpoint_0", "checkpoint_1"
             for key in sorted(params.keys()):
-                if key.isdigit():
+                if key.startswith("checkpoint_"):
                     clauses.append(params[key][0])
 
-            logger.info(f"Request: n={n}, clauses={len(clauses)}")
+            logger.info(f"Request: n={n}, clauses={len(clauses)}, keys={sorted(params.keys())}")
             recs = self.model.predict(clauses, broken_theorem, n=n)
 
             response = json.dumps(recs)
@@ -253,10 +279,13 @@ class AdviceHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             logger.error(f"Error: {e}", exc_info=True)
+            error_body = json.dumps({"error": str(e)}).encode("utf-8")
             self.send_response(500)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(error_body)))
+            self.send_header("Connection", "close")
             self.end_headers()
-            self.wfile.write(json.dumps(
-                {"error": str(e)}).encode("utf-8"))
+            self.wfile.write(error_body)
 
     def log_message(self, format, *args):
         logger.info(f"HTTP: {args[0]}")
