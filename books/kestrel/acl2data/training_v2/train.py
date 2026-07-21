@@ -322,7 +322,7 @@ def main():
     if global_step >= args.steps:
         logger.info("All steps already completed.  Done.")
         return
-    pbar = tqdm(total=args.steps, desc="Training")
+    pbar = tqdm(total=args.steps, initial=global_step, desc="Training")
 
     model.train()
     data_iter = iter(train_loader)
