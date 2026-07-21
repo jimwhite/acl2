@@ -17,7 +17,7 @@ import torch.nn as nn
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from training_v2.dense_model import DenseGGNN, DenseGraph2Tocopo
-from training_v2.train import FixedDataset, collate_fixed, compute_loss
+from training_v2.train import FixedDataset, collate_fixed, compute_plur_loss
 
 
 def test_dense_ggnn_forward():
@@ -56,6 +56,8 @@ def test_graph2tocopo_forward():
         "edges": torch.zeros(B, E, N, N),
         "copy_mask": torch.ones(B, N, dtype=torch.bool),
         "tgt_ids": torch.randint(1, V, (B, S)),
+        "node_labels": torch.randint(0, V, (B, N)),
+        "num_nodes": torch.full((B,), N, dtype=torch.long),
     }
     batch["edges"][0, 0, 0, 1] = 1.0
 
@@ -88,6 +90,8 @@ def test_dataset_collate():
         "tgt_ids": torch.randint(1, V, (n_items, S)),
         "action_types": torch.zeros(n_items, dtype=torch.long),
         "copy_mask": torch.ones(n_items, N, dtype=torch.bool),
+        "node_labels": torch.randint(0, V, (n_items, N)),
+        "num_nodes": torch.full((n_items,), N, dtype=torch.long),
     }
     torch.save(data, train_dir / "test.pt")
 
@@ -117,7 +121,7 @@ def test_dataset_collate():
     print(f"  Model: token_logits={out['token_logits'].shape}", flush=True)
 
     # Loss
-    loss = compute_loss(out, batch["tgt_ids"][:, 1:])
+    loss = compute_plur_loss(out, batch)
     assert loss.item() > 0
     print(f"  Loss: {loss.item():.4f}", flush=True)
 
@@ -142,12 +146,14 @@ def test_training_step():
         "edges": torch.zeros(B, E, N, N),
         "copy_mask": torch.ones(B, N, dtype=torch.bool),
         "tgt_ids": torch.randint(1, V, (B, S)),
+        "node_labels": torch.randint(0, V, (B, N)),
+        "num_nodes": torch.full((B,), N, dtype=torch.long),
     }
     batch["edges"][0, 0, 0, 1] = 1.0
 
     opt = torch.optim.Adam(model.parameters(), lr=1e-5)
     out = model(batch)
-    loss = compute_loss(out, batch["tgt_ids"][:, 1:])
+    loss = compute_plur_loss(out, batch)
     loss.backward()
     opt.step()
     print(f"  Loss: {loss.item():.4f}  PASSED", flush=True)

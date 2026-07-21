@@ -64,7 +64,7 @@ def main():
                                              torch.zeros_like(nt)
                                          ).unsqueeze(0).to(device))
 
-        pred_ids = [tid for tid, _, _ in gen]
+        pred_ids = [tid for tid, _, _, _ in gen]
         pred_tokens = [id_to_token.get(t, f"<{t}>") for t in pred_ids
                        if t not in (0, 1)]  # skip <pad>, <sos>
         gt_tokens = [id_to_token.get(t, f"<{t}>") for t in gt_ids

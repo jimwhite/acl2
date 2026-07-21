@@ -32,9 +32,18 @@ sleep 1
 # Start the server in background
 echo "Starting advice server..."
 source /workspaces/acl2-jupyter/.venv/bin/activate
+
+RUNES_DB="postprocess/runes-acl2data.json"
+RUNES_ARG=""
+if [ -f "$RUNES_DB" ]; then
+    RUNES_ARG="--runes $RUNES_DB"
+    echo "Using rune database: $RUNES_DB"
+fi
+
 python training_v2/server_v2.py \
     --model "$MODEL" \
     --vocab "$VOCAB" \
+    $RUNES_ARG \
     --port "$PORT" \
     --log-level WARNING \
     > "$SERVER_LOG" 2>&1 &

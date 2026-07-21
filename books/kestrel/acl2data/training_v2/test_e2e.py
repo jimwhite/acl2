@@ -132,7 +132,7 @@ def test_overfit():
                 src_key_padding_mask=node_mask,
                 encoder_node_labels=node_labels)
 
-            pred_ids = [tid for tid, _, _ in gen_out]
+            pred_ids = [tid for tid, _, _, _ in gen_out]
             gt_ids = batch["tgt_ids"][b_idx].tolist()
             gt_clean = [t for t in gt_ids if t > 1]  # strip <pad> + <sos>
             print(f"\n  Item {b_idx}:")

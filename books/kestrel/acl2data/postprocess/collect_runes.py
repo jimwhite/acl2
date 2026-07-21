@@ -164,9 +164,12 @@ def process_file(fname, runes):
         return []
 
     logging.info("> " + fname)
-    with open(fname, encoding='latin-1') as f:
-        content = f.read()
-        collect_runes(content, fname, runes)
+    try:
+        with open(fname, encoding='latin-1') as f:
+            content = f.read()
+            collect_runes(content, fname, runes)
+    except Exception as e:
+        logging.warning(f"  Skipping {fname}: {e}")
     return runes
 
 class RuneDB:

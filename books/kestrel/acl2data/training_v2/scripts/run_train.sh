@@ -73,6 +73,11 @@ python training_v2/evaluate.py \
     --max-items 100
 
 
+
+python training_v2/gen-eval-tests.py \
+    --preproc-dir "$PREPROC_DIR" \
+    --max-books 10
+
 echo ""
 echo "=== Training complete ==="
 echo "Best model: $OUTPUT_DIR/best_model.pt"

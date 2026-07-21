@@ -32,12 +32,47 @@ from training.data_utils import GraphBuilder
 logger = logging.getLogger(__name__)
 
 
+def _can_parse_as_single(obj_str):
+    """Return False if obj_str clearly cannot be read as a single ACL2 object.
+
+    This is a safety valve: the model at 15.7% Top-1 sometimes generates
+    token sequences that detokenize to strings that ACL2's
+    read-string-as-single-item cannot parse.
+    """
+    if not obj_str or not obj_str.strip():
+        return False
+    # Reader macros would create additional objects or change parsing mode
+    for bad in ('"', "'", "#", "|"):
+        if bad in obj_str:
+            return False
+    # Spaces create multiple objects unless wrapped in parens (a term)
+    if not obj_str.startswith('(') and ' ' in obj_str:
+        return False
+    # Check balanced parentheses
+    depth = 0
+    for c in obj_str:
+        if c == '(':
+            depth += 1
+        elif c == ')':
+            depth -= 1
+            if depth < 0:
+                return False
+    return depth == 0
+
+
 class AdviceModelV2:
     """Wraps DenseGraph2Tocopo for serving."""
 
-    def __init__(self, model_path, vocab_path, device="cpu"):
+    def __init__(self, model_path, vocab_path, runes_path=None, device="cpu"):
         self.device = torch.device(device)
         self.model_path = Path(model_path)
+
+        # Load rune database for book_map resolution
+        self.runes = {}
+        if runes_path:
+            with open(runes_path) as f:
+                self.runes = json.load(f)
+            logger.info(f"  Loaded {len(self.runes)} runes from {runes_path}")
 
         # Load vocab
         with open(vocab_path) as f:
@@ -67,6 +102,53 @@ class AdviceModelV2:
 
         logger.info(f"  Model loaded (step {ckpt.get('step', '?')}), "
                       f"vocab={self.vocab_size}")
+
+    def _resolve_book_map(self, obj_str):
+        """Build book_map for a generated action object.
+
+        Looks up the object (a lemma name, function name, etc.) in the
+        rune database to find which book defines it.
+        """
+        if not self.runes or not obj_str or obj_str == "NIL":
+            return {}
+
+        symbol = obj_str.strip()
+        if symbol.startswith("("):
+            return {}  # terms don't need book_map
+
+        # Build candidate keys to try
+        upper = symbol.upper()
+        candidates = [upper]
+
+        # If already package-qualified (has ::), try as-is
+        if "::" not in upper:
+            candidates.append(f"ACL2::{upper}")
+
+        # Try exact match
+        for key in candidates:
+            if key in self.runes:
+                return self._format_book_map(obj_str, key)
+
+        # Try substring match: find any rune whose name part matches
+        for key in self.runes:
+            if key.endswith(f"::{upper}"):
+                return self._format_book_map(obj_str, key)
+
+        return {}
+
+    def _format_book_map(self, obj_str, rune_key):
+        """Format a rune DB entry into ACL2's book_map format."""
+        entries = self.runes[rune_key]
+        paths = []
+        for entry in entries:
+            if not entry.get("local", False):
+                f = entry.get("file", "")
+                if f:
+                    paths.append(f":SYSTEM \"{f}\"")
+        if paths:
+            paths = list(dict.fromkeys(paths))  # deduplicate
+            return {obj_str: paths[:3]}
+        return {}
 
     def predict(self, clauses, broken_theorem, n=10):
         """Generate proof fix recommendations."""
@@ -141,59 +223,98 @@ class AdviceModelV2:
         node_mask = node_mask.to(self.device)
         node_labels = node_labels.to(self.device)
 
-        # Generate
+        # Generate top-k diverse recommendations via temperature sampling
         with torch.no_grad():
             emb = self.model.encoder(
                 node_types, subtoken_ids, edges, node_mask=node_mask)
-            gen_out = self.model.decoder.generate(
+            topk_results = self.model.decoder.generate_topk(
                 emb, copy_mask,
+                k=n, temperature=0.8, max_attempts=n * 5,
                 src_key_padding_mask=node_mask,
-                encoder_node_labels=node_labels,
-                temperature=1.0)
+                encoder_node_labels=node_labels)
 
-        # Decode
-        tokens = []
-        for tid, _, _ in gen_out:
-            if tid <= 0:
+        # Decode each result into an ACL2 recommendation
+        recommendations = []
+        for gen_out, total_log_prob in topk_results:
+            tokens = []
+            for tid, is_copy, copy_idx, _ in gen_out:
+                if tid <= 0:
+                    continue
+                tok = self.id_to_token.get(tid, "<unk>")
+                # Filter sentinel tokens that should never appear in output
+                if tok in ("<sos>", "<eos>", "<pad>", "<unk>"):
+                    if tok == "<eos>":
+                        break
+                    continue
+                tokens.append(tok)
+
+            if not tokens:
                 continue
-            tok = self.id_to_token.get(tid, "<unk>")
-            if tok in ("<sos>", "<eos>", "<pad>"):
-                if tok == "<eos>":
-                    break
+
+            # Detokenize: tokens starting with "-" are concatenated (no space),
+            # other tokens get a space separator. This is the inverse of
+            # build_target_sequence() in training/data_utils.py.
+            detok = tokens[0]
+            for t in tokens[1:]:
+                if t.startswith("-"):
+                    detok += t
+                else:
+                    detok += " " + t
+
+            # Action type is first symbol, action object is the rest
+            parts = detok.split(" ", 1)
+            action_type = parts[0] if parts else "use-lemma"
+            action_obj = parts[1] if len(parts) > 1 else "NIL"
+
+            # Map to ACL2 recommendation type keyword; validate against
+            # *rec-to-symbol-alist* in kestrel/helpers/recommendations.lisp
+            VALID_TYPES = {
+                "use-lemma", "add-hyp", "add-enable-hint", "add-disable-hint",
+                "add-use-hint", "add-by-hint", "add-expand-hint",
+                "add-do-not-hint", "add-nonlinearp-hint", "add-induct-hint",
+                "add-cases-hint", "add-library", "exact-hints",
+            }
+            acl2_type = action_type if action_type in VALID_TYPES else "use-lemma"
+            acl2_object = action_obj if action_obj else "NIL"
+
+            # Reject objects that clearly can't parse as a single ACL2 expression.
+            # (Model at 15.7% Top-1 generates some unparseable output; these
+            # would cause ACL2 read-string-as-single-item to error.)
+            if not _can_parse_as_single(acl2_object):
+                acl2_object = "NIL"
+
+            # Skip recommendations with NIL object — they can't help.
+            # An add-library with NIL is ill-formed; a use-lemma with NIL
+            # can't resolve to a lemma.
+            if acl2_object == "NIL":
                 continue
-            tokens.append(tok)
 
-        if not tokens:
-            logger.warning("  No tokens generated")
-            return [{"type": "use-lemma", "object": "NIL",
-                     "confidence": 0.0, "book_map": {}}] * n
+            # Confidence: exponentiate cumulative log-prob, normalized by seq length
+            seq_len = max(len(tokens), 1)
+            confidence = float(torch.exp(torch.tensor(total_log_prob / seq_len)))
 
-        # Parse action type + object from tokens
-        action_type = tokens[0] if tokens else "use"
-        action_obj = " ".join(tokens[1:]) if len(tokens) > 1 else ""
+            rec = {
+                "type": acl2_type,
+                "object": acl2_object,
+                "confidence": round(confidence, 4),
+                "book_map": self._resolve_book_map(acl2_object),
+            }
+            recommendations.append(rec)
+            logger.debug(f"  rec: type={acl2_type} obj={acl2_object} "
+                         f"conf={confidence:.4f}")
 
-        # Map our action types to ACL2 recommendation type strings
-        TYPE_MAP = {
-            "use": "use-lemma",
-            "add": "add-hyp",
-        }
-        acl2_type = TYPE_MAP.get(action_type, action_type)
+        # Pad with fallback if we got fewer than n distinct results
+        while len(recommendations) < n:
+            recommendations.append({
+                "type": "use-lemma",
+                "object": "NIL",
+                "confidence": 0.0,
+                "book_map": {},
+            })
 
-        # Format object as a single S-expression string for ACL2 parser
-        # e.g., "-lemma CDR -CONS" → "(:LEMMA CDR-CONS)" or just the symbol
-        acl2_object = action_obj.replace(" ", "-").strip("-") if action_obj else "NIL"
-        if not acl2_object:
-            acl2_object = "NIL"
-
-        # Return n recommendations (ACL2 framework expects exactly n)
-        rec = {
-            "type": acl2_type,
-            "object": acl2_object,
-            "confidence": 0.5,
-            "book_map": {},
-        }
-        logger.info(f"  Returning {n} recs: type={acl2_type} obj={acl2_object}")
-        return [rec] * n
+        logger.info(f"  Returning {len(recommendations)} distinct recs "
+                     f"(requested {n})")
+        return recommendations[:n]
 
     @staticmethod
     def _parse_clause(clause_str):
@@ -295,6 +416,7 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("--model", required=True, help="Model checkpoint (.pt)")
     p.add_argument("--vocab", required=True, help="vocab.json path")
+    p.add_argument("--runes", default=None, help="runes-acl2data.json path (for book_map resolution)")
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--device", default="cpu")
     p.add_argument("--log-level", default="INFO")
@@ -306,7 +428,7 @@ def main():
         datefmt="%H:%M:%S")
 
     AdviceHandler.model = AdviceModelV2(
-        args.model, args.vocab, device=args.device)
+        args.model, args.vocab, runes_path=args.runes, device=args.device)
 
     server = HTTPServer(("0.0.0.0", args.port), AdviceHandler)
     logger.info(f"Server listening on port {args.port}")

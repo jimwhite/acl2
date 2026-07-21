@@ -87,7 +87,7 @@ def evaluate(model, dataset, device, attr_to_id, id_to_token,
                     src_key_padding_mask=node_mask,
                     encoder_node_labels=item.get("node_labels",
                         torch.zeros_like(node_types)).unsqueeze(0).to(device))
-                pred_tokens = [tid for tid, _, _ in gen_out]
+                pred_tokens = [tid for tid, _, _, _ in gen_out]
 
                 pred_at, pred_ao = decode_action(
                     pred_tokens, attr_to_id, id_to_token)
