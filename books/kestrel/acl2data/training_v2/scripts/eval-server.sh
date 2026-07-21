@@ -17,6 +17,7 @@ VOCAB="${VOCAB:-../../../../../data/preprocessed_v4/vocab.json}"
 PORT=8765
 OUTPUT="${OUTPUT:-eval-output.txt}"
 SERVER_LOG="${SERVER_LOG:-eval-server.log}"
+EVAL_SCRIPT="${EVAL_SCRIPT:-training_v2/eval-graph2tocopo.lisp}"
 
 echo "=== Graph2Tocopo v2 Server Evaluation ===" | tee "$OUTPUT"
 echo "Model: $MODEL" | tee -a "$OUTPUT"
@@ -51,8 +52,8 @@ done
 
 # Run ACL2 evaluation
 echo "" | tee -a "$OUTPUT"
-echo "Running ACL2 evaluation (output → $OUTPUT)..." | tee -a "$OUTPUT"
-acl2 --disable-debugger < training_v2/eval-graph2tocopo.lisp >> "$OUTPUT" 2>&1
+echo "Running ACL2 evaluation (script=$EVAL_SCRIPT output→$OUTPUT)..." | tee -a "$OUTPUT"
+acl2 --disable-debugger < "$EVAL_SCRIPT" >> "$OUTPUT" 2>&1
 
 echo "" | tee -a "$OUTPUT"
 echo "=== Results ===" | tee -a "$OUTPUT"
