@@ -296,7 +296,11 @@ def main():
 
     resume_path = args.resume
     if resume_path is None:
-        ckpts = sorted(out_dir.glob("checkpoint_step*.pt"))
+        import re
+        def _step_num(p):
+            m = re.search(r'checkpoint_step(\d+)\.pt', str(p))
+            return int(m.group(1)) if m else 0
+        ckpts = sorted(out_dir.glob("checkpoint_step*.pt"), key=_step_num)
         if ckpts:
             resume_path = str(ckpts[-1])
             logger.info(f"Auto-resuming from {resume_path}")
