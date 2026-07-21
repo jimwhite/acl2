@@ -1,41 +1,42 @@
 #!/usr/bin/env bash
 # eval-server.sh — Run Graph2Tocopo v2 model evaluation via the advice server.
 #
-# Prerequisites:
-#   1. Trained model at $MODEL_DIR/best_model.pt
-#   2. Preprocessed data with vocab.json
-#   3. eval-models book certified (cd /home/acl2/books && cert.pl kestrel/helpers/eval-models.lisp)
-#
 # Usage:
-#   cd /home/acl2/books/kestrel/acl2data
 #   bash training_v2/scripts/eval-server.sh
 #
-# Or with custom model:
-#   MODEL=./models_v7/best_model.pt VOCAB=/path/to/vocab.json bash training_v2/scripts/eval-server.sh
+# Or custom:
+#   MODEL=./models_v7/best_model.pt bash training_v2/scripts/eval-server.sh
 
 set -e
 cd "$(dirname "$0")/../.."
 
+unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
+
 MODEL="${MODEL:-./models_v7/best_model.pt}"
 VOCAB="${VOCAB:-../../../../../data/preprocessed_v4/vocab.json}"
 PORT=8765
+OUTPUT="${OUTPUT:-eval-output.txt}"
+SERVER_LOG="${SERVER_LOG:-eval-server.log}"
 
-echo "=== Graph2Tocopo v2 Server Evaluation ==="
-echo "Model: $MODEL"
-echo "Vocab: $VOCAB"
-echo "Port:  $PORT"
-echo ""
+echo "=== Graph2Tocopo v2 Server Evaluation ===" | tee "$OUTPUT"
+echo "Model: $MODEL" | tee -a "$OUTPUT"
+echo "Vocab: $VOCAB" | tee -a "$OUTPUT"
+echo "Output: $OUTPUT" | tee -a "$OUTPUT"
+echo "" | tee -a "$OUTPUT"
 
 # Kill any existing server on this port
-kill $(lsof -t -i:$PORT) 2>/dev/null || true
+fuser -k $PORT/tcp 2>/dev/null || true
+sleep 1
 
 # Start the server in background
 echo "Starting advice server..."
-source training/.venv/bin/activate 2>/dev/null || source training_v2/.venv/bin/activate 2>/dev/null || true
+source /workspaces/acl2-jupyter/.venv/bin/activate
 python training_v2/server_v2.py \
     --model "$MODEL" \
     --vocab "$VOCAB" \
-    --port "$PORT" &
+    --port "$PORT" \
+    --log-level WARNING \
+    > "$SERVER_LOG" 2>&1 &
 SERVER_PID=$!
 echo "Server PID: $SERVER_PID"
 
@@ -49,10 +50,15 @@ for i in $(seq 1 30); do
 done
 
 # Run ACL2 evaluation
-echo ""
-echo "Running ACL2 evaluation..."
-acl2 < training_v2/eval-graph2tocopo.lisp
+echo "" | tee -a "$OUTPUT"
+echo "Running ACL2 evaluation (output → $OUTPUT)..." | tee -a "$OUTPUT"
+acl2 --disable-debugger < training_v2/eval-graph2tocopo.lisp >> "$OUTPUT" 2>&1
+
+echo "" | tee -a "$OUTPUT"
+echo "=== Results ===" | tee -a "$OUTPUT"
+grep -E "GRAPH2TOCOPO|model.*worked|Done|OVERALL" "$OUTPUT" | tail -20 | tee -a "$OUTPUT"
 
 # Cleanup
 kill $SERVER_PID 2>/dev/null || true
-echo "Done."
+echo ""
+echo "Done. Output: $OUTPUT  Server log: $SERVER_LOG"

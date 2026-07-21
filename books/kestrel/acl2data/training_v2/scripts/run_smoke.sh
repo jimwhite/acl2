@@ -18,7 +18,7 @@ echo "Preproc dir:  $PREPROC_DIR"
 echo "Output dir:   $OUTPUT_DIR"
 echo ""
 
-source training/.venv/bin/activate 2>/dev/null || source training_v2/.venv/bin/activate
+source /workspaces/acl2-jupyter/.venv/bin/activate
 
 echo "1. Installing package..."
 uv pip install -q -e training_v2/ 2>/dev/null || pip install -q -e training_v2/

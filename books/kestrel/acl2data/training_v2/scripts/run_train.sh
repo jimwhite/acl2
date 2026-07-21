@@ -20,7 +20,7 @@ echo "Preproc dir:  $PREPROC_DIR"
 echo "Output dir:   $OUTPUT_DIR"
 echo ""
 
-source training/.venv/bin/activate 2>/dev/null || source training_v2/.venv/bin/activate
+source /workspaces/acl2-jupyter/.venv/bin/activate
 
 echo "1. Installing package..."
 uv pip install -q -e training_v2/ 2>/dev/null || pip install -q -e training_v2/
@@ -46,7 +46,7 @@ python training_v2/train.py \
 
 python training_v2/train.py \
     --data-dir "$PREPROC_DIR" \
-    --output-dir ./models_v7 \
+    --output-dir "$OUTPUT_DIR" \
     --steps 50000 --batch-size 8 \
     --valid-steps 5000 --log-steps 1000 --checkpoint-steps 10000
 
@@ -58,17 +58,20 @@ python training_v2/evaluate.py \
 
 
 echo ""
-echo "3. Training 50K steps..."
+echo "3. Training 200K steps..."
 python training_v2/train.py \
     --data-dir "$PREPROC_DIR" \
     --output-dir "$OUTPUT_DIR" \
-    --steps 50000 \
-    --batch-size 8 \
-    --hidden-dim 128 \
-    --num-workers 8 \
-    --valid-steps 5000 \
-    --log-steps 1000 \
-    --checkpoint-steps 10000
+    --steps 200000 --batch-size 8 \
+    --valid-steps 5000 --log-steps 1000 --checkpoint-steps 10000
+
+
+
+python training_v2/evaluate.py \
+    --data-dir "$PREPROC_DIR" \
+    --model "$OUTPUT_DIR/best_model.pt" \
+    --max-items 100
+
 
 echo ""
 echo "=== Training complete ==="
