@@ -46,3 +46,10 @@ Deep Learning Recommendations for the ACL2 Interactive Theorem Pr.md
 
 # Jupyter kernel logs
 postprocess/common-lisp-jupyter/
+runes-acl2data.json
+
+# Generated eval outputs
+eval-output*.txt
+eval-test-output*.txt
+eval-test-set-output.txt
+train-out.txt
