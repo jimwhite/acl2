@@ -5,7 +5,7 @@ Usage:
   python training_v2/scripts/gen_batch_evals.py \
       --books training_v2/eval-val.lisp \
       --batches 8 \
-      --port 8765 \
+      --server-url http://host.docker.internal:8765/ \
       --output-dir eval-outputs-parallel
 """
 
@@ -32,7 +32,7 @@ LISP_TEMPLATE = """(in-package "ACL2")
 (include-book "kestrel/helpers/eval-models" :dir :system :ttags :all)
 
 (table acl2::advice-server :graph2tocopo
-       '("http://127.0.0.1:{port}/" "graph2tocopo"))
+       '("{server_url}" "graph2tocopo"))
 
 (cw "~%=== Graph2Tocopo v2 — Validation Set Eval (Batch {batch_num}/{total_batches}) ===~%")
 
@@ -60,7 +60,8 @@ def main():
     import argparse
     p = argparse.ArgumentParser(description="Generate per-batch ACL2 eval scripts")
     p.add_argument("--batches", type=int, default=8)
-    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--server-url", default="http://127.0.0.1:8765/",
+                   help="URL that ACL2 uses to reach the advice server")
     p.add_argument("--output-dir", default="eval-outputs-parallel")
     args = p.parse_args()
 
@@ -83,7 +84,7 @@ def main():
         book_entries = " ".join(f'("{b}" . :all)' for b in batch_books)
 
         content = LISP_TEMPLATE.format(
-            port=args.port,
+            server_url=args.server_url,
             batch_num=batch_num,
             total_batches=args.batches,
             book_list=book_entries,

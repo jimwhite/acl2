@@ -12,6 +12,13 @@
 #   PORT        — HTTP port for model server (default: 8765)
 #   BATCHES     — number of concurrent ACL2 processes (default: 8)
 #   OUTPUT_DIR  — directory for output logs (default: eval-outputs-parallel)
+#   SERVER_URL  — URL ACL2 uses to reach the server (default: http://127.0.0.1:PORT/)
+#                 From container→host: http://host.docker.internal:PORT/
+#   ACL2_CMD    — how to invoke acl2 (default: acl2)
+#                 From host:  docker exec -i CONTAINER acl2
+#                 In container: acl2
+#   START_SERVER — set to 0 to skip starting the server (default: 1)
+#   VENV        — path to venv activate (default: /workspaces/acl2-jupyter/.venv/bin/activate)
 
 set -e
 cd "$(dirname "$0")/../.."
@@ -26,6 +33,9 @@ RUNES="${RUNES:-postprocess/runes-acl2data.json}"
 PORT="${PORT:-8765}"
 BATCHES="${BATCHES:-8}"
 OUTPUT_DIR="${OUTPUT_DIR:-eval-outputs-parallel}"
+SERVER_URL="${SERVER_URL:-http://127.0.0.1:$PORT/}"
+ACL2_CMD="${ACL2_CMD:-acl2}"
+START_SERVER="${START_SERVER:-1}"
 VENV="${VENV:-/workspaces/acl2-jupyter/.venv/bin/activate}"
 
 # Activate venv if it exists
@@ -38,59 +48,66 @@ echo "Model:    $MODEL"
 echo "Vocab:    $VOCAB"
 echo "Runes:    $RUNES"
 echo "Port:     $PORT"
+echo "Server:   $SERVER_URL"
+echo "ACL2:     $ACL2_CMD"
 echo "Batches:  $BATCHES"
 echo "Output:   $OUTPUT_DIR/"
 echo ""
 
-# ── Step 1: Start the model server ──────────────────────────────────────────
+# ── Step 1: Start the model server (if requested) ────────────────────────────
 
-# Kill anything already on our port (lsof is portable across Linux/macOS)
-lsof -ti :$PORT | xargs kill -9 2>/dev/null || true
-sleep 1
+SERVER_PID=""
+if [ "$START_SERVER" = "1" ]; then
+    # Kill anything already on our port (lsof is portable across Linux/macOS)
+    lsof -ti :$PORT | xargs kill -9 2>/dev/null || true
+    sleep 1
 
-RUNES_ARG=""
-if [ -n "$RUNES" ]; then
-    RUNES_ARG="--runes $RUNES"
-fi
-
-echo "Starting model advice server..."
-python -m training_v2.server_v2 \
-    --model "$MODEL" \
-    --vocab "$VOCAB" \
-    $RUNES_ARG \
-    --port "$PORT" \
-    > /tmp/model-server-parallel.log 2>&1 &
-SERVER_PID=$!
-echo "  PID: $SERVER_PID"
-
-# Wait for server to be ready
-echo "Waiting for server to be ready (timeout 120s)..."
-READY=0
-for i in $(seq 1 60); do
-    RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://127.0.0.1:$PORT/" \
-        -d "n=1&broken-theorem=(DEFTHM%20TEST%20X)" 2>/dev/null || echo "000")
-    if [ "$RESP" = "200" ]; then
-        echo "  Server ready after $((i * 2))s (HTTP $RESP)"
-        READY=1
-        break
+    RUNES_ARG=""
+    if [ -n "$RUNES" ] && [ -f "$RUNES" ]; then
+        RUNES_ARG="--runes $RUNES"
     fi
-    if ! kill -0 $SERVER_PID 2>/dev/null; then
-        echo "FATAL: Server died during startup. Last log lines:"
+
+    echo "Starting model advice server..."
+    python -m training_v2.server_v2 \
+        --model "$MODEL" \
+        --vocab "$VOCAB" \
+        $RUNES_ARG \
+        --port "$PORT" \
+        > /tmp/model-server-parallel.log 2>&1 &
+    SERVER_PID=$!
+    echo "  PID: $SERVER_PID"
+
+    # Wait for server to be ready
+    echo "Waiting for server to be ready (timeout 120s)..."
+    READY=0
+    for i in $(seq 1 60); do
+        RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://127.0.0.1:$PORT/" \
+            -d "n=1&broken-theorem=(DEFTHM%20TEST%20X)" 2>/dev/null || echo "000")
+        if [ "$RESP" = "200" ]; then
+            echo "  Server ready after $((i * 2))s (HTTP $RESP)"
+            READY=1
+            break
+        fi
+        if ! kill -0 $SERVER_PID 2>/dev/null; then
+            echo "FATAL: Server died during startup. Last log lines:"
+            tail -30 /tmp/model-server-parallel.log
+            exit 1
+        fi
+        if [ $((i % 15)) -eq 0 ]; then
+            echo "  Still waiting... (${i}s, HTTP response: $RESP)"
+        fi
+        sleep 2
+    done
+
+    if [ "$READY" -eq 0 ]; then
+        echo "FATAL: Server did not become ready within 120s"
+        kill $SERVER_PID 2>/dev/null || true
         tail -30 /tmp/model-server-parallel.log
         exit 1
     fi
-    # Show progress every 30s
-    if [ $((i % 15)) -eq 0 ]; then
-        echo "  Still waiting... (${i}s, HTTP response: $RESP)"
-    fi
-    sleep 2
-done
-
-if [ "$READY" -eq 0 ]; then
-    echo "FATAL: Server did not become ready within 120s"
-    kill $SERVER_PID 2>/dev/null || true
-    tail -30 /tmp/model-server-parallel.log
-    exit 1
+else
+    echo "Skipping server startup (START_SERVER=0)."
+    echo "Assuming server is already running at $SERVER_URL"
 fi
 
 # ── Step 2: Generate batch Lisp files ───────────────────────────────────────
@@ -101,7 +118,7 @@ echo ""
 echo "Generating batch eval scripts..."
 python -m training_v2.scripts.gen_batch_evals \
     --batches "$BATCHES" \
-    --port "$PORT" \
+    --server-url "$SERVER_URL" \
     --output-dir "$OUTPUT_DIR"
 
 # ── Step 3: Run all batches in parallel ─────────────────────────────────────
@@ -115,7 +132,7 @@ for batch_file in "$OUTPUT_DIR"/eval-batch-*.lisp; do
     batch_log="$OUTPUT_DIR/$batch_name.log"
     echo "  Starting: $batch_name (log: $batch_log)"
 
-    acl2 < "$batch_file" > "$batch_log" 2>&1 &
+    $ACL2_CMD < "$batch_file" > "$batch_log" 2>&1 &
     PIDS+=($!)
 done
 
@@ -187,7 +204,9 @@ fi
 
 # ── Step 6: Cleanup ─────────────────────────────────────────────────────────
 
-kill $SERVER_PID 2>/dev/null || true
+if [ -n "$SERVER_PID" ]; then
+    kill $SERVER_PID 2>/dev/null || true
+fi
 echo ""
 echo "=== Done ==="
 echo "Outputs: $OUTPUT_DIR/"
