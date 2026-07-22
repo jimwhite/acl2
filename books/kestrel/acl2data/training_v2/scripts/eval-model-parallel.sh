@@ -11,6 +11,7 @@
 #   RUNES       — path to runes JSON for book_map resolution
 #   PORT        — HTTP port for model server (default: 8765)
 #   BATCHES     — number of concurrent ACL2 processes (default: 8)
+#                 With 539 books, 8 batches = ~67 books each.
 #   OUTPUT_DIR  — directory for output logs (default: eval-outputs-parallel)
 #   SERVER_URL  — URL ACL2 uses to reach the server (default: http://127.0.0.1:PORT/)
 #                 From container→host: http://host.docker.internal:PORT/
@@ -118,6 +119,7 @@ echo ""
 echo "Generating batch eval scripts..."
 python -m training_v2.scripts.gen_batch_evals \
     --batches "$BATCHES" \
+    --manifest ../../../../../data/preprocessed_v4/manifest.json \
     --server-url "$SERVER_URL" \
     --output-dir "$OUTPUT_DIR"
 

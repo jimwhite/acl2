@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Generate per-batch ACL2 eval scripts for the validation set.
 
+Reads the validation book list from preprocessed_v4/manifest.json
+(full 539-book validation split), or falls back to a small default list.
+
 Usage:
   python training_v2/scripts/gen_batch_evals.py \
-      --books training_v2/eval-val.lisp \
+      --manifest ../../../../../data/preprocessed_v4/manifest.json \
       --batches 8 \
       --server-url http://host.docker.internal:8765/ \
       --output-dir eval-outputs-parallel
@@ -11,10 +14,11 @@ Usage:
 
 import sys
 import os
+import json
 from pathlib import Path
 
-# Validation set books — extracted from eval-val.lisp
-VALIDATION_BOOKS = [
+# Small fallback list if manifest not available
+FALLBACK_BOOKS = [
     "arithmetic-2/meta/integerp.lisp",
     "arithmetic-2/meta/expt.lisp",
     "arithmetic-2/meta/numerator-and-denominator.lisp",
@@ -26,6 +30,29 @@ VALIDATION_BOOKS = [
     "centaur/fty/baselists.lisp",
     "centaur/fty/deftypes.lisp",
 ]
+
+
+def load_validation_books(manifest_path):
+    """Load validation book list from manifest.json.
+
+    Converts val/foo/bar__acl2data.pt → foo/bar.lisp
+    """
+    if not manifest_path or not Path(manifest_path).exists():
+        return None
+
+    with open(manifest_path) as f:
+        manifest = json.load(f)
+
+    val_entries = manifest.get("val", [])
+    books = set()
+    for pt in val_entries:
+        # val/path/to/book__acl2data.pt → path/to/book.lisp
+        book = pt.replace("val/", "").replace("__acl2data.pt", ".lisp")
+        books.add(book)
+
+    result = sorted(books)
+    print(f"  Loaded {len(result)} validation books from manifest")
+    return result
 
 LISP_TEMPLATE = """(in-package "ACL2")
 
@@ -60,6 +87,8 @@ def main():
     import argparse
     p = argparse.ArgumentParser(description="Generate per-batch ACL2 eval scripts")
     p.add_argument("--batches", type=int, default=8)
+    p.add_argument("--manifest", default="../../../../../data/preprocessed_v4/manifest.json",
+                   help="Path to preprocessed_v4/manifest.json for validation book list")
     p.add_argument("--server-url", default="http://127.0.0.1:8765/",
                    help="URL that ACL2 uses to reach the advice server")
     p.add_argument("--output-dir", default="eval-outputs-parallel")
@@ -68,7 +97,18 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    books = VALIDATION_BOOKS
+    # Load validation books from manifest, or use fallback
+    manifest_path = Path(args.manifest)
+    if manifest_path.exists():
+        books = load_validation_books(args.manifest)
+    else:
+        print(f"  Manifest not found: {args.manifest}")
+        print(f"  Using fallback list ({len(FALLBACK_BOOKS)} books)")
+        books = FALLBACK_BOOKS
+
+    if not books:
+        print("ERROR: No books to evaluate")
+        sys.exit(1)
     total = len(books)
     per_batch = (total + args.batches - 1) // args.batches
 
