@@ -17,7 +17,7 @@
 #   ACL2_CMD    — how to invoke acl2 (default: acl2)
 #                 From host:  docker exec -i CONTAINER acl2
 #                 In container: acl2
-#   START_SERVER — set to 0 to skip starting the server (default: 1)
+#   START_SERVER — set to 1 to start server locally (default: 0)
 #   VENV        — path to venv activate (default: /workspaces/acl2-jupyter/.venv/bin/activate)
 
 set -e
@@ -33,9 +33,9 @@ RUNES="${RUNES:-postprocess/runes-acl2data.json}"
 PORT="${PORT:-8765}"
 BATCHES="${BATCHES:-8}"
 OUTPUT_DIR="${OUTPUT_DIR:-eval-outputs-parallel}"
-SERVER_URL="${SERVER_URL:-http://127.0.0.1:$PORT/}"
+SERVER_URL="${SERVER_URL:-http://host.docker.internal:$PORT/}"
 ACL2_CMD="${ACL2_CMD:-acl2}"
-START_SERVER="${START_SERVER:-1}"
+START_SERVER="${START_SERVER:-0}"
 VENV="${VENV:-/workspaces/acl2-jupyter/.venv/bin/activate}"
 
 # Activate venv if it exists
