@@ -22,16 +22,21 @@ unset http_proxy HTTP_PROXY https_proxy HTTPS_PROXY
 
 MODEL="${MODEL:-./models_v7/best_model.pt}"
 VOCAB="${VOCAB:-../../../../../data/preprocessed_v4/vocab.json}"
-RUNES="${RUNES:-}"
+RUNES="${RUNES:-postprocess/runes-acl2data.json}"
 PORT="${PORT:-8765}"
 BATCHES="${BATCHES:-8}"
 OUTPUT_DIR="${OUTPUT_DIR:-eval-outputs-parallel}"
+VENV="${VENV:-/workspaces/acl2-jupyter/.venv/bin/activate}"
 
-source /workspaces/acl2-jupyter/.venv/bin/activate
+# Activate venv if it exists
+if [ -f "$VENV" ]; then
+    source "$VENV"
+fi
 
 echo "=== Model Advice Server — Parallel Validation Eval ==="
 echo "Model:    $MODEL"
 echo "Vocab:    $VOCAB"
+echo "Runes:    $RUNES"
 echo "Port:     $PORT"
 echo "Batches:  $BATCHES"
 echo "Output:   $OUTPUT_DIR/"
@@ -39,7 +44,8 @@ echo ""
 
 # ── Step 1: Start the model server ──────────────────────────────────────────
 
-fuser -k $PORT/tcp 2>/dev/null || true
+# Kill anything already on our port (lsof is portable across Linux/macOS)
+lsof -ti :$PORT | xargs kill -9 2>/dev/null || true
 sleep 1
 
 RUNES_ARG=""
@@ -61,16 +67,21 @@ echo "  PID: $SERVER_PID"
 echo "Waiting for server to be ready (timeout 120s)..."
 READY=0
 for i in $(seq 1 60); do
-    if curl -s -X POST "http://127.0.0.1:$PORT/" \
-        -d "n=1&broken-theorem=(DEFTHM%20TEST%20X)" > /dev/null 2>&1; then
-        echo "  Server ready after $((i * 2))s"
+    RESP=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://127.0.0.1:$PORT/" \
+        -d "n=1&broken-theorem=(DEFTHM%20TEST%20X)" 2>/dev/null || echo "000")
+    if [ "$RESP" = "200" ]; then
+        echo "  Server ready after $((i * 2))s (HTTP $RESP)"
         READY=1
         break
     fi
     if ! kill -0 $SERVER_PID 2>/dev/null; then
-        echo "FATAL: Server died. Check /tmp/model-server-parallel.log"
+        echo "FATAL: Server died during startup. Last log lines:"
         tail -30 /tmp/model-server-parallel.log
         exit 1
+    fi
+    # Show progress every 30s
+    if [ $((i % 15)) -eq 0 ]; then
+        echo "  Still waiting... (${i}s, HTTP response: $RESP)"
     fi
     sleep 2
 done
