@@ -52,4 +52,8 @@ runes-acl2data.json
 eval-output*.txt
 eval-test-output*.txt
 eval-test-set-output.txt
+eval-train-out.txt
 train-out.txt
+
+# Generated test index (large file)
+test_index.json
