@@ -238,7 +238,7 @@
 (defirrelevant irr-align-spec
   :short "An irrelevant alignment specifier."
   :type align-specp
-  :body (align-spec-alignas-expr (irr-const-expr)))
+  :body (align-spec-alignas-expr nil (irr-const-expr)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,19 +305,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defirrelevant irr-param-declor
+  :short "An irrelevant parameter declarator."
+  :type param-declorp
+  :body (param-declor-none nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defirrelevant irr-param-declon
   :short "An irrelevant parameter declaration."
   :type param-declonp
   :body (make-param-declon :specs nil
-                           :declor (param-declor-none)
+                           :declor (irr-param-declor)
                            :attribs nil))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defirrelevant irr-param-declor
-  :short "An irrelevant parameter declarator."
-  :type param-declorp
-  :body (param-declor-none))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -345,7 +345,7 @@
 (defirrelevant irr-struct-declor
   :short "An irrelevant structure declarator."
   :type struct-declorp
-  :body (make-struct-declor :declor? nil :expr? nil))
+  :body (make-struct-declor :declor? nil :expr? nil :info nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,7 +366,8 @@
 (defirrelevant irr-statassert
   :short "An irrelevant static assertion declaration."
   :type statassertp
-  :body (make-statassert :test (irr-const-expr)
+  :body (make-statassert :uscore nil
+                         :test (irr-const-expr)
                          :message (list (irr-stringlit))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

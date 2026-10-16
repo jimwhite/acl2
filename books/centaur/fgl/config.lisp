@@ -120,6 +120,15 @@ validity check of its result produces a counterexample, the SAT counterexample
 will be analyzed to try and create a counterexample to the conjecture (in terms
 of its original variables). This also affects any rewrite rules that call
 @('interp-st-run-ctrex') (it will exit without running the counterexample).")
+    (counterexample-consistency-check-enabledp
+     booleanp :default 't
+     "If T (the default) and if @('counterexample-analysis-enabledp'), then after
+a SAT counterexample is analyzed to try and create a conjecture counterexample,
+each Boolean variable binding in the Boolean variable database will be checked
+for consistency: that is, whether the truth value of a Boolean variabe under
+the SAT counterexample is the same as the truth value of the associated FGL
+symbolic object under the conjecture counterexample. Inconsistencies are
+collected and reported. Setting this to NIL disables the consistency check.")
     (prof-enabledp booleanp :default 't
                    "If T (the default), then the interpreter collects rule
 profiling information (like ACL2's @(see acl2::accumulated-persistence)) and
@@ -132,6 +141,10 @@ fgl-sat-config) object. See @(see fgl-solving).")
 skipped. If NIL (the default), then instead uses the attachment for
 @('(fgl-toplevel-vacuity-check-config)').  If nonnil, should be a @(see
 fgl-sat-config) object. See @(see fgl-solving).")
+    (sat-config-reachability
+     "SAT config objects for reachability checks. If NIL (the default), then these
+checks instead use the attachment for @('(fgl-reachability-sat-check-config)').
+ If nonnil, should be a @(see fgl-sat-config) object. See @(see fgl-solving).")
     (toplevel-sat-check fgl-toplevel-sat-check-mode-p :default 't
                         "If T (the default), then the FGL clause processor runs
 the interpreter on the given goal and then tries to prove the validity of the
@@ -252,6 +265,8 @@ global, its global value (e.g., keyword @(':fgl-trace-rewrites') for the
 (define fgl-toplevel-vacuity-check-config-wrapper (override)
   (or override (fgl-toplevel-vacuity-check-config)))
 
+(define fgl-reachability-sat-check-config-wrapper (override)
+  (or override (fgl-reachability-sat-check-config)))
 
 
 

@@ -8,7 +8,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
 (in-package "ARM")
 
 ;; STATUS: In-progress / incomplete
@@ -21,6 +20,7 @@
 (include-book "kestrel/bv/bvplus-def" :dir :system)
 (local (include-book "kestrel/bv/bvplus" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(include-book "kestrel/bv/bvif" :dir :system) ;todo: just the def
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 ;(include-book "kestrel/alists-light/lookup-eq" :dir :system)
 ;(include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
@@ -31,6 +31,24 @@
   (defthm integerp-when-unsigned-byte-p-32
     (implies (unsigned-byte-p 32 x)
              (integerp x))))
+
+;; A map from library function addresses to names (strings).
+;; The my- is to avoid a name clash with the stobj generated name.
+;; TODO: Make this a doublet list (will need a lookup function)
+(defund my-library-mapp (map)
+  (declare (xargs :guard t))
+  (and (alistp map)
+       (nat-listp (strip-cars map))
+       (string-listp (strip-cdrs map))))
+
+(defthmd alistp-when-my-library-mapp
+  (implies (my-library-mapp map)
+           (alistp map))
+  :hints (("Goal" :in-theory (enable my-library-mapp))))
+
+;; Grant Jurgensen reports that CMUCL rejects the type of the large memory array
+;; (even though that array is not allocated due to the :non-executable option):
+; cert_param: (non-cmucl)
 
 ;; The state of the ARM CPU, including registers, memory, etc.
 (defstobj+
@@ -48,7 +66,6 @@
   (endianstate :type bit :initially 0)
   ;; TODO: SIMD / floating point registers
   ;; TODO: Exception bit?
-  ;; TODO: Oracle for undefined values?
   ;; This array can use a lot of memory, so we use :non-executable below:
   (memory :type (array (unsigned-byte 8) (4294967296)) ; 2^32 bytes
           :initially 0)
@@ -60,6 +77,17 @@
   ;; allows the user to make an assumption about the version when lifting.
   (arch-version :type (integer 4 7) :initially 7)
 
+  (library-map :type (satisfies my-library-mapp))
+
+  (oracle :type (satisfies true-listp))
+
+  ;; System Control Register
+  ;; Currently, we only model the bits of this that we need.
+  ;; Initial values come from Figure B4-1, but note that some values
+  ;; don't make sense for earlier ARM versions (see Table D12-1)!
+  (sctlr.a :type bit :initially 0)
+  (sctlr.u :type bit :initially 1)
+
   ;; This avoids actually allocating 4GB of memory for the MEMORY field (even
   ;; though that only takes a few seconds).  See add-global-stobj if you want
   ;; execution for this stobj.  See also the "large stobj" discussion on Zulip.
@@ -68,6 +96,26 @@
   ;; GCL 2.7.1 (and probably any version of GCL starting with 2.7.0).  It is
   ;; also too big for 32-bit CMUCL (compilation error, apparently).
   :non-executable t)
+
+(defthm bitp-of-sctlr.a
+  (implies (armp arm)
+           (bitp (sctlr.a arm)))
+  :hints (("Goal" :in-theory (enable armp sctlr.ap sctlr.a))))
+
+(defthm bitp-of-sctlr.a-type
+  (implies (armp arm)
+           (bitp (sctlr.a arm)))
+  :rule-classes :type-prescription)
+
+(defthm bitp-of-sctlr.u
+  (implies (armp arm)
+           (bitp (sctlr.u arm)))
+  :hints (("Goal" :in-theory (enable armp sctlr.up sctlr.u))))
+
+(defthm bitp-of-sctlr.u-type
+  (implies (armp arm)
+           (bitp (sctlr.u arm)))
+  :rule-classes :type-prescription)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -134,9 +182,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst *sp* #b1101)
-(defconst *lr* #b1110)
-(defconst *pc* #b1111)
+(defconst *fp* #b1011) ; register 11 is the frame pointer (FP)
+(defconst *sp* #b1101) ; register 13 is the stack pointer (SP)
+(defconst *lr* #b1110) ; register 14 is the link register (LR)
+(defconst *pc* #b1111) ; register 15 is the program counter (PC)
 
 ;; Gets the stack pointer (register 13 = #b1101).
 ;; We consider this an abbreviation to be kept enabled.
@@ -220,14 +269,66 @@
          (set-reg n val1 arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
+;; Here the IF is over states
+;; TODO: Maybe refrain if the PCs are the same, to prevent splitting
+;; todo: more if lifters (or maybe set-reg will always be on top)?
+(defthmd set-reg-of-if-arg3
+  (equal (set-reg reg val (if test arm1 arm2))
+         (if test
+             (set-reg reg val arm1)
+           (set-reg reg val arm2))))
+
+;; maybe only do it for the pc (see set-reg-of-pc-and-bvif)
+(defthmd set-reg-of-bvif
+  (equal (set-reg reg (bvif size test tp ep) arm)
+         (if test
+             (set-reg reg (bvchop size tp) arm)
+           (set-reg reg (bvchop size ep) arm))))
+
+;; special case for the PC
+(defthmd set-reg-of-pc-and-bvif
+  (equal (set-reg *pc* (bvif size test tp ep) arm)
+         (if test
+             (set-reg *pc* (bvchop size tp) arm)
+           (set-reg *pc* (bvchop size ep) arm))))
+
 (defthm isetstate-of-set-reg
   (equal (isetstate (set-reg n val arm))
          (isetstate arm))
   :hints (("Goal" :in-theory (enable set-reg))))
 
+(defthm sctlr.a-of-set-reg
+  (equal (sctlr.a (set-reg n val arm))
+         (sctlr.a arm))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm sctlr.u-of-set-reg
+  (equal (sctlr.u (set-reg n val arm))
+         (sctlr.u arm))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+(defthm library-map-of-set-reg
+  (equal (library-map (set-reg n val arm))
+         (library-map arm))
+  :hints (("Goal" :in-theory (enable set-reg))))
+
+;move
 (defthm isetstate-of-if
   (equal (isetstate (if test tp ep))
          (if test (isetstate tp) (isetstate ep))))
+
+(defthm sctlr.a-of-if
+  (equal (sctlr.a (if test tp ep))
+         (if test (sctlr.a tp) (sctlr.a ep))))
+
+(defthm sctlr.u-of-if
+  (equal (sctlr.u (if test tp ep))
+         (if test (sctlr.u tp) (sctlr.u ep))))
+
+;move
+(defthm library-map-of-if
+  (equal (library-map (if test tp ep))
+         (if test (library-map tp) (library-map ep))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -366,6 +467,29 @@
 (defthm isetstate-of-set-apsr.v (equal (isetstate (set-apsr.v bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.v))))
 (defthm isetstate-of-set-apsr.q (equal (isetstate (set-apsr.q bit arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.q))))
 (defthm isetstate-of-set-apsr.ge (equal (isetstate (set-apsr.ge bits arm)) (isetstate arm)) :hints (("Goal" :in-theory (enable set-apsr.ge))))
+
+(defthm sctlr.a-of-set-apsr.n (equal (sctlr.a (set-apsr.n bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.n))))
+(defthm sctlr.a-of-set-apsr.z (equal (sctlr.a (set-apsr.z bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.z))))
+(defthm sctlr.a-of-set-apsr.c (equal (sctlr.a (set-apsr.c bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.c))))
+(defthm sctlr.a-of-set-apsr.v (equal (sctlr.a (set-apsr.v bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.v))))
+(defthm sctlr.a-of-set-apsr.q (equal (sctlr.a (set-apsr.q bit arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.q))))
+(defthm sctlr.a-of-set-apsr.ge (equal (sctlr.a (set-apsr.ge bits arm)) (sctlr.a arm)) :hints (("Goal" :in-theory (enable set-apsr.ge))))
+
+(defthm sctlr.u-of-set-apsr.n (equal (sctlr.u (set-apsr.n bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.n))))
+(defthm sctlr.u-of-set-apsr.z (equal (sctlr.u (set-apsr.z bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.z))))
+(defthm sctlr.u-of-set-apsr.c (equal (sctlr.u (set-apsr.c bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.c))))
+(defthm sctlr.u-of-set-apsr.v (equal (sctlr.u (set-apsr.v bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.v))))
+(defthm sctlr.u-of-set-apsr.q (equal (sctlr.u (set-apsr.q bit arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.q))))
+(defthm sctlr.u-of-set-apsr.ge (equal (sctlr.u (set-apsr.ge bits arm)) (sctlr.u arm)) :hints (("Goal" :in-theory (enable set-apsr.ge))))
+
+(defthm library-map-of-set-apsr.n (equal (library-map (set-apsr.n bit arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.n))))
+(defthm library-map-of-set-apsr.z (equal (library-map (set-apsr.z bit arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.z))))
+(defthm library-map-of-set-apsr.c (equal (library-map (set-apsr.c bit arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.c))))
+(defthm library-map-of-set-apsr.v (equal (library-map (set-apsr.v bit arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.v))))
+(defthm library-map-of-set-apsr.q (equal (library-map (set-apsr.q bit arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.q))))
+(defthm library-map-of-set-apsr.ge (equal (library-map (set-apsr.ge bits arm)) (library-map arm)) :hints (("Goal" :in-theory (enable set-apsr.ge))))
+
+(defthm library-map-of-update-isetstate (equal (library-map (update-isetstate v arm)) (library-map arm)) :hints (("Goal" :in-theory (enable reg))))
 
 (local (include-book "kestrel/bv/trim-intro-rules" :dir :system))
 

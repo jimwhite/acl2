@@ -11,8 +11,14 @@
 (in-package "REMORA")
 
 (include-book "abstract-syntax-trees")
+(include-book "abstract-syntax-derived-fixtypes")
+(include-book "abstract-syntax-structurals")
+(include-book "free-variable-operations")
+
+(local (include-book "osets"))
 
 (include-book "kestrel/fty/deffold-map" :dir :system)
+(include-book "kestrel/fty/deffold-reduce" :dir :system)
 
 (include-book "portcullis")
 
@@ -33,7 +39,54 @@
   (if (endp binds)
       (expr-fix body)
     (expr-let (list (bind-fix (car binds)))
-              (nest-let-binds (cdr binds) body))))
+              (nest-let-binds (cdr binds) body)))
+
+  ///
+
+  ; The free variables of the nested form are those of the multi-bind form:
+  ; the bindings' free variables, and the body's minus the bound ones.
+
+  (defrule expr-free-expr-vars-of-nest-let-binds
+    (equal (expr-free-expr-vars (nest-let-binds binds body))
+           (set::union (bind-list-free-expr-vars binds)
+                       (set::difference (expr-free-expr-vars body)
+                                        (bind-list-bound-expr-vars binds))))
+    :induct t
+    :enable (nest-let-binds
+             bind-list-bound-expr-vars
+             union-difference-nest-identity)
+    :expand ((:free (bs b) (expr-free-expr-vars (expr-let bs b)))
+             (:free (a l) (bind-list-free-expr-vars (cons a l)))
+             (bind-list-free-expr-vars binds)
+             (bind-list-free-expr-vars nil)))
+
+  (defrule expr-free-ispace-vars-of-nest-let-binds
+    (equal (expr-free-ispace-vars (nest-let-binds binds body))
+           (set::union (bind-list-free-ispace-vars binds)
+                       (set::difference (expr-free-ispace-vars body)
+                                        (bind-list-bound-ispace-vars binds))))
+    :induct t
+    :enable (nest-let-binds
+             bind-list-bound-ispace-vars
+             union-difference-nest-identity)
+    :expand ((:free (bs b) (expr-free-ispace-vars (expr-let bs b)))
+             (:free (a l) (bind-list-free-ispace-vars (cons a l)))
+             (bind-list-free-ispace-vars binds)
+             (bind-list-free-ispace-vars nil)))
+
+  (defrule expr-free-type-vars-of-nest-let-binds
+    (equal (expr-free-type-vars (nest-let-binds binds body))
+           (set::union (bind-list-free-type-vars binds)
+                       (set::difference (expr-free-type-vars body)
+                                        (bind-list-bound-type-vars binds))))
+    :induct t
+    :enable (nest-let-binds
+             bind-list-bound-type-vars
+             union-difference-nest-identity)
+    :expand ((:free (bs b) (expr-free-type-vars (expr-let bs b)))
+             (:free (a l) (bind-list-free-type-vars (cons a l)))
+             (bind-list-free-type-vars binds)
+             (bind-list-free-type-vars nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -50,8 +103,7 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :override
   ((expr :let (nest-let-binds
                 (bind-list-singletonize-let expr.binds)
@@ -67,10 +119,18 @@
   :returns (new-expr exprp)
   :short "Merge @('binds') into a @(':let') body, coalescing when the body is
           itself a @(':let')."
-  (expr-case body
-    :let (expr-let (bind-list-fix (append (bind-list-fix binds) body.binds))
-                   body.body)
-    :otherwise (expr-let (bind-list-fix binds) (expr-fix body))))
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "With no binds, there is nothing to merge and the result is just the body:
+     this avoids building a bindless @(':let'),
+     consistently with the requirement that
+     @(':let') expressions have at least one bind (see @(tsee expr))."))
+  (b* (((when (endp binds)) (expr-fix body)))
+    (expr-case body
+      :let (expr-let (bind-list-fix (append (bind-list-fix binds) body.binds))
+                     body.body)
+      :otherwise (expr-let (bind-list-fix binds) (expr-fix body)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -87,9 +147,193 @@
           type-list-option
           var+type?
           var+type?-list
-          exprs/atoms/binds
-          prog)
+          exprs/atoms/binds)
   :override
   ((expr :let (coalesce-let (bind-list-flatten-let expr.binds)
                             (expr-flatten-let expr.body))))
   :name ast-flatten-let)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Files as expressions.
+;
+; The declarations of a file are a sequence of bindings whose scopes nest
+; left to right, which is exactly the scoping of the nested single-bind
+; :LETs built by NEST-LET-BINDS above.  So the tools that work on
+; expressions can be lifted to whole files by folding the declarations
+; into such a nest; the conversions between declarations and bindings
+; that this needs are collected here.
+
+(define decl-to-bind ((decl declp))
+  :returns (bind bindp)
+  :parents (remora)
+  :short "Turn a declaration into the @('let') binding it corresponds to."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A definition is already a binding.  An entry point has the same
+     components as a function binding (see @(tsee decl)), so it becomes
+     one; @(tsee bind-to-decl) turns it back."))
+  (decl-case decl
+    :def decl.bind
+    :entry (make-bind-fun :var decl.var
+                          :params decl.params
+                          :type? decl.type?
+                          :expr decl.expr)))
+
+(define decl-list-to-binds ((decls decl-listp))
+  :returns (binds bind-listp)
+  :parents (remora)
+  :short "Turn a list of declarations into the @('let') bindings
+          they correspond to."
+  (if (endp decls)
+      nil
+    (cons (decl-to-bind (car decls))
+          (decl-list-to-binds (cdr decls)))))
+
+(define decl-list-entry-names ((decls decl-listp))
+  :returns (names string-listp)
+  :parents (remora)
+  :short "The names declared by the entry points of a list of declarations."
+  (b* (((when (endp decls)) nil)
+       (decl (car decls))
+       (rest (decl-list-entry-names (cdr decls))))
+    (decl-case decl
+      :entry (cons (str::str-fix decl.var) rest)
+      :otherwise rest)))
+
+(define bind-to-decl ((bind bindp) (entry-names string-listp))
+  :returns (decl declp)
+  :parents (remora)
+  :short "Turn a @('let') binding back into a declaration."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The function bindings that came from entry points are recognized by
+     their names, which @(tsee decl-list-entry-names) collects before the
+     transformation; every other binding becomes a definition.  This
+     assumes that the names declared by the file are distinct, and that
+     none of them is also an entry point's name without being that entry
+     point --- which holds of any file whose declarations are
+     well-formed."))
+  (bind-case bind
+    :fun (if (member-equal bind.var (str::string-list-fix entry-names))
+             (make-decl-entry :var bind.var
+                              :params bind.params
+                              :type? bind.type?
+                              :expr bind.expr)
+           (decl-def bind))
+    :otherwise (decl-def bind)))
+
+(define bind-list-to-decls ((binds bind-listp) (entry-names string-listp))
+  :returns (decls decl-listp)
+  :parents (remora)
+  :short "Turn a list of @('let') bindings back into declarations."
+  (if (endp binds)
+      nil
+    (cons (bind-to-decl (car binds) entry-names)
+          (bind-list-to-decls (cdr binds) entry-names))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+; Running a file means running its MAIN entry point.  This is the
+; semantic constraint noted in the grammar (the interpreter requires
+; exactly one entry named MAIN); nothing else in the model imposes it,
+; so it is imposed here, by the two functions below and FILE-TO-EXPR.
+
+(define find-main-entry ((decls decl-listp))
+  :returns (main decl-resultp)
+  :parents (remora)
+  :short "The first entry point named @('main') in a list of declarations."
+  (b* (((when (endp decls)) (reserrf :no-main-entry))
+       (decl (car decls))
+       ((when (decl-case decl
+                :entry (equal (decl-entry->var decl) "main")
+                :otherwise nil))
+        (decl-fix decl)))
+    (find-main-entry (cdr decls))))
+
+(define decls-before-main ((decls decl-listp))
+  :returns (before decl-listp)
+  :parents (remora)
+  :short "The declarations preceding the first entry point named @('main')."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "These are exactly the declarations in scope in @('main')'s body:
+     Remora @('let')s are non-recursive, so a declaration that follows
+     @('main') is not visible to it."))
+  (b* (((when (endp decls)) nil)
+       (decl (car decls))
+       ((when (decl-case decl
+                :entry (equal (decl-entry->var decl) "main")
+                :otherwise nil))
+        nil))
+    (cons (decl-fix decl) (decls-before-main (cdr decls)))))
+
+(define file-to-expr ((file filep))
+  :returns (expr expr-resultp)
+  :parents (remora)
+  :short "The expression that running an import-free Remora file evaluates."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the body of the file's @('main') entry point, wrapped in the
+     declarations that precede it (see @(tsee decls-before-main)), so
+     that evaluating it runs the file.")
+   (xdoc::p
+    "Fails with @(':imports-not-supported') if the file has imports, which
+     would have to be resolved first by replacing them with the
+     declarations of the imported files (see @(tsee file));
+     @(':no-main-entry') if there is no entry point named @('main'); and
+     @(':main-has-parameters') if @('main') has any, since there would be
+     nothing to apply it to."))
+  (b* (((file file) file)
+       ((when (consp file.imports)) (reserrf :imports-not-supported))
+       (main (find-main-entry file.decls))
+       ((when (reserrp main)) main)
+       ((unless (decl-case main :entry)) (reserrf :no-main-entry))
+       ((unless (endp (decl-entry->params main))) (reserrf :main-has-parameters))
+       (binds (decl-list-to-binds (decls-before-main file.decls))))
+    (nest-let-binds binds (decl-entry->expr main))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(fty::deffold-reduce expr-var-binders
+  :parents (remora)
+  :short "List of the expression variables bound by the binders in ASTs,
+          with repetitions."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "Each occurrence of a binder of an expression variable contributes its
+     variable: the variable bound by a binding (other than of an ispace or
+     type variable), the parameters of lambda abstractions and of
+     function bindings, and the variable of an unboxing expression.  A
+     variable bound by several binders occurs several times."))
+  :types (exprs/atoms/binds)
+  :result string-listp
+  :default nil
+  :combine append
+  :override
+  ((expr :unbox (cons expr.var
+                      (append (expr-expr-var-binders expr.target)
+                              (expr-expr-var-binders expr.body))))
+   (expr :unboxn (cons expr.var
+                       (append (expr-expr-var-binders expr.target)
+                               (expr-expr-var-binders expr.body))))
+   (atom :lambda (cons (var+type?->var atom.param)
+                       (expr-expr-var-binders atom.body)))
+   (atom :lambdan (append (var+type?-list->var atom.params)
+                          (expr-expr-var-binders atom.body)))
+   (bind :val (cons bind.var (expr-expr-var-binders bind.expr)))
+   (bind :fun (cons bind.var
+                    (append (var+type?-list->var bind.params)
+                            (expr-expr-var-binders bind.expr))))
+   (bind :tfun (cons bind.var (expr-expr-var-binders bind.expr)))
+   (bind :ifun (cons bind.var (expr-expr-var-binders bind.expr)))
+   (bind :cfun (cons bind.var
+                     (append (var+type?-list->var bind.params)
+                             (expr-expr-var-binders bind.expr)))))
+  :name ast-expr-var-binders)

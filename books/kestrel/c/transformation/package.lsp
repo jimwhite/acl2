@@ -17,7 +17,7 @@
 (include-book "oslib/portcullis" :dir :system)
 (include-book "std/portcullis" :dir :system)
 
-(include-book "../syntax/abstract-syntax-symbols")
+(include-book "../syntax/exported-symbols")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,8 +26,10 @@
                                   '(block
                                     type
                                     typep))
-               c$::*abstract-syntax-symbols*
-               '(bool
+               c$::*exported-symbols*
+               '(3definitely
+                 3possibly
+                 bool
                  constant-symbolp
                  constant-value
                  defirrelevant
@@ -39,6 +41,8 @@
                  erp
                  impossible
                  index-of
+                 lnfix
+                 lposfix
                  packn-pos
                  maybe-msgp
                  maybe-pseudo-event-formp
@@ -51,5 +55,6 @@
                  reterr
                  retmsg$
                  retok
+                 symbol-lfix
                  symbol-list
                  std::defret-mutual)))

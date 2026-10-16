@@ -2194,21 +2194,23 @@
                   ;;   besides parenthesized expressions as arguments;
                   ;;   but the resulting code may look confusing
                   ;;   in those other cases without the space.
-                  ;; - After + if the argument is ++...,
-                  ;;   otherwise +++ would be lexed as ++ +.
-                  ;; - After - if the argument is --...,
-                  ;;   otherwise --- would be lexed as -- -.
+                  ;; - After + if the argument starts with +,
+                  ;;   otherwise + + would be lexed as ++,
+                  ;;   or + ++ would be lexed as ++ +.
+                  ;; - After - if the argument starts with -,
+                  ;;   otherwise - - would be lexed as --,
+                  ;;   or - -- would be lexed as -- -.
                   (spacep (or (and (or (unop-case expr.op :sizeof)
                                        (unop-case expr.op :alignof))
                                    (not (expr-case expr.arg :paren)))
                               (and (unop-case expr.op :plus)
                                    (expr-case expr.arg :unary)
                                    (unop-case (expr-unary->op expr.arg)
-                                              :preinc))
+                                              '(:plus :preinc)))
                               (and (unop-case expr.op :minus)
                                    (expr-case expr.arg :unary)
                                    (unop-case (expr-unary->op expr.arg)
-                                              :predec))))
+                                              '(:minus :predec)))))
                   (pstate (if spacep
                               (print-astring " " pstate)
                             pstate))
@@ -2317,7 +2319,7 @@
              pstate)
            :extension
            (b* ((pstate (print-astring "__extension__ " pstate))
-                (pstate (print-expr expr.expr (expr-priority-primary) pstate)))
+                (pstate (print-expr expr.expr (expr-priority-cast) pstate)))
              pstate)))
          (pstate (if parenp
                      (print-astring ")" pstate)
@@ -2576,7 +2578,14 @@
     :returns (new-pstate pristatep)
     :parents (printer print-exprs/decls/stmts)
     :short "Print an alignment specifier."
-    (b* ((pstate (print-astring "_Alignas(" pstate))
+    (b* ((uscore (align-spec-case
+                  alignspec
+                  :alignas-type alignspec.uscore
+                  :alignas-expr alignspec.uscore
+                  :alignas-ambig alignspec.uscore))
+         (pstate (if uscore
+                     (print-astring "_Alignas(" pstate)
+                   (print-astring "alignas(" pstate)))
          (pstate
           (align-spec-case
            alignspec
@@ -2913,7 +2922,7 @@
        pstate)
      :array-static1
      (b* ((pstate (print-dirdeclor dirdeclor.declor pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring "[static " pstate))
           (pstate (if dirdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
                                     dirdeclor.qualspecs
@@ -3055,7 +3064,7 @@
                        (dirabsdeclor-option-some->val dirabsdeclor.declor?)
                        pstate)
                     pstate))
-          (pstate (print-astring "static " pstate))
+          (pstate (print-astring "[static " pstate))
           (pstate (if dirabsdeclor.qualspecs
                       (b* ((pstate (print-typequal/attribspec-list
                                     dirabsdeclor.qualspecs
@@ -3484,7 +3493,9 @@
     :parents (printer print-exprs/decls/stmts)
     :short "Print a static assertion declaration."
     (b* (((statassert statassert) statassert)
-         (pstate (print-astring "_Static_assert(" pstate))
+         (pstate (if statassert.uscore
+                     (print-astring "_Static_assert(" pstate)
+                   (print-astring "static_assert(" pstate)))
          (pstate (print-const-expr statassert.test pstate))
          (pstate (print-astring ", " pstate))
          ((unless statassert.message)

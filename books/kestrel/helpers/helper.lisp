@@ -1,6 +1,6 @@
 ; An assistant to help find simple proofs
 ;
-; Copyright (C) 2022 Kestrel Institute
+; Copyright (C) 2022-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -98,7 +98,7 @@
                        (pseudo-termp (farg1 x))))
          ;; (:enable ...fns-or-runes...)
          (:enable (and (true-listp (fargs x))
-                       (true-listp (fargs x)) ; todo: strengthen?
+                       ;; todo: strengthen?
                        ))
          (:direct (null (cdr x)))
          (otherwise nil))))
@@ -185,7 +185,7 @@
            :in-theory (disable return-type-of-open-problem->last-step-limit))))
 
 (defthm open-problem->benefit-linear
-  (implies (and (open-problemp prob))
+  (implies (open-problemp prob)
            (<= (open-problem->benefit prob) 1000))
   :rule-classes :linear)
 
@@ -195,7 +195,7 @@
   :rule-classes :type-prescription)
 
 (defthm open-problem->chance-linear
-  (implies (and (open-problemp prob))
+  (implies (open-problemp prob)
            (<= (open-problem->chance prob) 1000))
   :rule-classes :linear)
 
@@ -617,7 +617,7 @@
       (progn$ (and (eq res :proved) (cw " Proved it!)~%"))
               (and (eq res :updated) (cw " Reached step limit.)~%"))
               (and (eq res :split) (cw " Split into ~x0 subproblems.)~%" (len raw-subproblems)))
-              (and (eq res :failed) (cw " Failed.)~%" (len raw-subproblems)))
+              (and (eq res :failed) (cw " Failed.)~%"))
               (mv erp res proof-events updated-open-problem new-pending-problem raw-subproblems name-map state)))))
 
 ;; For each subterms of the goal, this considers doing an induction based on it.
@@ -669,7 +669,7 @@
       (if (and (consp subterm) ; not a var
                (symbolp (ffn-symb subterm)) ; not a lambda
                (not (eq 'quote (ffn-symb subterm))) ; not a quoted constant
-               (< 1 (count-occurences-in-term subterm formula)) ; for now, we only generalize terms that appear more than once
+               (< 1 (count-occurrences-in-term subterm formula)) ; for now, we only generalize terms that appear more than once
                )
           (let ((technique `(:generalize ,subterm)))
             (if (member-equal technique old-techniques)

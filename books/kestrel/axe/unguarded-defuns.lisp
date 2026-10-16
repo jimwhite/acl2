@@ -67,6 +67,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/integer-length" :dir :system))
 (local (include-book "kestrel/bv-lists/bvchop-list2" :dir :system))
+(local (include-book "kestrel/bv-lists/unsigned-byte-listp" :dir :system))
 (local (include-book "kestrel/bv/bvsx" :dir :system))
 (local (include-book "kestrel/bv/bvcat" :dir :system))
 (local (include-book "kestrel/bv/logtail" :dir :system))
@@ -74,6 +75,7 @@
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/getbit" :dir :system))
 
 ;; For each of these, the defun should be disabled and the defthm enabled:
 
@@ -857,3 +859,18 @@
          (subrange start end lst))
   :hints (("Goal" :in-theory (enable subrange-unguarded
                                      subrange))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund union-equal-unguarded (l1 l2)
+  (declare (xargs :guard t))
+  (cond ((endp-unguarded l1) l2)
+        ((member-equal-unguarded (car l1) l2)
+         (union-equal-unguarded (cdr l1) l2))
+        (t (cons (car l1)
+                 (union-equal-unguarded (cdr l1) l2)))))
+
+(defthm union-equal-unguarded-correct
+  (equal (union-equal-unguarded l1 l2)
+         (union-equal l1 l2))
+  :hints (("Goal" :in-theory (enable union-equal-unguarded))))

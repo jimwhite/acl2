@@ -1065,7 +1065,7 @@
                  (all-<= (strip-cars acc) max-literal-nodenum))
             (all-<= (strip-cars (drop-irrelevant-subst-candidates subst-candidates max-literal-nodenum acc))
                     max-literal-nodenum))
-   :hints (("Goal" :in-theory (enable drop-irrelevant-subst-candidates)))))
+   :hints (("Goal" :in-theory (enable drop-irrelevant-subst-candidates all-<=)))))
 
 ;drop?
 (local
@@ -1368,7 +1368,6 @@
                           ;;check-for-var-subst-literal2
                           find-var-and-expr-to-subst2
                           check-for-var
-                          consp-of-cdr
                           integerp-when-dargp
                           <=-of-0-when-dargp
                           <-when-dargp-less-than

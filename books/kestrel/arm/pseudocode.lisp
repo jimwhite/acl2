@@ -12,22 +12,30 @@
 
 (include-book "state")
 (include-book "memory")
-(include-book "kestrel/bv/bvcat" :dir :system)
-(include-book "kestrel/bv/bvsx" :dir :system)
-(include-book "kestrel/bv/bvor" :dir :system)
-(include-book "kestrel/bv/repeatbit" :dir :system)
-(include-book "kestrel/bv/bvcount" :dir :system)
-(include-book "kestrel/bv/bool-to-bit" :dir :system)
+(include-book "kestrel/bv/bvcat-def" :dir :system)
+(include-book "kestrel/bv/bvsx-def" :dir :system)
+(include-book "kestrel/bv/bvand-def" :dir :system)
+(include-book "kestrel/bv/bvor-def" :dir :system)
+(include-book "kestrel/bv/bvxor-def" :dir :system)
+(include-book "kestrel/bv/repeatbit-def" :dir :system)
+(include-book "kestrel/bv/bvcount-def" :dir :system)
+(include-book "kestrel/bv/bool-to-bit-def" :dir :system)
 (include-book "kestrel/bv/sbvlt-def" :dir :system)
 (include-book "kestrel/bv/bvshl-def" :dir :system)
+(include-book "kestrel/bv/bvshr-def" :dir :system)
+(include-book "kestrel/bv/bvashr-def" :dir :system)
+(include-book "kestrel/bv/bvdiv" :dir :system)
 (include-book "kestrel/bv/rightrotate" :dir :system)
-(include-book "kestrel/bv/overflow-and-underflow" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq" :dir :system)
 (include-book "kestrel/alists-light/lookup-eq-safe" :dir :system)
 (include-book "std/util/bstar" :dir :system)
 (include-book "std/testing/must-be-redundant" :dir :system)
 (local (include-book "kestrel/bv/unsigned-byte-p" :dir :system))
 (local (include-book "kestrel/bv/slice" :dir :system))
+(local (include-book "kestrel/bv/bvor" :dir :system))
+(local (include-book "kestrel/bv/overflow-and-underflow" :dir :system))
+(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
+(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 (in-theory (disable mv-nth))
 
@@ -104,7 +112,7 @@
 
 ;; D16.5.3 (Bitstring manipulation, Lowest and highest set bits of a bitstring)
 
-(defun LowestSetBit-aux (n size x)
+(defund LowestSetBit-aux (n size x)
   (declare (xargs :guard (and (natp n)
                               (unsigned-byte-p size x)
                               (<= n (+ 1 size)))
@@ -133,7 +141,7 @@
 ;; (assert-equal (LowestSetBit 32 8) 3)
 ;; (assert-equal (LowestSetBit 32 0) 32)
 
-(defun HighestSetBit-aux (n size x)
+(defund HighestSetBit-aux (n size x)
   (declare (xargs :guard (and (integerp n)
                               (<= -1 n)
                               (unsigned-byte-p size x)
@@ -251,6 +259,13 @@
                               (unsigned-byte-p n x))))
   (bvchop n x))
 
+(defthm unsigned-byte-p-of-uint
+  (implies (and (<= n size)
+                (integerp n))
+           (equal (unsigned-byte-p size (uint n x))
+                  (natp size)))
+  :hints (("Goal" :in-theory (enable uint))))
+
 (local (in-theory (enable uint sint)))
 
 (defthm uint-bound-linear
@@ -289,12 +304,11 @@
 (defthm mv-nth-1-of-lsl_c-becomes-getbit
   (implies (and (<= shift n)
                 (natp n)
-                (unsigned-byte-p n x)
                 (integerp shift)
                 ;(< 0 shift)
                 )
            (equal (mv-nth 1 (lsl_c n x shift))
-                  (getbit (- n shift) x)))
+                  (getbit (- n shift) (bvchop n x))))
   :hints (("Goal" :in-theory (enable lsl_c))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -381,7 +395,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv bits bit)
-(defun asr_c (n x shift)
+(defund asr_c (n x shift)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n) ; so we have a sign bit
                               (integerp shift)
@@ -391,6 +405,26 @@
          (result (slice (+ shift (- n 1)) shift extended_x))
          (carry_out (getbit (- shift 1) extended_x)))
     (mv result carry_out)))
+
+(defthm unsigned-byte-p-of-mv-nth-0-of-asr_c
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (unsigned-byte-p n (mv-nth 0 (asr_c n x shift))))
+  :hints (("Goal" :in-theory (enable asr_c))))
+
+(defthm unsigned-byte-p-1-of-mv-nth-1-of-asr_c
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (unsigned-byte-p 1 (mv-nth 1 (asr_c n x shift))))
+  :hints (("Goal" :in-theory (enable asr_c))))
+
+(defthm mv-nth-0-of-asr_c-becomes-rightrotate
+  (implies (and (unsigned-byte-p n x)
+                (< shift n)
+                (natp shift))
+           (equal (mv-nth 0 (asr_c n x shift))
+                  (bvashr n x shift)))
+  :hints (("Goal" :in-theory (enable asr_c bvashr bvshr bvsx))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -486,6 +520,12 @@
            (unsigned-byte-p 32 (mv-nth 1 (DecodeImmShift type imm5))))
   :hints (("Goal" :in-theory (enable DecodeImmShift))))
 
+(defthm equal-of-mv-nth-0-of-decodeimmshift-and-srtype_rrx
+  (equal (equal (mv-nth '0 (decodeimmshift type imm5)) ':srtype_rrx)
+         (and (equal type #b11)
+              (equal imm5 #b00000)))
+  :hints (("Goal" :in-theory (enable decodeimmshift))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -574,6 +614,16 @@
                   (getbit (+ -1 n) (acl2::rightrotate n shift x))))
   :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
 
+;; This prevenst a ground call of ror_c from generating a warning (before the
+;; overarching mv-nth calls are simplified).
+(defthm ror_c-redef
+  (implies (and (unsigned-byte-p n x)
+                (integerp shift))
+           (equal (ror_c n x shift)
+                  (mv (acl2::rightrotate n shift x)
+                      (getbit (+ -1 n) (acl2::rightrotate n shift x)))))
+  :hints (("Goal" :in-theory (enable ror_c acl2::rightrotate bvshl bvshr))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defund ROR (n x shift)
@@ -597,7 +647,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Returns (mv bits bit)
-(defun RRX_C (n x carry_in)
+(defund RRX_C (n x carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n)
                               (bitp carry_in))))
@@ -605,7 +655,30 @@
         (carry_out (getbit 0 x)))
     (mv result carry_out)))
 
-(defun RRX (n x carry_in)
+;; Disabled since we have mv-nth-0-of-rrx_c
+(defthmd unsigned-byte-p-of-mv-nth-0-of-rrx_c
+  (implies (posp n)
+           (unsigned-byte-p n (mv-nth 0 (rrx_c n x carry_in))))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+(defthm mv-nth-0-of-rrx_c
+  (equal (mv-nth 0 (rrx_c n x carry_in))
+         (bvcat 1 carry_in (- n 1) (slice (- n 1) 1 x)))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+;; Disabled since we have mv-nth-1-of-rrx_c
+(defthmd unsigned-byte-p-1-of-mv-nth-1-of-rrx_c
+  (unsigned-byte-p 1 (mv-nth 1 (rrx_c n x carry_in)))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+(defthm mv-nth-1-of-rrx_c
+  (equal (mv-nth 1 (rrx_c n x carry_in))
+         (getbit 0 x))
+  :hints (("Goal" :in-theory (enable rrx_c))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defund RRX (n x carry_in)
   (declare (xargs :guard (and (unsigned-byte-p n x)
                               (< 0 n)
                               (bitp carry_in))))
@@ -613,6 +686,13 @@
       (RRX_C n x carry_in)
     (declare (ignore bit))
     result))
+
+(defthm unsigned-byte-p-of-mv-nth-0-of-rrx
+  (implies (and ;(unsigned-byte-p n x)
+                ;(integerp carry_in)
+                (posp n))
+           (unsigned-byte-p n (rrx n x carry_in)))
+  :hints (("Goal" :in-theory (enable rrx))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -707,12 +787,8 @@
 
 ;; Output 0 is just the sum of x and y and carry_in.
 (defthm mv-nth-0-of-AddWithCarry
-  (implies (and (posp n)
-                (integerp x)
-                (integerp y)
-                (integerp carry_in))
-           (equal (mv-nth 0 (AddWithCarry n x y carry_in))
-                  (bvplus n x (bvplus n y carry_in))))
+  (equal (mv-nth 0 (AddWithCarry n x y carry_in))
+         (bvplus n x (bvplus n y carry_in)))
   :hints (("Goal" :in-theory (enable AddWithCarry bvplus))))
 
 (local (include-book "kestrel/bv/getbit" :dir :system))
@@ -735,9 +811,6 @@
                                    acl2::usb-plus-from-bounds
                                    ;;acl2::unsigned-byte-p-false-when-not-longer
                                    )))))
-
-(local (include-book "kestrel/arithmetic-light/plus" :dir :system))
-(local (include-book "kestrel/arithmetic-light/minus" :dir :system))
 
 ;; ;gen
 ;; (local
@@ -790,7 +863,7 @@
                                     bvminus bvuminus
                                     acl2::BVCHOP-WHEN-TOP-BIT-1
                                     acl2::getbit-of-+)
-                                   (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   (;acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                     acl2::bvchop-when-top-bit-1 ; for speed
                                     ))))))
 
@@ -820,7 +893,7 @@
                                     bvminus bvuminus
                                     acl2::BVCHOP-WHEN-TOP-BIT-1
                                     acl2::getbit-of-+)
-                                   (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   (;acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                     acl2::bvchop-when-top-bit-1 ; for speed
                                     ))))))
 
@@ -872,7 +945,7 @@
                                    bvminus bvuminus
                                    acl2::BVCHOP-WHEN-TOP-BIT-1
                                    acl2::getbit-of-+)
-                                  (acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  (;acl2::BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    acl2::bvchop-when-top-bit-1 ; for speed
                                    ))))
   ;; todo: get this to work, but need some sbvlt rules
@@ -964,11 +1037,15 @@
   (declare (xargs :stobjs arm))
   (isetstate arm))
 
+(defthm natp-of-CurrentInstrSet
+  (implies (armp arm)
+           (natp (CurrentInstrSet arm)))
+  :hints (("Goal" :in-theory (enable CurrentInstrSet armp isetstate isetstatep))))
+
 (defthm natp-of-CurrentInstrSet-type
   (implies (armp arm)
            (natp (CurrentInstrSet arm)))
-  :rule-classes :type-prescription
-  :hints (("Goal" :in-theory (enable CurrentInstrSet armp isetstate isetstatep))))
+  :rule-classes :type-prescription)
 
 (defund SelectInstrSet (iset arm)
   (declare (xargs :guard (member iset (list *InstrSet_ARM*
@@ -1005,7 +1082,7 @@
 ;; A2.3.2 (Pseudocode details of operations on ARM core registers)
 
 ;; Returns arm.
-(defun BranchWritePC (address arm)
+(defund BranchWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address) ; or call addressp
                   :stobjs arm))
   (if (== (CurrentInstrSet arm) *InstrSet_ARM*)
@@ -1018,7 +1095,7 @@
       (BranchTo (bvcat 31 (slice 31 1 address) 1 #b0) arm))))
 
 ;; Returns arm.
-(defun BXWritePC (address arm)
+(defund BXWritePC (address arm)
   (declare (xargs :guard (unsigned-byte-p 32 address)
                   :stobjs arm))
   (if (== (CurrentInstrSet arm) *InstrSet_ThumbEE*)
@@ -1120,9 +1197,19 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun UnalignedSupport ()
-  (declare (xargs :guard t))
-  t)
+;; See D16.7.30.
+(defund UnalignedSupport (arm)
+  (declare (xargs :stobjs arm)
+           (ignore arm) ; todo
+           )
+  t
+  ;; todo: put this in, but it broke things:
+  ;; (if (equal 7 (arch-version arm))
+  ;;     t
+  ;;   (if (equal 6 (arch-version arm))
+  ;;       (== (sctlr.u arm) #b1)
+  ;;     nil))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1198,7 +1285,7 @@
 ;todo: disable but need rules
 ;; TODO: In some cases, this may be overkill because the register can't be the PC.
 ;; In those cases, we could just use REG instead of REG*.
-(defun reg* (n arm)
+(defund reg* (n arm)
   (declare (xargs :guard (register-numberp n)
                   :stobjs arm))
   (let ((val (reg n arm)))
@@ -1218,3 +1305,16 @@
                 (armp arm))
            (unsigned-byte-p size (reg* reg arm)))
   :hints (("Goal" :in-theory (enable reg*))))
+
+(defthm reg*-when-not-pc
+  (implies (not (equal n *pc*))
+           (equal (reg* n arm)
+                  (reg n arm)))
+  :hints (("Goal" :in-theory (enable reg*))))
+
+(defthm reg*-of-set-apsr.n (equal (reg* n (set-apsr.n bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.z (equal (reg* n (set-apsr.z bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.c (equal (reg* n (set-apsr.c bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.v (equal (reg* n (set-apsr.v bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.q (equal (reg* n (set-apsr.q bit arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))
+(defthm reg*-of-set-apsr.ge (equal (reg* n (set-apsr.ge bits arm)) (reg* n arm)) :hints (("Goal" :in-theory (enable reg*))))

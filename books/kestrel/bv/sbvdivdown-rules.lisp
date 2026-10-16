@@ -98,10 +98,9 @@
                                           bvchop-of-sum-cases
                                           BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                           bvcat
-                                          logapp
                                           TRUNCATE-BECOMES-FLOOR-GEN
                                           )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                  (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    )))))
 
 (defthmd bvchop-of-minus-rule
@@ -143,11 +142,10 @@
                                    bvcat logapp
                                    truncate-becomes-floor-other
                                    bvchop-of-minus-rule
-                                   )
-                                  (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   sbvrem-rewrite)
+                                  (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    ;;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;;SBVDIV-rewrite
                                    )))))
 
 
@@ -188,7 +186,7 @@
                                    bvplus
                                    bvcat logapp
                                    truncate-becomes-floor-other
-                                   )
+                                   sbvrem-rewrite)
                                   (;disabling these fixed a failure when moving to acl2 5.0:
                                    EQUAL-BVCHOP-BVCHOP-MOVE-MINUS
                                    (:REWRITE BVCHOP-OF-MINUS-1)
@@ -196,13 +194,11 @@
                                    (:REWRITE UNSIGNED-BYTE-P-OF-FLOOR)
 
                                    EQUAL-OF-0-AND-FLOOR
-                                   BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
+                                   ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    FLOOR-OF-1-ARG1 ;why?
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
-                                   ;SBVDIV-rewrite
-                                   EXPT-HALF-LINEAR
-                                   )))))
+                                   EXPT-HALF-LINEAR)))))
 
 ;need to turn sbvdivdown into STP primitives (sbvdiv may be further turned into bvdiv?)
 (defthmd sbvdivdown-rewrite
@@ -248,9 +244,7 @@
                                   (sbvdiv size x y)
                                   (bvplus size -1 (sbvdiv size x y))))))))
   :hints (("Goal" :use (:instance sbvdivdown-rewrite (x (bvchop size x)) (y (bvchop size y)))
-           :in-theory (disable sbvdivdown-rewrite
-                               ;;sbvdiv-rewrite
-                               sbvrem-rewrite))))
+           :in-theory (disable sbvdivdown-rewrite))))
 
 (local
  (defthm bvdiv-lemma
@@ -278,6 +272,6 @@
                                    bvchop-of-sum-cases
                                    getbit-of-+
                                    truncate-becomes-floor-gen
-                                   )
+                                   sbvrem-rewrite)
                                   (BVLT-OF-BVCHOP-ARG2
                                    BVLT-OF-BVCHOP-ARG3)))))

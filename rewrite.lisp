@@ -8381,11 +8381,11 @@ its attachment is ignored during proofs"))))
                (cons #\1 (f-get-global 'current-package state))
                (cons #\2 (defun-mode-prompt-string state))
                (cons #\r
-                     #+:non-standard-analysis
+                     #+non-standard-analysis
                      (if (f-get-global 'script-mode state)
                          ""
                        "(r)")
-                     #-:non-standard-analysis ""))
+                     #-non-standard-analysis ""))
          0 channel state nil)))
 
 ; We now develop code to display type-alists nicely.
@@ -12600,7 +12600,7 @@ its attachment is ignored during proofs"))))
 
                         nil t)))))
 
-(defun ev-synp (synp-term unify-subst mfc state)
+(defun ev-synp (synp-term unify-subst mfc actual-synp-fn rune state)
 
 ; Synp-term is the quotation of the term to be evaluated.  Unify-subst is the
 ; unifying substitution presently in force, and mfc is the meta-level context
@@ -12612,6 +12612,7 @@ its attachment is ignored during proofs"))))
 ; bad-synp-hyp-msg (called in chk-acceptable-rewrite-rule2) that synp-term has
 ; a form that we know how to handle.
 
+  #+acl2-loop-only (declare (ignore actual-synp-fn rune))
   (let* (#-acl2-loop-only
          (*metafunction-context* mfc)
          (unify-subst1 (if mfc
@@ -12623,14 +12624,39 @@ its attachment is ignored during proofs"))))
                                  unify-subst1)
                          unify-subst)))
 
-; It is tempting to bind the state global safe-mode to t here, using
-; state-global-let*.  However, we cannot do that without returning state, which
-; we want to avoid since the caller, relieve-hyp, does not return state.  Since
-; synp is only used heuristically, it really isn't necessary to use safe mode,
-; although it would have been nice for avoiding hard errors (e.g., from car of
-; a non-nil atom).
+; We need some sort of safety mechanism here, because when synp is introduced
+; by expanding a call of bind-free, it can introduce a bad Lisp object into the
+; proof; see for example community book
+; books/system/tests/ev-synp-bind-free.lisp.  We considered binding the state
+; global safe-mode to t here, using state-global-let*.  However, we could not
+; do that without returning state, which we want to avoid since the caller,
+; relieve-hyp, does not return state.  We could probably just use
+; state-free-global-let* instead.  And safe-mode is nice because it can avoid
+; hard errors when evaluating calls of program-mode functions, for example when
+; invoking from car on a non-nil atom.
 
-    (ev (get-evg synp-term 'ev-synp) unify-subst2 state nil t t)))
+; But as of October 2026, we recall no user complaints about such hard errors
+; after many years of using no protection here.  So rather than slow down
+; evaluation using safe-mode, we check that the result is an ACL2 object, which
+; we suspect is faster (sometimes much faster) on large problems than using
+; safe-mode.
+
+    (mv-let (erp val latches)
+      (ev (get-evg synp-term 'ev-synp) unify-subst2 state nil t t)
+      (prog2$ #-acl2-loop-only (let ((msg (bad-lisp-objectp val)))
+                                 (and msg
+                                      (er hard 'ev-synp
+                                          "The value produced by evaluating ~
+                                           the ~x0 hypothesis with argument ~
+                                           ~x1 of the rule named ~x2 is not ~
+                                           an ACL2 object.  ~@3"
+                                          actual-synp-fn
+                                          (assert$ (quotep synp-term)
+                                                   (unquote synp-term))
+                                          rune
+                                          msg)))
+              #+acl2-loop-only t
+              (mv erp val latches)))))
 
 (defun bad-synp-alist1 (alist unify-subst vars-to-be-bound wrld)
 
@@ -13813,8 +13839,29 @@ its attachment is ignored during proofs"))))
   #-acl2-rewrite-meter ; normal stats (no stats)
   `(eql (the-fixnum ,depth) 0))
 
+(defun tilde-@-call-depth-overflow-advice-phrase1 (alist)
+  (cond ((endp alist) nil)
+        (t (cons (msg "~x0:~%~@1~%~%"
+                      (car (car alist))
+                      (cdr (car alist)))
+                 (tilde-@-call-depth-overflow-advice-phrase1 (cdr alist))))))
+
+(defun tilde-@-call-depth-overflow-advice-phrase (alist)
+  (msg "~#0~[~/~%~%FYI: The book~#1~[~/s~] named below ~#1~[offers~/offer~] ~
+        the following advice about rewrite loops attributable to rules in ~
+        ~#1~[that~/each individual~] book.~%~%~*2~]~%"
+       (if (endp alist) 0 1)
+       alist
+       `("" "~@*" "~@*" "~@*" ,(tilde-@-call-depth-overflow-advice-phrase1 alist))))
+
 (defmacro rdepth-error (form &optional preprocess-p)
   (if preprocess-p
+
+; If we're in the preprocessor no gstack information is available, so it's
+; unlikely the user could attributed the loop to any particular rewrite rule or
+; book.  Therefore, we just tell the user to turn off preprocessing and follow
+; the directions (from the rewriter) when the loop occurs again.
+
       (let ((ctx ''preprocess))
         `(prog2$ (er-hard
                   ,ctx "Call depth"
@@ -13834,17 +13881,20 @@ its attachment is ignored during proofs"))))
       `(prog2$ (er-hard
                 ,ctx "Call depth"
                 "The call depth limit of ~x0 has been exceeded in the ACL2 ~
-                 rewriter.  To see why the limit was exceeded, ~@1execute the ~
-                 form (cw-gstack) or, for less verbose output, instead try ~
-                 (cw-gstack :frames 30).  You may then notice a loop caused ~
-                 by some set of enabled rules, some of which you can then ~
-                 disable; see :DOC disable.  For a possible solution when ~
-                 there is not a loop, see :DOC rewrite-stack-limit."
+                   rewriter.  To see why the limit was exceeded, ~@1execute ~
+                   the form (cw-gstack) or, for less verbose output, instead ~
+                   try (cw-gstack :frames 30).  You may then notice a loop ~
+                   caused by some set of enabled rules, some of which you ~
+                   might then disable; see :DOC disable.  For a possible ~
+                   solution when there is not a loop, see :DOC ~
+                   rewrite-stack-limit.~@2"
                 (rewrite-stack-limit wrld)
                 (if (f-get-global 'gstackp state)
                     ""
                   "first execute~%  :brr t~%and then try the proof again, and ~
-                   then "))
+                   then ")
+                (tilde-@-call-depth-overflow-advice-phrase
+                 (table-alist 'call-depth-overflow-advice wrld)))
                ,form))))
 
 (defun bad-synp-hyp-msg1 (hyp bound-vars all-vars-bound-p wrld)
@@ -14161,6 +14211,7 @@ its attachment is ignored during proofs"))))
 ; (mv wonp failure-reason unify-subst' ttree'')
 
   (let* ((synp-fn (car (get-evg (fargn hyp0 2) 'relieve-hyp)))
+         (actual-synp-fn (if (eq synp-fn 'syntaxp) synp-fn 'bind-free))
          (mfc (if (member-eq 'state (all-vars (get-evg (fargn hyp0 3)
                                                        'relieve-hyp)))
                   (make metafunction-context
@@ -14182,17 +14233,13 @@ its attachment is ignored during proofs"))))
 
 ; Bkptr is nil when we turn off tracking, e.g. for show-rewrites.
 
-                                    (push-gframe 'synp
-                                                 bkptr
-                                                 (if (eq synp-fn 'syntaxp)
-                                                     synp-fn
-                                                   'bind-free))
+                                    (push-gframe 'synp bkptr actual-synp-fn)
                                   gstack)
                         :ttree ttree
                         :unify-subst unify-subst)
                 nil)))
     (mv-let (erp val latches)
-            (ev-synp (fargn hyp0 3) unify-subst mfc state)
+            (ev-synp (fargn hyp0 3) unify-subst mfc actual-synp-fn rune state)
             (declare (ignore latches))
             #-acl2-loop-only (setq *deep-gstack* gstack)
             (cond
@@ -16691,9 +16738,31 @@ its attachment is ignored during proofs"))))
                                  :pequiv-info nil)
                   (cond
                    ((equal rewritten-concl *nil*)
-                    (mv step-limit
-                        (dumb-negate-lit rewritten-test)
-                        ttree))
+
+; (Implies test nil) is (not test), which is Boolean.  But dumb-negate-lit may
+; return a non-Boolean term, for example p for (not p), which is only
+; iff-equivalent to (not rewritten-test).  So we use it only when iff refines
+; geneqv or it is known to be Boolean.
+
+                    (let ((neg (dumb-negate-lit rewritten-test))
+                          (rune (geneqv-refinementp 'iff geneqv wrld)))
+                      (cond
+                       (rune (mv step-limit
+                                 neg
+                                 (push-lemma rune ttree)))
+                       (t (mv-let
+                            (ts ts-ttree)
+                            (type-set neg (ok-to-force rcnst) nil type-alist
+                                      (access rewrite-constant rcnst
+                                              :current-enabled-structure)
+                                      wrld ttree
+                                      simplify-clause-pot-lst
+                                      (access rewrite-constant rcnst :pt))
+                            (cond ((ts-subsetp ts *ts-boolean*)
+                                   (mv step-limit neg ts-ttree))
+                                  (t (mv step-limit
+                                         (fcons-term* 'not rewritten-test)
+                                         ttree))))))))
                    ((or (quotep rewritten-concl) ; not *nil*
                         (equal rewritten-test rewritten-concl))
                     (mv step-limit *t* ttree))
@@ -19649,7 +19718,7 @@ its attachment is ignored during proofs"))))
 ; whose rune is of the form (:DEFINITION fn); its hyps is nil, at least in the
 ; standard case; but:
 
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
 
 ; In the non-standard case, we may be attempting to open up a call of a
 ; function defined by defun-std.  Hence, there may be one or more hypotheses.
@@ -20493,6 +20562,17 @@ its attachment is ignored during proofs"))))
                            (accumulate-rw-cache t
                                                 ttree2
                                                 ttree1))))
+                        ((eq new-pot-lst :null-lst)
+
+; The rewritten conclusion linearized to nil and there is no different
+; unrewritten conclusion to try.  The value :null-lst is a marker returned by
+; add-linear-lemma-finish (meaning "another try is coming"); it must not escape
+; as the pot-lst.  So we report an unchanged pot-lst, exactly as
+; add-linear-lemma-finish does when an unrewritten conclusion linearizes to
+; nil.  Before this case was added, :null-lst was returned as the new pot-lst,
+; and the next function to traverse it faulted (see GitHub issue #2055).
+
+                         (mv nil simplify-clause-pot-lst nil nil))
                         (t (mv nil new-pot-lst failure-reason brr-result))))
                      (cond (contradictionp
                             (prog2$ (brkpt2 t nil unify-subst gstack

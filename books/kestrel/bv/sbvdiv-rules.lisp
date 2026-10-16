@@ -15,7 +15,7 @@
 (include-book "sbvdiv")
 (include-book "bvdiv")
 (include-book "bvuminus-def")
-(include-book "bvminus")
+(include-book "bvminus-def")
 (include-book "sbvlt") ;for sbvle
 (include-book "bitnot")
 (local (include-book "kestrel/arithmetic-light/floor" :dir :system))
@@ -47,7 +47,7 @@
 (defthmd slice-of-bvuminus
   (implies (and (< high size)
                 (<= low high)
-                (integerp x)
+                ;(integerp x)
                 (integerp size)
                 (natp low)
                 (natp high))
@@ -69,7 +69,7 @@
 ;can cause a case split
 (defthm getbit-of-bvuminus
   (implies (and (< low size)
-                (integerp x)
+                ;; (integerp x)
                 (integerp size)
                 (natp low))
            (equal (getbit low (bvuminus size x))
@@ -109,8 +109,8 @@
 ;;(bvuminus 32 (bvdiv 31 (bvuminus 31 x) y))
 
 (defthmd sbvdiv-when-both-positive
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvle size 0 x)
                 (sbvle size 0 y)
                 (natp size)
@@ -141,8 +141,8 @@
                                    )))))
 
 (defthmd sbvdiv-when-both-negative
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvlt size x 0)
                 (sbvlt size y 0)
                 (posp size)
@@ -205,6 +205,7 @@
   :hints (("Goal" :use (:instance floor-minus-arg2
                                   (y (+ y1 (- y2)))))))
 
+;localize?
 (defthm /-of-+-of---arg1
   (equal (/ x (+ (- y1) y2))
          (- (/ x (+ y1 (- y2)))))
@@ -215,8 +216,8 @@
                             /-of--)))))
 
 (defthmd sbvdiv-when-x-negative
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvlt size x 0)
                 (sbvle size 0 y)
                 (posp size))
@@ -240,8 +241,8 @@
                             )))))
 
 (defthmd sbvdiv-when-y-negative
-  (implies (and (integerp x)
-                (integerp y)
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (sbvlt size y 0)
                 (sbvle size 0 x)
                 (posp size)
@@ -264,9 +265,9 @@
                              )))))
 
 ;can we tighten any of the sizes?
-(defthm sbvdiv-rewrite
-  (implies (and (integerp x)
-                (integerp y)
+(defthmd sbvdiv-rewrite
+  (implies (and ;(integerp x)
+                ;(integerp y)
                 (posp size))
            (equal (sbvdiv size x y)
                   (if (sbvle size 0 x)
@@ -282,6 +283,8 @@
                                      sbvdiv-when-both-negative
                                      sbvdiv-when-both-positive))))
 
+;move?
+;; both branches of the result should get evaluated.
 (defthm equal-of-if-constants
   (implies (syntaxp (and (quotep k1)
                          (quotep k2)
@@ -293,8 +296,8 @@
 
 ;gen!
 (defthmd sbvdiv-of-sbvdiv-arg2
-  (implies (and (natp size)
-                (natp x)
+  (implies (and; (natp size)
+;                (natp x)
                 (unsigned-byte-p (+ -1 size) x)  ; x is non-negative (gen?) ;todo: drop
                 (unsigned-byte-p (+ -1 size) y1) ; y1 is non-negative (gen?)
                 (unsigned-byte-p (+ -1 size) y2) ; y2 is non-negative (gen?)
@@ -310,7 +313,8 @@
   :hints (("Goal" :cases ((equal y1 0)
                           (and (not (equal y1 0))
                                (EQUAL (BVCHOP (+ -1 SIZE) X) 0)))
-           :in-theory (e/d (;SBVDIV-WHEN-BOTH-POSITIVE
+           :in-theory (e/d (sbvdiv-rewrite
+                            ;;SBVDIV-WHEN-BOTH-POSITIVE
                             sbvlt
                             bvdiv
                             unsigned-byte-p
@@ -328,7 +332,7 @@
                             BVCHOP-OF-*-OF-BVCHOP-ARG2
                             BVCHOP-OF-*-OF-BVCHOP
                             ;;slow:
-                            USB-PLUS-FROM-BOUNDS
+                            ;USB-PLUS-FROM-BOUNDS
                             getbit-of-0-when-bitp
                             BVCHOP-WHEN-TOP-BIT-NOT-1-FAKE-FREE
                             )))))
@@ -350,4 +354,4 @@
                               (* y1 y2) ;(bvchop size (* y1 y2))
                               )
                     0)))
-  :hints (("Goal" :in-theory (e/d (sbvdiv-of-sbvdiv-arg2) (sbvdiv-rewrite)))))
+  :hints (("Goal" :in-theory (enable sbvdiv-of-sbvdiv-arg2))))

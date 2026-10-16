@@ -679,7 +679,7 @@
                                       (mv-nth 1 (build-reduced-dag-with-name n top-nodenum dag-array-name dag-array tag-array dag-len translation-array dag-acc))
                                       nodenums
                                       acc)))
-  :hints (("Goal" :in-theory (e/d (nat-listp aref1-list-aux ALL-TAGGEDP-WITH-NAME) (natp)))))
+  :hints (("Goal" :in-theory (e/d (nat-listp aref1-list-aux ALL-TAGGEDP-WITH-NAME all-<=) (natp)))))
 
 (defthm nat-listp-of-aref1-list-of-mv-nth-1-of-build-reduced-dag-with-name-when-all-taggedp-with-name
   (implies (and (all-taggedp-with-name nodenums 'tag-array tag-array)
@@ -872,6 +872,25 @@
                                            top-nodenum
                                            nil ; print
                                            ))))
+
+(defthm drop-non-supporters-return-type
+  (implies (or (and (pseudo-dagp dag-or-quotep)
+                    (<= (top-nodenum-of-dag dag-or-quotep) *max-1d-array-index*))
+               (myquotep dag-or-quotep))
+           (or (pseudo-dagp (drop-non-supporters dag-or-quotep))
+               (myquotep (drop-non-supporters dag-or-quotep))))
+  :hints (("Goal" :cases ((< 0 (car (car dag-or-quotep))))
+           :in-theory (enable drop-non-supporters len-when-pseudo-dagp))))
+
+;; uses quotep as the normal form
+(defthm myquotep-of-non-supporters
+  (implies (or (and (pseudo-dagp dag-or-quotep)
+                    (<= (top-nodenum-of-dag dag-or-quotep) *max-1d-array-index*))
+               (myquotep dag-or-quotep))
+           (equal (myquotep (drop-non-supporters dag-or-quotep))
+                  (quotep (drop-non-supporters dag-or-quotep))))
+  :hints (("Goal" :use (drop-non-supporters-return-type)
+           :in-theory (disable drop-non-supporters-return-type))))
 
 (defthm true-listp-of-drop-non-supporters
   (implies (or (pseudo-dagp dag-or-quotep)

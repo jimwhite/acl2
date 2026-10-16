@@ -22,6 +22,7 @@
                                        check-type
                                        function
                                        functionp
+                                       import
                                        prog
                                        sort
                                        termp
@@ -30,13 +31,18 @@
                                        value
                                        values))
                   '(all-equalp
+                    assert-equal
                     bool
                     boolean-resultp
                     booleanp-when-result-not-error
                     change-string-string-map-quadruple
                     chars=>nats
+                    cons-listp
+                    definductive
                     defmacro+
+                    defund-sk
                     defxdoc+
+                    e/d*
                     enable*
                     explode
                     impossible
@@ -45,6 +51,7 @@
                     integer-list-resultp
                     lifix
                     lnfix
+                    lposfix
                     make-string-string-map-pair
                     make-string-string-map-quadruple
                     nat

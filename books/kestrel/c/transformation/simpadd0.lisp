@@ -344,14 +344,16 @@
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-member :arg new-arg
-                               :name expr.name)
+                               :name expr.name
+                               :info expr.info)
              (gout-no-thm gin)))
        :memberp
        (b* (((mv new-arg (gout gout-arg))
              (simpadd0-expr expr.arg gin))
             (gin (gin-update gin gout-arg)))
          (mv (make-expr-memberp :arg new-arg
-                                :name expr.name)
+                                :name expr.name
+                                :info expr.info)
              (gout-no-thm gin)))
        :complit
        (b* (((mv new-type (gout gout-type))
@@ -362,7 +364,8 @@
             (gin (gin-update gin gout-elems)))
          (mv (make-expr-complit :type new-type
                                 :elems new-elems
-                                :final-comma expr.final-comma)
+                                :final-comma expr.final-comma
+                                :info expr.info)
              (gout-no-thm gin)))
        :unary
        (b* (((mv new-arg (gout gout-arg))
@@ -696,7 +699,8 @@
        :union (b* (((mv new-spec (gout gout-spec))
                     (simpadd0-struni-spec tyspec.spec gin))
                    (gin (gin-update gin gout-spec)))
-                (mv (type-spec-union new-spec)
+                (mv (c$::make-type-spec-union :spec new-spec
+                                              :info tyspec.info)
                     (gout-no-thm gin)))
        :enum (b* (((mv new-spec (gout gout-spec))
                    (simpadd0-enum-spec tyspec.spec gin))
@@ -800,12 +804,12 @@
        :alignas-type (b* (((mv new-type (gout gout-type))
                            (simpadd0-tyname alignspec.type gin))
                           (gin (gin-update gin gout-type)))
-                       (mv (align-spec-alignas-type new-type)
+                       (mv (align-spec-alignas-type alignspec.uscore new-type)
                            (gout-no-thm gin)))
        :alignas-expr (b* (((mv new-expr (gout gout-expr))
                            (simpadd0-const-expr alignspec.expr gin))
                           (gin (gin-update gin gout-expr)))
-                       (mv (align-spec-alignas-expr new-expr)
+                       (mv (align-spec-alignas-expr alignspec.uscore new-expr)
                            (gout-no-thm gin)))
        :alignas-ambig (prog2$ (impossible)
                               (mv (irr-align-spec) (irr-gout)))))
@@ -1400,9 +1404,11 @@
        :abstract (b* (((mv new-absdeclor (gout gout-absdeclor))
                        (simpadd0-absdeclor paramdeclor.declor gin))
                       (gin (gin-update gin gout-absdeclor)))
-                   (mv (param-declor-abstract new-absdeclor)
+                   (mv (make-param-declor-abstract
+                        :declor new-absdeclor
+                        :info paramdeclor.info)
                        (gout-no-thm gin)))
-       :none (mv (param-declor-none) (gout-no-thm gin))
+       :none (mv (param-declor-none paramdeclor.info) (gout-no-thm gin))
        :ambig (prog2$ (impossible) (mv (irr-param-declor) (irr-gout)))))
     :measure (param-declor-count paramdeclor))
 
@@ -1525,7 +1531,8 @@
           (simpadd0-const-expr-option structdeclor.expr? gin))
          (gin (gin-update gin gout-expr?)))
       (mv (make-struct-declor :declor? new-declor?
-                              :expr? new-expr?)
+                              :expr? new-expr?
+                              :info structdeclor.info)
           (gout-no-thm gin)))
     :measure (struct-declor-count structdeclor))
 
@@ -1627,7 +1634,8 @@
          ((mv new-test (gout gout-test))
           (simpadd0-const-expr statassert.test gin))
          (gin (gin-update gin gout-test)))
-      (mv (make-statassert :test new-test
+      (mv (make-statassert :uscore statassert.uscore
+                           :test new-test
                            :message statassert.message)
           (gout-no-thm gin)))
     :measure (statassert-count statassert))
@@ -3311,7 +3319,7 @@
   :guard (and (code-ensemble-unambp code-old)
               (code-ensemble-annop code-old))
   :returns (mv erp (event pseudo-event-formp))
-  :short "Event expansion of the transformation."
+  :short "Generate the new code ensemble and accompanying theorems."
   :long
   (xdoc::topstring
    (xdoc::p

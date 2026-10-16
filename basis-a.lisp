@@ -1644,11 +1644,11 @@
 
   (declare (xargs :guard
                   (and (iprint-alistp1 iprint-alist)
-                       (consp iprint-alist)
                        (iprint-falp (f-get-global 'iprint-fal state))
                        (array1p 'iprint-ar (f-get-global 'iprint-ar state))
                        (posp last-index)
-                       (equal last-index (caar iprint-alist))
+                       (or (null iprint-alist)
+                           (eql last-index (caar iprint-alist)))
                        (iprint-array-p (f-get-global 'iprint-ar state)
                                        last-index)
                        (natp (f-get-global 'iprint-hard-bound state))
@@ -5488,7 +5488,7 @@
    #.*fixnat-type*
    (cond
     ((not (character-alistp alist))
-     (mv (prog2$ (er hard! 'fmt0
+     (mv (prog2$ (er hard! 'fmt1
                      "The second argument of any of the FMT family of ~
                       functions must satisfy ~x0, but ~x1 does not."
                      'character-alistp
@@ -5875,14 +5875,14 @@
                                 i x s)))))
                           (#\_
                            (cond
-                            ((and (natp c2)
-                                  (<= c2
+                            ((and (natp val2)
+                                  (<= val2
                                       (floor (fixnum-bound) 2)))
                              (fmx-cw-msg-1 s alist i+3 maximum clk-1))
                             (t
                              (illegal-fmt-msg
                               bad-tilde-_-arg
-                              i c2 (floor (fixnum-bound) 2) s))))
+                              i val2 (floor (fixnum-bound) 2) s))))
                           ((#\Newline #\| #\% #\~ #\-)
                            (fmx-cw-msg-1 s alist i+2 maximum clk-1))
                           (otherwise
@@ -6033,11 +6033,11 @@
 
 (defconst *fmt-ctx-spacers*
   '(defun
-     #+:non-standard-analysis defun-std
+     #+non-standard-analysis defun-std
      mutual-recursion
      defuns
      defthm
-     #+:non-standard-analysis defthm-std
+     #+non-standard-analysis defthm-std
      defaxiom
      defconst
      defstobj defabsstobj
@@ -8157,7 +8157,7 @@
                                       (symbolp size0)
                                       (symbol-value size0)))
                         #+acl2-loop-only
-                        (er hard 'fix-stobj-hash-table-type
+                        (er hard 'fix-stobj-table-type
                             "Implementation error: Attempted to get logical ~
                              result for fix-stobj-table-type when the world ~
                              is empty.")))))
@@ -8693,6 +8693,39 @@
              ht)
     (merge-sort-lexorder keys)))
 
+; The keys of a stobj-table field are stand-in symbols, not the stobj names.
+; We therefore must consult *current-stobj-gensym-ht* to find the proper
+; stobj names to return.
+
+#-acl2-loop-only
+(defun stobj-table-sorted-keys (ht)
+  (declare (type hash-table ht))
+  (let ((keys nil))
+    (maphash (lambda (name sym)
+               (when (nth-value 1 (gethash sym ht))
+                 (push name keys)))
+             (the hash-table *current-stobj-gensym-ht*))
+    (merge-sort-lexorder keys)))
+
+(defun hashp-init (etype init)
+
+; Etype is the element-type for a stobj hash table, and init is the constant
+; specified by the user for the initial value.  We return a suitable expression
+; for the initial value.
+
+  (if (eq etype 'double-float)
+
+; For efficiency, it would be nice to write `(quote ,(to-df init)), to avoid
+; re-evaluating to-df each time there's a hash-table miss.  However, to-df is
+; not yet defined in the boot-strap.  It doesn't seem important enough to deal
+; with this issue in general, but init is probably often 0 so we optimize for
+; that case.
+
+      (if (eql init 0)
+          '(df0)
+        `(to-df (quote ,init)))
+    `(quote ,init)))
+
 (defun defstobj-field-fns-raw-defs (var flush-var inline n field-templates)
 
 ; Warning:  See the guard remarks in the Essay on Defstobj Definitions.
@@ -8810,27 +8843,14 @@
                             ,(cond (stobj-creator
                                     (assert$ hashp `(,stobj-creator)))
                                    (init
-                                    (assert$
-                                     hashp
-                                     (if (eq etype0 'double-float)
-
-; For efficiency, it would be nice to write `(quote ,(to-df init)), to avoid
-; re-evaluating to-df each time there's a hash-table miss.  However, to-df is
-; not yet defined in the boot-strap.  It doesn't seem important enough to deal
-; with this issue in general, but init is probably often 0 so we optimize for
-; that case.
-
-                                         (if (eql init 0)
-                                             '(df0)
-                                           `(to-df (quote ,init)))
-                                       `(quote ,init))))
+                                    (assert$ hashp (hashp-init etype0 init)))
                                    (t
                                     (assert$ stobj-tablep 'v)))))))))
              (,updater-name
               (k v ,var)
               ,@(and inline (list *stobj-inline-declare*))
               (progn
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (setf (gethash ,key (the hash-table ,fld))
                       v)
                 ,var))
@@ -8844,7 +8864,10 @@
              (,keys-name
               (,var)
               ,@(and inline (list *stobj-inline-declare*))
-              (hash-table-sorted-keys (the hash-table ,fld)))
+              (,(if hashp
+                    'hash-table-sorted-keys
+                  (assert$ stobj-tablep 'stobj-table-sorted-keys))
+               (the hash-table ,fld)))
              ,@(and hashp ; skip this for a stobj-table
 ; Keep the following in sync with the accessor-name case above.
                     `((,accessor?-name
@@ -8856,7 +8879,7 @@
                         (if boundp
                             (mv val t)
                           (mv ,(cond (stobj-creator `(,stobj-creator))
-                                     (init `(quote ,init))
+                                     (init (hashp-init etype0 init))
                                      (t nil))
                               nil))))))
              (,remove-name
@@ -8864,7 +8887,7 @@
               ,@(and inline (list *stobj-inline-declare*))
               (progn
                 #-acl2-loop-only
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (remhash ,key (the hash-table ,fld))
                 ,var))
              (,count-name
@@ -8878,7 +8901,7 @@
               (,var)
               (progn
                 #-acl2-loop-only
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (clrhash (the hash-table ,fld))
                 ,@(and (not single-fieldp)
                        (list var))))
@@ -8886,7 +8909,7 @@
               (ht-size rehash-size rehash-threshold ,var)
               (progn
                 #-acl2-loop-only
-                (memoize-flush ,var)
+                (memoize-flush ,flush-var)
                 (setf ,fld
                       (make-hash-table-with-defaults ',hash-test
                                                      ht-size
@@ -9428,7 +9451,8 @@
                 (t (and (true-listp ,name)
                         (= (length ,name) ,(length field-templates))
                         ,@(defstobj-component-recognizer-calls
-                            field-templates 0 name nil)))))
+                            field-templates 0 name nil)
+                        t))))
        (,creator ()
                  ,(defstobj-raw-init template))
        ,@(defstobj-field-fns-raw-defs
@@ -10236,7 +10260,7 @@
                          *print-readably*)
          t)
         (otherwise
-         (hard-error 'print-control-p
+         (hard-error 'print-control-alistp
                      "The symbol ~x0 is not a legal print control variable."
                      (list (cons #\0 key))))))
     (print-control-alistp (cdr alist)))

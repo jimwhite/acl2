@@ -240,6 +240,9 @@
 ; So clear-brr-data-lst has been put into *system-verify-guards-alist*.
 ; (verify-termination-boot-strap clear-brr-data-lst) ; and guards
 
+(verify-termination-boot-strap untranslated-constant-p)
+(verify-termination-boot-strap untranslated-duplicate-free-constant-listp)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Attachment: too-many-ifs-post-rewrite and too-many-ifs-pre-rewrite
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1484,9 +1487,13 @@
 
 #-acl2-loop-only
 (defun write-user-stobj-alist-raw (st val state)
+
+; At one time we caused an error here when *wormholep*.  But we should already
+; have caused an error in that case; see with-global-stobj-fn.  We check that
+; here using assert$, but we might consider removing that check at some point.
+
+  (assert (not *wormholep*))
   (cond
-   (*wormholep*
-    (wormhole-er 'write-user-stobj-alist (list st val 'state)))
    ((live-state-p state)
     (loop for pair of-type cons in *user-stobj-alist*
           when (eq (car pair) st)
@@ -1496,6 +1503,6 @@
           finally (error "Unknown stobj, ~s" st)))
    (t
     (error "Illegal call of write-user-stobj-alist: State argument is not the ~
-           `live' ACL2 state."))))
+            `live' ACL2 state."))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

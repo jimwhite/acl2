@@ -12,13 +12,14 @@
 (in-package "ACL2")
 
 (include-book "merge-sort-less-than")
-(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-def" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/less-than-or-equal-all" :dir :system)
 (include-book "kestrel/typed-lists-light/sortedp-less-than-or-equal" :dir :system)
 (include-book "kestrel/typed-lists-light/all-natp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
+(local (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system))
 (local (include-book "kestrel/lists-light/len" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/revappend" :dir :system))
@@ -156,6 +157,7 @@
            (ALL-<=-ALL x y))
   :hints (("Goal" :in-theory (enable ALL-<=-ALL))))
 
+;See also sortedp-<=-of-append-simple
 (defthm sortedp-<=-of-append
   (equal (sortedp-<= (append x y))
          (and (sortedp-<= x)
@@ -213,7 +215,6 @@
            (sortedp-<= (merge-< l1 l2 acc)))
   :hints (("Goal" :in-theory (enable merge-<
                                      sortedp-<=
-                                     SORTEDP-<=
                                      <=-all
                                      revappend-becomes-append-of-reverse-list
                                      ))))

@@ -130,11 +130,11 @@
                       (bvcat (- size amount)
                              val
                              amount
-                             (SLICE (+ -1 32)
-                                    (+ (- AMOUNT) 32)
-                                    VAL) )
-                    (slice (+ -1 (- AMOUNT) SIZE 32)
-                           (+ (- AMOUNT) 32)
+                             (slice (+ -1 32)
+                                    (+ (- amount) 32)
+                                    val))
+                    (slice (+ -1 (- amount) size 32)
+                           (+ (- amount) 32)
                            val))))
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
@@ -217,6 +217,7 @@
                     0)))
   :hints (("Goal" :in-theory (enable leftrotate32))))
 
+;; use a more general trim rule?
 (defthm leftrotate32-normalize-amt
   (implies (and (syntaxp (quotep amt))
                 (not (and (<= 0 amt)

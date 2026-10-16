@@ -620,7 +620,6 @@
    :hints (("Goal" :in-theory (enable ALL-SUPERCLASSES-OKAYP
                                       get-superclass
                                       bound-in-class-tablep
-                                      all-superclasses-okayp
                                       SUPERCLASS-OKAYP ;memberp
                                       class-decl-superclass class-tablep)))))
 
@@ -637,7 +636,6 @@
   :hints (("Goal" :in-theory (enable ALL-SUPERCLASSES-OKAYP
                                      get-superclass
                                      bound-in-class-tablep
-                                     all-superclasses-okayp
                                      SUPERCLASS-OKAYP;memberp
                                      class-decl-superclass class-tablep)))))
 
@@ -1012,7 +1010,7 @@
                               (class-tablep class-table)
                               (bound-in-class-tablep class-name class-table))))
   (let* ((superclass-names (get-superclasses class-name class-table))
-         (implemented-interfaces (get-superinterfaces superclass-names class-table)))
+         (implemented-interfaces (get-superinterfaces (cons class-name superclass-names) class-table)))
     (if (member-equal interface-name implemented-interfaces)
         t
       nil)))

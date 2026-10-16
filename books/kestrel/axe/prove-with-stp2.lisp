@@ -366,7 +366,7 @@
                       (b* ((- (and print (cw "~%  (Cutting at shared node ~x0.)" n)))
                            (type (maybe-get-type-of-function-call (ffn-symb expr) (dargs expr)))
                            ((when (not (axe-typep type)))
-                            (er hard? 'gather-nodes-for-translation "ERROR: Bad type for ~x0.~%" expr)
+                            (er hard? 'gather-nodes-to-translate-for-aggressively-cut-proof "ERROR: Bad type for ~x0.~%" expr)
                             (mv :type-error nil nil extra-asserts))
                            ;;Special handling for BVMULT when the arguments
                            ;;are small.  Consider the product of two 4-bit
@@ -507,9 +507,9 @@
 
 (include-book "merge-sort-greater-than-and-remove-dups")
 
-;dup
+
 (local
- (defthmd not-equal-of-nth-0-and-nth-1-when-decreasingp
+ (defthmd not-equal-of-nth-0-and-nth-1-when-decreasingp-2 ; todo
    (implies (and (decreasingp x)
                  (nat-listp x))
             (equal (equal (nth 0 x) (nth 1 x))
@@ -624,7 +624,7 @@
                                  (+ 1 (nfix (first worklist2)))
                                0))
                   :ruler-extenders :lambdas
-                  :hints (("Goal" :in-theory (enable not-equal-of-nth-0-and-nth-1-when-decreasingp
+                  :hints (("Goal" :in-theory (enable not-equal-of-nth-0-and-nth-1-when-decreasingp-2
                                                      <-OF-NTH-1-AND-NTH-0-WHEN-DECREASINGP
                                                      <-of-nth-when-all-<
                                                      car-becomes-nth-of-0
@@ -907,7 +907,7 @@
             :in-theory (enable gather-nodes-to-translate-for-aggressively-cut-proof2
                                car-becomes-nth-of-0
                                <-of-nth-when-all-<
-                              ;; not-equal-of-nth-0-and-nth-1-when-decreasingp
+                              ;; not-equal-of-nth-0-and-nth-1-when-decreasingp-2
                               ;; <-of-nth-1-and-nth-0-when-decreasingp
                               ;; not-<-of-nth-0-and-nth-1-when-decreasingp
                               ;; all-<-when-<-of-car-and-decreasingp

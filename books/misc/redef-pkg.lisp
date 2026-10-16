@@ -248,8 +248,12 @@
      (t
       (er-progn
        (cond
-        ((or package-entry
-             (eq (ld-skip-proofsp state) 'include-book))
+        (package-entry
+
+; We formerly also returned (value nil) here when (eq (ld-skip-proofsp state)
+; 'include-book).  The example in community book
+; system/tests/empty-pkg-nil.lisp shows why that isn't adequate.
+
          (value nil))
         ((not (stringp name))
          (er soft ctx
@@ -274,13 +278,7 @@
 ;   :rule-classes nil)
 
          (er soft ctx
-             "The empty string is not a legal package name for defpkg."
-             name))
-        ((not (standard-char-listp (coerce name 'list)))
-         (er soft ctx
-             "~x0 is not a legal package name for defpkg, which requires the ~
-              name to contain only standard characters."
-             name))
+             "The empty string is not a legal package name for defpkg."))
         ((not (equal (string-upcase name) name))
          (er soft ctx
              "~x0 is not a legal package name for defpkg, which disallows ~
@@ -288,25 +286,13 @@
              name))
         ((equal name "LISP")
          (er soft ctx
-             "~x0 is disallowed as a a package name for defpkg, because this ~
+             "~x0 is disallowed as a package name for defpkg, because this ~
               package name is used under the hood in some Common Lisp ~
               implementations."
              name))
-        ((let ((len (length *1*-pkg-prefix*)))
-           (and (<= len (length name))
-                (string-equal (subseq name 0 len) *1*-pkg-prefix*)))
-
-; The use of string-equal could be considered overkill; probably equal provides
-; enough of a check.  But we prefer not to consider the possibility that some
-; Lisp has case-insensitive package names.  Probably we should similarly use
-; member-string-equal instead of member-equal below.
-
-         (er soft ctx
-             "It is illegal for a package name to start (even ignoring case) ~
-              with the string \"~@0\".  ACL2 makes internal use of package ~
-              names starting with that string."
-             *1*-pkg-prefix*))
         (t (value nil)))
+       (chk-pkg-prefix name *global-package-prefix* ctx state)
+       (chk-pkg-prefix name *1*-package-prefix* ctx state)
 
 ; At one time we checked that if the package exists, i.e. (member-equal name
 ; all-names), and we are not in the boot-strap, then name must previously have

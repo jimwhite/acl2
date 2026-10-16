@@ -15,12 +15,12 @@
 (include-book "unambiguity")
 (include-book "translation-unit-comparison")
 
+(include-book "kestrel/fty/deftreemap" :dir :system)
 (include-book "kestrel/utilities/messages" :dir :system)
 (include-book "std/util/error-value-tuples" :dir :system)
 
 (local (include-book "kestrel/utilities/nfix" :dir :system))
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
-(local (include-book "std/alists/top" :dir :system))
 
 (local (in-theory (enable* abstract-syntax-unambp-rules)))
 
@@ -221,30 +221,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defalist dimb-scope
+(fty::deftreemap dimb-scope
   :short "Fixtype of scopes in disambiguation tables."
   :long
   (xdoc::topstring
    (xdoc::p
     "An identifier may have different meanings in different scopes,
      but it must have one meaning within the same scope.
-     Thus, we represent scopes as alists from identifiers to their kinds."))
+     Thus, we represent scopes as maps from identifiers to their kinds."))
   :key-type ident
   :val-type dimb-kind
-  :true-listp t
-  :keyp-of-nil nil
-  :valp-of-nil nil
   :pred dimb-scopep
-  :prepwork ((set-induction-depth-limit 1))
 
   ///
 
-  (defrule dimb-kindp-of-cdr-of-assoc-equal-when-dimb-scopep
+  (defrule dimb-kind-optionp-of-lookup-when-dimb-scopep
     (implies (dimb-scopep scope)
-             (iff (dimb-kindp (cdr (assoc-equal ident scope)))
-                  (assoc-equal ident scope)))
-    :induct t
-    :enable (assoc-equal)))
+             (dimb-kind-optionp (treemap::lookup ident scope)))
+    :cases ((treeset::in ident (treemap::keys scope)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -295,7 +289,7 @@
      @(':gotoe') statements are re-classified as @(':goto') statements
      (more on this below),
      a (mutable) macro table,
-     an immutable string containing the path of the file,
+     an immutable path of the file being disambiguated,
      and an immutable implementation environment.")
    (xdoc::p
     "The aforementioned set of identifiers is always empty,
@@ -322,7 +316,7 @@
   ((table dimb-table)
    (goto-reclass ident-set)
    (macros macro-table)
-   (file string)
+   (file filepath)
    (ienv ienv))
   :pred dstatep)
 
@@ -331,7 +325,11 @@
 (defirrelevant irr-dstate
   :short "An irrelevant disambiguation state."
   :type dstatep
-  :body (dstate (irr-dimb-table) nil (irr-macro-table) "" (irr-ienv)))
+  :body (dstate (irr-dimb-table)
+                nil
+                (irr-macro-table)
+                (irr-filepath)
+                (irr-ienv)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -346,7 +344,7 @@
      so we push via @(tsee cons).
      Also see @(tsee dimb-pop-scope)."))
   (b* ((table (dstate->table dstate))
-       (new-table (cons nil table)))
+       (new-table (cons (treemap::empty) table)))
     (change-dstate dstate :table new-table)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -392,10 +390,9 @@
      :parents nil
      (b* (((when (endp table)) nil)
           (scope (dimb-scope-fix (car table)))
-          (ident+kind (assoc-equal (ident-fix ident) scope))
-          ((when ident+kind) (dimb-kind-fix (cdr ident+kind))))
-       (dimb-lookup-ident-loop ident (cdr table)))
-     :guard-hints (("Goal" :in-theory (enable alistp-when-dimb-scopep-rewrite))))))
+          (kind? (treemap::lookup (ident-fix ident) scope))
+          ((when kind?) kind?))
+       (dimb-lookup-ident-loop ident (cdr table))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -424,12 +421,12 @@
         (raise "Internal error: empty disambiguation table.")
         (irr-dstate))
        (scope (dimb-scope-fix (car table)))
-       (new-scope (acons (ident-fix ident) (dimb-kind-fix kind) scope))
+       (new-scope (treemap::update (ident-fix ident)
+                                   (dimb-kind-fix kind)
+                                   scope))
        (new-table (cons new-scope (cdr table))))
     (change-dstate dstate :table new-table))
-  :no-function nil
-  :guard-hints
-  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -453,7 +450,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define dimb-add-ident-objfun-file-scope ((ident identp) (dstate dstatep))
-  :returns (new-dstate dstatep :hints (("Goal" :in-theory (enable acons))))
+  :returns (new-dstate dstatep)
   :short "Add an identifier to the file scope of a disambiguation table,
           with object or function kind."
   :long
@@ -467,12 +464,12 @@
         (irr-dstate))
        (table (dimb-table-fix table))
        (scope (car (last table)))
-       (new-scope (acons (ident-fix ident) (dimb-kind-objfun) scope))
+       (new-scope (treemap::update (ident-fix ident)
+                                   (dimb-kind-objfun)
+                                   scope))
        (new-table (append (butlast table 1) (list new-scope))))
     (change-dstate dstate :table new-table))
-  :no-function nil
-  :guard-hints
-  (("Goal" :in-theory (enable acons alistp-when-dimb-scopep-rewrite))))
+  :no-function nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -480,12 +477,12 @@
   :returns (new-dstate dstatep)
   :short "Add an identifier to the set for which @('goto')s we re-classified."
   (b* ((idents (dstate->goto-reclass dstate))
-       (new-idents (set::insert (ident-fix ident) idents)))
+       (new-idents (treeset::insert (ident-fix ident) idents)))
     (change-dstate dstate :goto-reclass new-idents)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define init-dstate ((file stringp) (ienv ienvp))
+(define init-dstate ((file filepathp) (ienv ienvp))
   :returns (dstate dstatep)
   :short "Initial disambiguation state."
   :long
@@ -505,11 +502,11 @@
      is initially empty, since no re-classification has occurred yet.")
    (xdoc::p
     "The macro table is the initial one for the given dialect."))
-  (b* ((table (list nil))
+  (b* ((table (list (treemap::empty)))
        (dialect (ienv->dialect ienv))
        (macros (macro-init dialect))
        (dstate (make-dstate :table table
-                            :goto-reclass nil
+                            :goto-reclass (treeset::empty)
                             :macros macros
                             :file file
                             :ienv ienv)))
@@ -908,6 +905,48 @@
   ///
 
   (defret expr-unambp-of-dimb-make/adjust-expr-label-addr
+    (expr-unambp expr)
+    :hyp (expr-unambp arg)
+    :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define dimb-make/adjust-expr-extension ((arg exprp))
+  :guard (expr-unambp arg)
+  :returns (expr exprp)
+  :short "Build, and adjust if needed, an extension expression."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is analogous to @(tsee dimb-make/adjust-expr-unary).
+     The @('__extension__') keyword expects a cast expression as operand,
+     but an ambiguous cast may be disambiguated to a binary expression.
+     For instance, if @('x') is an object,
+     @('__extension__ (x) + y') must become
+     @('[ __extension__ (x) ] + y'),
+     where square brackets indicate grouping.
+     We recursively move the keyword into the left operand
+     until the operand has at least cast priority."))
+  (b* (((when (expr-priority->= (expr->priority arg) (expr-priority-cast)))
+        (expr-extension arg))
+       ((unless (expr-case arg :binary))
+        (raise "Internal error: ~
+                non-binary expression ~x0 ~
+                used as argument of __extension__."
+               (expr-fix arg))
+        (expr-extension arg)))
+    (make-expr-binary :op (expr-binary->op arg)
+                      :arg1 (dimb-make/adjust-expr-extension
+                             (expr-binary->arg1 arg))
+                      :arg2 (expr-binary->arg2 arg)
+                      :info nil))
+  :no-function nil
+  :measure (expr-count arg)
+  :verify-guards :after-returns
+
+  ///
+
+  (defret expr-unambp-of-dimb-make/adjust-expr-extension
     (expr-unambp expr)
     :hyp (expr-unambp arg)
     :hints (("Goal" :induct t))))
@@ -1657,7 +1696,7 @@
          (retok (make-expr-va-arg :list list :type type) dstate))
        :extension
        (b* (((erp expr dstate) (dimb-expr expr.expr dstate)))
-         (retok (expr-extension expr) dstate))))
+         (retok (dimb-make/adjust-expr-extension expr) dstate))))
     :measure (expr-count expr))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1838,7 +1877,8 @@
                         dstate))
        :union (b* (((erp new-struni-spec dstate)
                     (dimb-struni-spec tyspec.spec dstate)))
-                (retok (type-spec-union new-struni-spec)
+                (retok (make-type-spec-union :spec new-struni-spec
+                                             :info nil)
                        dstate))
        :enum (b* (((erp new-enumspec dstate)
                    (dimb-enum-spec tyspec.spec dstate)))
@@ -1949,7 +1989,8 @@
     (b* (((reterr) nil (irr-dstate))
          ((when (endp specquals)) (retok nil (dstate-fix dstate)))
          ((erp new-specqual dstate) (dimb-spec/qual (car specquals) dstate))
-         ((erp new-specquals dstate) (dimb-spec/qual-list (cdr specquals) dstate)))
+         ((erp new-specquals dstate)
+          (dimb-spec/qual-list (cdr specquals) dstate)))
       (retok (cons new-specqual new-specquals) dstate))
     :measure (spec/qual-list-count specquals))
 
@@ -1973,19 +2014,26 @@
        alignspec
        :alignas-type
        (b* (((erp new-type dstate) (dimb-tyname alignspec.type dstate)))
-         (retok (align-spec-alignas-type new-type) dstate))
+         (retok (make-align-spec-alignas-type :uscore alignspec.uscore
+                                              :type new-type)
+                dstate))
        :alignas-expr
        (b* (((erp new-expr dstate) (dimb-const-expr alignspec.expr dstate)))
-         (retok (align-spec-alignas-expr new-expr) dstate))
+         (retok (make-align-spec-alignas-expr :uscore alignspec.uscore
+                                              :expr new-expr)
+                dstate))
        :alignas-ambig
        (b* (((erp expr/tyname dstate)
              (dimb-amb-expr/tyname alignspec.expr/type nil dstate)))
          (expr/tyname-case
           expr/tyname
-          :expr (retok (align-spec-alignas-expr
-                         (make-const-expr :expr expr/tyname.expr))
+          :expr (retok (make-align-spec-alignas-expr
+                        :uscore alignspec.uscore
+                        :expr (make-const-expr :expr expr/tyname.expr))
                        dstate)
-          :tyname (retok (align-spec-alignas-type expr/tyname.tyname)
+          :tyname (retok (make-align-spec-alignas-type
+                          :uscore alignspec.uscore
+                          :type expr/tyname.tyname)
                          dstate)))))
     :measure (align-spec-count alignspec))
 
@@ -2704,9 +2752,10 @@
        :abstract
        (b* (((erp new-absdeclor dstate)
              (dimb-absdeclor paramdeclor.declor dstate)))
-         (retok (param-declor-abstract new-absdeclor) (dstate-fix dstate)))
+         (retok (make-param-declor-abstract :declor new-absdeclor :info nil)
+                (dstate-fix dstate)))
        :none
-       (retok (param-declor-none) (dstate-fix dstate))
+       (retok (param-declor-none nil) (dstate-fix dstate))
        :ambig
        (b* (((erp declor/absdeclor ident? dstate)
              (dimb-amb-declor/absdeclor paramdeclor.declor dstate)))
@@ -2722,7 +2771,9 @@
                     :info nil)
                    dstate))
           :absdeclor
-          (retok (param-declor-abstract declor/absdeclor.absdeclor)
+          (retok (make-param-declor-abstract
+                  :declor declor/absdeclor.absdeclor
+                  :info nil)
                  (dstate-fix dstate))))))
     :no-function nil
     :measure (param-declor-count paramdeclor))
@@ -2836,7 +2887,9 @@
           (dimb-declor-option structdeclor.declor? dstate))
          ((erp new-expr? dstate)
           (dimb-const-expr-option structdeclor.expr? dstate)))
-      (retok (make-struct-declor :declor? new-declor? :expr? new-expr?)
+      (retok (make-struct-declor :declor? new-declor?
+                                 :expr? new-expr?
+                                 :info nil)
              dstate))
     :measure (struct-declor-count structdeclor))
 
@@ -2935,7 +2988,9 @@
     (b* (((reterr) (irr-statassert) (irr-dstate))
          ((statassert statassert) statassert)
          ((erp new-test dstate) (dimb-const-expr statassert.test dstate)))
-      (retok (make-statassert :test new-test :message statassert.message)
+      (retok (make-statassert :uscore statassert.uscore
+                              :test new-test
+                              :message statassert.message)
              dstate))
     :measure (statassert-count statassert))
 
@@ -2996,7 +3051,8 @@
        and passed to this function as input."))
     (b* (((reterr) nil (irr-dstate))
          ((when (endp ideclors)) (retok nil (dstate-fix dstate)))
-         ((erp new-ideclor dstate) (dimb-init-declor (car ideclors) kind dstate))
+         ((erp new-ideclor dstate)
+          (dimb-init-declor (car ideclors) kind dstate))
          ((erp new-ideclors dstate)
           (dimb-init-declor-list (cdr ideclors) kind dstate)))
       (retok (cons new-ideclor new-ideclors) dstate))
@@ -3888,6 +3944,8 @@
     (retok (make-fundef :extension fundef.extension
                         :specs new-specs
                         :declor new-declor
+                        :asm? fundef.asm?
+                        :attribs fundef.attribs
                         :declons new-declons
                         :body new-body
                         :info fundef.info)
@@ -3945,12 +4003,14 @@
            (retok (/= intval 0)))
      :ifdef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
                  ((unless (stringp name))
-                  (raise "Internal error: identifier ~x0." if/ifdef/ifndef.name)
+                  (raise "Internal error: identifier ~x0."
+                         if/ifdef/ifndef.name)
                   (reterr "irrelevant")))
               (retok (and (macro-lookup name macros) t)))
      :ifndef (b* ((name (ident->unwrap if/ifdef/ifndef.name))
                   ((unless (stringp name))
-                   (raise "Internal error: identifier ~x0." if/ifdef/ifndef.name)
+                   (raise "Internal error: identifier ~x0."
+                          if/ifdef/ifndef.name)
                    (reterr "irrelevant")))
                (retok (not (macro-lookup name macros))))))
   :no-function nil)
@@ -3983,7 +4043,7 @@
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-string-map-mapp)
+                            filepath-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4124,7 +4184,7 @@
                                 (dstate dstatep)
                                 (tumap-orig filepath-trans-unit-mapp)
                                 (resolved-includes
-                                 string-header-name-string-map-mapp)
+                                 filepath-header-name-filepath-map-mapp)
                                 (tumap-dimb filepath-trans-unit-mapp)
                                 (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4164,7 +4224,8 @@
   (define dimb-include ((header header-namep)
                         (dstate dstatep)
                         (tumap-orig filepath-trans-unit-mapp)
-                        (resolved-includes string-header-name-string-map-mapp)
+                        (resolved-includes
+                         filepath-header-name-filepath-map-mapp)
                         (tumap-dimb filepath-trans-unit-mapp)
                         (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4200,13 +4261,14 @@
           (reterr "irrelevant"))
          ;; Look up translation unit through the 3 maps.
          (including (dstate->file dstate))
-         (including+inner (omap::assoc including
-                                       (string-header-name-string-map-map-fix
-                                        resolved-includes)))
+         (including+inner (omap::assoc
+                           including
+                           (filepath-header-name-filepath-map-map-fix
+                            resolved-includes)))
          ((unless including+inner)
           (raise "Internal error: ~x0 not in ~x1."
                  including
-                 (string-header-name-string-map-map-fix resolved-includes))
+                 (filepath-header-name-filepath-map-map-fix resolved-includes))
           (reterr "irrelevant"))
          (inner (cdr including+inner))
          (header+included (omap::assoc (header-name-fix header) inner))
@@ -4216,7 +4278,7 @@
                  inner)
           (reterr "irrelevant"))
          (included (cdr header+included))
-         (included+tunit (omap::assoc (filepath included)
+         (included+tunit (omap::assoc included
                                       (filepath-trans-unit-map-fix tumap-orig)))
          ((unless included+tunit)
           (raise "Internal error: ~x0 not in ~x1."
@@ -4242,7 +4304,7 @@
          ((mv erp new-tunit-stand-alone tumap-dimb)
           (b* (((reterr) (irr-trans-unit) nil)
                (included+tunit
-                (omap::assoc (filepath included)
+                (omap::assoc included
                              (filepath-trans-unit-map-fix tumap-dimb)))
                ((when included+tunit)
                 (retok (cdr included+tunit) tumap-dimb))
@@ -4267,7 +4329,7 @@
                                           (dstate->ienv dstate))))
           (retok (list (trans-item-include header))
                  dstate
-                 (omap::update (filepath included)
+                 (omap::update included
                                new-tunit-stand-alone
                                (filepath-trans-unit-map-fix tumap-dimb)))))
       ;; Otherwise, we expand the #include in place.
@@ -4282,7 +4344,7 @@
   (define dimb-elif ((elif hash-elifp)
                      (dstate dstatep)
                      (tumap-orig filepath-trans-unit-mapp)
-                     (resolved-includes string-header-name-string-map-mapp)
+                     (resolved-includes filepath-header-name-filepath-map-mapp)
                      (tumap-dimb filepath-trans-unit-mapp)
                      (donep booleanp)
                      (limit natp))
@@ -4347,7 +4409,8 @@
   (define dimb-elif-list ((elifs hash-elif-listp)
                           (dstate dstatep)
                           (tumap-orig filepath-trans-unit-mapp)
-                          (resolved-includes string-header-name-string-map-mapp)
+                          (resolved-includes
+                           filepath-header-name-filepath-map-mapp)
                           (tumap-dimb filepath-trans-unit-mapp)
                           (donep booleanp)
                           (limit natp))
@@ -4401,7 +4464,7 @@
                             (dstate dstatep)
                             (tumap-orig filepath-trans-unit-mapp)
                             (resolved-includes
-                             string-header-name-string-map-mapp)
+                             filepath-header-name-filepath-map-mapp)
                             (tumap-dimb filepath-trans-unit-mapp)
                             (donep booleanp)
                             (limit natp))
@@ -4452,7 +4515,7 @@
                            (dstate dstatep)
                            (tumap-orig filepath-trans-unit-mapp)
                            (resolved-includes
-                            string-header-name-string-map-mapp)
+                            filepath-header-name-filepath-map-mapp)
                            (tumap-dimb filepath-trans-unit-mapp)
                            (limit natp))
     :returns (mv (erp maybe-msgp)
@@ -4560,7 +4623,7 @@
 
 (define dimb-filepath-trans-unit-map ((tumap filepath-trans-unit-mapp)
                                       (resolved-includes
-                                       string-header-name-string-map-mapp)
+                                       filepath-header-name-filepath-map-mapp)
                                       (ienv ienvp)
                                       (keep-going booleanp))
   :returns (mv (erp maybe-msgp)
@@ -4593,7 +4656,7 @@
   ((define dimb-filepath-trans-unit-map-loop
      ((paths filepath-setp)
       (tumap filepath-trans-unit-mapp)
-      (resolved-includes string-header-name-string-map-mapp)
+      (resolved-includes filepath-header-name-filepath-map-mapp)
       (ienv ienvp)
       (keep-going booleanp)
       (tumap-dimb filepath-trans-unit-mapp))
@@ -4607,29 +4670,30 @@
           (tumap (filepath-trans-unit-map-fix tumap))
           (tumap-dimb (filepath-trans-unit-map-fix tumap-dimb))
           (resolved-includes
-           (string-header-name-string-map-map-fix resolved-includes))
+           (filepath-header-name-filepath-map-map-fix resolved-includes))
           (path (set::head paths))
           (tunit (omap::lookup path tumap))
-          (file (filepath->string path))
-          (dstate (init-dstate file ienv))
-          ((mv erp new-tunit & tumap-dimb)
+          (dstate (init-dstate path ienv))
+          ((mv erp new-tunit & new-tumap-dimb)
            (dimb-trans-unit tunit
                             dstate
                             tumap
                             resolved-includes
                             tumap-dimb
                             1000000000))
+          ;; On error, continue with the accumulator as it was before the
+          ;; call, not with the irrelevant value returned on failure.
           ((when erp)
            (if keep-going
-               (prog2$ (cw "Error in translation unit ~x0: ~@1~%" file erp)
+               (prog2$ (cw "Error in translation unit ~x0: ~@1~%" path erp)
                        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                                           tumap
                                                           resolved-includes
                                                           ienv
                                                           keep-going
                                                           tumap-dimb))
-             (retmsg$ "Error in translation unit ~x0: ~@1" file erp)))
-          (tumap-dimb (omap::update path new-tunit tumap-dimb)))
+             (retmsg$ "Error in translation unit ~x0: ~@1" path erp)))
+          (tumap-dimb (omap::update path new-tunit new-tumap-dimb)))
        (dimb-filepath-trans-unit-map-loop (set::tail paths)
                                           tumap
                                           resolved-includes

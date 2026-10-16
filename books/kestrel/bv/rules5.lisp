@@ -1,7 +1,7 @@
 ; Mixed theorems about bit-vector operations
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -19,36 +19,14 @@
 (include-book "overflow-and-underflow")
 (local (include-book "arith")) ; todo: drop (not easy)
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 ;; (local (include-book "kestrel/utilities/equal-of-booleans" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
-;; (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
+(local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus-and-minus" :dir :system))
 ;; (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 
 (local (in-theory (disable logext-when-non-negative-becomes-bvchop))) ;for speed
-
-; move these (but need bitnot):
-
-(defthm getbit-of-+-of-expt-same-arg1
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ (expt 2 n) x))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
-(defthm getbit-of-+-of---of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (- (expt 2 n))))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
-
-(defthm getbit-of-+-of-expt-same-arg2
-  (implies (and (natp n)
-                (integerp x))
-           (equal (getbit n (+ x (expt 2 n)))
-                  (bitnot (getbit n x))))
-  :hints (("Goal" :in-theory (enable getbit-of-+))))
 
 ;Normal case: no overflow or underflow.  Because of symmetry, we can reorder
 ;the arguments to signed-addition-overflowsp and signed-addition-underflowsp if
@@ -62,25 +40,9 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus
-                                   bvchop-of-sum-cases
-                                   sbvlt
-                                   bvlt
-                                   getbit-of-+
-                                   logext-cases
-                                   bvminus
-                                   bvchop-when-top-bit-1
-                                   bvuminus
-                                   <-of-0-and-logext-alt
-                                   *-of-expt-of-one-less)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;; disables for speed:
-                                   bvchop-identity
-                                   expt-type-even-exponent-1
-                                   expt-type-even-exponent-2
-                                   expt-type-odd-exponent-negative-base
-                                   <=-of-bvchop-same-linear-2
-                                   expt-type-small-base-negative-exponent)))))
+  :hints (("Goal" :in-theory (enable sbvlt bvplus logext-of-plus
+                                     signed-addition-overflowsp-correct
+                                     signed-addition-underflowsp-correct))))
 
 ;todo: add more versions
 (defthmd sbvlt-add-to-both-sides-normal-case-alt
@@ -91,7 +53,18 @@
                 (posp size))
            (equal (sbvlt size (bvplus size x k) (bvplus size y k))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (enable sbvlt-add-to-both-sides-normal-case))))
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus logext-of-plus
+                                         signed-addition-overflowsp-correct
+                                         signed-addition-underflowsp-correct)
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
+
+(local
+  (defthm expt-helper
+    (implies (integerp size)
+             (equal (* 2 (expt 2 (+ -2 size)))
+                    (expt 2 (+ -1 size))))
+    :hints (("Goal" :in-theory (enable expt-of-+)))))
 
 ;if both additions overflow, adding k does not affect the relative positions of x and y
 (defthmd sbvlt-add-to-both-sides-both-overflow
@@ -100,17 +73,11 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
-                                          logext-cases
-                                          logext-of-plus
-                                          bvminus
-                                          bvchop-when-top-bit-1
-                                          bvuminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;;unsigned-byte-p-when-not-bvlt-tighten
-                                   ;bvlt-when-unsigned-byte-p-better-non-constant
-                                   ;bvlt-tighten-free
-                                   bvlt-tighten-when-getbit-0-alt)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus logext-of-plus
+                                         signed-addition-overflowsp-correct
+                                         signed-addition-underflowsp-correct)
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
 
 ;if both additions underflow, adding k does not affect the relative positions of x and y
 (defthmd sbvlt-add-to-both-sides-both-underflow
@@ -119,81 +86,55 @@
                 (posp size))
            (equal (sbvlt size (bvplus size k x) (bvplus size k y))
                   (sbvlt size x y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
-                                          logext-cases
-                                          bvminus
-                                          bvchop-when-top-bit-1
-                                          bvuminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;unsigned-byte-p-when-not-bvlt-tighten
-                                   ;bvlt-when-unsigned-byte-p-better-non-constant
-                                   ;bvlt-tighten-free
-                                   bvlt-tighten-when-getbit-0-alt)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus logext-of-plus
+                                         signed-addition-overflowsp-correct
+                                         signed-addition-underflowsp-correct)
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
 
 (defthmd sbvlt-add-to-both-only-x-underflows
   (implies (and (signed-addition-underflowsp size k x)
                 (not (signed-addition-underflowsp size k y))
                 (posp size))
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
-                                          logext-cases
-                                          logext-of-plus
-                                          bvminus
-                                          bvchop-when-top-bit-1
-                                          bvuminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;unsigned-byte-p-when-not-bvlt-tighten
-                                   ;bvlt-when-unsigned-byte-p-better-non-constant
-                                   ;bvlt-tighten-free
-                                   bvlt-tighten-when-getbit-0-alt)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus logext-of-plus
+                                         signed-addition-overflowsp-correct
+                                         signed-addition-underflowsp-correct)
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
 
 (defthmd sbvlt-add-to-both-only-y-underflows
   (implies (and (signed-addition-underflowsp size k y)
                 (not (signed-addition-underflowsp size k x))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
-                                          logext-cases
-                                          bvminus
-                                          bvchop-when-top-bit-1
-                                          bvuminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;unsigned-byte-p-when-not-bvlt-tighten
-                                   ;bvlt-when-unsigned-byte-p-better-non-constant
-                                   ;;bvlt-tighten-free
-                                   bvlt-tighten-when-getbit-0-alt)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus logext-of-plus
+                                         signed-addition-overflowsp-correct
+                                         signed-addition-underflowsp-correct)
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
 
 (defthmd sbvlt-add-to-both-only-x-overflows
   (implies (and (signed-addition-overflowsp size k x)
                 (not (signed-addition-overflowsp size k y))
                 (posp size))
            (sbvlt size (bvplus size k x) (bvplus size k y)))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
-                                          logext-cases
-                                          bvminus
-                                          bvchop-when-top-bit-1
-                                          bvuminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;unsigned-byte-p-when-not-bvlt-tighten
-                                   ;bvlt-when-unsigned-byte-p-better-non-constant
-                                   ;bvlt-tighten-free
-                                   bvlt-tighten-when-getbit-0-alt)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus logext-of-plus
+                                         signed-addition-overflowsp-correct
+                                         signed-addition-underflowsp-correct)
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
 
 (defthmd sbvlt-add-to-both-only-y-overflows
   (implies (and (signed-addition-overflowsp size k y)
                 (not (signed-addition-overflowsp size k x))
                 (posp size))
            (not (sbvlt size (bvplus size k x) (bvplus size k y))))
-  :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt GETBIT-OF-+
-                                          logext-cases
-                                          bvminus
-                                          BVCHOP-WHEN-TOP-BIT-1
-                                          bvuminus)
-                                  (bvminus-becomes-bvplus-of-bvuminus
-                                   ;unsigned-byte-p-when-not-bvlt-tighten
-                                   ;bvlt-when-unsigned-byte-p-better-non-constant
-                                   ;bvlt-tighten-free
-                                   bvlt-tighten-when-getbit-0-alt)))))
+  :hints (("Goal" :in-theory (e/d (sbvlt bvplus logext-of-plus
+                                         signed-addition-overflowsp-correct
+                                         signed-addition-underflowsp-correct)
+                                  (signed-addition-overflowsp
+                                   signed-addition-underflowsp)))))
 
 (defthmd sbvlt-add-to-both-sides-gen
   (implies (and (equal (signed-addition-underflowsp size k x)
@@ -314,20 +255,12 @@
 (defthm signed-addition-overflowsp-of-bvuminus-and-bvplus-same
   (implies (not (signed-addition-underflowsp size k2 x)) ;this also works: (sbvlt size (bvuminus size k2) x) ;todo: gen
            (not (signed-addition-overflowsp size (bvuminus size k2) (bvplus size k2 x))))
-  :hints (("Goal":in-theory (e/d (signed-addition-overflowsp
-                                  bvplus bvchop-of-sum-cases
-                                  sbvlt bvlt
-                                  getbit-of-+
-                                  bvuminus
-                                  logext-cases
-                                  bvminus
-                                  bvchop-when-top-bit-1)
-                                 (bvminus-becomes-bvplus-of-bvuminus
-                                  ;;unsigned-byte-p-when-not-bvlt-tighten
-                                  ;bvlt-when-unsigned-byte-p-better-non-constant
-                                  ;bvlt-tighten-free
-                                  bvlt-tighten-when-getbit-0-alt
-                                  getbit-when-<-of-bvchop-and-constant-high)))))
+  :hints (("Goal" :cases ((posp size))
+           :in-theory (e/d (bvplus bvuminus logext-of-plus logext-of-minus
+                                   signed-addition-overflowsp-correct
+                                   signed-addition-underflowsp-correct)
+                           (signed-addition-overflowsp
+                            signed-addition-underflowsp)))))
 
 ;for underflow to happen, (bvuminus 32 k2) must be negative, so k2 must be positive
 ;rename

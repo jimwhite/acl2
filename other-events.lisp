@@ -121,8 +121,8 @@
 (defun defconst-val (name form ctx wrld state)
   #+acl2-loop-only
   (declare (ignore name))
-  #-acl2-loop-only
   (cond
+   #-acl2-loop-only
    ((f-get-global 'boot-strap-flg state)
     (cond
      ((member name '(*first-order-like-terms-and-out-arities*
@@ -157,15 +157,32 @@
 
     (return-from defconst-val
                  (value (symbol-value name))))
-   (t (let ((val (defconst-val-raw name)))
+   (t #-acl2-loop-only
+      (let ((val (defconst-val-raw name)))
         (when (not (eq val *hcomp-fake-value*))
-          (return-from defconst-val
-                       (with-debug (value val)
-                                   "[~s] Found ~s in hash table.~%"
-                                   'defconst-val name))))))
-  (er-let*
-   ((pair (state-global-let*
-           ((safe-mode
+
+; At one time we returned the value here, without translating.  But that
+; allowed the following event to be admitted when not skipping proofs, which
+; caused a book containing this event to fail being included after
+; certification.
+
+;   (encapsulate
+;     ()
+;     (local (defun c-body () 17))
+;     (defconst *c* (c-body)))
+
+; We will want to use the saved value, but we create an expression that will
+; force translation of the form.  So we modify the form accordingly.
+
+          (setq form
+                (with-debug
+                 `(prog2$ ,form
+                          (quote ,val))
+                 "[~s] Found ~s in hash table.~%"
+                 'defconst-val name))))
+      (er-let*
+          ((pair (state-global-let*
+                  ((safe-mode
 
 ; Warning: If you are tempted to bind safe-mode to nil outside the boot-strap,
 ; then revisit the binding of *safe-mode-verified-p* to t in the
@@ -235,13 +252,13 @@
 ;   allow raw Lisp calls, avoiding safe mode during the boot-strap, even for
 ;   other lisps.
 
-             t ; (not (f-get-global 'boot-strap-flg state))
-             ))
-           (simple-translate-and-eval form nil
-                                      nil
-                                      "The second argument of defconst"
-                                      ctx wrld state nil))))
-   (value (cdr pair))))
+                    t ; (not (f-get-global 'boot-strap-flg state))
+                    ))
+                  (simple-translate-and-eval form nil
+                                             nil
+                                             "The second argument of defconst"
+                                             ctx wrld state nil))))
+        (value (cdr pair))))))
 
 (defun large-consp (x)
   (eql (the #.*fixnat-type* (cons-count-bounded x))
@@ -523,14 +540,14 @@
             (list 'quote def)
             'state
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro defuns (&whole event-form &rest def-lst)
       (list 'defuns-fn
             (list 'quote def-lst)
             'state
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro verify-termination-boot-strap (&whole event-form &rest lst)
       (list 'verify-termination-boot-strap-fn
@@ -583,7 +600,7 @@
             (list 'quote hints)
             (list 'quote otf-flg)
             (list 'quote event-form)
-            #+:non-standard-analysis ; std-p
+            #+non-standard-analysis ; std-p
             nil))
     (defmacro defaxiom (&whole event-form
                                name term
@@ -747,7 +764,7 @@
   (cond ((null actuals) nil)
         ((equal (car actuals) '(quote state))
          (cons 'state (primordial-event-macro-and-fn1 (cdr actuals))))
-        #+:non-standard-analysis
+        #+non-standard-analysis
         ((or (equal (car actuals) nil)
              (equal (car actuals) t))
 
@@ -1145,8 +1162,8 @@
   (let ((names (strip-cars *primitive-formals-and-guards*))
         (arglists (strip-cadrs *primitive-formals-and-guards*))
         (guards (strip-caddrs *primitive-formals-and-guards*))
-        (ns-names #+:non-standard-analysis *non-standard-primitives*
-                  #-:non-standard-analysis nil))
+        (ns-names #+non-standard-analysis *non-standard-primitives*
+                  #-non-standard-analysis nil))
 
     (add-command-landmark
      :logic
@@ -1171,7 +1188,7 @@
           (putprop-defun-runic-mapping-pairs
            names nil
            (putprop-x-lst1
-            ns-names ; nil in the #-:non-standard-analysis case
+            ns-names ; nil in the #-non-standard-analysis case
             'classicalp nil
             (putprop-x-lst1
              ns-names
@@ -1384,18 +1401,30 @@
                                            include-book-path-strings)))
                    ""))))))
 
-(defconst *1*-pkg-prefix*
+#+acl2-loop-only
+(defconst *global-package-prefix* "ACL2_GLOBAL_")
 
-; Unfortunately, *1*-package-prefix* is defined in raw Lisp only, early in the
-; boot-strap.  We mirror that constant here for use below.
+#+acl2-loop-only
+(defconst *1*-package-prefix* "ACL2_*1*_")
 
-  (let ((result "ACL2_*1*_"))
-    #-acl2-loop-only
-    (or (equal result *1*-package-prefix*)
-        (er hard '*1*-pkg-prefix*
-            "Implementation error:  Failed to keep *1*-package-prefix* and ~
-             *1*-pkg-prefix* in sync."))
-    result))
+(defun chk-pkg-prefix (name prefix ctx state)
+  (declare (xargs :guard (and (stringp name)
+                              (stringp prefix)
+                              (error1-state-p state))
+                  :stobjs state))
+  (let ((len (length prefix)))
+    (cond ((and (<= len (length name))
+                (string-equal (subseq name 0 len) prefix))
+
+; The use of string-equal could be considered overkill; probably equal provides
+; enough of a check.
+
+           (er soft ctx
+               "It is illegal for a package name to start (even ignoring ~
+                case) with the string \"~@0\".  ACL2 makes internal use of ~
+                package names starting with that string."
+               prefix))
+          (t (value nil)))))
 
 (defun chk-acceptable-defpkg (name form defpkg-book-path hidden-p ctx w state)
 
@@ -1449,8 +1478,12 @@
      (t
       (er-progn
        (cond
-        ((or package-entry
-             (eq (ld-skip-proofsp state) 'include-book))
+        (package-entry
+
+; We formerly also returned (value nil) here when (eq (ld-skip-proofsp state)
+; 'include-book).  The example in community book
+; system/tests/empty-pkg-nil.lisp shows why that isn't adequate.
+
          (value nil))
         ((not (stringp name))
          (er soft ctx
@@ -1487,21 +1520,9 @@
               package name is used under the hood in some Common Lisp ~
               implementations."
              name))
-        ((let ((len (length *1*-pkg-prefix*)))
-           (and (<= len (length name))
-                (string-equal (subseq name 0 len) *1*-pkg-prefix*)))
-
-; The use of string-equal could be considered overkill; probably equal provides
-; enough of a check.  But we prefer not to consider the possibility that some
-; Lisp has case-insensitive package names.  Probably we should similarly use
-; member-string-equal instead of member-equal below.
-
-         (er soft ctx
-             "It is illegal for a package name to start (even ignoring case) ~
-              with the string \"~@0\".  ACL2 makes internal use of package ~
-              names starting with that string."
-             *1*-pkg-prefix*))
         (t (value nil)))
+       (chk-pkg-prefix name *global-package-prefix* ctx state)
+       (chk-pkg-prefix name *1*-package-prefix* ctx state)
 
 ; At one time we checked that if the package exists, i.e. (member-equal name
 ; all-names), and we are not in the boot-strap, then name must previously have
@@ -1795,6 +1816,7 @@
                     set-difference-theories
                     theory
                     union-theories
+                    union-theories-2
                     universal-theory))
        t))
 
@@ -2279,7 +2301,7 @@
       (augment-theory lst2 wrld)
       nil))))
 
-(defmacro union-theories (lst1 lst2)
+(defmacro union-theories-2 (lst1 lst2)
 
 ; Warning: The resulting value must be a runic-theoryp.  See theory-fn-callp.
 
@@ -2313,6 +2335,13 @@
                lst2
                nil
                'world))))
+
+(defmacro union-theories (&rest rst)
+  (cond ((null rst) nil)
+        ((null (cdr rst))
+; We ensure a runic theory, which (car rst) might not be.
+         `(union-theories-2 nil ,(car rst)))
+        (t (xxxjoin 'union-theories-2 rst))))
 
 (defun set-difference-current-theory-fn (lst2 lst2-known-to-be-runic wrld)
 
@@ -3169,7 +3198,7 @@
 
 (defconst *signature-keywords*
   '(:GUARD
-    #+:non-standard-analysis :CLASSICALP
+    #+non-standard-analysis :CLASSICALP
     :STOBJS :DFS :FORMALS :GLOBAL-STOBJS :TRANSPARENT))
 
 (defun duplicate-key-in-keyword-value-listp (l)
@@ -3418,7 +3447,7 @@
                     signature."
                    x)
               nil nil nil nil nil nil))
-         ((or #+:non-standard-analysis
+         ((or #+non-standard-analysis
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
@@ -3431,9 +3460,9 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    :TRANSPARENT
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                            kwd-value-list))))
                        :CLASSICALP
@@ -3490,7 +3519,7 @@
                     see :DOC signature."
                    x)
               nil nil nil nil nil nil))
-         ((or #+:non-standard-analysis
+         ((or #+non-standard-analysis
               (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                   kwd-value-list))))
               (not (booleanp (cadr (assoc-keyword :TRANSPARENT
@@ -3503,9 +3532,9 @@
           (mv (msg "The object ~x0 is not a legal signature.  The value of ~
                     the ~x1 keyword must be Boolean; see :DOC signature."
                    x
-                   #-:non-standard-analysis
+                   #-non-standard-analysis
                    :TRANSPARENT
-                   #+:non-standard-analysis
+                   #+non-standard-analysis
                    (if (not (booleanp (cadr (assoc-keyword :CLASSICALP
                                                            kwd-value-list))))
                        :CLASSICALP
@@ -4747,11 +4776,11 @@
                       (cons #\4 (car ev-lst))
                       (cons #\5 (term-evisc-tuple nil state))
                       (cons #\r
-                            #+:non-standard-analysis
+                            #+non-standard-analysis
                             (if (f-get-global 'script-mode state)
                                 ""
                               "(r)")
-                            #-:non-standard-analysis ""))
+                            #-non-standard-analysis ""))
                      channel state nil))))
          (mv-let
            (erp form state)
@@ -4947,13 +4976,13 @@
 
 ; For ACL2 (as opposed to ACL2(r)), we do not use kwd-value-list-lst.  It is
 ; convenient though to keep it as a formal, to avoid proliferation of
-; #-:non-standard-analysis readtime conditionals.  We are tempted to declare
+; #-non-standard-analysis readtime conditionals.  We are tempted to declare
 ; kwd-value-list-lst as IGNOREd, in order to avoid the complaint that
 ; kwd-value-list-lst is an irrelevant formal.  However, ACL2 then complains
 ; because of the recursive calls of this function.  Fortunately, declaring
 ; kwd-value-list-lst IGNORABLE also turns off the irrelevance check.
 
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignorable kwd-value-list-lst))
   (cond ((null insigs) nil)
         ((member-eq (caar insigs) udf-fns)
@@ -4969,7 +4998,7 @@
                                       (stobjs-out fn wrld))))
              (cond
               ((and (equal-insig declared-insig actual-insig)
-                    #+:non-standard-analysis
+                    #+non-standard-analysis
 
 ; If the function is specified to be classical, then it had better have a
 ; classical witness.  But in fact the converse is critical too!  Consider the
@@ -5010,15 +5039,15 @@
 ; This is just (list 'if test tbr fbr), except that we expect test always to be
 ; false in the standard case.
 
-  #+:non-standard-analysis
+  #+non-standard-analysis
   (declare (ignore ctx))
-  #-:non-standard-analysis
+  #-non-standard-analysis
   (declare (ignore tbr))
   (list 'if
         test
-        #+:non-standard-analysis
+        #+non-standard-analysis
         tbr
-        #-:non-standard-analysis
+        #-non-standard-analysis
         `(er hard ,ctx
              "Unexpected intrusion of non-standard analysis into standard ~
               ACL2!  Please contact the implementors.")
@@ -6073,15 +6102,15 @@
          infectious-fns
          fns))))
 
-(defun bogus-exported-compliants (names exports-with-sig-ancestors sig-fns
-                                        wrld)
+(defun bogus-exported-compliants (names exports-with-sig-ancestors wrld)
 
 ; Names is a list of function symbols exported from an encapsulate event.
 ; Exports-with-sig-ancestors contains each element of names that has at least
 ; one signature function of that encapsulate among its ancestors.  We return
 ; those elements of names whose body or guard has at least one ancestor in
-; sig-fns, except for those that are constrained, because the guard proof
-; obligations may depend on local properties.  Consider the following example.
+; signature functions, except for those that are constrained, because the guard
+; proof obligations may depend on local properties.  Consider the following
+; example.
 
 ; (encapsulate
 ;  ((f (x) t))
@@ -6097,6 +6126,8 @@
 ; with their guard verification, it seems appropriate to insist that the guard
 ; proof obligation really does hold in the theory produced by the encapsulate,
 ; not merely in the temporary theory of the first pass of the encapsulate.
+; More importantly, it is important that the :guard-theorem is really a
+; theorem!
 
 ; See also the comment about this function in intro-udf.
 
@@ -6114,16 +6145,43 @@
 ; signature functions as ancestors.
 
               (or (member-eq (car names) exports-with-sig-ancestors)
-                  (intersectp-eq sig-fns (instantiable-ancestors
-                                          (all-fnnames
-                                           (guard (car names) nil wrld))
-                                          wrld
-                                          nil))))
+                  (intersectp-eq exports-with-sig-ancestors
+                                 (all-fnnames (guard (car names) nil wrld)))))
          (cons (car names)
                (bogus-exported-compliants
-                (cdr names) exports-with-sig-ancestors sig-fns wrld)))
+                (cdr names) exports-with-sig-ancestors wrld)))
         (t (bogus-exported-compliants
-            (cdr names) exports-with-sig-ancestors sig-fns wrld))))
+            (cdr names) exports-with-sig-ancestors wrld))))
+
+(defun bogus-exported-measures (names exports-with-sig-ancestors wrld)
+
+; This check is to guarantee that the :termination-theorem is really a theorem.
+
+  (cond
+   ((endp names) nil)
+   (t
+    (let ((just (getpropc (car names) 'justification nil wrld)))
+      (cond
+       (just
+        (let* ((measure (access justification just :measure))
+               (mp (access justification just :mp))
+               (wf-rel (access justification just :rel))
+               (bogus-measure (intersectp-eq exports-with-sig-ancestors
+                                             (all-fnnames measure)))
+               (bogus-mp (member-eq mp exports-with-sig-ancestors))
+               (bogus-wf-rel (member-eq wf-rel exports-with-sig-ancestors)))
+          (cond
+           ((or bogus-measure bogus-mp bogus-wf-rel)
+            (cons (car names)
+                  (bogus-exported-measures (cdr names)
+                                           exports-with-sig-ancestors
+                                           wrld)))
+           (t (bogus-exported-measures (cdr names)
+                                       exports-with-sig-ancestors
+                                       wrld)))))
+       (t (bogus-exported-measures (cdr names)
+                                   exports-with-sig-ancestors
+                                   wrld)))))))
 
 (defun remove-type-prescription-cert-data (cert-data)
   (remove1-assoc-eq :type-prescription cert-data))
@@ -6529,7 +6587,11 @@
                               (state (set-w 'extension wrld2 state))
                               (bogus-exported-compliants
                                (bogus-exported-compliants
-                                exported-names exports-with-sig-ancestors sig-fns
+                                exported-names exports-with-sig-ancestors
+                                wrld2))
+                              (bogus-exported-measures
+                               (bogus-exported-measures
+                                exported-names exports-with-sig-ancestors
                                 wrld2)))
                          (cond
                           (bogus-exported-compliants
@@ -6542,7 +6604,16 @@
                                 verification until after the encapsulate ~
                                 event, for example by using :verify-guards ~
                                 nil."
-                               bogus-exported-compliants))
+                               (reverse bogus-exported-compliants)))
+                          (bogus-exported-measures
+                           (er soft ctx
+                               "For the following function~#0~[~/s~] ~
+                                introduced by this encapsulate event, the ~
+                                :termination-theorem may depend on local ~
+                                properties that are not exported from the ~
+                                encapsulate event: ~&0.  See :DOC ~
+                                bogus-exported-measures for a workaround."
+                               (reverse bogus-exported-measures)))
                           (t (value
                               (if only-pass-p
                                   (cons expansion-alist retval)
@@ -7728,6 +7799,8 @@
         (t x)))
 
 (defun redundant-encapsulate-tuplep (event-form mode ruler-extenders vge
+                                                measure-function
+                                                well-founded-relation
                                                 event-number wrld wrld0 state
                                                 r-e-p)
 
@@ -7763,12 +7836,17 @@
                                ruler-extenders)
                         (eql (default-verify-guards-eagerness-from-table adt)
                              vge)
+                        (eq (default-well-founded-relation-from-table adt)
+                            well-founded-relation)
+                        (eq (default-measure-function-from-table adt)
+                            measure-function)
                         (redundant-encapsulatep-result
                          (if (eq equal? :expanded)
                              old-event-form
                            t)
                          wrld wrld0 state)))))))
         (t (redundant-encapsulate-tuplep event-form mode ruler-extenders vge
+                                         measure-function well-founded-relation
                                          event-number (cdr wrld) wrld0 state
                                          r-e-p))))
 
@@ -7836,6 +7914,14 @@
                         old-adt)
                       (default-verify-guards-eagerness-from-table
                         new-adt))
+                 (eq (default-measure-function-from-table
+                       old-adt)
+                     (default-measure-function-from-table
+                       new-adt))
+                 (eq (default-well-founded-relation-from-table
+                       old-adt)
+                     (default-well-founded-relation-from-table
+                       new-adt))
                  (redundant-encapsulatep-result (if (eq equal? :expanded)
                                                     old-event-form
                                                   t)
@@ -7859,6 +7945,8 @@
                 (default-defun-mode-from-table new-adt)
                 (default-ruler-extenders-from-table new-adt)
                 (default-verify-guards-eagerness-from-table new-adt)
+                (default-measure-function-from-table new-adt)
+                (default-well-founded-relation-from-table new-adt)
                 (and name
                      (getpropc name 'absolute-event-number nil wrld))
                 wrld
@@ -8818,7 +8906,7 @@
                                                    kwd-value-list-lst
                                                    wrld3)
                                                   wrld3 ctx state))
-                                         #+:non-standard-analysis
+                                         #+non-standard-analysis
                                          (wrld3a (value
                                                   (intro-udf-non-classicalp
                                                    insigs kwd-value-list-lst
@@ -9003,7 +9091,7 @@
                                        kwd-value-list-lst
                                        wrld3)
                                       wrld3 ctx state))
-                             #+:non-standard-analysis
+                             #+non-standard-analysis
                              (wrld3a (value (intro-udf-non-classicalp
                                              insigs kwd-value-list-lst wrld3a))))
                           (install-event (cond
@@ -9894,8 +9982,7 @@
   (and (symbolp x)
        (let ((pkg-name (ignore-errors (symbol-package-name x))))
          (and pkg-name
-              (string-prefixp *1*-pkg-prefix* ; i.e., *1*-package-prefix*
-                              pkg-name)))))
+              (string-prefixp *1*-package-prefix* pkg-name)))))
 
 (mutual-recursion
 
@@ -12358,9 +12445,10 @@
                 (equal-modulo-hidden-defpkgs cmds1 (cdr cmds2)))
                (& nil))))))
 
-(defun cert-obj-for-convert (full-book-string dir pre-alist fixed-cmds
-                                            suspect-book-action-alist
-                                            ctx state)
+(defun cert-obj-for-convert (full-book-string dir full-book-name pre-alist
+                                              fixed-cmds
+                                              suspect-book-action-alist
+                                              ctx state)
 
 ; Here we check that the pre-alists and portcullis commands correspond, as
 ; explained in the error messages below.  See also certify-book-finish-convert
@@ -12394,6 +12482,7 @@
                 current ACL2 world:~|~y2"
                `(er-let* ((cert-obj
                            (chk-certificate-file ,full-book-string ,dir
+                                                 ,full-book-name
                                                  'convert-pcert ',ctx state
                                                  ',suspect-book-action-alist
                                                  nil)))
@@ -12504,9 +12593,9 @@
                                              wrld ctx state)))))
         (cond
          ((eq cert-op :convert-pcert)
-          (cert-obj-for-convert full-book-string dir pre-alist-cert-wrld
-                                fixed-cmds suspect-book-action-alist ctx
-                                state))
+          (cert-obj-for-convert full-book-string dir full-book-name
+                                pre-alist-cert-wrld fixed-cmds
+                                suspect-book-action-alist ctx state))
          (t
           (value
            (make cert-obj
@@ -13631,7 +13720,7 @@
                               "Although the file ~x0 exists, it is being ~
                                ignored because keyword option :ACL2X T was ~
                                not supplied to certify-book."
-                              acl2x-file full-book-string))
+                              acl2x-file))
                    (t state))
              (value nil)))
     (t (mv-let
@@ -17346,7 +17435,8 @@
                     (value (cond (str (intern$ (string-upcase str) "ACL2"))
                                  (t t))))))) ; default
         (t (er soft ctx
-               "Illegal :write-port argument, ~x0.  See :DOC certify-book."))))
+               "Illegal :write-port argument, ~x0.  See :DOC certify-book."
+               write-port))))
 
 (defun certify-book-cert-op (pcert pcert-env write-acl2x ctx state)
 
@@ -18642,7 +18732,7 @@
 ;       (and tbody2
 ;            (not tbody1))))
 
-; We now outline an argument for the :non-standard-analysis case, which in fact
+; We now outline an argument for the non-standard-analysis case, which in fact
 ; provides justification for both defchoose axioms.  The idea is to assume that
 ; there is a suitable well-ordering for the ground-zero theory and that the
 ; ground-zero theory contains enough "invisible" functions so that this
@@ -18821,12 +18911,12 @@
                                (stobjs-out
                                 (compute-stobj-flags bound-vars nil nil wrld))
                                (wrld
-                                #+:non-standard-analysis
+                                #+non-standard-analysis
                                 (putprop
                                  fn 'classicalp
                                  (classical-fn-list-p (all-fnnames tbody) wrld)
                                  wrld)
-                                #-:non-standard-analysis
+                                #-non-standard-analysis
                                 wrld)
                                (wrld
                                 (putprop
@@ -18871,7 +18961,7 @@
 (defconst *defun-sk-keywords*
   '(:quant-ok :skolem-name :thm-name :rewrite :strengthen
               :constrain :verbose
-              #+:non-standard-analysis :classicalp))
+              #+non-standard-analysis :classicalp))
 
 (defun non-acceptable-defun-sk-p (name args body quant-ok rewrite exists-p
                                        dcls)
@@ -19107,9 +19197,9 @@
                                       constrained))))
                (rewrite (cdr (assoc-eq :rewrite keyword-alist)))
                (strengthen (cdr (assoc-eq :strengthen keyword-alist)))
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp-p (and (assoc-eq :classicalp keyword-alist) t))
-               #+:non-standard-analysis
+               #+non-standard-analysis
                (classicalp (let ((pair (assoc-eq :classicalp keyword-alist)))
                              (if pair
                                  (cdr pair)
@@ -19191,7 +19281,7 @@
                                  (cons 'mv
                                        (make-list (length bound-vars)
                                                   :initial-element '*)))
-                              #+:non-standard-analysis
+                              #+non-standard-analysis
                               ,@(and classicalp-p
                                      `(:classicalp ,classicalp)))
                              ,@(and constrained
@@ -19215,7 +19305,7 @@
                                                  nil)
                                                 (declare (ignore ign))
                                                 `(:guard ,guard)))
-                                       #+:non-standard-analysis
+                                       #+non-standard-analysis
                                        ,@(and classicalp-p
                                               `(:classicalp ,classicalp))))))
                             (local (in-theory '(implies)))
@@ -20812,7 +20902,9 @@
                           (if (eq (car type) 'hash-table)
                               (putprop
                                accessor?-fn 'stobjs-in (list nil name)
-                               wrld)
+                               (putprop
+                                accessor?-fn 'stobjs-out (list stobj-flg nil)
+                                wrld))
 
 ; See the comment in put-stobjs-in-and-outs about *stobj-table-stobj*.
 
@@ -20902,11 +20994,17 @@
           (defconst-name-alist (cdr lst) (1+ n)))))
 
 (defun accessor-array (name field-names)
-  (let ((len (length field-names)))
+  (let ((len (max 1 (length field-names)))) ; :dimensions must be positive
     (compress1 name
                (cons `(:HEADER :DIMENSIONS (,len)
                                :MAXIMUM-LENGTH ,(+ 1 len)
-                               :DEFAULT nil ; should be ignored
+
+; The :DEFAULT of nil is generally irrelevant.  However, in the case that
+; field-names is nil for a stobj st, function accessor-root will return this
+; default when untranslating the first argument of (nth '0 st), so that the
+; untranslation is (nth 0 st) rather than (nth 17 st).
+
+                               :DEFAULT nil
                                :NAME ,name
                                :ORDER :none)
                      (defconst-name-alist field-names 0)))))
@@ -22736,7 +22834,7 @@
 ; wrld)).
 
    (cond
-    ((eq st (getpropc fn 'stobj-function nil wrld))
+    ((congruent-stobjsp st (getpropc fn 'stobj-function nil wrld) wrld)
      :once)
     ((getpropc fn 'recursivep nil wrld)
 
@@ -22821,7 +22919,9 @@
 ; function body won't allow stobj modification in args of a function call.
 
          (assert$ (null (stobj-updates-listp st (fargs term) wrld))
-                  (and (member-eq st (stobjs-out (ffn-symb term) wrld))
+                  (and (some-congruent-p st
+                                         (stobjs-out (ffn-symb term) wrld)
+                                         wrld)
 
 ; We recur into the body of fn.  If this process runs too slowly, we may decide
 ; on a sort of memoization obtained by storing a suitable property for fn.
@@ -22847,7 +22947,7 @@
 ; they update atomically or because the :PROTECT keyword was supplied at the
 ; time the abstract stobj st$c was admitted.
 
-  (and (member-eq st$c (stobjs-out name wrld))
+  (and (some-congruent-p st$c (stobjs-out name wrld) wrld)
        (eq t (fn-stobj-updates-p st$c name wrld))))
 
 (defun key-position-from-end-eq (key alist)
@@ -24205,7 +24305,7 @@
           (msg (cond (old-formula (msg "~%~Y01[Note discrepancy with existing ~
                                         formula named ~x2:~|  ~Y31~|]~%"
                                        expected-defthm nil name old-formula))
-                     (t (msg "~%~Y01" expected-defthm nil name old-formula)))))
+                     (t (msg "~%~Y01" expected-defthm nil)))))
      (cond ((endp (cdr missing)) msg)
            (t (msg "~@0~@1"
                    msg
@@ -24497,7 +24597,7 @@
        (t
         (cons-with-hint field-old
                         (fix-export-updaters1 (cdr old) old-to-new)
-                        (cdr old))))))))
+                        old)))))))
 
 (defun export-names (exports)
   (cond ((endp exports) nil)
@@ -27946,10 +28046,10 @@
 
 (defun hyps-type-alist (assumptions ens wrld state)
 
-; Note that the force-flg arg to type-alist-clause is nil here, so we shouldn't
-; wind up with any assumptions in the returned tag-tree. Also note that we
-; return (mv contradictionp type-alist fc-pair-lst), where actually fc-pair-lst
-; is a ttree if contradictionp holds; normally we ignore fc-pair-lst otherwise.
+; We return (mv contradictionp type-alist ttree-or-fc-pairs), where
+; ttree-or-fc-pairs is a ttree if contradictionp is true and otherwise ttree is
+; generally ignored (it's the fc-pairs returned in that case by
+; forward-chain-top).
 
   (forward-chain-top 'show-rewrites
                      (dumb-negate-lit-lst (expand-assumptions assumptions))
@@ -28677,7 +28777,7 @@
            key))
       ((member-eq key *hint-keywords*)
        (er soft ctx
-           "It is illegal to use the name of a primitive hint, ~e.g., ~x0, as ~
+           "It is illegal to use the name of a primitive hint, e.g., ~x0, as ~
             a custom keyword hint."
            key))
       ((assoc-eq key
@@ -29069,9 +29169,9 @@
    ((not (or (booleanp substitute)
              (natp substitute)))
     (er soft 'print-gv
-        "The :substitute keyword argument of PRINT-GV must evaluate to T, ~
-         NIL, or a natural number."
-        substitute))
+        "The :substitute keyword argument of PRINT-GV must evaluate to ~x0, ~
+         ~x1, or a natural number, so the argument ~x2 is illegal."
+        t nil substitute))
    (t
     (let* ((fn (nth 0 info))
            (guard (nth 1 info))
@@ -32758,7 +32858,8 @@
         ((member-eq :system-ok args)
          (er hard 'defattach-system
              "The argument :system-ok is illegal for a defattach-system call. ~
-              Consider instead using defattach or removing :system-ok."
+              ~ The call ~x0 is thus illegal.  Consider instead using ~
+              defattach or removing :system-ok."
              form))
         (t
          `(local (defattach ,@args :system-ok t)))))
@@ -32816,6 +32917,9 @@
                   it is given special treatment."
                  key 'return-last-table))
                ((and val
+                     (if (consp val)
+                         (symbolp (car val))
+                       (symbolp val)) ; avoid getpropc error below
                      (let ((val2 (if (symbolp val) val (car val))))
                        (and
                         (not (getpropc val2 'macro-body nil wrld))
@@ -33076,13 +33180,13 @@
             (,@(and extra-var (list extra-var)) state)
             ,form0
             (mv-let (erp result state)
-                    (get-output-stream-string$ ,channel-var state)
-                    (mv nil
-                        (and (not erp)
-                             ,(if extra-var
-                                  `(cons ,extra-var result)
-                                'result))
-                        state))))
+              (get-output-stream-string$ ,channel-var state)
+              (mv nil
+                  (and (not erp)
+                       ,(if extra-var
+                            `(cons ,extra-var result)
+                          'result))
+                  state))))
          (body1 ; bind fmt controls and clean up around body0
 
 ; Warning: Keep the two branches below in sync.
@@ -33138,16 +33242,22 @@
                             state)))))
          (body ; open a string output channel and then evaluate body1
           `(mv-let
-            (,channel-var state)
-            (open-output-channel :string :character state)
-            (cond (,channel-var ,body1)
-                  (t ,(cond
-                       (outside-loop-p
-                        "ERROR: Failed to open string output channel to ~
-                         report an error.")
-                       (t '(er soft 'channel-to-string
-                               "Implementation error: Unable to open a ~
-                                channel to a string."))))))))
+             (,channel-var state)
+             (open-output-channel :string :character state)
+             (cond (,channel-var ,body1)
+                   (t ,(cond
+                        (outside-loop-p
+                         '(value (error "ERROR: Failed to open string output ~
+                                         channel to report an error.")))
+                        (t
+
+; We avoid (er soft ...) because the *default-state* might not permit writing
+; an error, and anyhow we want a "real" error here that stops evaluation since
+; this case is highly unexpected.
+
+                         '(value (er hard? 'channel-to-string
+                                     "Implementation error: Unable to open a ~
+                                      channel to a string.")))))))))
     `(with-local-state
       (mv-let
        (erp result state)
@@ -34146,10 +34256,10 @@
 ; not have to protect the world here in case of error, though we do set the
 ; world back to the starting world when returning a non-erroneous error triple.
 ; Form should evaluate either to an ordinary value, val, or to (mv nil val
-; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (list*
-; val new-kpa new-ttags-seen)), where new-kpa and new-ttags-seen are the
-; known-package-alist and value of world global 'ttags-seen immediately after
-; form is evaluated; and if not, we return a soft error.
+; state stobj1 ... stobjk), where k may be 0.  If so, we return (value (cons
+; val new-ttags-seen)), where new-ttags-seen is the value of world global
+; 'ttags-seen immediately after form is evaluated; and if not, we return a soft
+; error.
 
 ; See the comment at the call of trans-eval-default-warning, below.
 
@@ -34189,12 +34299,11 @@
 
                  (with-hcomp-bindings-protected-eval
                   (trans-eval-default-warning form ctx state aok))))
-        (let* ((new-kpa (known-package-alist state))
-               (new-ttags-seen (global-val 'ttags-seen (w state)))
+        (let* ((new-ttags-seen (global-val 'ttags-seen (w state)))
                (stobjs-out (car result))
                (vals (cdr result))
                (safep (equal stobjs-out '(nil))))
-          (cond (safep (value (list* vals new-kpa new-ttags-seen)))
+          (cond (safep (value (cons vals new-ttags-seen)))
                 ((or (null (cdr stobjs-out))
                      (not (eq (caddr stobjs-out) 'state))
                      (member-eq nil (cdddr stobjs-out)))
@@ -34227,7 +34336,7 @@
                          form))))
                 (t (pprogn
                     (set-w! original-wrld state)
-                    (value (list* (cadr vals) new-kpa new-ttags-seen)))))))))))
+                    (value (cons (cadr vals) new-ttags-seen)))))))))))
 
 (defun make-event-debug-pre (depth form on-behalf-of state)
 
@@ -34426,9 +34535,7 @@
 
 (defun make-event-fn (form expansion? check-expansion on-behalf-of
                            save-event-data whole-form state)
-  (let ((ctx (make-event-ctx whole-form))
-        #-acl2-loop-only
-        (old-kpa (known-package-alist state)))
+  (let ((ctx (make-event-ctx whole-form)))
     (with-ctx-summarized
      ctx
      (cond
@@ -34497,7 +34604,7 @@
                (new-debug-depth (1+ (f-get-global 'make-event-debug-depth state)))
                (wrld (w state)))
           (er-let*
-              ((expansion0/new-kpa/new-ttags-seen
+              ((expansion0/new-ttags-seen
                 (pprogn
                  (if make-event-debug
                      (make-event-debug-pre new-debug-depth form on-behalf-of
@@ -34520,7 +34627,7 @@
 
                                        (eq check-expansion t))
                                   (not (eq check-expansion t))))
-                    (value (list* expansion? nil nil)))
+                    (value (cons expansion? nil)))
                    (t
                     (do-proofs?
                      (or check-expansion
@@ -34546,10 +34653,9 @@
 ; occurs later at the top level of the book.
 
                      (protected-eval form on-behalf-of ctx state t)))))))
-               (expansion0 (value (car expansion0/new-kpa/new-ttags-seen)))
-               (new-kpa (value (cadr expansion0/new-kpa/new-ttags-seen)))
+               (expansion0 (value (car expansion0/new-ttags-seen)))
                (new-ttags-seen
-                (value (cddr expansion0/new-kpa/new-ttags-seen)))
+                (value (cdr expansion0/new-ttags-seen)))
                (need-event-landmark-p
                 (pprogn
                  (if make-event-debug
@@ -34655,42 +34761,13 @@
                           #-acl2-loop-only
                           (let ((msg
 
-; We now may check the expansion to see if an unknown package appears.  The
-; following example shows why this can be important.  Consider a book "foo"
-; with this event.
+; At one time we only did the following check when the known-package-alist has
+; changed.  A comment appeared here through ACL2 Version 8.7 explaining why the
+; check is needed in that case.  But we now do the check unconditionally, and a
+; very simple example explains why; see community book
+; system/tests/make-event-bad-char.lisp.
 
-; (make-event
-;  (er-progn
-;   (include-book "foo2") ; introduces "MY-PKG"
-;   (assign bad (intern$ "ABC" "MY-PKG"))
-;   (value `(make-event
-;            (list 'defconst '*a*
-;                  (list 'length
-;                        (list 'symbol-name
-;                              (list 'quote ',(@ bad)))))))))
-;
-
-; where "foo2" is as follows, with the indicated portcullis command:
-
-; (in-package "ACL2")
-;
-; ; (defpkg "MY-PKG" nil)
-;
-; (defun foo (x)
-;   x)
-
-; In ACL2 Version_3.4, we certified these books; but then, in a new ACL2
-; session, we got a raw Lisp error about unknown packages when we try to
-; include "foo".
-
-; On the other hand, the bad-lisp-objectp test is potentially expensive for
-; large objects such as are encountered at Centaur Tech. in March 2010.  The
-; value returned by expansion can be expected to be a good lisp object in the
-; world installed at the end of expansion, so if expansion doesn't extend the
-; world with any new packages, then we can avoid this check.
-
-                                 (and (not (eq old-kpa new-kpa))
-                                      (bad-lisp-objectp actual-expansion))))
+                                 (bad-lisp-objectp actual-expansion)))
                             (when msg
                               (er hard ctx
                                   "Make-event expansion for the form ~x0 has ~
@@ -34793,14 +34870,14 @@
       (er-let* ((next
                  (cond
                   (make-event-case
-                   (er-let* ((expansion0/new-kpa/new-ttags-seen
+                   (er-let* ((expansion0/new-ttags-seen
                               (revert-world-on-error
                                (protected-eval (cadr form)
                                                (cadr (assoc-keyword
                                                       :on-behalf-of
                                                       (cddr form)))
                                                ctx state t))))
-                     (value (car expansion0/new-kpa/new-ttags-seen))))
+                     (value (car expansion0/new-ttags-seen))))
                   (macrop (macroexpand1 form ctx state))
                   (transp (translate form
                                      t   ; stobjs-out
@@ -34960,7 +35037,7 @@
     `(set-check-invariant-risk-fn ,x state))
    (t `(cond
         ((not (member-eq ,x '(t nil :ERROR :WARNING)))
-         (er soft 'check-invariant-risk
+         (er soft 'set-check-invariant-risk
              "Illegal value for ~x0: ~x1"
              'check-invariant-risk
              ',x))
@@ -36436,13 +36513,15 @@
     (msg "~@0The function to be memoized, ~x1, has a different signature from ~
           the function to be :INVOKEd, ~x2."
          str key invoke))
-   ((skip-proofs-due-to-system state)
 
-; By conservativity it is sound to skip the theorem checks (for equality and
-; guard implication) when we are including a book or in the second pass of
-; encapsulate.
+; At one time we returned nil here if (skip-proofs-due-to-system state) is
+; true.  After all, by conservativity it is sound to skip the theorem checks
+; (for equality and guard implication) when we are including a book or in the
+; second pass of encapsulate.  But that does not account for using
+; macro-aliases in the first argument of memoize, or other ways for that
+; argument to depend on the world; see community book
+; system/tests/memoize-invoke-macro-alias.lisp.
 
-    nil)
    (t (let ((eq-thm-p (memoize-invoke-equality-exists key invoke wrld wrld))
             (gd-thm-p (memoize-invoke-guard-thm-exists key invoke wrld)))
         (cond
@@ -36452,7 +36531,7 @@
                          `(defthm ,(intern-in-package-of-symbol
                                     (concatenate 'string
                                                  (symbol-name key)
-                                                 "-is-"
+                                                 "-IS-"
                                                  (symbol-name invoke))
                                     invoke)
                             ,(let ((formals (formals key wrld)))
@@ -36471,9 +36550,9 @@
                                     thm-formula
                                     guard-thm-formula)))))
               (msg "~@0The following event~#1~[~/s~] must be admitted ~
-                    (possibly with differing name or macro) before memoizing ~
-                    function ~x2 with :INVOKE value ~x3.  See :DOC ~
-                    memoize.~|~%~@4"
+                    (possibly with differing name or macro), non-locally, ~
+                    before memoizing function ~x2 with :INVOKE value ~x3.  ~
+                    See :DOC memoize.~|~%~@4"
                    str
                    (if (or eq-thm-p gd-thm-p) 0 1)
                    key invoke msg))))))))
@@ -36517,8 +36596,22 @@
              (msg
               (cond
                ((eq key-formals t)
-                (msg "~@0~x1 is not a function symbol."
-                     str key))
+                (msg "~@0~x1 is not a function symbol.~#2~[~/~@3~]"
+                     str key
+                     (if (and invoke
+                              (function-symbolp
+                               (deref-macro-name key (macro-aliases wrld))
+                               wrld))
+                         1
+                       0)
+                     (msg "  Note that because of the non-nil :INVOKE ~
+                           argument, the first argument of your ~x0 call must ~
+                           be a function symbol.  That first argument, ~x1, ~
+                           is a macro-alias for the function symbol, ~x2, ~
+                           which you should use instead as the first argument."
+                          'memoize
+                          key
+                          (deref-macro-name key (macro-aliases wrld)))))
                ((and (or condition (cdr (assoc-eq :inline val)))
 
 ; The preceding term says that we are not profiling.  Why not replace it simply

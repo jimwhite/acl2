@@ -26,6 +26,7 @@
           tree-element->hash
           tree-element->key+val
           tree-element
+          tree-element$
           treep
           tree-fix
           tree-equiv
@@ -34,6 +35,8 @@
           tree->left
           tree->right
           tree-node
+          tree-node-with-hint
+          tree-leaf
           tree-listp
           tree-list-fix
           ))

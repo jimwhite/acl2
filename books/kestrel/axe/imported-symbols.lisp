@@ -203,7 +203,10 @@
     axe-binding-hyp
     axe-smt
     work-hard ; may not be needed
-    axe-rewrite-objective ; may not be needed
+    axe-rewrite-objective
+    rewrite-objective-strengthen
+    rewrite-objective-weaken
+    rewrite-objective-?
 
     ;; These are for writing axe-syntaxp and axe-bind-free functions:
     pseudo-dag-arrayp
@@ -337,6 +340,8 @@
     doublets-to-alist
     translate-term
     translate-terms
+    translate-term-in-logic-mode
+    translate-terms-in-logic-mode
     variablep
     empty-alist
     empty-acc
@@ -410,7 +415,8 @@
     strings-starting-with
     add-prefix-to-strings
     merge-sort-string<
-    ))
+
+    plist-worldp-with-formals))
 
 (defconst *arithmetic-symbols*
   '(ceiling-of-lg
@@ -446,7 +452,8 @@
     amazing-rules-bv
     trim-rules
     prune-dag-post-rewrite-rules
-    pre-stp-rules))
+    pre-stp-rules
+    introduce-bv-array-rules))
 
 (defconst *bv-list-symbols*
   '(packbv-little

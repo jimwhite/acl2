@@ -39,6 +39,7 @@
 (define tree-intersect
   ((x treep)
    (y treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Take the intersection of two treaps."
   :long
@@ -56,7 +57,7 @@
            (let ((left (tree-intersect left (tree->left y)))
                  (right (tree-intersect right (tree->right y))))
              (if in
-                 (tree-node (tree->head y) left right)
+                 (tree-node-with-hint (tree->head y) left right y)
                (mbe :logic (tree-join-at (tree-element->val (tree->head y))
                                          left right)
                     :exec (tree-join left right))))))
@@ -66,7 +67,7 @@
            (let ((left (tree-intersect (tree->left x) left))
                  (right (tree-intersect (tree->right x) right)))
              (if in
-                 (tree-node (tree->head x) left right)
+                 (tree-node-with-hint (tree->head x) left right x)
                (mbe :logic (tree-join-at (tree-element->val (tree->head x))
                                          left right)
                     :exec (tree-join left right)))))))
@@ -76,8 +77,6 @@
   :guard-hints (("Goal" :in-theory (enable tree-join-at))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-intersect)))
 
 (defrule tree-intersect-type-prescription
   (or (consp (tree-intersect x y))
@@ -197,7 +196,7 @@
                 (let ((left (acl2-number-tree-intersect left (tree->left y)))
                       (right (acl2-number-tree-intersect right (tree->right y))))
                   (if in
-                      (tree-node (tree->head y) left right)
+                      (tree-node-with-hint (tree->head y) left right y)
                     (tree-join left right)))))
              (t
               (mv-let (in left right)
@@ -206,7 +205,7 @@
                 (let ((left (acl2-number-tree-intersect (tree->left x) left))
                       (right (acl2-number-tree-intersect (tree->right x) right)))
                   (if in
-                      (tree-node (tree->head x) left right)
+                      (tree-node-with-hint (tree->head x) left right x)
                     (tree-join left right)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-intersect
@@ -231,7 +230,7 @@
                 (let ((left (symbol-tree-intersect left (tree->left y)))
                       (right (symbol-tree-intersect right (tree->right y))))
                   (if in
-                      (tree-node (tree->head y) left right)
+                      (tree-node-with-hint (tree->head y) left right y)
                     (tree-join left right)))))
              (t
               (mv-let (in left right)
@@ -240,7 +239,7 @@
                 (let ((left (symbol-tree-intersect (tree->left x) left))
                       (right (symbol-tree-intersect (tree->right x) right)))
                   (if in
-                      (tree-node (tree->head x) left right)
+                      (tree-node-with-hint (tree->head x) left right x)
                     (tree-join left right)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-intersect
@@ -264,7 +263,7 @@
                 (let ((left (eqlable-tree-intersect left (tree->left y)))
                       (right (eqlable-tree-intersect right (tree->right y))))
                   (if in
-                      (tree-node (tree->head y) left right)
+                      (tree-node-with-hint (tree->head y) left right y)
                     (tree-join left right)))))
              (t
               (mv-let (in left right)
@@ -273,7 +272,7 @@
                 (let ((left (eqlable-tree-intersect (tree->left x) left))
                       (right (eqlable-tree-intersect (tree->right x) right)))
                   (if in
-                      (tree-node (tree->head x) left right)
+                      (tree-node-with-hint (tree->head x) left right x)
                     (tree-join left right)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-intersect

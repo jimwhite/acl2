@@ -16,14 +16,12 @@
 (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)
 (include-book "kestrel/typed-lists-light/all-less" :dir :system)
 (include-book "kestrel/typed-lists-light/maxelem" :dir :system)
-(include-book "kestrel/lists-light/repeat" :dir :system)
 (include-book "kestrel/utilities/quote" :dir :system)
 (include-book "kestrel/utilities/forms" :dir :system)
 (include-book "kestrel/utilities/erp" :dir :system)
 (include-book "kestrel/utilities/wrap-all" :dir :system)
 (include-book "kestrel/bv/bvif" :dir :system) ; since the prover knows about BVIF
 (include-book "kestrel/bv/bool-to-bit" :dir :system) ; since the prover knows about BOOL-TO-BIT
-(include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system)
 ;(include-book "merge-sort-less-than")
 (include-book "supporting-nodes")
 (include-book "dag-array-builders")
@@ -95,7 +93,7 @@
 ;; ;eventually have the evaluator check if it's a ground term too..
 ;; (make-event
 ;;  (make-evaluator 'axe-evaluator2
-;;                  (axe-evaluator-function-info) ;(cons '(apply-AXE-EVALUATOR2 arg1 arg2 arg3) )  ;what else?
+;;                  (axe-evaluator-function-info) ;(cons '(apply-AXE-EVALUATOR2 arg1 arg2 arg3))  ;what else?
 ;;                  t                ;args are quoted (fffixme does this cause lots of quoting and unquoting as the evaluator computes?
 ;;   ;               :make-term       ;if can't eval, just make the term
 ;;    ;              t                ; quote the result
@@ -106,7 +104,7 @@
 ;;  (make-evaluator 'axe-evaluator3
 ;;                  (cons '(DAG-VAL-WITH-AXE-EVALUATOR arg1 arg2 arg3 arg4 ;(+ 1 array-depth)
 ;;                                                      ) ;what else?
-;;                        (axe-evaluator-function-info)) ;(cons '(apply-AXE-EVALUATOR2 arg1 arg2 arg3) )
+;;                        (axe-evaluator-function-info)) ;(cons '(apply-AXE-EVALUATOR2 arg1 arg2 arg3))
 ;;                  t                             ;args are quoted
 ;; ;             :nil       ;if can't eval, just return nil
 ;; ;            t          ; quote the result
@@ -786,7 +784,7 @@
 ;;             (prog2$ (if (and print-interval
 ;;                              (equal 0 (mod dag-len print-interval)))
 ;; ;                          nil
-;;                         (print-array 'dag-array dag-array (+ -1 dag-len) ) ;
+;;                         (print-array 'dag-array dag-array (+ -1 dag-len))
 ;; ;                          (cw "Adding node ~x0 to dag: ~x1.~%" dag-len (array-to-alist 'dag-array dag-array dag-len))
 
 ;;                       (if (and (not dont-add-permanently)

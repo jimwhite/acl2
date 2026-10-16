@@ -22,6 +22,7 @@
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "bvuminus"))
+(local (include-book "bvminus"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -55,9 +56,9 @@
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
                                           getbit-of-+
                                           logext-cases
-                                          bvminus bvuminus
+                                          bvminus
                                           bvchop-when-top-bit-1)
-                                  (bvminus-becomes-bvplus-of-bvuminus
+                                  (bvminus-becomes-bvplus-of-bvuminus ; todo
                                    ;; for speed:
                                    associativity-of-+ bvchop-when-top-bit-1
                                    )))))
@@ -70,15 +71,16 @@
   :hints (("Goal" :in-theory (e/d (signed-addition-overflowsp-symmetric)
                                   (signed-addition-overflowsp)))))
 
-(defthm signed-addition-overflowsp-correct
+(defthmd signed-addition-overflowsp-correct
   (implies (and (posp size)
-                (unsigned-byte-p size x)
-                (unsigned-byte-p size y))
+                ;; (unsigned-byte-p size x)
+                ;; (unsigned-byte-p size y)
+                )
            (iff (signed-addition-overflowsp size x y)
                 (<= (expt 2 (+ -1 size)) (+ (logext size x) (logext size y)))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt
                                           logext-cases
-                                          bvminus  bvuminus
+                                          bvminus
                                           BVCHOP-WHEN-TOP-BIT-1)
                                   (BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    bvchop-when-top-bit-1 ; for speed
@@ -93,11 +95,36 @@
            (equal (signed-addition-overflowsp 32 x y)
                   (signed-addition-overflowsp 32 free y))))
 
+(defthm not-signed-addition-overflowsp-when-non-positive-arg1
+  (implies (sbvle 32 x 0)
+           (not (signed-addition-overflowsp 32 x y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
+
 ;todo: dual for underflow?
-(defthm not-signed-addition-overflowsp-when-negative-constant-version
+(defthm not-signed-addition-overflowsp-when-non-positive-arg2
+  (implies (sbvle 32 y 0)
+           (not (signed-addition-overflowsp 32 x y)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
+
+(defthm not-signed-addition-overflowsp-when-non-positive-arg1-constant-version
   (implies (and (syntaxp (quotep k))
                 (sbvle 32 k 0))
-           (not (signed-addition-overflowsp 32 k k))))
+           (not (signed-addition-overflowsp 32 k x)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
+
+(defthm not-signed-addition-overflowsp-when-non-positive-arg2-constant-version
+  (implies (and (syntaxp (quotep k))
+                (sbvle 32 k 0))
+           (not (signed-addition-overflowsp 32 x k)))
+  :hints (("Goal" :in-theory (enable bvminus bvplus sbvlt-rewrite bvlt
+                                     bvchop-of-sum-cases
+                                     getbit-of-+))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -126,7 +153,7 @@
   :hints (("Goal" :in-theory (e/d (;bvplus
                                    bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                    logext-cases
-                                   bvminus bvuminus
+                                   bvminus
                                    bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus
                                    bvchop-of-sum-cases +-of-expt-and---of-expt-of-one-less-extra ; for speed
@@ -140,16 +167,17 @@
   :hints (("Goal" :in-theory (e/d (signed-addition-underflowsp-symmetric)
                                   (signed-addition-underflowsp)))))
 
-(defthm signed-addition-underflowsp-correct
+(defthmd signed-addition-underflowsp-correct
   (implies (and (posp size)
-                (unsigned-byte-p size x)
-                (unsigned-byte-p size y))
+                ;; (unsigned-byte-p size x)
+                ;; (unsigned-byte-p size y)
+                )
            (iff (signed-addition-underflowsp size x y)
                 (< (+ (logext size x) (logext size y)) (- (expt 2 (+ -1 size))))))
   :hints (("Goal" :in-theory (e/d (bvplus bvchop-of-sum-cases sbvlt bvlt getbit-of-+
                                           logext-cases
                                           logext-of-plus
-                                          bvminus bvuminus
+                                          bvminus
                                           bvchop-when-top-bit-1)
                                   (bvminus-becomes-bvplus-of-bvuminus)))))
 

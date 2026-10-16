@@ -29,7 +29,6 @@
                                   member
                                   pi
                                   pointers
-                                  pprint-indent
                                   preprocess
                                   read-object
                                   schar
@@ -46,6 +45,7 @@
                any-nat-mapp
                any-nat-mfix
                bool
+               char-fix
                character-setp
                character-sfix
                character-any-map
@@ -220,4 +220,5 @@
                fty::okf
                fty::reserrf
                fty::reserrp
-               std::defret-mutual)))
+               std::defret-mutual
+               std::defretd)))

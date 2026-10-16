@@ -41,8 +41,7 @@
      but it is more general, and should be moved to a new library.")
    (xdoc::p
     "Often a C program, or a C library, or other meaningful C code component,
-     consists of multiple translation units, more in general multiple files,
-     which in the future will include both headers and source files.
+     consists of multiple files.
      So here we introduce a notion of a file set as a collection of files,
      purported to contain, together,
      a C program, or C library, or other meaningful C component."))
@@ -167,7 +166,7 @@
           (path-to-write (str::cat (str-fix base-dir) "/" file-string))
           ((mv erp state) (acl2::write-bytes-to-file! (filedata->bytes data)
                                                       path-to-write
-                                                      'output-files
+                                                      'write-fileset
                                                       state))
           ((when erp)
            (reterr (msg "Writing ~x0 failed." path-to-write))))

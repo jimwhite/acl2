@@ -202,11 +202,6 @@
                                   (low 0)
                                   (x (* (/ y) x))))))
 
-
-
-
-
-
 ;;;
 ;;; Characterize division of complex numbers
 ;;;
@@ -330,8 +325,8 @@
                                   (x1 z)
                                   (x2 (* x (/ y))))
            :in-theory (disable <-of-*-and-*-cancel-gen
-                               ;<-*-/-RIGHT
-                               <-OF-*-OF-/-arg1))))
+                               ;; <-*-/-right
+                               <-of-*-of-/-arg1))))
 
 ;; commutes the * in the lhs
 (defthm <-of-*-of-/-arg2-alt
@@ -403,7 +398,7 @@
            (equal (< k (/ x))
                   (< x (/ k))))
   :rule-classes ((:rewrite :loop-stopper nil)) ;otherwise, this rule doesn't apply because it "permutes a big term forward"
-  :hints (("Goal" )))
+  )
 
 ;gen?
 (defthm /-equal-constant-alt
@@ -425,6 +420,14 @@
            (<= (* i (/ j)) (- i)))
   :rule-classes :linear)
 
+(defthm <=-of-*-of-/-when-negative-linear
+  (implies (and (< i 0)
+                (<= 1 j)
+                (rationalp i)
+                (rationalp j))
+           (<= i (* i (/ j))))
+  :rule-classes :linear)
+
 (defthm <=-of-*-of-/-when-negative-and-positive-linear
   (implies (and (<= 0 i)
                 (<= j -1)
@@ -436,10 +439,11 @@
 (defthm <=-of-*-of-/-when-both-nonnegative-linear
   (implies (and (<= 0 i)
                 (<= 1 j)
-                (rationalp i)
+                (not (complex/complex-rationalp i)) ; (real/rationalp i)
                 (rationalp j))
            (<= (* i (/ j)) i))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :cases ((real/rationalp i)))))
 
 (defthm equal-of-*-/-and---same
   (implies (and (rationalp i)

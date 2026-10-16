@@ -313,6 +313,10 @@
 
 ; Note: Tag-tree primitive
 
+; This associates val with the list of values associated with tag in ttree,
+; except that this is a no-op if val is already in that list.  See also
+; add-to-tag-tree-new for a variant that does not make that exception.
+
 ; See also add-to-tag-tree!, for the case that tag is known not to be a key of
 ; ttree.
 
@@ -326,6 +330,27 @@
                         (t (acons tag
                                   (cons val (cdr pair))
                                   (remove-tag-from-tag-tree! tag ttree)))))
+            (t (acons tag (list val) ttree)))))))
+
+(defun add-to-tag-tree-new (tag val ttree)
+
+; Note: Tag-tree primitive
+
+; It is legal (and more efficient) to use this instead of add-to-tag-tree if we
+; know (or don't care) that val is already in the list of values associated
+; with tag 
+
+; See also add-to-tag-tree!, for the case that tag is known not to be a key of
+; ttree.
+
+  (cond
+   ((eq ttree nil) ; optimization
+    (list (list tag val)))
+   (t
+    (let ((pair (assoc-eq tag ttree)))
+      (cond (pair (acons tag
+                         (cons val (cdr pair))
+                         (remove-tag-from-tag-tree! tag ttree)))
             (t (acons tag (list val) ttree)))))))
 
 (defun add-to-tag-tree! (tag val ttree)
@@ -1522,7 +1547,7 @@
                                                        (1+f acc)
                                                        (1+f calls))
                                      (+f 2 calls)))))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            ((realp evg)
             (prog2$ (er hard? 'fn-count-evg
                         "Encountered an irrational in fn-count-evg!")
@@ -1533,7 +1558,7 @@
                                                 (1+f acc)
                                                 (1+f calls))
                               (+f 2 calls)))
-           #+:non-standard-analysis
+           #+non-standard-analysis
            ((complexp evg)
             (prog2$ (er hard? 'fn-count-evg
                         "Encountered a complex irrational in ~ fn-count-evg!")
@@ -1824,7 +1849,7 @@
 ; Rational-poly-p is a boolean flag used in non-linear arithmetic.  When it is
 ; true, then the right-hand side of the inequality (the polynomial) is known to
 ; have a rational number value.  (But note that for ACL2(r), i.e. for
-; #+:non-standard-analysis, the value need only be real.  Through the linear
+; #+non-standard-analysis, the value need only be real.  Through the linear
 ; and non-linear arithmetic code, references to "rational" should be considered
 ; as references to "real".)  The flag is needed because of the presence of
 ; complex numbers in ACL2's logic.  Note that sums and products of rational

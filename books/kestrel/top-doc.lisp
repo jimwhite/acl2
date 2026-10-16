@@ -20,6 +20,7 @@
 (local
  (progn
    (include-book "abstract-domains/top")
+   (include-book "acl2-arrays/doc")
    (include-book "acl2pl/top")
    (include-book "apt/doc")
    (include-book "arm/doc")
@@ -42,7 +43,9 @@
    (include-book "hdwallet/top")
    (include-book "ethereum/top")
    (include-book "file-io-light/doc")
+   (include-book "filepath/paths")
    (include-book "fty/top")
+   (include-book "futhark/top")
    (include-book "helpers/doc")
    (include-book "htclient/top")
    (include-book "isar/top")
@@ -55,6 +58,7 @@
    (include-book "prime-fields/doc")
    (include-book "remora/top")
    (include-book "risc-v/top")
+   (include-book "rust/top")
    (include-book "simpl-imp/top")
    (include-book "soft/top")
    (include-book "solidity/top")
@@ -68,6 +72,7 @@
    (include-book "utilities/show-books-doc")
    (include-book "utilities/ubi-doc")
    (include-book "utilities/checkpoints-doc")
+   (include-book "utilities/defstobj-plus-doc")
    (include-book "yul/top")
    (include-book "zcash/top")
 

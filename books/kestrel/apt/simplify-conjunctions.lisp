@@ -17,43 +17,87 @@
 (include-book "utilities/def-equality-transformation")
 (include-book "kestrel/axe/rewriter-basic" :dir :system)
 (include-book "kestrel/utilities/directed-untranslate-dollar" :dir :system)
+(include-book "kestrel/utilities/defthm-forms" :dir :system)
+(include-book "kestrel/utilities/translate" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
 (local (include-book "kestrel/terms-light/all-fnnames1" :dir :system))
+(local (include-book "kestrel/lists-light/union-equal" :dir :system))
+
+;; Extracts the bodies of all the named "rules" (which can be defthms and/or defuns).
+;move
+(defund rule-bodies (names wrld)
+  (declare (xargs :guard (and (symbol-listp names)
+                              (plist-worldp wrld))))
+
+  (if (endp names)
+      nil
+    (let ((name (first names)))
+      (cons (if (and (function-symbolp name wrld)
+                     (fn-definedp name wrld))
+                (fn-body name t wrld)
+              (if (defthm-or-defaxiom-symbolp name wrld)
+                  (defthm-body name wrld)
+                (er hard? 'rule-bodies "Unknown kind of item: ~x0." name)))
+            (rule-bodies (rest names) wrld)))))
+
+(defthm pseudo-term-listp-of-rule-bodies
+  (pseudo-term-listp (rule-bodies names wrld))
+  :hints (("Goal" :in-theory (enable rule-bodies))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; The core function for simplify-conjunctions.  Such functions always take:
 ;; fn, untranslated-body, state, and then transformation-specific args (none
 ;; for simplify-conjunctions).
-;; Returns (mv new-body info).
+;; Returns (mv new-body info state).
 ;; TODO: Check that the rule-names are non-Axe-specific rules (since we need them in the proof).
 (defun simplify-conjunctions-function-body-transformer (fn
                                                         untranslated-body
                                                         state
                                                         ;; extra-function-renaming
                                                         untranslate
-                                                        rule-names)
+                                                        rule-names
+                                                        extra-enables ; todo: instead, make a table mapping axe rules to normal rules
+                                                        remove-enables
+                                                        rewrite-objective
+                                                        monitor
+                                                        count-hits)
   (declare (xargs :guard (and (symbolp fn)
                               ;; (doublet-listp extra-function-renaming)
                               (member-eq untranslate '(t nil :nice))
-                              (symbol-listp rule-names))
+                              (symbol-listp rule-names)
+                              (symbol-listp extra-enables)
+                              (symbol-listp remove-enables)
+                              (rewrite-objectivep rewrite-objective)
+                              (symbol-listp monitor)
+                              (count-hits-argp count-hits))
                   :stobjs state
-                  :mode :program ;; because of translate
+                  :mode :program ;; because of untranslate and directed-untranslate$
                   )
            (ignore fn))
   (b* ((wrld (w state))
-       (translated-body (translate-term untranslated-body 'simplify-conjunctions-function-body-transformer wrld)) ; todo: untranslate later
+       ((mv erp translated-body state)
+        (translate-term-in-logic-mode untranslated-body 'simplify-conjunctions-function-body-transformer state)) ; todo: untranslate later
+       ((when erp)
+        (er hard? 'simplify-conjunctions-function-body-transformer "Error translating: ~x0." erp)
+        (mv nil nil state))
+       ;; needed for the body of a defun-nx, for example:
+       (translated-body (remove-guard-holders-and-clean-up-lambdas translated-body))
        (conjuncts (get-conjuncts-of-term2 translated-body))
        ;; todo: handle conjunctions not at the top level:
        ((mv erp new-conjuncts &) (simplify-conjunction-basic conjuncts
                                                              (make-rule-alist! rule-names (w state))
                                                              (known-booleans wrld)
-                                                             nil ; monitored-symbols
+                                                             rewrite-objective
+                                                             monitor
                                                              nil ; no-warn-ground-functions
                                                              nil ; memoizep
-                                                             nil ; count-hits
+                                                             count-hits
                                                              t ; warn-missingp
                                                              ))
        ((when erp)
         (er hard? 'simplify-conjunctions-function-body-transformer "Error simplifying conjunctions: ~x0." erp)
-        (mv nil nil))
+        (mv nil nil state))
        (new-body (if nil ;; (perm new-conjuncts conjuncts) ;todo: get this to work, but consider duplicate removal when getting conjuncts
                      (prog2$ (cw "No change!~%")
                              untranslated-body ; no change! todo: support making this an error
@@ -63,16 +107,22 @@
                          new-body ;TODO clean up macros at least?  clean up mvs too?
                        (if (eq t untranslate)
                            (untranslate new-body nil wrld)
-                         (directed-untranslate$ new-body untranslated-body wrld)))))))
-    ;; todo: consider returning only those rule-names that got used:
-    (mv new-body (acons :enables rule-names nil))))
+                         (directed-untranslate$ new-body untranslated-body wrld))))))
+       ;; todo: consider returning only those rule-names that got used:
+       (enables rule-names)
+       (enables (set-difference-eq enables remove-enables))
+       (enables (union-eq extra-enables enables)))
+    (mv new-body (acons :enables enables nil) state)))
 
-(defund simplify-conjunctions-enables (fn wrld)
+(defund simplify-conjunctions-enables (fn rule-names wrld)
   (declare (xargs :guard (and (symbolp fn)
+                              (symbol-listp rule-names)
                               (plist-worldp wrld))))
   (b* ((body (fn-body fn t wrld))
-       (fns (all-fnnames body)))
-    ;; enable the :executable-counterpart of every function in the body:
+       (fns (union-eq (all-fnnames body)
+                      (all-fnnames-lst (rule-bodies rule-names wrld)))))
+    ;; enable the :executable-counterpart of every function in the body and in
+    ;; all the rules:
     (make-doublets (repeat (len fns) :executable-counterpart) fns)))
 
 (def-equality-transformation
@@ -83,9 +133,14 @@
    )
   ;; transform-specific-keyword-args-and-defaults:
   ((untranslate 't)
-   (rule-names 'nil))
-  :infop t ; because we return the rule-names as extra enables for the proof
-  :enables (simplify-conjunctions-enables fn (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
+   (rule-names 'nil)
+   (extra-enables 'nil)
+   (remove-enables 'nil)
+   (rewrite-objective ':?)
+   (monitor 'nil)
+   (count-hits 'nil))
+  :function-body-transformer-kind :body-and-info-and-state ; because we return the rule-names as extra enables for the proof
+  :enables (simplify-conjunctions-enables fn rule-names (w state)) ; form to compute the enables for the 'becomes theorem' ; TODO: Allow the function-body-transformer to return pre-events and hints?
   :short "Simplify conjunctions in a function using the Axe Rewriter."
   ;; todo: put this sort of thing in automatically?:
   :description "<p>To inspect the resulting forms, call @('show-simplify-conjunctions') on the same
@@ -95,4 +150,8 @@ arguments.</p>"
   (;; (extra-function-renaming "The renaming to apply to called functions (each entry should have a corresponding entry in the renaming-rule-table).")
    (untranslate "How to untranslate the function body after changing it.")
    (rule-names "Names of rules to use when simplifying.  These should be usable both as ACL2 rules and as Axe rules.")
-   ))
+   (extra-enables "Names of rules to enable for the proof (e.g., ACL2 counterparts of Axe rules that are removed with the remove-enables.")
+   (remove-enables "Names of rules to avoid enabling for the proof (e.g., Axe rules).")
+   (monitor "Rule names to monitor.")
+   (rewrite-objective "Whether to try to strength (nil) or weaken (t) the conjuncts, using rules with hypotheses that mention axe-rewrite-objective.  Or :?, meaning just apply normal rules.")
+   (count-hits "Whether to count hits when rewriting.")))

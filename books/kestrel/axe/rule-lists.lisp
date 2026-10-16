@@ -169,24 +169,34 @@
             ;; ifix can lead to problems (add rules to handle the expanded ifix in an argument position?)
 
             ;; TODO: eventually phase out myif in favor of if
+            myif-of-t
+            myif-of-nil
+            myif-same-branches
+            myif-of-t-and-nil-when-booleanp
+            myif-nil-t ; introduces NOT
+
             myif-becomes-boolif-axe
             myif-of-not
-            myif-of-nil
-            myif-of-t
             myif-of-constant-when-not-nil
-            myif-nil-t
-            myif-of-t-and-nil-when-booleanp
-            myif-same-branches
             myif-same-test
             myif-same-test2
             myif-same-arg1-arg2-when-booleanp
+            myif-of-myif-of-nil-arg1-arg2
+            myif-of-myif-of-nil-arg1-arg3
 
             ;; todo: compare to the myif rules:
             if-of-t
             if-of-nil
             if-same-branches
             if-of-t-and-nil-when-booleanp
+            if-nil-t ; introduces NOT
+            ;; if-x-x-y-when-booleanp ; todo: uncomment
+            ;; if-becomes-boolif-axe ; try this?
             not-of-if
+            ;; try these:
+            ;; if-x-y-x
+            ;; if-of-not-same-arg2
+            ;; if-of-not-same-arg3
 
             fix-when-acl2-numberp
             = ; introduces EQUAL
@@ -364,8 +374,8 @@
     bitxor-of-constant-chop-arg2
     ;; todo: more like this?
     ;; todo: rename these 4?:
-    bvlt-trim-constant-arg1
     bvlt-trim-constant-arg2
+    bvlt-trim-constant-arg3
     sbvlt-trim-constant-left
     sbvlt-trim-constant-right))
 
@@ -495,7 +505,7 @@
     repeatbit-of-if-becomes-repeatbit-of-bvif-arg2))
 
 ;; These are needed only when operations like logxor or + may appear
-(defun convert-to-bv-rules ()
+(defun convert-to-bv-rules-axe ()
   (declare (xargs :guard t))
   '(bvchop-convert-arg2-to-bv-axe
     bvplus-convert-arg2-to-bv-axe-restricted ; todo: use the unrestricted ones
@@ -638,6 +648,35 @@
     bvchop-of-bvchop
     bvchop-of-bvcat-cases))
 
+;; Rules to introduce our BV operators:
+(defund bitops-to-bv-rules ()
+  (declare (xargs :guard t))
+  '(;; Rules to handle part-select-width-low:
+    ;; acl2::part-select-width-low-becomes-slice ; for when low and width are constants
+    acl2::part-select-width-low-becomes-slice-gen ; allows low and width to be non-constants (can happen with shifts)
+
+    ;; should we instead go to putbits?
+    ;; TODO: Think about the case when sizes/indices are not constant
+    acl2::slice-of-part-install-width-low ; introduces bvcat
+    acl2::bvchop-of-part-install-width-low-becomes-bvcat
+    ;; getbit rule?
+    acl2::part-install-width-low-becomes-bvcat ; gets the size of X from an assumption
+    acl2::part-install-width-low-becomes-bvcat-axe ; gets the size of X from the form of X
+    acl2::part-install-width-low-becomes-bvcat-32
+    acl2::part-install-width-low-becomes-bvcat-64
+    acl2::part-install-width-low-becomes-bvcat-128
+    acl2::part-install-width-low-becomes-bvcat-256
+    acl2::part-install-width-low-becomes-bvcat-512
+    acl2::integerp-of-part-install-width-low ; needed?
+
+    acl2::rotate-right-becomes-rightrotate
+    acl2::rotate-left-becomes-leftrotate
+    acl2::logbit-becomes-getbit
+    acl2::b-and-becomes-bitand
+    acl2::b-ior-becomes-bitor
+    acl2::b-xor-becomes-bitxor
+    acl2::b-not-becomes-bitnot))
+
 ;fixme a few of these are not -all rules...
 ;; todo: we shouldn't use these without the trim-helpers  - add them to this?
 ;; add bvlt-trim rules?
@@ -731,7 +770,10 @@
    (trim-helper-rules) ; in case some rule introduces trim (harmless if no rule does)
    (bv-function-of-bvchop-rules)
    (unsigned-byte-p-forced-rules) ; needed for some rules below
-   '(;; our normal form is to let these open up to calls to bvlt and sbvlt:
+   '(not-equal-of-constant-and-bv-term-axe
+     not-equal-of-constant-and-bv-term-alt-axe
+
+     ;; our normal form is to let these open up to calls to bvlt and sbvlt:
      bvle ;Thu Jan 19 16:35:59 2017
      bvge ;Thu Jan 19 16:35:59 2017
      bvgt ;Thu Jan 19 16:35:59 2017
@@ -759,6 +801,7 @@
      ;; getbit-of-leftrotate32-high
      leftrotate32-of-0-arg1
      leftrotate32-of-0-arg2
+     leftrotate32-normalize-amt
 
      ;; rightrotate32-trim-arg1-axe ;move to trim rules? or drop since we go to leftrotate32
      ;;i don't think we want these any more (trying without them):
@@ -816,6 +859,8 @@
      bvplus-of-ifix-arg3
      equal-of-constant-and-bvplus-of-constant
      equal-of-bvplus-of-constant-and-constant
+     equal-of-bvchop-and-bvplus-of-same ; todo: remove these 2 from downstream rule-lists
+     equal-of-bvchop-and-bvplus-of-same-alt
 
      bvand-of-0-arg2
      bvand-of-0-arg3 ; could drop if commuting constants forward
@@ -876,10 +921,10 @@
      bitxor-of-myif-arg1
      bitxor-of-myif-arg2
 
-     equal-of-bvchop-and-constant-when-bvlt-constant-1
-     equal-of-bvchop-and-constant-when-bvlt-constant-2
-     equal-of-bvchop-and-constant-when-not-bvlt-constant-1
-     equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+     not-equal-of-bvchop-and-constant-when-bvlt-constant-1
+     not-equal-of-bvchop-and-constant-when-bvlt-constant-2
+     not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+     not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
 
      getbit-identity-free ;Sun Mar 13 03:18:26 2011
 
@@ -1135,7 +1180,7 @@
      ; slice-of-bvsx-high ; introduces repeatbit..
      equal-of-0-and-bvsx ;Wed Oct 14 13:28:17 2015
      equal-of-bvsx-and-bvsx
-     bvsx-too-high-axe
+     bvsx-when-unsigned-byte-p-axe
      bvsx-when-sizes-match
      getbit-of-bvsx
      ;; bvsx base cases?
@@ -1199,7 +1244,7 @@
      getbit-test-is-self ;make a myif version?
 
      getbit-too-high-is-0-bind-free-axe
-     getbit-too-high-cheap-free
+     getbit-too-high-when-unsigned-byte-p-free
      ;; high-getbit-of-getbit-is-0 ; handled by getbit-too-high-is-0-bind-free-axe
      getbit-of-if
 ;            getbit-of-bvif ;could be expensive? newww
@@ -1286,7 +1331,7 @@
      bvequal-convert-arg3-to-bv-axe
      bvequal-of-bvplus-and-bvplus-cancel-1+-1+
      bvequal-of-bvplus-arg2-cancel-1
-     bvequal-of-bvplus-arg1-cancel-1
+     bvequal-of-bvplus-arg3-cancel-1
      bvequal-trim-arg2-axe-all
      bvequal-trim-arg3-axe-all
      bvequal-of-constant-and-bvplus-of-constant
@@ -1340,7 +1385,7 @@
 ;todo: some of these are not bv rules?
 (defun more-rules-bv-misc ()
   (declare (xargs :guard t))
-  '(if-becomes-myif ;can ifs ever arise from simulation?  probably? ; todo: move
+  '(if-becomes-myif ;can ifs ever arise from simulation?  probably? ; todo: drop (but that caused problems!)
 
     bitnot-becomes-bitxor-with-1 ; todo: which way should we go here?
 
@@ -1364,6 +1409,9 @@
     bvand-with-small-arg1
     bvand-with-small-arg2
 
+    ;; if-becomes-bvif-1-axe ; todo: uncomment, but that caused problems
+    ;; if-becomes-bvif-2-axe
+    ;; if-becomes-bvif-3-axe
     myif-becomes-bvif-1-axe ; kill special case rules for this?
     myif-becomes-bvif-2-axe
     myif-becomes-bvif-3-axe
@@ -1780,8 +1828,8 @@
   (declare (xargs :guard t))
   '(bvif-same-branches
     bvif-equal-1-usb1
-    bvif-when-true
-    bvif-when-false
+    bvif-of-t
+    bvif-of-nil
     bvif-of-bool-fix
     equal-of-bvif-same-1
     equal-of-bvif-same-2))
@@ -1802,7 +1850,7 @@
     bvchop-list-of-bvchop-list))
 
 ;; are these all for when the logext is too big?
-;; todo: can we rely on the convert-to-bv-rules instead (make sure those are always included)?
+;; todo: can we rely on the convert-to-bv-rules-axe instead (make sure those are always included)?
 (defun bv-of-logext-rules ()
   (declare (xargs :guard t))
   '(bvplus-of-logext-arg2
@@ -2087,11 +2135,11 @@
     list-to-byte-array ; wrapper for list-to-bv-array
     ))
 
-(defun byte-array-to-bit-array-rules ()
-  (declare (xargs :guard t))
-  '(byte-array-to-bit-array
-    byte-array-to-bit-array-aux-base
-    byte-array-to-bit-array-aux-opener))
+;; (defun byte-array-to-bit-array-rules ()
+;;   (declare (xargs :guard t))
+;;   '(byte-array-to-bit-array
+;;     byte-array-to-bit-array-aux-base
+;;     byte-array-to-bit-array-aux-opener))
 
 ;rename
 (defun yet-more-rules-non-jvm ()
@@ -3013,11 +3061,11 @@
 ;;   (declare (xargs :guard t))
 ;;   (reassemble-bv-rules))
 
-;; Only used in the equivalence checker
+;; Only used in the equivalence checker (rarely or never)
 (defun strengthening-rules ()
   (declare (xargs :guard t))
-  (append '(bvlt-trim-constant-arg1 ; replace with a general trim rule?
-            bvlt-trim-constant-arg2 ; replace with a general trim rule?
+  (append '(bvlt-trim-constant-arg2 ; replace with a general trim rule?
+            bvlt-trim-constant-arg3 ; replace with a general trim rule?
             bvlt-when-bvlt-wider
             not-bvlt-when-not-bvlt-narrower
             not-bvlt-when-not-bvlt-narrower2
@@ -3028,30 +3076,30 @@
             integerp-of-len
             bvlt-of-plus-arg1
             bvlt-of-plus-arg2
-            equal-of-bvchop-and-constant-when-bvlt-constant-1
-            equal-of-bvchop-and-constant-when-bvlt-constant-2
-            equal-of-bvchop-and-constant-when-not-bvlt-constant-1
-            equal-of-bvchop-and-constant-when-not-bvlt-constant-2
+            not-equal-of-bvchop-and-constant-when-bvlt-constant-1
+            not-equal-of-bvchop-and-constant-when-bvlt-constant-2
+            not-equal-of-bvchop-and-constant-when-not-bvlt-constant-1
+            not-equal-of-bvchop-and-constant-when-not-bvlt-constant-2
             bvlt-when-bvlt-must-be-fake-free-axe ;thu mar 17 15:36:51 2011
             bvlt-when-bvlt-must-be-gen-axe ;fri may  6 21:22:34 2011
-            bvlt-of-max-arg3-axe
+            ;; bvlt-of-max-arg3-axe
             bvlt-of-constant-arg3
             bvlt-of-constant-arg2
             slice-when-bvlt-gen      ;wed mar 16 00:52:46 2011
             slice-when-not-bvlt-free ;wed mar 16 00:52:46 2011
             equal-of-0-and-slice-when-bvlt
-            equal-of-bvchop-extend-when-bvlt
-            equal-of-bvchop-extend-when-not-bvlt
+            equal-of-bvchop-extend-when-bvlt-axe
+            equal-of-bvchop-extend-when-not-bvlt-axe
             bvlt-when-bvchop-known-subst-alt
             bvlt-when-bvchop-known-subst
             bvlt-must-be-axe ;fixme more like this?
             not-equal-when-not-equal-bvchop
             not-equal-bvchop-when-not-equal-bvchop
-            bvlt-of-constant-arg2-weaken
-            bvlt-of-constant-arg2-strengthen
-            bvlt-of-constant-arg3-strengthen
-            bvlt-of-constant-arg3-weaken
-            equal-of-constant-and-bvchop-when-bvlt ;new!
+            bvlt-of-constant-arg2-weaken-axe
+            bvlt-of-constant-arg2-strengthen-axe
+            bvlt-of-constant-arg3-strengthen-axe
+            bvlt-of-constant-arg3-weaken-axe
+            equal-of-constant-and-bvchop-when-bvlt-axe ;new!
             bvlt-of-two-less-than-max-when-not-max  ;yuck?
             equal-of-constant-and-slice-when-bvlt   ;new
             equal-of-constant-and-slice-when-equal-of-constant-and-bvchop
@@ -3123,7 +3171,7 @@
           (bvchop-list-rules)
           (lookup-rules) ;Sat Dec 25 23:52:09 2010
           (list-rules)
-          (convert-to-bv-rules)
+          (convert-to-bv-rules-axe)
           (logext-rules) ;move to parent? ; drop?
           (list-rules3)
           (alist-rules)
@@ -3146,7 +3194,7 @@
              equal-of-map-reverse-list-and-map-reverse-list ;Tue Feb  8 15:08:06 2011
 
              ;; logext can still appear (if arraycopy is called):
-             logext-when-usb-cheap
+             logext-when-unsigned-byte-p-free
              logext-identity-when-usb-smaller-axe
 
              all-unsigned-byte-p-of-take-of-subrange ;Fri Dec 17 03:22:09 2010
@@ -3168,7 +3216,7 @@
              bvlt-transitive-5-a
              bvlt-transitive-5-b
 
-             equal-of-bvchop-extend-when-bvlt     ;new
+             equal-of-bvchop-extend-when-bvlt-axe     ;new
              bvplus-of-bvuminus-of-bvcat-of-slice32 ;new
              bvplus-of-bvuminus-of-bvcat-of-slice   ;new
              bvlt-of-floor-arg3
@@ -3210,7 +3258,7 @@
              bvcat-of-slice-when-slice-known
              nth-becomes-bv-array-read-strong2
              nth-of-bv-when-all-same
-             unsigned-byte-p-of-+-of-minus-better
+             unsigned-byte-p-of-+-of-minus-better-axe
              bv-array-write-shorten-constant-data
              EQUAL-OF-CONSTANT-AND-BVXOR-OF-CONSTANT
              bvlt-6-4
@@ -3252,7 +3300,7 @@
              unsigned-byte-p-false-when-not-longer
              equal-of-0-and-bvchop-6
              bvlt-of-64
-             unsigned-byte-p-of-+-of-minus2
+             unsigned-byte-p-of-+-of-minus2-axe
              sbvlt-of-+-arg1
              sbvlt-of-+-arg2
              bvplus-of-unary-minus-arg2
@@ -3314,7 +3362,7 @@
              bv-array-clear-range-of-bv-array-write-too-high
 
              bv-array-clear-length-1-of-list-zero ;Wed Apr 14 00:23:10 2010
-             bvchop-identity-cheap ;moved from prover rules
+             bvchop-identity-free ;moved from prover rules
              bvplus-of-bvcat-and-bvuminus-of-bvcat ;Tue Apr 13 16:17:40 2010
              bvminus-of-constant-and-bvplus-of-constant ;Sun Apr 11 17:17:35 2010
              true-listp-of-add-to-end
@@ -3352,7 +3400,6 @@
              boolor-of-equal-and-not-of-equal-constants
              boolor-of-equal-and-not-of-equal-constants-alt
              booland-of-booland-of-boolif
-             not-equal-constant-when-unsigned-byte-p-bind-free-axe ;was just in prover-rules ;Wed Mar 17 04:03:01 2010
              sha1-context-hack ;Wed Mar 17 03:54:02 2010 (how much does this help?)
              boolor-of-booland-same-2 ;Wed Mar 17 03:06:45 2010
              bvlt-of-constant-when-unsigned-byte-p-tighter
@@ -3374,7 +3421,7 @@
 
              bvplus-of-bvuminus-of-bvcat-and-bvcat
 
-             unsigned-byte-p-of-smaller
+             unsigned-byte-p-of-smaller-axe
              bvxor-cancel-2-of-more-and-1-of-more
              bitxor-when-equal-of-constant-and-bvchop-arg1
              bitxor-when-equal-of-constant-and-bvchop-arg2
@@ -3420,14 +3467,14 @@
              floor-of-*-of-8-and-32
              consp-of-ungroup
 
-             equal-of-constant-and-+-of-minus-and-bv
+             equal-of-constant-and-+-of-minus-and-bv-axe
              group-of-cons
              <-of-non-integerp-and-integerp
              bvlt-of-bitxor-of-1-same
              bvlt-of-bitxor-of-1-same-two
 
-             <-of-constant-and-+-of-bv-and-minus-and-bv
-             <-of-+-of-minus-becomes-bvlt
+             <-of-constant-and-+-of-bv-and-minus-and-bv-axe
+             <-of-+-of-minus-becomes-bvlt-axe
              unsigned-byte-p-of-slice-one-more
              equal-of-plus-minus-move
              equal-of-0-and-+-of-minus ;these should have similar names
@@ -3567,9 +3614,9 @@
 ;(bit-blast-rules-basic) ;new! we only want these when mitering?
              unsigned-byte-p-of-+-of-constant-strong
              nth-of-repeat
-             +-of-minus-1-and-bv2-alt-bind-free
-             <-of-constant-and-+-of-bv-and-minus
-             <-of-constant-and-+-of-minus-and-bv
+             +-of-minus-1-and-bv2-alt-bind-free-axe
+             <-of-constant-and-+-of-bv-and-minus-axe
+             <-of-constant-and-+-of-minus-and-bv-axe
 
              nth-of-plus-of-bv-and-minus
              nth-of-plus-of-bv-and-minus-alt
@@ -3589,8 +3636,8 @@
              equal-of-0-and-floor
              equal-of-getbit-and-bitxor-same
              equal-of-getbit-and-bitxor-same-alt
-             equal-of-floor-of-expt-and-bv-constant-version-dag
-             <-of-diff-of-bv-and-constant
+             equal-of-floor-of-expt-and-bv-constant-version-axe
+             <-of-diff-of-bv-and-constant-axe
              <-of-constant-when-<=-of-free
              bvxor-cancel-lemma1-bvchop-version-alt3
              bvxor-cancel-lemma1-bvchop-version-alt2
@@ -3598,12 +3645,12 @@
              equal-of-bvplus-cancel-arg2-alt ;more?
              equal-of-constant-and-bvif-of-constant-and-constant
 
-             ;;                                      <-of-constant-and-+-of-minus
+             ;;                                      <-of-constant-and-+-of-minus-axe
              ;;                                      <-of-*-of-floor-and-same
              ;;                                      +-of-bvplus-of-1-and-unary-minus-same
              ;;                                      +-of-bvplus-of-2-and-unary-minus-same
 
-             +-of-minus-bind-free-constant-version ;more like this?!
+             +-of-minus-bind-free-constant-version-axe ;more like this?!
              unsigned-byte-p-of-floor-of-expt-constant-version
              bvplus-of-floor-4-32
              bvplus-of-floor-4-32-alt
@@ -3663,8 +3710,8 @@
              bvplus-of-+-arg2
              slice-of-+-becomes-slice-of-bvplus ;ffixme complete set..
              bv-array-read-of-+
-             <-of-+-of-minus-and-bv
-             equal-of-+-of-minus-and-bv
+             <-of-+-of-minus-and-bv-axe
+             equal-of-+-of-minus-and-bv-axe
              nth-of-bv-array-write-becomes-bv-array-read-strong
              sha1-hack-four-million-six
              equal-of-0-and-bvplus-of-bvuminus-alt
@@ -3726,7 +3773,7 @@
              integerp-of-myif-strong
 
              ;bvchop-of-minus-trim
-             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules...
+             ;bvchop-convert-arg2-to-bv-axe ; need the rest of the convert-to-bv-rules-axe...
 
              sha1-hack-a-million
              subrange-of-take
@@ -3903,8 +3950,8 @@
              equal-of-bvxor-and-bvor
              equal-of-bvxor-and-bvor-alt
 
-             plus-of-minus-becomes-bv-dag
-             plus-of-minus-becomes-bv-dag-alt
+             plus-of-minus-becomes-bv-axe
+             plus-of-minus-becomes-bv-alt-axe
 
              bvlt-of-slice-29-30-2
              slice-when-not-bvlt-gen
@@ -4033,7 +4080,7 @@
              equal-of-bvplus-and-bvplus-cancel-gen-alt
              equal-of-bvplus-and-bvplus-cancel-gen
              unsigned-byte-p-of-bvplus-tighten
-             bvlt-tighten-arg1
+             bvlt-tighten-arg1-axe
 ;bvlt-tighten-arg2 ;wed feb 24 01:14:46 2010
              acl2-numberp-when-unsigned-byte-p
              bvlt-of-plus-arg1
@@ -4273,7 +4320,9 @@
      if-becomes-bvif-1-axe
      if-becomes-bvif-2-axe
      if-becomes-bvif-3-axe
-     if-becomes-bvif-4-axe)
+     if-becomes-bvif-4-axe
+     ;; needed for rotate example:
+     acl2::slice-out-of-order)
    (bv-function-of-bvchop-rules)
    (type-rules)
    (unsigned-byte-p-forced-rules)))

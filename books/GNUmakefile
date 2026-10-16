@@ -632,13 +632,6 @@ SLOW_BOOKS += $(X86ISA_BOOKS)
 FILESYSTEM_BOOKS := $(filter projects/filesystems/%, $(OK_CERTS))
 SLOW_BOOKS += $(FILESYSTEM_BOOKS)
 
-SLOW_BOOK_TARGETS :=
-
-SLOW_BOOK_TARGETS += milawa-test-basic
-
-# Now SLOW_BOOKS is defined as the list above.
-SLOW_BOOKS += $(SLOW_BOOK_TARGETS)
-
 # We used to filter out the slow books here. As of mid-2020, we do it later, as
 # part of the `regression` target
 # OK_CERTS := $(filter-out $(SLOW_BOOKS), $(OK_CERTS))
@@ -681,7 +674,8 @@ CLEAN_FILES_EXPLICIT := \
    projects/apply-model-2/ex1/evaluation-apply.lisp \
    projects/apply-model-2/ex1/evaluation-user-defs.lisp \
    projects/apply-model-2/ex2/evaluation-apply.lisp \
-   projects/apply-model-2/ex2/evaluation-user-defs.lisp
+   projects/apply-model-2/ex2/evaluation-user-defs.lisp \
+   projects/acl2-in-hol/tests/success.txt
 
 MORECLEAN_FILES_EXPLICIT := \
    doc/manual \
@@ -1255,12 +1249,19 @@ BOOKS_BKCHK_OUT := $(filter-out hacking/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2007/dillinger-et-al/code/%, $(BOOKS_BKCHK_OUT))
 # Includes hacking/ books; see comment about EXTEND-PROGN! above:
 BOOKS_BKCHK_OUT := $(filter-out workshops/2023/vonhippel-etal/%, $(BOOKS_BKCHK_OUT))
+# Portcullis includes acl2s/doc, hence hacking/defcode (EXTEND-PROGN!):
+BOOKS_BKCHK_OUT := $(filter-out kestrel/auto-termination/td-cands.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out kestrel/auto-termination/defunt-top.bkchk.out, $(BOOKS_BKCHK_OUT))
+BOOKS_BKCHK_OUT := $(filter-out kestrel/auto-termination/defunt-tests.bkchk.out, $(BOOKS_BKCHK_OUT))
+# Includes hacking/all and acl2s/doc (EXTEND-PROGN!):
+BOOKS_BKCHK_OUT := $(filter-out top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out acl2s/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out doc/top-slow.bkchk.out, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out build/test/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out projects/pdf-parser/pdf-parser.bkchk.out, $(BOOKS_BKCHK_OUT))
-BOOKS_BKCHK_OUT := $(filter-out projects/python/embedding/enumerators/%, $(BOOKS_BKCHK_OUT))
+# Whole directory (not just enumerators/) hits EXTEND-PROGN!:
+BOOKS_BKCHK_OUT := $(filter-out projects/python/embedding/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2023/kumar-etal/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2023/walter-etal/%, $(BOOKS_BKCHK_OUT))
 BOOKS_BKCHK_OUT := $(filter-out workshops/2025/kumar-manolios/%, $(BOOKS_BKCHK_OUT))

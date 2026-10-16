@@ -17,6 +17,7 @@
 
 (local (include-book "std/basic/nfix" :dir :system))
 (local (include-book "std/typed-lists/nat-listp" :dir :system))
+(local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
 (acl2::controlled-configuration)
@@ -35,6 +36,15 @@
   :short "A list of naturals is a true list."
   (implies (nat-listp x)
            (true-listp x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled integer-listp-when-nat-listp
+  :short "A list of naturals is a list of integers."
+  (implies (nat-listp x)
+           (integer-listp x))
+  :induct t
+  :enable (nat-listp integer-listp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -56,7 +66,15 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is 1 if the list is empty."))
+    "This is 1 if the list is empty.")
+   (xdoc::p
+    "The theorem @('posp-of-len-over-car-of-dims') shows that
+     splitting a list whose length is
+     the product of non-empty, non-zero dimensions
+     into as many chunks as the first dimension,
+     gives chunks of positive length.
+     The chunk length is stated in the form that arises
+     from @(tsee list-split)."))
   (cond ((endp nats) 1)
         (t (* (lnfix (car nats)) (nat-list-product (cdr nats)))))
 
@@ -84,7 +102,16 @@
   (defruled nat-list-product-divided-by-car
     (implies (and (nat-listp dims)
                   (consp dims))
-             (integerp (/ (nat-list-product dims) (car dims))))))
+             (integerp (/ (nat-list-product dims) (car dims)))))
+
+  (defruled posp-of-len-over-car-of-dims
+    (implies (and (nat-listp dims)
+                  (not (member-equal 0 dims))
+                  (consp dims)
+                  (equal (len vals) (nat-list-product dims)))
+             (posp (* (/ (car dims)) (len vals))))
+    :enable posp
+    :use nat-list-product-divided-by-car))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -103,6 +130,32 @@
   (cond ((endp nats) (prog2$ (impossible) 0))
         ((endp (cdr nats)) (- (lnfix (car nats))))
         (t (- (lnfix (car nats)) (nat-list-sum (cdr nats))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define nat-list-from-to ((i natp) (n natp))
+  :returns (nats nat-listp)
+  :short "List of the naturals from @('i') (inclusive) to @('n') (exclusive)."
+  (b* ((i (nfix i))
+     (n (nfix n)))
+  (if (>= i n)
+      nil
+    (cons i (nat-list-from-to (1+ i) n))))
+  :measure (nfix (- (nfix n) (nfix i)))
+  :hints (("Goal" :in-theory (enable nfix fix)))
+
+  ///
+
+  (defret len-of-nat-list-from-to
+    (equal (len nats)
+           (nfix (- (nfix n) (nfix i))))
+    :hints (("Goal" :induct t
+                    :in-theory (enable nfix fix len))))
+
+  (defret consp-of-nat-list-from-to
+    (equal (consp nats)
+           (< (nfix i) (nfix n)))
+    :hints (("Goal" :induct t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

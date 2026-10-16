@@ -84,11 +84,10 @@
                  scopes))
        (scope (first scopes))
        (ord (c$::valid-scope->ord scope))
-       (lookup (assoc-equal ident ord))
-       ((unless lookup)
+       ((mv foundp ord-info) (treemap::lookup? (c$::ident-fix ident) ord))
+       ((unless foundp)
         (retmsg$ "Global struct object ~x0 not in the validation table."
-                 ident))
-       (ord-info (cdr lookup)))
+                 ident)))
     (c$::valid-ord-info-case
       ord-info
       ;; TODO: also return struct tag?
@@ -1121,37 +1120,40 @@
              (make-expr-member
                :arg (expr-replace-field-access
                       expr.arg original linkage new1 new2 split-members)
-               :name expr.name)))
+               :name expr.name
+               :info expr.info)))
          (make-expr-member
            :arg (c$::make-expr-ident
                   :ident (if (member-equal expr.name split-members)
                              new2
                            new1)
                   :info nil)
-           :name expr.name)))
+           :name expr.name
+           :info expr.info)))
      (c$::expr
        ;; TODO: factor out member expr matching
        :unary
        (if (and (or (equal expr.op (c$::unop-address))
                     (equal expr.op (c$::unop-sizeof))
                     (equal (c$::unop-kind expr.op) :alignof))
-                (expr-case
-                  expr.arg
-                  :member (expr-case
-                            expr.arg
-                            :ident (b* ((original (ident-fix original))
-                                        (linkage (c$::linkage-fix linkage))
-                                        ((unless (equal expr.arg.ident original))
-                                         nil)
-                                        (ident-linkage
-                                          (c$::var-vinfo->linkage
-                                            (c$::coerce-var-vinfo expr.arg.info))))
-                                     (equal linkage ident-linkage))
-                            :otherwise nil)
-                  :otherwise nil))
-           (raise "SPLIT-GSO ERROR: ~
-                   Global struct object ~x0 occurs in illegal expression."
-                  original)
+                (expr-case expr.arg :member)
+                (b* ((arg (c$::expr-member->arg expr.arg)))
+                  (expr-case
+                    arg
+                    :ident (b* ((original (ident-fix original))
+                                (linkage (c$::linkage-fix linkage))
+                                ((unless (equal arg.ident original))
+                                 nil)
+                                (ident-linkage
+                                  (c$::var-vinfo->linkage
+                                    (c$::coerce-var-vinfo arg.info))))
+                             (equal linkage ident-linkage))
+                    :otherwise nil)))
+           (prog2$
+             (raise "SPLIT-GSO ERROR: ~
+                     Global struct object ~x0 occurs in illegal expression."
+               original)
+             (c$::irr-expr))
          (make-expr-unary
            :op expr.op
            :arg (expr-replace-field-access
@@ -1209,7 +1211,7 @@
               ;; the validation table.
               (retmsg$ "Could not find struct type."))
              (ident-blacklist
-               (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
+               (treeset::insert new-struct-tag1 (treeset::insert new-struct-tag2 ident-blacklist)))
              ((list new-struct1 new-struct2)
               (fresh-idents (list new-struct1
                                   new-struct2)
@@ -1248,7 +1250,7 @@
         ;; the validation table.
         (retmsg$ "Could not find struct type."))
        (ident-blacklist
-         (insert new-struct-tag1 (insert new-struct-tag2 ident-blacklist)))
+         (treeset::insert new-struct-tag1 (treeset::insert new-struct-tag2 ident-blacklist)))
        ((list new-struct1 new-struct2)
         (fresh-idents (list new-struct1
                             new-struct2)

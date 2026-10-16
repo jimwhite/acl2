@@ -115,8 +115,7 @@
                     :stmt
                     :tycompat
                     :offsetof
-                    :va-arg
-                    :extension))
+                    :va-arg))
        t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -279,7 +278,7 @@
    :tycompat (expr-priority-primary)
    :offsetof (expr-priority-primary)
    :va-arg (expr-priority-primary)
-   :extension (expr-priority-primary)))
+   :extension (expr-priority-unary)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -507,6 +506,102 @@
   ///
 
   (fty::deffixequiv-mutual declor/dirdeclor->ident))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines declor/dirdeclor-derived-type-depth
+  :short "Depth of the type derived by a declarator or direct declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define declor-derived-type-depth ((declor declorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a declarator."
+    (b* (((declor declor) declor))
+      (+ (len declor.pointers)
+         (dirdeclor-derived-type-depth declor.direct)))
+    :measure (declor-count declor))
+
+  (define dirdeclor-derived-type-depth ((dirdeclor dirdeclorp))
+    :returns (depth natp)
+    :parents (declor/dirdeclor-derived-type-depth abstract-syntax-operations)
+    :short "Depth of the type derived by a direct declarator."
+    (dirdeclor-case
+      dirdeclor
+      :ident 0
+      :paren (declor-derived-type-depth dirdeclor.inner)
+      :array (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static1 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-static2 (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :array-star (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-params (1+ (dirdeclor-derived-type-depth dirdeclor.declor))
+      :function-names (1+ (dirdeclor-derived-type-depth dirdeclor.declor)))
+    :measure (dirdeclor-count dirdeclor))
+
+  :verify-guards :after-returns)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defines absdeclor/dirabsdeclor-derived-type-depth
+  :short "Depth of the type derived by an abstract declarator
+          or direct abstract declarator."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This is the number of array, pointer, and function type constructors
+     contributed by the (direct) abstract declarator.
+     Parentheses do not contribute to the depth."))
+
+  (define absdeclor-derived-type-depth ((absdeclor absdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an abstract declarator."
+    (b* (((absdeclor absdeclor) absdeclor))
+      (+ (len absdeclor.pointers)
+         (dirabsdeclor-option-derived-type-depth absdeclor.direct?)))
+    :measure (absdeclor-count absdeclor))
+
+  (define dirabsdeclor-option-derived-type-depth
+    ((dirabsdeclor? dirabsdeclor-optionp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by an optional direct abstract
+            declarator."
+    (dirabsdeclor-option-case
+      dirabsdeclor?
+      :none 0
+      :some (dirabsdeclor-derived-type-depth dirabsdeclor?.val))
+    :measure (dirabsdeclor-option-count dirabsdeclor?))
+
+  (define dirabsdeclor-derived-type-depth ((dirabsdeclor dirabsdeclorp))
+    :returns (depth natp)
+    :parents (absdeclor/dirabsdeclor-derived-type-depth
+              abstract-syntax-operations)
+    :short "Depth of the type derived by a direct abstract declarator."
+    (dirabsdeclor-case
+      dirabsdeclor
+      :dummy-base 0
+      :paren (absdeclor-derived-type-depth dirabsdeclor.inner)
+      :array
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static1
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-static2
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :array-star
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?))
+      :function
+      (1+ (dirabsdeclor-option-derived-type-depth dirabsdeclor.declor?)))
+    :measure (dirabsdeclor-count dirabsdeclor))
+
+  :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -861,6 +956,58 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(define check-ext-declon-declon ((edeclon ext-declonp))
+  :returns (declon? declon-optionp)
+  :short "Check if an external declaration is a declaration,
+          return the declaration if successful."
+  (if (ext-declon-case edeclon :declon)
+      (ext-declon-declon->declon edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-ext-declon-fundef ((edeclon ext-declonp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if an external declaration is a function definition,
+          return the function definition if successful."
+  (if (ext-declon-case edeclon :fundef)
+      (ext-declon-fundef->fundef edeclon)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-ext-declon ((item trans-itemp))
+  :returns (edeclon? ext-declon-optionp)
+  :short "Check if a translation item is an external declaration,
+          returning the external declaration if successful."
+  (if (trans-item-case item :declon)
+      (trans-item-declon->declon item)
+    nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-declon ((item trans-itemp))
+  :returns (declon? declon-optionp)
+  :short "Check if a translation item is a declaration,
+          returning the declaration if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-declon edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-trans-item-fundef ((item trans-itemp))
+  :returns (fundef? fundef-optionp)
+  :short "Check if a translation item is a function definition,
+          returning the function definition if successful."
+  (b* ((edeclon (check-trans-item-ext-declon item)))
+    (if edeclon
+        (check-ext-declon-fundef edeclon)
+      nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define check-struni-spec-no-members ((struni-spec struni-specp))
   :returns (ident? ident-optionp)
   :short "Check if a structure or union specifier has no members,
@@ -914,7 +1061,16 @@
        ((mv yes/no tyspecs) (check-decl-spec-list-all-typespec (cdr declspecs))))
     (if yes/no
         (mv t (cons (decl-spec-typespec->spec declspec) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-decl-spec-list-all-typespec-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable decl-spec-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -965,7 +1121,26 @@
                                     declspecs))
                          nil)))
     :induct t
-    :enable check-decl-spec-list-all-typespec))
+    :enable check-decl-spec-list-all-typespec)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-decl-spec-typespec-list
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (decl-spec-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs) nil))
+    :induct t
+    :enable decl-spec-typespec-list)
+
+  (defrule
+    check-decl-spec-list-all-typespec/stoclass-of-stoclass-and-typespec-append-lists
+    (equal (check-decl-spec-list-all-typespec/stoclass
+            (append (decl-spec-stoclass-list stor-specs)
+                    (decl-spec-typespec-list tyspecs)))
+           (mv t
+               (type-spec-list-fix tyspecs)
+               (stor-spec-list-fix stor-specs)))
+    :induct t
+    :enable decl-spec-stoclass-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -984,7 +1159,16 @@
        ((mv yes/no tyspecs) (check-spec/qual-list-all-typespec (cdr specquals))))
     (if yes/no
         (mv t (cons (spec/qual-typespec->spec specqual) tyspecs))
-      (mv nil nil))))
+      (mv nil nil)))
+
+  ///
+
+  (defrule check-spec/qual-list-all-typespec-of-spec/qual-typespec-list
+    (equal (check-spec/qual-list-all-typespec
+            (spec/qual-typespec-list tyspecs))
+           (mv t (type-spec-list-fix tyspecs)))
+    :induct t
+    :enable spec/qual-typespec-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1013,6 +1197,103 @@
         (cons (decl-spec-stoclass->spec declspec)
               (decl-spec-list-to-stor-spec-list (cdr declspecs)))
       (decl-spec-list-to-stor-spec-list (cdr declspecs)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define decl-spec-list-standalone-tag-gcc-okp ((declspecs decl-spec-listp))
+  :returns (yes/no booleanp)
+  :short "Check if a list of declaration specifiers
+          is allowed by GCC in a standalone tag declaration."
+  :long
+  (xdoc::topstring-p
+   "See @(tsee check-declon-standalone-tag).
+    GCC does not treat a declaration as a standalone tag declaration
+    if it has storage class specifiers
+    (other than @('_Thread_local') and @('__thread')),
+    type qualifiers,
+    or alignment specifiers.")
+  (b* (((when (endp declspecs)) t)
+       (declspec (car declspecs))
+       ((when (decl-spec-case declspec '(:typequal :align))) nil)
+       ((when (and (decl-spec-case declspec :stoclass)
+                   (not (stor-spec-case (decl-spec-stoclass->spec declspec)
+                                        :thread))))
+        nil))
+    (decl-spec-list-standalone-tag-gcc-okp (cdr declspecs))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define check-declon-standalone-tag ((declon declonp) (dialect c::dialectp))
+  :returns (mv (ident? ident-optionp) (unionp booleanp))
+  :short "Check if a declaration is a standalone tag declaration,
+          returning the tag and whether it is a union tag
+          if the check succeeds."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "A declaration of the form @('struct-or-union identifier ;')
+     declares the identifier as the tag of a new type in the current scope,
+     even if a tag with the same name is visible from an outer scope
+     [C17:6.7.2.3/7] [C23:6.7.3.4/11].
+     In other contexts, a structure or union type specifier without members
+     refers to the visible tag, if any [C17:6.7.2.3/9] [C23:6.7.3.4/13].
+     The standard does not name this form of declaration;
+     we introduce the term `standalone tag declaration' for it,
+     generalized to the GCC and Clang extensions as described below.")
+   (xdoc::p
+    "In all dialects,
+     the declaration must have no declarators
+     and exactly one type specifier,
+     which must be a structure or union type specifier
+     with a tag and no members.
+     Attributes between the @('struct') or @('union') keyword and the tag
+     are allowed.
+     The other declaration specifiers, if any, depend on the dialect:")
+   (xdoc::ul
+    (xdoc::li
+     "Without GCC or Clang extensions,
+      there must be no other declaration specifiers,
+      as in the standard.")
+    (xdoc::li
+     "With GCC extensions,
+      the other declaration specifiers
+      must satisfy @(tsee decl-spec-list-standalone-tag-gcc-okp).
+      This is not documented in the GCC manual,
+      but it is the observed behavior,
+      and it is described in the comments of the GCC test
+      @('gcc.dg/c99-tag-3.c').")
+    (xdoc::li
+     "With Clang extensions,
+      the type specifier must be the last declaration specifier,
+      i.e. any other declaration specifiers must precede it.
+      This is not documented in the Clang manual,
+      but it is the observed behavior."))
+   (xdoc::p
+    "If the check fails, we return @('nil') as the tag."))
+  (b* (((unless (declon-case declon :declon)) (mv nil nil))
+       (specs (declon-declon->specs declon))
+       ((when (consp (declon-declon->declors declon))) (mv nil nil))
+       (tyspecs (decl-spec-list-to-type-spec-list specs))
+       ((unless (and (consp tyspecs)
+                     (endp (cdr tyspecs))))
+        (mv nil nil))
+       (tyspec (car tyspecs))
+       ((unless (type-spec-case tyspec '(:struct :union))) (mv nil nil))
+       (unionp (type-spec-case tyspec :union))
+       ((struni-spec struni-spec) (if unionp
+                                      (type-spec-union->spec tyspec)
+                                    (type-spec-struct->spec tyspec)))
+       ((unless (and struni-spec.name?
+                     (endp struni-spec.members)))
+        (mv nil nil))
+       ((unless (cond ((c::dialect->gcc dialect)
+                       (decl-spec-list-standalone-tag-gcc-okp specs))
+                      ((c::dialect->clang dialect)
+                       (equal (car (last specs))
+                              (decl-spec-typespec tyspec)))
+                      (t (endp (cdr specs)))))
+        (mv nil nil)))
+    (mv struni-spec.name? unionp)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

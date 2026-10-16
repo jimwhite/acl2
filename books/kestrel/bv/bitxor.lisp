@@ -229,7 +229,7 @@
            (equal (bitxor bit1 (* 2 bit2))
                   (bitxor bit1 0)))
   :hints (("Goal" :in-theory (e/d (bitxor bvxor getbit)
-                                  (bvxor-1-becomes-bitxor )))))
+                                  (bvxor-1-becomes-bitxor)))))
 
 (defthm equal-of-0-and-bitxor
   (equal (equal 0 (bitxor x y))
@@ -310,7 +310,6 @@
   :hints (("Goal" ;:cases ((equal size 1))
            :in-theory (e/d (;bitxor
                             ) (;BVXOR-1-BECOMES-BITXOR
-                               bitxor-commutative
                                bitxor-commutative
                                bitxor-associative)))))
 

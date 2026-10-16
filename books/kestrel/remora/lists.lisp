@@ -17,6 +17,7 @@
 (include-book "std/util/deflist" :dir :system)
 (include-book "std/util/defrule" :dir :system)
 (include-book "xdoc/defxdoc-plus" :dir :system)
+(include-book "std/typed-lists/cons-listp" :dir :system)
 
 (local (include-book "arithmetic"))
 
@@ -40,6 +41,88 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled car/cdr-when-equal-cons
+  :short "Derive equalities for @(tsee car) and @(tsee cdr)
+          from an equality to a @(tsee cons).."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This may be useful when the context has
+     a hypothesis that matches this theorem's hypothesis,
+     but ACL2's heuristics judge the term matching @('x')
+     to be simpler than the term matching @('(cons a b)'),
+     and thus @('x') is not replaced by @('(cons a b)'),
+     thus missing opportunities for simplifying
+     @(tsee car) and/or @(tsee cdr) of the term matching @('x').
+     This rule performs that simplification by rewriting."))
+  (implies (equal x (cons a b))
+           (and (equal (car x) a)
+                (equal (cdr x) b))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled consp-when-positive-len
+  :short "Derive @(tsee consp) from a positive @(tsee len)."
+  (implies (< 0 (len x))
+           (consp x))
+  :enable len)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled positive-len-when-consp
+  :short "Derive a positive @(tsee len) from @(tsee consp)."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The @(see acl2::std/lists) library proves the rewrite rule
+     @('|(< 0 (len x))|'), which rewrites @('(< 0 (len x))') to
+     @('(consp x)').  That rule does not apply to a goal of the form
+     @('(>= (len x) 1)'), which is the form in which minimum-length
+     requirements are typically stated; hence this linear rule, which
+     the linear arithmetic procedure can combine with such a goal."))
+  (implies (consp x)
+           (< 0 (len x)))
+  :rule-classes :linear
+  :enable len)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defruled len->=-2-when-consp-of-cdr
+  :short "Derive a @(tsee len) of at least 2
+          from a list with at least two @(tsee cons)es."
+  (implies (and (consp x)
+                (consp (cdr x)))
+           (<= 2 (len x)))
+  :rule-classes :linear
+  :enable len)
+
+;;;;;;;;;;;;;;;;;;;;
+
+(encapsulate ()
+
+  ;; ACL2::EQUAL-OF-LEN-AND-1 is exactly this fact, as a biconditional on
+  ;; the length.  Its book installs a theory invariant that forbids the
+  ;; definition of LEN to be enabled, which this book and its users do
+  ;; throughout their hints, so the book is confined to this encapsulate
+  ;; and only the rule below escapes.
+  (local (include-book "kestrel/lists-light/len" :dir :system))
+
+  (defruled list-of-car-when-len-1
+    :short "A true list of length 1 is the list of its @(tsee car)."
+    :long
+    (xdoc::topstring
+     (xdoc::p
+      "This is @('acl2::equal-of-len-and-1') oriented as a rewrite rule
+       on @('(list (car x))'), which is the direction in which it is used:
+       a rebuilt one-element list is met where the unary form of a
+       construct is expected."))
+    (implies (and (true-listp x)
+                  (equal (len x) 1))
+             (equal (list (car x)) x))
+    :use acl2::equal-of-len-and-1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defruled car-of-repeat
   :short "Theorem about @(tsee car) applied to @(tsee repeat)."
   (equal (car (repeat n x))
@@ -49,13 +132,34 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defruled append-of-repeats-same
+  (equal (append (repeat m x) (repeat n x))
+         (repeat (+ (nfix m) (nfix n)) x))
+  :induct (repeat m x)
+  :enable (repeat nfix)
+  :expand ((repeat (+ m n) x)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (define append-all ((lists true-list-listp))
   :returns (list true-listp)
   :short "Append all the lists in a list, in that order."
   (cond ((endp lists) nil)
         (t (append (mbe :logic (true-list-fix (car lists))
                         :exec (car lists))
-                   (append-all (cdr lists))))))
+                   (append-all (cdr lists)))))
+
+  ///
+
+  (defruled append-all-of-repeat-of-repeat
+    (implies (natp m)
+             (equal (append-all (repeat m (repeat n x)))
+                    (repeat (* m (nfix n)) x)))
+    :induct (repeat m x)
+    :enable (repeat
+             append-of-repeats-same
+             nfix)
+    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -96,6 +200,29 @@
     :induct t
     :enable nthcdr)
 
+  (defrule list-repeatp-of-append
+    (equal (list-repeatp (append x y))
+           (and (list-repeatp x)
+                (list-repeatp y)
+                (or (endp x)
+                    (endp y)
+                    (equal (car x) (car y)))))
+    :induct t)
+
+  (defruled car-of-rev-when-list-repeatp
+    (implies (list-repeatp x)
+             (equal (car (rev x)) (car x)))
+    :induct t
+    :enable (list-repeatp rev))
+
+  (defrule list-repeatp-of-rev
+    (equal (list-repeatp (rev x))
+           (list-repeatp x))
+    :induct t
+    :enable (list-repeatp
+             rev
+             car-of-rev-when-list-repeatp))
+
   (defruled take-when-list-repeatp
     (implies (and (list-repeatp list)
                   (<= (nfix n) (len list)))
@@ -121,7 +248,23 @@
     :use ((:instance take-when-list-repeatp)
           (:instance take-when-list-repeatp (list (nthcdr n list))))
     :enable (nth-when-list-repeatp nfix)
-    :disable list-repeatp))
+    :disable list-repeatp)
+
+  (defruled repeat-of-len-and-car-when-list-repeatp
+    (implies (and (list-repeatp list)
+                  (consp list)
+                  (equal len (len list)))
+             (equal (repeat len (car list))
+                    (true-list-fix list)))
+    :use lemma
+    :prep-lemmas
+    ((defruled lemma
+       (implies (and (list-repeatp list)
+                     (consp list))
+                (equal (repeat (len list) (car list))
+                       (true-list-fix list)))
+       :induct t
+       :enable repeat))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -145,7 +288,35 @@
   :guard (and (true-list-listp x)
               (natp len))
   :short "Check if all the lists in a list of lists have a given length."
-  (equal (len x) (nfix len)))
+  (equal (len x) (nfix len))
+
+  ///
+
+  (defruled cons-listp-when-all-of-len-p
+    (implies (and (all-of-len-p vals n)
+                  (posp n))
+             (cons-listp vals))
+    :induct t
+    :enable cons-listp)
+
+  (defruled len-of-append-all-when-all-of-len-p
+    (implies (all-of-len-p lists n)
+             (equal (len (append-all lists))
+                    (* (len lists) (nfix n))))
+    :induct t
+    :enable (append-all nfix))
+
+  (defruled len-of-append-all-when-all-of-len-p-of-len-car
+    (implies (all-of-len-p lists (len (car lists)))
+             (equal (len (append-all lists))
+                    (* (len lists) (len (car lists)))))
+    :use (:instance len-of-append-all-when-all-of-len-p
+                    (n (len (car lists)))))
+
+  (defruled consp-of-append-all-when-consp-of-car
+    (implies (consp (car lists))
+             (consp (append-all lists)))
+    :expand ((append-all lists))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -217,6 +388,19 @@
                     (car list)))
     :enable (car-of-list-split take))
 
+  (defruled len-of-car-of-list-split
+    (implies (and (consp list)
+                  (posp chunk))
+             (equal (len (car (list-split list chunk)))
+                    chunk))
+    :enable (car-of-list-split take))
+
+  (defruled consp-of-car-list-split
+    (implies (posp chunk)
+             (equal (consp (car (list-split list chunk)))
+                    (consp list)))
+    :expand ((list-split list chunk)))
+
   (defrule list-list-repeat-of-list-split
     (implies (and (list-repeatp list)
                   (posp n)
@@ -236,7 +420,15 @@
              take-of-nthcdr-when-list-repeatp
              nfix)
     :hints ('(:use (:instance pos-gte-twice-divisor (x (len list)) (y n))))
-    :prep-books ((include-book "arithmetic-3/top" :dir :system))))
+    :prep-books ((include-book "arithmetic-3/top" :dir :system)))
+
+  (defruled list-split-of-repeat
+    (implies (and (posp n)
+                  (integerp m))
+             (equal (list-split (repeat (* m n) x) n)
+                    (repeat m (repeat n x))))
+    :induct (repeat m x)
+    :enable repeat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -282,7 +474,13 @@
   (defret consp-of-car-list
     (equal (consp cars)
            (consp lists))
-    :hints (("Goal" :induct t))))
+    :hints (("Goal" :induct t)))
+
+  (defruled car-list-of-repeat
+    (equal (car-list (repeat n list))
+           (repeat n (car list)))
+    :induct (repeat n list)
+    :enable repeat))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -305,7 +503,99 @@
   (defret consp-of-cdr-list
     (equal (consp cdrs)
            (consp lists))
-    :hints (("Goal" :induct t))))
+    :hints (("Goal" :induct t)))
+
+  (defret car-of-cdr-list
+    (equal (car cdrs)
+           (cdr (car lists)))
+    :hyp (true-list-listp lists)
+    :hints (("Goal" :induct t)))
+
+  (defruled len-of-car-cdr-list
+    (equal (len (car (cdr-list lists)))
+           (nfix (+ -1 (len (car lists)))))
+    :induct t)
+
+  (defruled all-of-len-p-of-cdr-list
+    (implies (and (all-of-len-p lists len)
+                  (equal (nfix n) (nfix (+ -1 len))))
+           (all-of-len-p (cdr-list lists) n))
+    :induct t
+    :in-theory (enable all-of-len-p nfix))
+
+  (defruled cdr-list-of-repeat
+    (equal (cdr-list (repeat n list))
+           (repeat n (cdr (true-list-fix list))))
+    :induct (repeat n list)
+    :enable repeat))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define transpose-list-list ((lists true-list-listp))
+  :guard (all-of-len-p lists (len (car lists)))
+  :returns (lists1 true-list-listp)
+  :short "Transpose a list of lists."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The first resulting list has the first elements of all the lists,
+     the second resulting list has the second elements of all the lists,
+     and so on, until the first list runs out.")
+   (xdoc::p
+    "This is built from @(tsee car-list) and @(tsee cdr-list),
+     which lift @(tsee car) and @(tsee cdr) to lists."))
+  (cond ((endp lists) nil)
+        ((endp (car lists)) nil)
+        (t (cons (car-list lists)
+                 (transpose-list-list (cdr-list lists)))))
+  :measure (len (car lists))
+  :hints (("Goal" :expand ((cdr-list lists))))
+  :guard-hints
+  (("Goal"
+    :use ((:instance all-of-len-p-of-cdr-list
+                     (len (len (car lists)))
+                     (n (len (cdr (car lists))))))))
+
+  ///
+
+  (defret len-of-transpose-list-list
+    (equal (len lists1)
+           (len (car lists)))
+    :hyp (true-list-listp lists)
+    :hints (("Goal" :induct t)))
+
+  (defruled all-of-len-p-of-transpose-list-list
+    (implies (equal (len lists) n)
+             (all-of-len-p (transpose-list-list lists) n))
+    :induct t
+    :enable (all-of-len-p nfix fix))
+
+  (defruled len-of-car-of-transpose-list-list
+    (equal (len (car (transpose-list-list lists)))
+           (if (consp (car lists))
+               (len lists)
+             0))
+    :expand ((transpose-list-list lists)))
+
+  (defrule transpose-list-list-of-repeat-of-nil
+    (implies (posp n)
+             (not (transpose-list-list (repeat n nil))))
+    :induct t
+    :enable repeat)
+
+  (defruled transpose-list-list-of-repeat-of-repeat
+    (implies (and (posp m)
+                  (posp n))
+             (equal (transpose-list-list (repeat m (repeat n x)))
+                    (repeat n (repeat m x))))
+    :induct (repeat n x)
+    :expand ((transpose-list-list (repeat m (list x)))
+             (transpose-list-list (repeat m (cons x (repeat (+ -1 n) x)))))
+    :e/d ((repeat
+           car-list-of-repeat
+           cdr-list-of-repeat
+           car-of-repeat)
+          (transpose-list-list))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -386,7 +676,11 @@
 
   (theory-invariant
    (incompatible (:definition check-list-suffix)
-                 (:rewrite check-list-suffix-alt-def))))
+                 (:rewrite check-list-suffix-alt-def)))
+
+  (defrule check-list-suffix-same
+    (equal (check-list-suffix x x)
+           (mv t nil))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -517,3 +811,19 @@
   (defret all-of-len-p-1-of-list-to-singletons
     (all-of-len-p sing-list 1)
     :hints (("Goal" :induct t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define three-cdrs-induct (x y z)
+  :short "Induction scheme over three lists in lockstep."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "This recurs on the @(tsee cdr)s of all three lists
+     until any of them runs out.
+     It is only used to drive inductions, via @(':induct') hints,
+     for properties that relate the elements of three lists
+     at the same positions."))
+  (if (or (not (consp x)) (not (consp y)) (not (consp z)))
+      nil
+    (three-cdrs-induct (cdr x) (cdr y) (cdr z))))

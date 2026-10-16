@@ -1,7 +1,7 @@
 ; sbvmoddown
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2025 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -13,6 +13,7 @@
 (in-package "ACL2")
 
 (include-book "bvchop")
+(include-book "bvplus-def")
 (include-book "logext")
 (include-book "bvmod")
 (include-book "bvcat")
@@ -31,7 +32,7 @@
 (local (include-book "kestrel/arithmetic-light/expt2" :dir :system))
 (local (include-book "kestrel/arithmetic-light/rem" :dir :system))
 
-(local (in-theory (disable BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))
+;(local (in-theory (disable BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS)))
 
 ;todo: move?
 (defund sbvmoddown (n x y)
@@ -77,12 +78,10 @@
                                           bvchop-of-sum-cases
                                           BVCHOP-WHEN-TOP-BIT-NOT-1 BVCHOP-WHEN-TOP-BIT-1 ;BVCHOP-REDUCE-WHEN-TOP-BIT-KNOWN
                                           bvcat
-                                          logapp
                                           rem-becomes-mod)
                                   (BVCHOP-UPPER-BOUND ;for speed
                                    ;MOD-BOUNDED-BY-MODULUS
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   ;sbvrem-rewrite
                                    )))))
 
 (defthm equal-of-+-of-expt-of-one-less-and-expt-cancel
@@ -124,7 +123,6 @@
                                    sbvlt-rewrite
                                    )
                                   (;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
-                                   sbvrem-rewrite
                                    ;mod-sum-cases
                                    ;;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?
                                    ;;SBVREM-BECOMES-BVMOD
@@ -180,13 +178,11 @@
                                    bvcat logapp
                                    rem-becomes-mod
                                    )
-                                  (SBVREM-REWRITE
-                                   bvmod
+                                  (bvmod
                                    BVMINUS
                                    BVuMINUS
                                    sbvlt
                                    BVCHOP-UPPER-BOUND ;for speed
-                                   ;sbvrem-rewrite
                                    ;BVMINUS-BECOMES-BVPLUS-OF-BVUMINUS
                                    mod-sum-cases
                                    ;NOT-EQUAL-CONSTANT-WHEN-BOUND-FORBIDS-IT2 ;add syntaxp hyp?

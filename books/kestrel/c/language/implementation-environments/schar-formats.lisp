@@ -38,52 +38,82 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "Values of the @('signed char') type, like all the other values,
-     must be represented as one or more bytes [C17:6.2.6.1/4].
-     Objects of the @('signed char') type,
-     like all other signed integer objects,
-     must have no more value bits
-     than value bits of their unsigned counterpart
-     [C17:6.2.6.2/2],
-     i.e. @('unsigned char') objects in this case,
-     which consist of exactly one byte (see @(tsee uchar-format)):
-     therefore, @('signed char') objects must take exactly one byte as well.")
+    "Objects of the @('signed char') type
+     must have the same size (i.e. number of bytes)
+     as their unsigned counterpart [C17:6.2.5/6] [C23:6.2.5],
+     in this case @('unsigned char') objects,
+     which consist of exactly one byte (see @(tsee uchar-format)).
+     Therefore, @('signed char') objects must take exactly one byte as well.")
    (xdoc::p
     "Since @('signed char') objects must have one sign bit and no padding bits
-     [C17:6.2.6.2/2],
+     [C17:6.2.6.2/2] [C23:6.2.6.2],
      they must have exactly @($\\mathtt{CHAR\\_BIT} - 1$) value bits.
-     Since the values of the value bits of a signed integer type
-     must be equal to the value bits of the unsigned integer type counterpart
-     [C17:6.2.6.2/2],
-     the value bits of @('signed char') values are the low bits of the byte,
-     and the sign is the high bit.")
+     Since each value bit of a signed integer type
+     must have the same value as the same bit
+     of the unsigned integer type counterpart
+     [C17:6.2.6.2/2] [C23:6.2.6.2],
+     the value bits of @('signed char') objects are the low bits of the byte,
+     and the sign bit is the high bit.")
    (xdoc::p
     "While the byte/bit format of @('signed char') is thus set,
      the exact values represented by this byte/bit format depend on the "
     (xdoc::seetopic "signed-format" "signed format")
     " (when the sign bit is 1).
-     Furthermore, [C17:6.2.6.2/2] identifies one specific bit pattern,
+     Furthermore, [C17:6.2.6.2/2] (but not [C23])
+     identifies one specific bit pattern,
      for each signed format,
      as a possible trap representation:
-     it either is a trap representation or it is not.
+     either it is a trap representation or it is not.
      These two choices
      (i.e. the signed format,
-     and whether the specific pattern is a trap representation),
+     and whether the specific pattern is a trap representation)
      completely define the representation of @('signed char').")
    (xdoc::p
     "We formalize the format of @('signed char') as consisting of
      a specification of signed format
-     and a boolean flag saying whether the aforementioned pattern is a trap."))
+     and a boolean flag saying whether the aforementioned pattern is a trap.
+     The latter flag is forced to be @('nil') in C23;
+     see @(tsee schar-format-wfp).
+     Although C23 uses the term `non-value representation'
+     for what C17 calls `trap representation',
+     here we use just the name @('trap') since it only applies to C17."))
   ((signed signed-format)
    (trap bool))
   :pred schar-formatp)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define schar-format-wfp ((format schar-formatp)
+                          (std standardp))
+  :returns (yes/no booleanp)
+  :short "Check if a @('signed char') format is well-formed for a C standard."
+  :long
+  (xdoc::topstring
+   (xdoc::p
+    "The signed format must be well-formed for the standard,
+     as checked by @(tsee signed-format-wfp).")
+   (xdoc::p
+    "C17 allows either choice of the trap flag [C17:6.2.6.2/2],
+     while C23 requires it to be false [C23:6.2.6.2]."))
+  (and (signed-format-wfp (schar-format->signed format) std)
+       (standard-case std
+                      :c17 t
+                      :c23 (not (schar-format->trap format))))
+
+  ///
+
+  (defrule schar-format-wfp-of-standard-c17
+    (schar-format-wfp format (standard-c17))
+    :use (:instance signed-format-wfp-of-standard-c17
+                    (format (schar-format->signed format)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define schar-format->max ((schar-format schar-formatp)
                            (uchar-format uchar-formatp))
   :returns (max posp :hints (("Goal" :in-theory (enable posp))))
-  :short "The ACL2 integer value of @('SCHAR_MAX') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MAX')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -105,23 +135,25 @@
     :rule-classes :type-prescription
     :hints (("Goal" :in-theory (enable posp))))
 
-  (defrulel lemma
-    (>= (expt 2 (1- (uchar-format->size uchar-format))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (uchar-format->size uchar-format))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
-
   (defret schar-format->max-lower-bound
     (>= max 127)
-    :rule-classes :linear))
+    :rule-classes :linear
+    :hints (("Goal"
+             :in-theory
+             (enable expt-of-one-less-than-uchar-format->size-lower-bound))))
+
+  (defret schar-format->max-lt-uchar-format->max
+    (< max (uchar-format->max uchar-format))
+    :rule-classes :linear
+    :hints (("Goal" :in-theory (enable uchar-format->max)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define schar-format->min ((schar-format schar-formatp)
                            (uchar-format uchar-formatp))
   :returns (min integerp)
-  :short "The ACL2 integer value of @('SCHAR_MIN') [C17:5.2.4.2.1/1]."
+  :short "The ACL2 integer value of @('SCHAR_MIN')
+          [C17:5.2.4.2.1/1] [C23:5.3.5.3.2]."
   :long
   (xdoc::topstring
    (xdoc::p
@@ -131,10 +163,16 @@
      and the pattern with sign bit 1 and all value bits 0
      is not a trap representation)
      or @($- 2^{\\mathtt{CHAR\\_BIT}-1} + 1$)
-     (if the signed format is ones' complement or sign-and-magnitude,
+     (if the signed format is ones' complement or sign and magnitude,
      or it is two's complement
      but the pattern with sign bit 1 and all value bits 0
      is a trap representation).")
+   (xdoc::p
+    "When @(tsee schar-format-wfp) holds for C23,
+     the minimum is always @($- 2^{\\mathtt{CHAR\\_BIT}-1}$),
+     i.e. @('-SCHAR_MAX - 1').
+     Since @('CHAR_BIT') is at least 8, this minimum is at most -128.
+     These consequences are proved below.")
    (xdoc::p
     "Like @(tsee schar-format->max),
      this function also depends on the @('unsigned char') format.
@@ -154,20 +192,33 @@
          (< min 0))
     :rule-classes :type-prescription)
 
-  (defrulel lemma
-    (>= (expt 2 (1- (uchar-format->size uchar-format))) 128)
-    :rule-classes :linear
-    :use (:instance acl2::expt-is-weakly-increasing-for-base->-1
-                    (x 2) (m 7) (n (1- (uchar-format->size uchar-format))))
-    :disable acl2::expt-is-weakly-increasing-for-base->-1)
-
   (defret schar-format->min-upper-bound
     (<= min -127)
     :rule-classes
     ((:linear
-      :trigger-terms ((schar-format->min schar-format uchar-format))))))
+      :trigger-terms ((schar-format->min schar-format uchar-format))))
+    :hints (("Goal"
+             :in-theory
+             (enable expt-of-one-less-than-uchar-format->size-lower-bound))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (defretd schar-format->min-as-max-when-c23
+    (implies (schar-format-wfp schar-format (standard-c23))
+             (equal min
+                    (- (1+ (schar-format->max schar-format uchar-format)))))
+    :hints (("Goal"
+             :in-theory (enable schar-format-wfp
+                                signed-format-wfp
+                                schar-format->max))))
+
+  (defretd schar-format->min-upper-bound-when-c23
+    (implies (schar-format-wfp schar-format (standard-c23))
+             (<= min -128))
+    :rule-classes
+    ((:linear
+      :trigger-terms ((schar-format->min schar-format uchar-format))))
+    :hints (("Goal" :in-theory (enable schar-format->min-as-max-when-c23)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define schar-format-8tcnt ()
   :returns (format schar-formatp)
@@ -176,11 +227,20 @@
   :long
   (xdoc::topstring
    (xdoc::p
-    "This is the simplest and most common format for @('signed char')."))
+    "This is the simplest and most common format for @('signed char') in C17,
+     and the only one allowed in C23 for any @('CHAR_BIT').")
+   (xdoc::p
+    "The 8-bit size actually comes from the @(tsee uchar-format-8)
+     that is intended to accompany this @(tsee schar-format) format."))
   (make-schar-format :signed (signed-format-twos-complement)
                      :trap nil)
 
   ///
+
+  (defrule schar-format-wfp-of-schar-format-8tcnt
+    (schar-format-wfp (schar-format-8tcnt) std)
+    :enable schar-format-wfp
+    :use signed-format-wfp-of-signed-format-twos-complement)
 
   (defruled schar-format->max-of-schar-format-8tcnt
     (equal (schar-format->max (schar-format-8tcnt) (uchar-format-8))

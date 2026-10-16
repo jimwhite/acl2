@@ -18,9 +18,7 @@
 (local (include-book "kestrel/utilities/ordinals" :dir :system))
 
 (include-book "std/basic/controlled-configuration" :dir :system)
-(acl2::controlled-configuration
-  ;; Necessary for the deffold-map termination.
-  :tau t)
+(acl2::controlled-configuration)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,8 +34,7 @@
        (expr-case
          c$::expr
          :ident (if (and (var-vinfop c$::expr.info)
-                         (c$::uid-equal (var-vinfo->uid c$::expr.info)
-                                        uid))
+                         (equal (var-vinfo->uid c$::expr.info) uid))
                     (make-expr-ident :ident new-fn :info nil)
                   (expr-fix c$::expr))
          :paren (expr-paren

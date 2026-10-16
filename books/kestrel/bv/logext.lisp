@@ -15,7 +15,6 @@
 (include-book "getbit-def")
 (local (include-book "logapp"))
 (local (include-book "logbitp"))
-(local (include-book "ihs/logops-lemmas" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "getbit-rules"))
 (local (include-book "slice"))
@@ -279,7 +278,10 @@
   (implies (and (>= size1 size)
                 (integerp size1)
                 (posp size))
-           (signed-byte-p size1 (logext size i))))
+           (signed-byte-p size1 (logext size i)))
+  :hints (("Goal" :in-theory (enable logext
+                                     logapp ; todo
+                                     ))))
 
 ;; Splits based on the high bit
 (defthmd logext-cases
@@ -391,12 +393,16 @@
 (defthm <=-of-logext-linear-upper
   (implies (posp size)
            (<= (logext size x) (+ -1 (expt 2 (+ -1 size)))))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable logext))))
 
 (defthm <-of-logext-linear-lower
   (implies (posp size)
            (<= (- (expt 2 (+ -1 size))) (logext size x)))
-  :rule-classes :linear)
+  :rule-classes :linear
+  :hints (("Goal" :in-theory (enable logext
+                                     logapp ; todo
+                                     ))))
 
 (defthm <-of-logext-same-linear
   (implies (and (natp x)
@@ -410,9 +416,9 @@
                 (posp n))
            (equal (logext n x)
                   (bvchop (+ -1 n) x)))
-  :hints (("Goal" :use ((:instance logext-identity (size n) (i (bvchop n x))))
+  :hints (("Goal" :use ((:instance logext-when-signed-byte-p (size n) (x (bvchop n x))))
            :in-theory (e/d (logext)
-                           (logext-identity
+                           (logext-when-signed-byte-p
                             logext-does-nothing-rewrite)))))
 
 ;could loop?
@@ -524,7 +530,7 @@
                   (logext size (+ x y))))
   :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
-(defthm logext-of-+-of-logext-arg1
+(defthm logext-of-+-of-logext-arg2
   (implies (and (<= smallsize bigsize)
                 (integerp smallsize)
                 (integerp bigsize)
@@ -532,9 +538,10 @@
                 (force (integerp x))
                 (force (integerp y)))
            (equal (logext smallsize (+ x (logext bigsize y)))
-                  (logext smallsize (+ x y)))))
+                  (logext smallsize (+ x y))))
+  :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
-(defthm logext-of-+-of-logext-arg2
+(defthm logext-of-+-of-logext-arg1
   (implies (and (<= smallsize bigsize)
                 (integerp smallsize)
                 (integerp bigsize)
@@ -652,7 +659,7 @@
            :in-theory (disable logext-of-bvchop-same
                                logext-of-bvchop-smaller
                                logext-when-signed-byte-p
-                               logext-identity
+                               ;; logext-identity
                                bvchop-of-minus))))
 
 (defthm logext-of-+-of---of-logext-arg2
@@ -660,7 +667,8 @@
                 (integerp y)
                 (posp size))
            (equal (logext size (+ x (- (logext size y))))
-                  (logext size (+ x (- y))))))
+                  (logext size (+ x (- y)))))
+  :hints (("Goal" :in-theory (enable equal-of-logext-and-logext))))
 
 (defthm logext-of-minus
   (implies (and (integerp x)

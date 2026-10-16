@@ -14,6 +14,7 @@
 (include-book "unicode-characters")
 
 (include-book "kestrel/fty/dec-digit-char-list" :dir :system)
+(include-book "kestrel/fty/deftreeset" :dir :system)
 (include-book "kestrel/fty/hex-digit-char-list" :dir :system)
 (include-book "kestrel/fty/oct-digit-char-list" :dir :system)
 (include-book "std/basic/two-nats-measure" :dir :system)
@@ -113,14 +114,15 @@
     ") and that is calculated by "
     (xdoc::seetopic "validator" "validation")
     ". This information is stored in the abstract syntax for easy access,
-     e.g. access by tools to transform the abstract syntax.")
-   (xdoc::p
-    "This additional information can be also used, in the future,
+     e.g. access by tools to transform the abstract syntax.
+     This additional information can be also used, in the future,
      for other purposes than storing results from validation.
      This information in our fixtypes is untyped,
      which, in ACL2, can be regarded as analogous to
      using polymorphic types for the abstract syntax,
-     parameterized over the type of the additional information."))
+     parameterized over the type of the additional information.
+     In the definition of the AST fixtypes,
+     we uniformly use the name @('info') for slots for this information."))
   :order-subtopics t
   :default-parent t)
 
@@ -209,19 +211,24 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defset ident-set
+(fty::deftreeset ident-set
   :short "Fixtype of sets of identifiers."
   :elt-type ident
-  :elementp-of-nil nil
   :pred ident-setp
 
   ///
 
-  (defrule ident-setp-of-mergesort
-    (equal (ident-setp (set::mergesort idents))
-           (ident-listp (true-list-fix idents)))
+  (defrulel ident-setp-of-insert-all
+    (implies (and (ident-listp idents)
+                  (ident-setp set))
+             (ident-setp (treeset::insert-all idents set)))
     :induct t
-    :enable set::mergesort))
+    :enable treeset::insert-all)
+
+  (defrule ident-setp-of-from-list
+    (implies (ident-listp idents)
+             (ident-setp (treeset::from-list idents)))
+    :enable treeset::from-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -381,10 +388,7 @@
      As mentioned in @(tsee dec/oct/hex-const),
      our fixtypes are factored slightly differently.
      An integer constant consists of a decimal, octal, or hexadecimal constant,
-     and of an optional integer suffix.")
-   (xdoc::p
-    "Integer constants may be accompanied by some additional information,
-     such as the value calculated during validation."))
+     and of an optional integer suffix."))
   ((core dec/oct/hex-const)
    (suffix? isuffix-option)
    (info any))
@@ -1472,12 +1476,6 @@
        This means that our fixtypes are a bit more general,
        but we can use separate predicates to enforce restrictions.")
      (xdoc::p
-      "Some kinds of expressions may include some additional information
-       (e.g. identifiers),
-       such as types calculated during validation.
-       This is an instance of the additional information
-       discussed in @(tsee abstract-syntax).")
-     (xdoc::p
       "In order to capture
        possibly redundant parenthesization from the concrete syntax,
        we include, in this fixtype, a case @(':paren')
@@ -1754,12 +1752,15 @@
                (args expr-list)
                (info any)))
     (:member ((arg expr)
-              (name ident)))
+              (name ident)
+              (info any)))
     (:memberp ((arg expr)
-               (name ident)))
+               (name ident)
+               (info any)))
     (:complit ((type tyname)
                (elems desiniter-list)
-               (final-comma bool)))
+               (final-comma bool)
+               (info any)))
     (:unary ((op unop)
              (arg expr)
              (info any)))
@@ -1994,7 +1995,8 @@
     (:atomic ((type tyname)))
     (:struct ((spec struni-spec)
               (info any)))
-    (:union ((spec struni-spec)))
+    (:union ((spec struni-spec)
+             (info any)))
     (:enum ((spec enum-spec)))
     (:typedef ((name ident)
                (info any)))
@@ -2073,18 +2075,25 @@
      (xdoc::p
       "This corresponds to @('alignment-specifier') in the ABNF grammar.
        The first two cases of this fixtype correspond to
-       the two forms of @('_Alignas'),
+       the two forms of @('alignas') or @('_Alignas'),
        one for type names and one for constant expressions.
        The third case is for ambiguous forms")
      (xdoc::codeblock
+      "alignas ( X )"
       "_Alignas ( X )")
      (xdoc::p
       "where @('X') is, syntactically, both an expression or a type name.
        As discussed in @(tsee amb-expr/tyname),
-       there is a non-trivial overlap between expressions and type names."))
-    (:alignas-type ((type tyname)))
-    (:alignas-expr ((expr const-expr)))
-    (:alignas-ambig ((expr/type amb-expr/tyname)))
+       there is a non-trivial overlap between expressions and type names.")
+     (xdoc::p
+      "The @('uscore') flag keeps track of the keyword:
+       @('t') for @('_Alignas'); @('nil') for @('alignas')."))
+    (:alignas-type ((uscore bool)
+                    (type tyname)))
+    (:alignas-expr ((uscore bool)
+                    (expr const-expr)))
+    (:alignas-ambig ((uscore bool)
+                     (expr/type amb-expr/tyname)))
     :pred align-specp
     :base-case-override :alignas-expr
     :layout :fulltree
@@ -2499,8 +2508,9 @@
        the declaration specifiers in a parameter declaration."))
     (:nonabstract ((declor declor)
                    (info any)))
-    (:abstract ((declor absdeclor)))
-    (:none ())
+    (:abstract ((declor absdeclor)
+                (info any)))
+    (:none ((info any)))
     (:ambig ((declor amb-declor/absdeclor)))
     :pred param-declorp
     :layout :fulltree
@@ -2528,10 +2538,7 @@
        So we prefer the shorter name.
        Note that we also combine it in other fixtype names,
        e.g. in @(tsee amb-expr/tyname),
-       where the shorter name pays off in readability.")
-     (xdoc::p
-      "Type names may be accompanied by some additional information,
-       such as the type calculated during validation."))
+       where the shorter name pays off in readability."))
     ((specquals spec/qual-list)
      (declor? absdeclor-option)
      (info any))
@@ -2600,7 +2607,7 @@
        which come after the declarator (cf. the grammar).")
      (xdoc::p
       "As explained in our ABNF grammar,
-       we also include an empty external declaration,
+       we also include an empty structure declaration,
        which syntactically consists of a semicolon."))
     (:member ((extension bool) ; GCC extension
               (specquals spec/qual-list)
@@ -2645,7 +2652,8 @@
        we allow an absent declarator and an absent expression,
        even though this is disallowed in the concrete syntax."))
     ((declor? declor-option)
-     (expr? const-expr-option))
+     (expr? const-expr-option)
+     (info any))
     :pred struct-declorp
     :layout :fulltree
     :measure (two-nats-measure (acl2-count x) 3))
@@ -2731,8 +2739,14 @@
       "We use a list of string literals,
        which should be non-empty, but we do not capture this constraint.
        This mirrors the ABNF grammar:
-       this way, we preserve the information about adjacent string literals."))
-    ((test const-expr)
+       this way, we preserve the information about adjacent string literals.")
+     (xdoc::p
+      "We also keep track, via a boolean flag,
+       of whether the keyword in the concrete syntax is
+       @('_Static_assert') (flag @('t')) or @('static_assert') (flag @('nil'));
+       the latter is only in C23."))
+    ((uscore bool)
+     (test const-expr)
      (message stringlit-list))
     :pred statassertp
     :layout :fulltree
@@ -2842,13 +2856,7 @@
       "As GCC extensions, we allow
        an optional assembler name specifier
        and a possibly empty of attribute specifiers.
-       See the ABNF grammar.")
-     (xdoc::p
-      "Initializer declarators may be accompanied
-       by some additional information,
-       such as the "
-      (xdoc::seetopic "uid" "unique-identifier")
-      " calculated during validation."))
+       See the ABNF grammar."))
     ((declor declor)
      (asm? asm-name-spec-option)
      (attribs attrib-spec-list)
@@ -3303,7 +3311,10 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable nfix fix))))
+  :enable-rules (;; for speed:
+                 acl2::o-p-of-two-nats-measure
+                 acl2::o<-of-two-nats-measure
+                 acl2::zp-compound-recognizer)
 
   ///
 
@@ -3531,6 +3542,13 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(fty::defoption ext-declon-option
+  ext-declon
+  :short "Fixtype of optional external declarations."
+  :pred ext-declon-optionp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (fty::deflist ext-declon-list
   :short "Fixtype of lists of external declarations."
   :long
@@ -3703,7 +3721,14 @@
     :true-listp t
     :pred trans-item-listp
     :elementp-of-nil nil
-    :measure (two-nats-measure (acl2-count x) 0))
+    :measure (two-nats-measure (acl2-count x) 0)
+
+    ///
+
+    (defruled cdr-of-trans-item-list-fix
+      (equal (cdr (trans-item-list-fix items))
+             (trans-item-list-fix (cdr items)))
+      :enable trans-item-list-fix))
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3781,7 +3806,11 @@
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-  :prepwork ((local (in-theory (enable nfix fix)))))
+  :enable-rules (nfix
+                 ;; for speed:
+                 acl2::o-p-of-two-nats-measure
+                 acl2::o<-of-two-nats-measure
+                 acl2::zp-compound-recognizer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -3795,9 +3824,7 @@
     "As discussed in @(tsee trans-item),
      we allow other entities, besides external declaration.
      Thus, a translation unit, in our abstract syntax,
-     consists of zero or more translation items.")
-   (xdoc::p
-    "We also add a slot with additional information, e.g. from validation."))
+     consists of zero or more translation items."))
   ((items trans-item-list)
    (info any))
   :pred trans-unitp
@@ -3805,42 +3832,42 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap header-name-string-map
-  :short "Fixtype of maps from header names to strings."
+(fty::defomap header-name-filepath-map
+  :short "Fixtype of maps from header names to file paths."
   :long
   (xdoc::topstring
    (xdoc::p
     "These are used to record how header names in @('#include') directives
-     resolve to files identified by strings.
-     A map from header names to strings pertains to one file;
-     see @(tsee string-header-name-string-map-map)."))
+     resolve to files paths.
+     A map from header names to file paths pertains to one file;
+     see @(tsee filepath-header-name-filepath-map-map)."))
   :key-type header-name
-  :val-type string
-  :pred header-name-string-mapp)
+  :val-type filepath
+  :pred header-name-filepath-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(fty::defomap string-header-name-string-map-map
-  :short "Fixtype of maps from strings to
-          maps from header names to strings."
+(fty::defomap filepath-header-name-filepath-map-map
+  :short "Fixtype of maps from file paths to
+          maps from header names to file paths."
   :long
   (xdoc::topstring
    (xdoc::p
     "As in other types and recognizers used in the ACL2 community books,
-     the name of this type used a postfix structure, like
-     @('(string (header-name string map) map)').
-     These maps are used to record how header name resolve
+     the name of this type uses a postfix structure, like
+     @('(filepath (header-name filepath map) map)').
+     These maps are used to record how header names resolve
      for all the files in a file set or translation ensemble:
      the keys of the outer map identify the files or translation units,
      and each inner map records the mapping for that file."))
-  :key-type string
-  :val-type header-name-string-map
-  :pred string-header-name-string-map-mapp)
+  :key-type filepath
+  :val-type header-name-filepath-map
+  :pred filepath-header-name-filepath-map-mapp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (fty::defomap filepath-trans-unit-map
-  :short "Fixtype of omaps from file paths to translation units."
+  :short "Fixtype of maps from file paths to translation units."
   :key-type filepath
   :val-type trans-unit
   :pred filepath-trans-unit-mapp
@@ -3876,7 +3903,7 @@
      This is temporary, because we plan to put that information
      directly in the ASTs for the @('#include') directives."))
   ((units filepath-trans-unit-map)
-   (resolved-includes string-header-name-string-map-map)
+   (resolved-includes filepath-header-name-filepath-map-map)
    (info any))
   :pred trans-ensemblep
   :layout :fulltree)

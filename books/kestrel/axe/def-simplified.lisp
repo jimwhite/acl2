@@ -57,6 +57,7 @@
 (include-book "kestrel/bv/bvequal-rules" :dir :system)
 (include-book "kestrel/bv/putbits" :dir :system)
 (include-book "kestrel/bv/bvuminus" :dir :system)
+(include-book "kestrel/bv/bvminus" :dir :system)
 (include-book "kestrel/bv/rotate" :dir :system)
 (include-book "kestrel/bv/unsigned-byte-p-forced-rules" :dir :system)
 ;(include-book "rules3") ; for EQUAL-OF-BVCHOP-OF-CAR-AND-BV-ARRAY-READ -- drop?
@@ -112,6 +113,8 @@
                             memoizep
                             count-hits
                             normalize-xors
+                            ;; limits
+                            rewrite-objective
                             print
                             whole-form
                             state)
@@ -130,6 +133,7 @@
                               (booleanp memoizep)
                               (count-hits-argp count-hits)
                               (booleanp normalize-xors)
+                              (rewrite-objectivep rewrite-objective)
                               (print-levelp print)
                               (consp whole-form)
                               (symbolp (car whole-form)))))
@@ -149,6 +153,7 @@
                              (known-booleans (w state))
                              normalize-xors
                              nil ; limits
+                             rewrite-objective
                              memoizep
                              count-hits
                              print
@@ -187,6 +192,8 @@
                             memoizep
                             count-hits
                             normalize-xors
+                            ;; limits
+                            rewrite-objective
                             print
                             whole-form
                             state)
@@ -206,11 +213,12 @@
                               (booleanp memoizep)
                               (count-hits-argp count-hits)
                               (booleanp normalize-xors)
+                              (rewrite-objectivep rewrite-objective)
                               (consp whole-form)
                               (symbolp (car whole-form)))))
   (b* ((term (translate-term term 'def-simplified-fn (w state)))
        (assumptions (translate-terms assumptions 'def-simplified-fn (w state))))
-    (def-simplified-fn-core defconst-name term rules extra-rules remove-rules assumptions interpreted-function-alist monitor memoizep count-hits normalize-xors print whole-form state)))
+    (def-simplified-fn-core defconst-name term rules extra-rules remove-rules assumptions interpreted-function-alist monitor memoizep count-hits normalize-xors rewrite-objective print whole-form state)))
 
 ;; ;; TODO: update, or use defmacrodoc
 ;; (defxdoc def-simplified
@@ -252,6 +260,7 @@
                                  (memoizep 't)
                                  (count-hits 'nil)
                                  (normalize-xors 't)
+                                 (rewrite-objective ':?)
                                  (print 'nil))
   `(make-event-quiet (def-simplified-fn
                        ',defconst-name
@@ -266,6 +275,7 @@
                        ,memoizep
                        ,count-hits
                        ,normalize-xors
+                       ,rewrite-objective
                        ,print
                        ',whole-form
                        state)))

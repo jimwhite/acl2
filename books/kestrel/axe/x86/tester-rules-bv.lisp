@@ -31,6 +31,7 @@
 (include-book "kestrel/bv/bvif" :dir :system)
 (include-book "kestrel/bv/bvshl" :dir :system)
 (include-book "kestrel/bv/bvmult" :dir :system)
+(include-book "kestrel/bv/bvuminus-def" :dir :system)
 (include-book "kestrel/bv/bool-to-bit" :dir :system)
 (include-book "kestrel/booleans/boolif-def" :dir :system)
 ;(local (include-book "../axe-rules-mixed")) ; drop?
@@ -246,7 +247,7 @@
                          (quotep k2)))
            (equal (bvuminus 32 (bvif 1 test k1 k2))
                   (bvif 32 test (bvuminus 32 (bvchop 1 k1)) (bvuminus 32 (bvchop 1 k2)))))
-  :hints (("Goal" :in-theory (enable bvif getbit))))
+  :hints (("Goal" :in-theory (enable bvif getbit boolor))))
 
 (defthm ifix-of-if
   (equal (ifix (if test x86 x86_2))
@@ -325,7 +326,7 @@
 ;; Shows that the division can't be too positive
 ;; todo: gen the 2 but watch for the one weird case
 (defthm not-sbvlt-64-of-2147483647-and-sbvdiv-64-of-bvsx-64-32
-  (not (sbvlt 64 2147483647 (sbvdiv 64 (bvsx 64 32 x) 2) ))
+  (not (sbvlt 64 2147483647 (sbvdiv 64 (bvsx 64 32 x) 2)))
   :hints (("Goal" :cases ((equal 0 (getbit 31 x)))
            :in-theory (e/d (sbvlt sbvdiv bvsx bvlt logext-cases bvcat logapp
                                   truncate-becomes-floor-gen

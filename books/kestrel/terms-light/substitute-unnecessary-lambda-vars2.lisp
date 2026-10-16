@@ -1,6 +1,6 @@
 ; Substituting lambda vars that only appear once
 ;
-; Copyright (C) 2024-2025 Kestrel Institute
+; Copyright (C) 2024-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -20,6 +20,7 @@
 (include-book "count-vars")
 (include-book "substitute-lambda-formals") ; for subst-formals-in-lambda-application; make those names more consistent
 (include-book "make-lambda-with-hint")
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/alists-light/pairlis-dollar" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/symbol-listp" :dir :system))
@@ -67,15 +68,15 @@
    (if (or (variablep term)
            (quotep term))
        term
-     ;;it's a function call (maybe a lambda application):
+     ;; it's a function call (maybe a lambda application):
      (let* ((args (fargs term))
             (args (substitute-unnecessary-lambda-vars-in-terms2 args print hands-off-fns)) ;process the args first
             (fn (ffn-symb term)))
        (if (consp fn) ;test for lambda application.  term is: ((lambda (formals) body) ... args ...)
            (let* ((formals (lambda-formals fn))
-                  (lambda-body (lambda-body fn))
+                  (body (lambda-body fn))
                   ;;apply recursively to the lambda body:
-                  (lambda-body (substitute-unnecessary-lambda-vars-in-term2 lambda-body print hands-off-fns))
+                  (body (substitute-unnecessary-lambda-vars-in-term2 body print hands-off-fns))
                   (formal-arg-alist (pairlis$ formals args)) ; todo: avoid consing?
                   ;; We try to substitute for a lambda var if:
                   ;; 1) It is not bound to itself (trivial formals
@@ -87,8 +88,10 @@
                   ;; and
                   ;; 4) It is bound to a term that does not mention any of the remaining non-trivial formals.
                   (non-trivial-formals (non-trivial-formals formals args))
-                  (formals-to-maybe-subst (vars-that-appear-only-once non-trivial-formals lambda-body))
-                  (formals-to-maybe-subst (formals-whose-args-call-none formals-to-maybe-subst (map-lookup-equal formals-to-maybe-subst formal-arg-alist) hands-off-fns))
+                  (formals-to-maybe-subst (vars-that-appear-only-once non-trivial-formals body))
+                  (formals-to-maybe-subst (formals-whose-args-call-none formals-to-maybe-subst
+                                                                        (map-lookup-equal formals-to-maybe-subst formal-arg-alist) ; todo: avoid consing?
+                                                                        hands-off-fns))
                   ;; (formals-to-drop (vars-expressible-without-clashes formals-to-maybe-subst formal-arg-alist non-trivial-formals)) ; would be ok to mention formals we are substituting?
                   ;; We can't subst for any formal whose arg mentions a non-trivial formal that remains:
                   ;(bad-arg-vars (set-difference-eq non-trivial-formals formals-to-maybe-subst))
@@ -101,8 +104,8 @@
                (declare (ignore formals-to-keep)) ; todo
                (if formals-to-subst
                    (progn$ (and print (cw "Will subst for ~x0 in lambda.~%" formals-to-subst))
-                           (subst-formals-in-lambda-application formals lambda-body args formals-to-subst))
-                 (cons-with-hint (make-lambda-with-hint formals lambda-body fn) args term))))
+                           (subst-formals-in-lambda-application formals body args formals-to-subst))
+                 (cons-with-hint (make-lambda-with-hint formals body fn) args term))))
          ;; not a lambda application, so just rebuild the function call:
          (cons-with-hint fn args term)))))
 
@@ -126,7 +129,7 @@
     :hints (("Goal" :induct (len terms)
              :in-theory (enable (:i len))))))
 
-(make-flag substitute-unnecessary-lambda-vars-in-term2)
+(local (make-flag substitute-unnecessary-lambda-vars-in-term2))
 
 (defthm-flag-substitute-unnecessary-lambda-vars-in-term2
   (defthm pseudo-termp-of-substitute-unnecessary-lambda-vars-in-term2

@@ -57,6 +57,7 @@
 (define tree-restrict
   ((keys treeset::treep)
    (tree treep))
+  (declare (xargs :type-prescription :none))
   :parents (implementation)
   :short "Take the restriction of a map treap under a key set treap."
   :long
@@ -79,7 +80,7 @@
            (let ((left (tree-restrict left (tree->left tree)))
                  (right (tree-restrict right (tree->right tree))))
              (if in
-                 (tree-node (tree->head tree) left right)
+                 (tree-node-with-hint (tree->head tree) left right tree)
                (mbe :logic (tree-join-at (tree-element->key (tree->head tree))
                                          left right)
                     :exec (tree-join left right))))))
@@ -117,8 +118,6 @@
                                            tree-element-p))))
 
 ;;;;;;;;;;;;;;;;;;;;
-
-(in-theory (disable (:t tree-restrict)))
 
 (defrule tree-restrict-type-prescription
   (or (consp (tree-restrict keys tree))
@@ -277,7 +276,7 @@
                       (right (acl2-number-tree-restrict right
                                                         (tree->right tree))))
                   (if in
-                      (tree-node (tree->head tree) left right)
+                      (tree-node-with-hint (tree->head tree) left right tree)
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)
@@ -335,7 +334,7 @@
                       (right (symbol-tree-restrict right
                                                         (tree->right tree))))
                   (if in
-                      (tree-node (tree->head tree) left right)
+                      (tree-node-with-hint (tree->head tree) left right tree)
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)
@@ -393,7 +392,7 @@
                       (right (eqlable-tree-restrict right
                                                         (tree->right tree))))
                   (if in
-                      (tree-node (tree->head tree) left right)
+                      (tree-node-with-hint (tree->head tree) left right tree)
                     (tree-join left right)))))
              (t
               (mv-let (assoc left right)

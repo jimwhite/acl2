@@ -14,8 +14,10 @@
 (include-book "grammar")
 (include-book "concrete-syntax-trees")
 (include-book "extra-grammatical-restrictions")
+(include-book "parsing")
 (include-book "parser")
 (include-book "post-parsing")
+(include-book "lexicon")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -41,10 +43,17 @@
      @(tsee concrete-syntax-trees).  During parsing some side conditions
      such as ``[SC1] max-munch tokenization'' are enforced.")
    (xdoc::p
-    "The remaining side conditions are enforced by @(tsee post-parsing)."))
+    "The remaining side conditions are enforced by @(tsee post-parsing).")
+   (xdoc::p
+    "We have started formalizing the @(see lexicon)
+     of a new precise definition of the Remora syntax that is being developed.
+     This is not expected to differ significantly from the current syntax,
+     but it will be more precisely defined."))
   :order-subtopics (; we may want to elaborate on unicode-characters
                     grammar
                     concrete-syntax-trees
                     extra-grammatical-restrictions
+                    parsing
                     parser
-                    post-parsing))
+                    post-parsing
+                    lexicon))

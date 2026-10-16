@@ -16,12 +16,14 @@
 (include-book "rightrotate")
 (include-book "rightrotate32")
 (include-book "bvif")
-(include-book "bvminus") ;todo
+(include-book "bvminus-def")
+(include-book "bvplus-def")
 (include-book "kestrel/arithmetic-light/lg-def" :dir :system)
 (local (include-book "kestrel/arithmetic-light/lg" :dir :system))
 (local (include-book "unsigned-byte-p"))
 (local (include-book "bvcat"))
 (local (include-book "slice"))
+(local (include-book "bvminus"))
 (local (include-book "kestrel/arithmetic-light/mod" :dir :system))
 (local (include-book "kestrel/arithmetic-light/mod-and-expt" :dir :system))
 (local (include-book "kestrel/arithmetic-light/minus" :dir :system))
@@ -403,7 +405,7 @@
 
 ;; When the shift amount is not a constant, split into possible cases.  We
 ;; expect leftrotate-unroller-opener to fire next.
-;; This one puts a MOD around the amt.
+;; This one requires showing that (<= amt width).
 ;todo: compare to the rule just below
 (defthmd leftrotate-becomes-leftrotate-unroller
   (implies (and (syntaxp (and (not (quotep amt)) ; avoids loops, goal is to make all amounts be quoteps
@@ -416,7 +418,7 @@
                                        width amt val)))
   :hints (("Goal" :in-theory (enable leftrotate-unroller-intro-helper))))
 
-;; This one requires showing that (<= amt width).
+;; This one puts a MOD around the amt.
 ;; When the shift amount is not a constant, split into possible cases.  We
 ;; expect leftrotate-unroller-opener to fire next.  TODO: Do we need cases for
 ;; both the shift amount itself and 0?

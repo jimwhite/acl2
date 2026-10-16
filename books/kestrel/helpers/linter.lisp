@@ -91,6 +91,8 @@
 (include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (include-book "kestrel/world-light/fn-primitivep" :dir :system)
 (include-book "kestrel/world-light/defs-in-world" :dir :system)
+(include-book "kestrel/terms-light/make-conjunction-from-list" :dir :system)
+(local (include-book "tools/flag" :dir :system))
 (local (include-book "kestrel/typed-lists-light/pseudo-term-listp" :dir :system))
 (local (include-book "kestrel/lists-light/union-equal" :dir :system))
 
@@ -945,7 +947,7 @@
      (union-equal (non-variable-subterms (first terms))
                   (non-variable-subterms-list (rest terms))))))
 
-(make-flag non-variable-subterms)
+(local (make-flag non-variable-subterms))
 
 (defthm-flag-non-variable-subterms
   (defthm pseudo-term-listp-of-non-variable-subterms
@@ -997,7 +999,7 @@
        ((mv erp res state)
         (prove$ body-with-replacement :step-limit step-limit :ignore-ok t))
        ((when erp)
-        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        (er hard? 'try-replacing-subterm "Error trying to generalize ~s0." ctx)
         state)
        ((when res)
         (cw "~%   body can be generalized by replacing ~x0 with a fresh variable." subterm)
@@ -1013,7 +1015,7 @@
        ((mv erp res state)
         (prove$ `(implies ,subterm-type-assumption ,body-with-replacement) :step-limit step-limit :ignore-ok t))
        ((when erp)
-        (er hard? 'try-replacing-each-subterm "Error trying to generalize ~s0." ctx)
+        (er hard? 'try-replacing-subterm "Error trying to generalize ~s0." ctx)
         state)
        (- (and res (cw "~%   body can be generalized by replacing ~x0 with a fresh variable, ~x1, satisfying ~x2."
                        subterm new-var

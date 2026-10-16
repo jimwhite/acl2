@@ -1,7 +1,7 @@
 ; A lightweight book about the built-in function remove-assoc-equal
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -126,4 +126,14 @@
   (equal (remove-assoc-equal x (append alist1 alist2))
          (append (remove-assoc-equal x alist1)
                  (remove-assoc-equal x alist2)))
+  :hints (("Goal" :in-theory (enable remove-assoc-equal))))
+
+;; The syntaxp hyp defeats ACL2's match of the CONS term with a constant
+(defthm remove-assoc-equal-of-cons
+  (implies (syntaxp (not (and (quotep pair)
+                              (quotep alist))))
+           (equal (remove-assoc-equal key (cons pair alist))
+                  (if (equal key (car pair))
+                      (remove-assoc-equal key alist)
+                    (cons pair (remove-assoc-equal key alist)))))
   :hints (("Goal" :in-theory (enable remove-assoc-equal))))

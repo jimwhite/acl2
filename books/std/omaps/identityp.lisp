@@ -5,6 +5,7 @@
 ; License: A 3-clause BSD license. See the LICENSE file distributed with ACL2.
 ;
 ; Author: Quan Luu (quan.luu@kestrel.edu)
+; Contributing Author: Alessandro Coglio (www.alessandrocoglio.info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -34,7 +35,7 @@
       (mv-let (k v) (head x)
         (and (equal k v)
              (identityp (tail x)))))
-  
+
   ///
 
   (defcong mequiv equal (identityp x) 1)
@@ -94,12 +95,43 @@
     :enable (compose-is-restrict-when-Y-identityp-helper
              extensionality))
 
+  (defruled compose-when-identityp-left
+    (implies (and (identityp x)
+                  (set::subset (values y) (keys x)))
+             (equal (compose x y) (mfix y)))
+    :enable (extensionality
+             assoc-of-compose
+             assoc-when-identityp
+             cons-of-key-and-cdr-assoc
+             assoc-to-in-of-keys
+             set::expensive-rules)
+    :disable identityp)
+
   (defruled self-compose-is-self-when-identityp
       (implies (identityp x)
                (equal (compose x x)
                       (mfix x)))
     :enable (extensionality
-             assoc-of-compose)))
+             assoc-of-compose))
+
+  (defruled lookup-when-identityp
+    (implies (and (identityp map)
+                  (set::in key (keys map)))
+             (equal (lookup key map)
+                    key))
+    :induct t
+    :enable lookup)
+
+  (defruled lookup*-when-identityp
+    (implies (and (identityp map)
+                  (set::subset keys (keys map)))
+             (equal (lookup* keys map)
+                    (set::sfix keys)))
+    :induct (lookup* keys map)
+    :enable (lookup*
+             lookup-when-identityp
+             assoc-to-in-of-keys
+             set::expensive-rules)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -171,6 +203,16 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defsection identityp-ext
+  :extension identityp
+
+  (defrule identityp-of-update-same
+    (implies (identityp map)
+             (identityp (update k k map)))
+    :enable (pick-a-point-identityp
+             assoc-when-identityp)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-theory (disable values-is-keys-when-identityp
                     assoc-when-identityp))
-

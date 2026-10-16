@@ -753,6 +753,11 @@
     (equal (consp (assoc key map))
            (and (assoc key map) t)))
 
+  (defrule car-of-assoc-when-assoc
+    (implies (assoc key map)
+             (equal (car (assoc key map)) key))
+    :induct t)
+
   (defrule assoc-of-head
     (iff (assoc (mv-nth 0 (head map)) map)
          (not (emptyp map))))
@@ -1072,7 +1077,22 @@
     (implies (emptyp map)
              (equal (lookup* keys map)
                     nil))
-    :induct t))
+    :induct t)
+
+  (defruled lookup-in-lookup*-when-in
+    (implies (and (set::in key keys)
+                  (assoc key map))
+             (set::in (lookup key map) (lookup* keys map)))
+    :induct (lookup* keys map)
+    :enable (lookup* set::in))
+
+  (defruled lookup*-of-insert
+    (equal (lookup* (set::insert key keys) map)
+           (if (assoc key map)
+               (set::insert (lookup key map) (lookup* keys map))
+             (lookup* keys map)))
+    :induct (set::insert key keys)
+    :enable (lookup* lookup-in-lookup*-when-in)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1216,53 +1236,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(define restrict ((keys set::setp) (map mapp))
-  :returns (map1 mapp)
-  :short "Restrict an omap to a set of keys."
-  :long
-  (xdoc::topstring-p
-   "This drops all the keys of the omap
-    that are not in the given set of keys.")
-  (cond ((emptyp map) nil)
-        (t (mv-let (key val)
-             (head map)
-             (if (set::in key keys)
-                 (update key val (restrict keys (tail map)))
-               (restrict keys (tail map))))))
-  :verify-guards :after-returns
-
-  ///
-
-  (defcong mequiv equal (restrict keys map) 2
-    :hints (("Goal" :induct t
-                    :in-theory (e/d (restrict) (mequiv)))))
-
-  (defrule restrict-when-left-emptyp
-    (implies (set::emptyp keys)
-             (equal (restrict keys map) nil))
-    :rule-classes (:rewrite :type-prescription)
-    :induct t
-    :enable set::emptyp)
-
-  (defrule restrict-when-right-emptyp
-    (implies (emptyp map)
-             (equal (restrict keys map) nil))
-    :rule-classes (:rewrite :type-prescription))
-
-  (defruled assoc-of-restrict
-    (equal (assoc key (restrict keys map))
-           (and (set::in key keys)
-                (assoc key map)))
-    :induct t)
-
-  (defruled assoc-of-restrict-when-in-keys
-    (implies (set::in key keys)
-             (equal (assoc key (restrict keys map))
-                    (assoc key map)))
-    :induct t))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (define keys ((map mapp))
   :returns (keys set::setp
                  :hints (("Goal"
@@ -1366,6 +1339,77 @@
     :induct t
     :enable update*)
 
+  (defrule head-key-not-in-keys-of-tail
+    (not (set::in (mv-nth 0 (head map))
+                  (keys (tail map))))
+    :enable in-of-keys-to-assoc)
+
+  (defruled in*-alt-def
+    (equal (in* keys map)
+           (set::subset keys (keys map)))
+    :induct t
+    :enable (in* assoc-to-in-of-keys set::subset))
+
+  (defruled in-keys-when-in-rlookup
+    (implies (set::in x (rlookup y map))
+             (set::in x (keys map)))
+    :induct t
+    :enable rlookup
+    :disable keys)
+
+  (defrule rlookup-subset-keys
+    (set::subset (rlookup y map) (keys map))
+    :enable (set::expensive-rules
+             in-keys-when-in-rlookup)
+    :disable keys))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define restrict ((keys set::setp) (map mapp))
+  :returns (map1 mapp)
+  :short "Restrict an omap to a set of keys."
+  :long
+  (xdoc::topstring-p
+   "This drops all the keys of the omap
+    that are not in the given set of keys.")
+  (cond ((emptyp map) nil)
+        (t (mv-let (key val)
+             (head map)
+             (if (set::in key keys)
+                 (update key val (restrict keys (tail map)))
+               (restrict keys (tail map))))))
+  :verify-guards :after-returns
+
+  ///
+
+  (defcong mequiv equal (restrict keys map) 2
+    :hints (("Goal" :induct t
+                    :in-theory (e/d (restrict) (mequiv)))))
+
+  (defrule restrict-when-left-emptyp
+    (implies (set::emptyp keys)
+             (equal (restrict keys map) nil))
+    :rule-classes (:rewrite :type-prescription)
+    :induct t
+    :enable set::emptyp)
+
+  (defrule restrict-when-right-emptyp
+    (implies (emptyp map)
+             (equal (restrict keys map) nil))
+    :rule-classes (:rewrite :type-prescription))
+
+  (defruled assoc-of-restrict
+    (equal (assoc key (restrict keys map))
+           (and (set::in key keys)
+                (assoc key map)))
+    :induct t)
+
+  (defruled assoc-of-restrict-when-in-keys
+    (implies (set::in key keys)
+             (equal (assoc key (restrict keys map))
+                    (assoc key map)))
+    :induct t)
+
   (defrule keys-of-restrict
     (equal (keys (restrict keys map))
            (set::intersect keys (keys map)))
@@ -1376,23 +1420,18 @@
        (implies (set::in x (keys (restrict keys map)))
                 (set::in x (keys map)))
        :induct t
-       :enable restrict)
+       :enable keys)
      (defrule lemma2
        (implies (set::in x (keys (restrict keys map)))
                 (set::in x keys))
        :induct t
-       :enable restrict)
+       :enable keys)
      (defrule lemma3
        (implies (and (set::in x (keys map))
                      (set::in x keys))
                 (set::in x (keys (restrict keys map))))
        :induct t
-       :enable restrict)))
-
-  (defrule head-key-not-in-keys-of-tail
-    (not (set::in (mv-nth 0 (head map))
-                  (keys (tail map))))
-    :enable in-of-keys-to-assoc))
+       :enable keys))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1423,6 +1462,19 @@
              (set::in b (values m)))
     :induct t)
 
+  (defrule cdr-assoc-in-values
+    (implies (assoc key map)
+             (set::in (cdr (assoc key map))
+                      (values map)))
+    :induct t)
+
+  (defrule lookup-in-values-when-in-keys
+    (implies (set::in key (keys map))
+             (set::in (lookup key map)
+                      (values map)))
+    :enable lookup
+    :disable values)
+
   (defrule values-of-update-when-not-assoc
     (implies (not (consp (assoc key map)))
              (equal (values (update key val map))
@@ -1435,6 +1487,19 @@
     :induct t
     :enable (keys values set::expensive-rules)
     :rule-classes :linear)
+
+  (defruled in-values-when-in-lookup*
+    (implies (set::in x (lookup* keys map))
+             (set::in x (values map)))
+    :induct t
+    :enable (lookup*
+             lookup))
+
+  (defrule lookup*-subset-values
+    (set::subset (lookup* keys map)
+                 (values map))
+    :induct t
+    :enable (lookup* lookup))
 
   (defruled rlookup-to-in-of-values
     (equal (set::emptyp (rlookup v x))

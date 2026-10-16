@@ -62,16 +62,18 @@
          (mv-let (in left right)
                  (tree-split (tree-element->val (tree->head y)) x)
            (declare (ignore in))
-           (tree-node (tree->head y)
-                      (tree-union left (tree->left y))
-                      (tree-union right (tree->right y)))))
+           (tree-node-with-hint (tree->head y)
+                                (tree-union left (tree->left y))
+                                (tree-union right (tree->right y))
+                                y)))
         (t
          (mv-let (in left right)
                  (tree-split (tree-element->val (tree->head x)) y)
            (declare (ignore in))
-           (tree-node (tree->head x)
-                      (tree-union (tree->left x) left)
-                      (tree-union (tree->right x) right)))))
+           (tree-node-with-hint (tree->head x)
+                                (tree-union (tree->left x) left)
+                                (tree-union (tree->right x) right)
+                                x))))
   :measure (+ (acl2-count x)
               (acl2-count y))
   :verify-guards :after-returns)
@@ -111,14 +113,13 @@
   :enable tree-union)
 
 (defrule tree-in-of-tree-union
-  (implies (and (bstp x)
-                (bstp y))
-           (equal (tree-in a (tree-union x y))
-                  (or (tree-in a x)
-                      (tree-in a y))))
-  :induct t
+  (equal (tree-in a (tree-union x y))
+         (or (tree-in a x)
+             (tree-in a y)))
+  :induct (tree-union x y)
   :enable (tree-union
-           data::<<-rules))
+           tree-in-when-not-tree-in-of-tree-split.right-and-left
+           acl2::equal-of-booleans-cheap))
 
 ;;;;;;;;;;;;;;;;;;;;
 
@@ -190,17 +191,21 @@
                       (acl2-number-tree-split
                         (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
-                (tree-node (tree->head y)
-                           (acl2-number-tree-union left (tree->left y))
-                           (acl2-number-tree-union right (tree->right y)))))
+                (tree-node-with-hint
+                  (tree->head y)
+                  (acl2-number-tree-union left (tree->left y))
+                  (acl2-number-tree-union right (tree->right y))
+                  y)))
              (t
               (mv-let (in left right)
                       (acl2-number-tree-split
                         (tree-element->val (tree->head x)) y)
                 (declare (ignore in))
-                (tree-node (tree->head x)
-                           (acl2-number-tree-union (tree->left x) left)
-                           (acl2-number-tree-union (tree->right x) right))))))
+                (tree-node-with-hint
+                  (tree->head x)
+                  (acl2-number-tree-union (tree->left x) left)
+                  (acl2-number-tree-union (tree->right x) right)
+                  x)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-union
                                            acl2-number-tree-union
@@ -222,17 +227,19 @@
                       (symbol-tree-split
                         (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
-                (tree-node (tree->head y)
-                           (symbol-tree-union left (tree->left y))
-                           (symbol-tree-union right (tree->right y)))))
+                (tree-node-with-hint (tree->head y)
+                                     (symbol-tree-union left (tree->left y))
+                                     (symbol-tree-union right (tree->right y))
+                                     y)))
              (t
               (mv-let (in left right)
                       (symbol-tree-split
                         (tree-element->val (tree->head x)) y)
                 (declare (ignore in))
-                (tree-node (tree->head x)
-                           (symbol-tree-union (tree->left x) left)
-                           (symbol-tree-union (tree->right x) right))))))
+                (tree-node-with-hint (tree->head x)
+                                     (symbol-tree-union (tree->left x) left)
+                                     (symbol-tree-union (tree->right x) right)
+                                     x)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-union
                                            symbol-tree-union
@@ -254,17 +261,19 @@
                       (eqlable-tree-split
                         (tree-element->val (tree->head y)) x)
                 (declare (ignore in))
-                (tree-node (tree->head y)
-                           (eqlable-tree-union left (tree->left y))
-                           (eqlable-tree-union right (tree->right y)))))
+                (tree-node-with-hint (tree->head y)
+                                     (eqlable-tree-union left (tree->left y))
+                                     (eqlable-tree-union right (tree->right y))
+                                     y)))
              (t
               (mv-let (in left right)
                       (eqlable-tree-split
                         (tree-element->val (tree->head x)) y)
                 (declare (ignore in))
-                (tree-node (tree->head x)
-                           (eqlable-tree-union (tree->left x) left)
-                           (eqlable-tree-union (tree->right x) right))))))
+                (tree-node-with-hint (tree->head x)
+                                     (eqlable-tree-union (tree->left x) left)
+                                     (eqlable-tree-union (tree->right x) right)
+                                     x)))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-union
                                            eqlable-tree-union

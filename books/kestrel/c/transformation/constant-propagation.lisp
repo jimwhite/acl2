@@ -988,7 +988,9 @@
                       env))
         :union (b* (((mv spec env)
                      (const-prop-struni-spec tyspec.spec env)))
-                 (mv (type-spec-union spec) env))
+                 (mv (c$::make-type-spec-union :spec spec
+                                               :info nil)
+                     env))
         :enum (b* (((mv spec env)
                     (const-prop-enum-spec tyspec.spec env)))
                 (mv (type-spec-enum spec) env))
@@ -1071,10 +1073,12 @@
         alignspec
         :alignas-type (b* (((mv type env)
                             (const-prop-tyname alignspec.type env)))
-                        (mv (align-spec-alignas-type type) env))
+                        (mv (align-spec-alignas-type alignspec.uscore type)
+                            env))
         :alignas-expr (b* (((mv expr env)
                             (const-prop-const-expr alignspec.expr env)))
-                        (mv (align-spec-alignas-expr expr) env))
+                        (mv (align-spec-alignas-expr alignspec.uscore expr)
+                            env))
         :alignas-ambig (prog2$ (raise "Misusage error: ~x0."
                                       (align-spec-fix alignspec))
                                (mv (align-spec-fix alignspec) env))))
@@ -1474,8 +1478,11 @@
                            env))
         :abstract (b* (((mv unwrap env)
                         (const-prop-absdeclor paramdeclor.declor env)))
-                    (mv (param-declor-abstract unwrap) env))
-        :none (mv (param-declor-none) env)
+                    (mv (make-param-declor-abstract
+                         :declor unwrap
+                         :info paramdeclor.info)
+                        env))
+        :none (mv (param-declor-none paramdeclor.info) env)
         :ambig (prog2$ (raise "Misusage error: ~x0."
                               (param-declor-fix paramdeclor))
                        (mv (param-declor-fix paramdeclor)
@@ -1576,7 +1583,8 @@
           (const-prop-const-expr-option structdeclor.expr? env)))
       (mv (make-struct-declor
             :declor? declor?
-            :expr? expr?)
+            :expr? expr?
+            :info structdeclor.info)
           env))
     :measure (struct-declor-count structdeclor))
 
@@ -1657,6 +1665,7 @@
          ((mv test env)
           (const-prop-const-expr statassert.test env)))
       (mv (make-statassert
+            :uscore statassert.uscore
             :test test
             :message statassert.message)
           env))

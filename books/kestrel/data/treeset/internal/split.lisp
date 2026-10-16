@@ -12,6 +12,7 @@
 (include-book "std/util/defrule" :dir :system)
 
 (include-book "kestrel/data/utilities/total-order/total-order-defs" :dir :system)
+(include-book "kestrel/data/utilities/total-order/compare-defs" :dir :system)
 
 (include-book "tree-defs")
 (include-book "rotate-defs")
@@ -56,41 +57,47 @@
   :returns (mv (in booleanp :rule-classes :type-prescription)
                (left treep)
                (right treep))
-  (cond ((tree-empty-p tree)
-         (mv nil nil nil))
-        ((equal x (tree-element->val (tree->head tree)))
-         (mv t (tree->left tree) (tree->right tree)))
-        ((<< x (tree-element->val (tree->head tree)))
-         ;; Interpret as a tree-node (use x instead of in)
-         ;; (may violate heapp)
-         (mv-let (in left$ right$)
-                 (tree-split x (tree->left tree))
-           (mbe :logic (let ((tree$ (rotate-right
-                                      (tree-node (tree->head tree)
-                                                 (tree-node x left$ right$)
-                                                 (tree->right tree)))))
-                         (mv in (tree->left tree$) (tree->right tree$)))
-                ;; TODO: not clear this isn't simpler than the :logic branch
-                ;; Also not clear whether the compiler couldn't just make this
-                ;;   simplification (since rotate is inlined).
-                :exec (mv in
-                          left$
-                          (tree-node (tree->head tree)
-                                     right$
-                                     (tree->right tree))))))
-        (t
-         (mv-let (in left$ right$)
-                 (tree-split x (tree->right tree))
-           (mbe :logic (let ((tree$ (rotate-left
-                                      (tree-node (tree->head tree)
-                                                 (tree->left tree)
-                                                 (tree-node x left$ right$)))))
-                         (mv in (tree->left tree$) (tree->right tree$)))
-                :exec (mv in
-                          (tree-node (tree->head tree)
-                                     (tree->left tree)
-                                     left$)
-                          right$)))))
+  (if (tree-empty-p tree)
+      (mv nil nil nil)
+    (mv-let (equalp ltp)
+            (data::compare-<< x (tree-element->val (tree->head tree)))
+      (cond (equalp
+             (mv t (tree->left tree) (tree->right tree)))
+            (ltp
+             ;; Interpret as a tree-node (use x instead of in)
+             ;; (may violate heapp)
+             (mv-let (in left$ right$)
+                     (tree-split x (tree->left tree))
+               (mbe :logic (let ((tree$ (rotate-right
+                                          (tree-node (tree->head tree)
+                                                     (tree-node x left$ right$)
+                                                     (tree->right tree)))))
+                             (mv in (tree->left tree$) (tree->right tree$)))
+                    ;; TODO: not clear this isn't simpler than the :logic
+                    ;; branch. Also not clear whether the compiler couldn't
+                    ;; just make this simplification (since rotate is
+                    ;; inlined).
+                    :exec (mv in
+                              left$
+                              (tree-node-with-hint (tree->head tree)
+                                                   right$
+                                                   (tree->right tree)
+                                                   tree)))))
+            (t
+             (mv-let (in left$ right$)
+                     (tree-split x (tree->right tree))
+               (mbe :logic (let ((tree$ (rotate-left
+                                          (tree-node
+                                            (tree->head tree)
+                                            (tree->left tree)
+                                            (tree-node x left$ right$)))))
+                             (mv in (tree->left tree$) (tree->right tree$)))
+                    :exec (mv in
+                              (tree-node-with-hint (tree->head tree)
+                                                   (tree->left tree)
+                                                   left$
+                                                   tree)
+                              right$)))))))
   :verify-guards :after-returns)
 
 ;;;;;;;;;;;;;;;;;;;;
@@ -234,7 +241,7 @@
   :induct t
   :enable tree-split)
 
-(defruled <<-all-r-when-<<-all-l-of-arg1-and-tree-split.left-and-tree-split.right
+(defruled <<-all-r-when-<<-all-r-of-arg1-and-tree-split.left-and-tree-split.right
   (implies (and (<<-all-r x (mv-nth 1 (tree-split y tree)))
                 (<<-all-r x (mv-nth 2 (tree-split y tree)))
                 (<< x y))
@@ -384,6 +391,17 @@
 
 ;;;;;;;;;;;;;;;;;;;;
 
+(defruled tree-in-when-not-tree-in-of-tree-split.right-and-left
+  (implies (and (not (tree-in x (mv-nth 2 (tree-split y tree))))
+                (not (tree-in x (mv-nth 1 (tree-split y tree)))))
+           (equal (tree-in x tree)
+                  (and (equal x y)
+                       (mv-nth 0 (tree-split y tree)))))
+  :induct (tree-split y tree)
+  :enable tree-split)
+
+;;;;;;;;;;;;;;;;;;;;
+
 ;; TODO: useful?
 (defruled tree-in-becomes-tree-in-of-tree-split
   (equal (tree-in x tree)
@@ -452,7 +470,7 @@
   :induct t
   :enable tree-split)
 
-(defrule tree-empty-p-of-tree-split.right-when-<<-all-r
+(defrule tree-empty-p-of-tree-split.right-when-<<-all-l
   (implies (<<-all-l tree x)
            (tree-empty-p (mv-nth 2 (tree-split x tree))))
   :induct t
@@ -619,26 +637,32 @@
    (tree acl2-number-treep))
   (mbe :logic (tree-split x tree)
        :exec
-       (cond ((tree-empty-p tree)
-              (mv nil nil nil))
-             ((= x (tree-element->val (tree->head tree)))
-              (mv t (tree->left tree) (tree->right tree)))
-             ((data::acl2-number-<< x (tree-element->val (tree->head tree)))
-              (mv-let (in left$ right$)
-                      (acl2-number-tree-split x (tree->left tree))
-                (mv in
-                    left$
-                    (tree-node (tree->head tree)
-                               right$
-                               (tree->right tree)))))
-             (t
-              (mv-let (in left$ right$)
-                      (acl2-number-tree-split x (tree->right tree))
-                (mv in
-                    (tree-node (tree->head tree)
-                               (tree->left tree)
-                               left$)
-                    right$)))))
+       (if (tree-empty-p tree)
+           (mv nil nil nil)
+         (mv-let (equalp ltp)
+                 (data::acl2-number-compare-<<
+                   x
+                   (tree-element->val (tree->head tree)))
+           (cond (equalp
+                  (mv t (tree->left tree) (tree->right tree)))
+                 (ltp
+                  (mv-let (in left$ right$)
+                          (acl2-number-tree-split x (tree->left tree))
+                    (mv in
+                        left$
+                        (tree-node-with-hint (tree->head tree)
+                                             right$
+                                             (tree->right tree)
+                                             tree))))
+                 (t
+                  (mv-let (in left$ right$)
+                          (acl2-number-tree-split x (tree->right tree))
+                    (mv in
+                        (tree-node-with-hint (tree->head tree)
+                                             (tree->left tree)
+                                             left$
+                                             tree)
+                        right$)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
                                            acl2-number-tree-split
@@ -651,26 +675,31 @@
    (tree symbol-treep))
   (mbe :logic (tree-split x tree)
        :exec
-       (cond ((tree-empty-p tree)
-              (mv nil nil nil))
-             ((eq x (tree-element->val (tree->head tree)))
-              (mv t (tree->left tree) (tree->right tree)))
-             ((data::symbol-<< x (tree-element->val (tree->head tree)))
-              (mv-let (in left$ right$)
-                      (symbol-tree-split x (tree->left tree))
-                (mv in
-                    left$
-                    (tree-node (tree->head tree)
-                               right$
-                               (tree->right tree)))))
-             (t
-              (mv-let (in left$ right$)
-                      (symbol-tree-split x (tree->right tree))
-                (mv in
-                    (tree-node (tree->head tree)
-                               (tree->left tree)
-                               left$)
-                    right$)))))
+       (if (tree-empty-p tree)
+           (mv nil nil nil)
+         (mv-let (equalp ltp)
+                 (data::symbol-compare-<< x
+                                          (tree-element->val (tree->head tree)))
+           (cond (equalp
+                  (mv t (tree->left tree) (tree->right tree)))
+                 (ltp
+                  (mv-let (in left$ right$)
+                          (symbol-tree-split x (tree->left tree))
+                    (mv in
+                        left$
+                        (tree-node-with-hint (tree->head tree)
+                                             right$
+                                             (tree->right tree)
+                                             tree))))
+                 (t
+                  (mv-let (in left$ right$)
+                          (symbol-tree-split x (tree->right tree))
+                    (mv in
+                        (tree-node-with-hint (tree->head tree)
+                                             (tree->left tree)
+                                             left$
+                                             tree)
+                        right$)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
                                            symbol-tree-split
@@ -683,26 +712,32 @@
    (tree eqlable-treep))
   (mbe :logic (tree-split x tree)
        :exec
-       (cond ((tree-empty-p tree)
-              (mv nil nil nil))
-             ((eql x (tree-element->val (tree->head tree)))
-              (mv t (tree->left tree) (tree->right tree)))
-             ((data::eqlable-<< x (tree-element->val (tree->head tree)))
-              (mv-let (in left$ right$)
-                      (eqlable-tree-split x (tree->left tree))
-                (mv in
-                    left$
-                    (tree-node (tree->head tree)
-                               right$
-                               (tree->right tree)))))
-             (t
-              (mv-let (in left$ right$)
-                      (eqlable-tree-split x (tree->right tree))
-                (mv in
-                    (tree-node (tree->head tree)
-                               (tree->left tree)
-                               left$)
-                    right$)))))
+       (if (tree-empty-p tree)
+           (mv nil nil nil)
+         (mv-let (equalp ltp)
+                 (data::eqlable-compare-<<
+                   x
+                   (tree-element->val (tree->head tree)))
+           (cond (equalp
+                  (mv t (tree->left tree) (tree->right tree)))
+                 (ltp
+                  (mv-let (in left$ right$)
+                          (eqlable-tree-split x (tree->left tree))
+                    (mv in
+                        left$
+                        (tree-node-with-hint (tree->head tree)
+                                             right$
+                                             (tree->right tree)
+                                             tree))))
+                 (t
+                  (mv-let (in left$ right$)
+                          (eqlable-tree-split x (tree->right tree))
+                    (mv in
+                        (tree-node-with-hint (tree->head tree)
+                                             (tree->left tree)
+                                             left$
+                                             tree)
+                        right$)))))))
   :enabled t
   :guard-hints (("Goal" :in-theory (enable tree-split
                                            eqlable-tree-split
@@ -719,7 +754,7 @@
     <<-all-r-of-arg1-and-tree-split.left-when-<<-all-r
     <<-all-r-of-arg1-and-tree-split.right-when-<<-all-r
     <<-all-l-when-<<-all-l-of-tree-split.left-and-tree-split.right
-    <<-all-r-when-<<-all-l-of-arg1-and-tree-split.left-and-tree-split.right
+    <<-all-r-when-<<-all-r-of-arg1-and-tree-split.left-and-tree-split.right
     heap<-all-l-of-tree-split.left-when-heap<-all-l
     heap<-all-l-of-tree-split.right-when-heap<-all-l
     heap<-all-l-when-heap<-all-l-of-tree-split.left-and-tree-split.right

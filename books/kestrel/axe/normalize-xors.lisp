@@ -39,6 +39,7 @@
 (include-book "translation-array")
 (include-book "merge-sort-less-than")
 (include-book "kestrel/typed-lists-light/decreasingp" :dir :system)
+(include-book "kestrel/typed-lists-light/all-less-than-or-equal-def" :dir :system)
 (local (include-book "rational-lists"))
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/nth" :dir :system))
@@ -51,6 +52,7 @@
 (local (include-book "kestrel/typed-lists-light/all-integerp" :dir :system)) ;drop?
 (local (include-book "kestrel/typed-lists-light/nat-listp" :dir :system))
 (local (include-book "kestrel/typed-lists-light/rational-listp" :dir :system))
+(local (include-book "kestrel/typed-lists-light/all-less-than-or-equal" :dir :system))
 (local (include-book "kestrel/arithmetic-light/plus" :dir :system))
 (local (include-book "kestrel/arithmetic-light/natp" :dir :system))
 (local (include-book "kestrel/arithmetic-light/types" :dir :system))
@@ -75,10 +77,8 @@
                         darg-listp-when-not-consp
                            ;; for speed:
                         all-<=-when-not-consp
-                        ALL-<-TRANSITIVE-FREE
                         NOT-<-OF-NTH-OF-DARGS-OF-AREF1-WHEN-PSEUDO-DAG-ARRAYP-2
                         <=-of-nth-when-all-<= ;disable globally?
-                        rational-listp
                         strip-cdrs
                         ifix ; avoid case splits
                         RATIONAL-LISTP MAXELEM ;prevent inductions
@@ -115,12 +115,13 @@
   (equal (integer-listp x)
          (and (all-integerp x)
               (true-listp x)))
-  :hints (("Goal" :in-theory (enable integer-listp all-integerp))))
+  :hints (("Goal" :induct t
+           :in-theory (enable integer-listp all-integerp))))
 
 ;move
 (local
  ;; try last?
- (defthm natp-of-+-of-when-integerp
+ (defthm natp-of-+-of---when-integerp
    (implies (integerp (+ (- x) y))
             (equal (natp (+ (- x) y))
                    (<= x y)))
@@ -256,7 +257,8 @@
              (and (increasingp x)
                   (increasingp y)
                   (< (car (last x)) (car y))))))
-  :hints (("Goal" :in-theory (enable increasingp))))
+  :hints (("Goal" :induct t
+           :in-theory (enable increasingp))))
 
 (defthm increasingp-of-reverse-list
   (equal (increasingp (reverse-list x))
@@ -632,8 +634,9 @@
                    t))
             (all-<= (mv-nth 0 (bitxor-nest-leaves-aux pending-list dag-array-name dag-array dag-len acc accumulated-constant))
                     bound))
-   :hints (("Goal" :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep <=-of-nth-when-all-<= all-<=-when-<=-and-decreasingp)
-                                   (pseudo-dag-arrayp quotep))))))
+   :hints (("Goal" :induct t
+            :in-theory (e/d (bitxor-nest-leaves-aux all-myquotep <=-of-nth-when-all-<= all-<=-when-<=-and-decreasingp)
+                            (pseudo-dag-arrayp quotep))))))
 
 (defthm all-<=-of-+-of--1
   (implies (and (all-integerp acc)

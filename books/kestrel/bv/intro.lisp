@@ -14,7 +14,8 @@
 (include-book "bvor-def")
 (include-book "bvxor-def")
 (include-book "bvplus-def")
-(include-book "bvminus")
+(include-book "bvuminus-def")
+(include-book "bvminus-def")
 (include-book "bv-syntax")
 (include-book "bvcat-def")
 (include-book "bvsx-def")
@@ -26,6 +27,7 @@
 (local (include-book "kestrel/arithmetic-light/times" :dir :system))
 (local (include-book "kestrel/arithmetic-light/expt" :dir :system))
 (local (include-book "bvand"))
+(local (include-book "bvminus"))
 (local (include-book "bvor"))
 (local (include-book "logxor-b"))
 (local (include-book "logior-b"))
@@ -114,7 +116,7 @@
 ;; We only need to get the size of one argument for logand
 (defthmd logand-becomes-bvand
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-                (unsigned-byte-p-forced size x)
+                (force (unsigned-byte-p-forced size x))
                 (integerp y))
            (equal (logand x y)
                   (bvand size x y)))
@@ -122,7 +124,7 @@
 
 (defthmd logand-becomes-bvand-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p-forced size y)
+                (force (unsigned-byte-p-forced size y))
                 (integerp x))
            (equal (logand x y)
                   (bvand size x y)))
@@ -166,8 +168,8 @@
 
 (defthmd logior-becomes-bvor
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-                (unsigned-byte-p-forced size y)
-                (unsigned-byte-p-forced size x) ; should never fail
+                (unsigned-byte-p-forced size y) ; remove -forced?
+                (force (unsigned-byte-p-forced size x)) ; should never fail
                 )
            (equal (logior x y)
                   (bvor size x y)))
@@ -175,8 +177,8 @@
 
 (defthmd logior-becomes-bvor-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p-forced size x)
-                (unsigned-byte-p-forced size y) ; should never fail
+                (unsigned-byte-p-forced size x) ; remove -forced?
+                (force (unsigned-byte-p-forced size y)) ; should never fail
                 )
            (equal (logior x y)
                   (bvor size x y)))
@@ -205,8 +207,8 @@
 
 (defthmd logxor-becomes-bvxor
   (implies (and (bind-free (bind-var-to-bv-term-size 'size x))
-                (unsigned-byte-p-forced size y)
-                (unsigned-byte-p-forced size x) ; should never fail
+                (unsigned-byte-p-forced size y) ; remove -forced?
+                (force (unsigned-byte-p-forced size x)) ; should never fail
                 )
            (equal (logxor x y)
                   (bvxor size x y)))
@@ -214,8 +216,8 @@
 
 (defthmd logxor-becomes-bvxor-alt
   (implies (and (bind-free (bind-var-to-bv-term-size 'size y))
-                (unsigned-byte-p-forced size x)
-                (unsigned-byte-p-forced size y) ; should never fail
+                (unsigned-byte-p-forced size x) ; remove -forced?
+                (force (unsigned-byte-p-forced size y)) ; should never fail
                 )
            (equal (logxor x y)
                   (bvxor size x y)))
@@ -254,7 +256,7 @@
 ;; figure it out.
 (defthmd logapp-becomes-bvcat-when-bv
   (implies (and (bind-free (bind-var-to-bv-term-size 'jsize j) (jsize))
-                (unsigned-byte-p-forced jsize j))
+                (force (unsigned-byte-p-forced jsize j)))
            (equal (logapp size i j)
                   (bvcat jsize j size i)))
   :hints (("Goal" :in-theory (enable bvcat))))
@@ -314,7 +316,8 @@
                 (posp size2))
            (equal (bvminus size (logext size2 x) y)
                   (bvminus size (bvsx size size2 x) y)))
-  :hints (("Goal" :cases ((equal size size2)))))
+  :hints (("Goal" :cases ((equal size size2))
+                  :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))
 
 ;; replace with a general rule?
 (defthmd bvminus-of-logext-arg3-convert-to-bv
@@ -323,4 +326,5 @@
                 (posp size2))
            (equal (bvminus size x (logext size2 y))
                   (bvminus size x (bvsx size size2 y))))
-  :hints (("Goal" :cases ((equal size size2)))))
+  :hints (("Goal" :cases ((equal size size2))
+                  :in-theory (enable bvminus-becomes-bvplus-of-bvuminus))))

@@ -100,6 +100,8 @@
 (local (in-theory (e/d (true-listp-when-nat-listp-rewrite)
                        (acl2-count symbol-alistp default-car default-cdr))))
 
+(ensure-rules-known (strengthening-rules)) ; mentioned below but rarely or never used?
+
 (defthm not-<-of-maxelem-and-nth
   (implies (and (< n (len x))
                 (natp n))
@@ -1195,9 +1197,9 @@
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
 (defun min-and-max-integer-list (list min-so-far max-so-far)
-  (declare (xargs :guard (and (and (integer-listp list)
-                                   (integerp min-so-far)
-                                   (integerp max-so-far)))))
+  (declare (xargs :guard (and (integer-listp list)
+                              (integerp min-so-far)
+                              (integerp max-so-far))))
   (if (endp list)
       (mv min-so-far max-so-far)
     (let* ((item (first list))
@@ -1211,9 +1213,9 @@
 ;returns (mv min max)
 ;calls logext 32 on list elems before comparing - fixme gen
 (defun min-and-max-integer-list-list (list-of-lists min-so-far max-so-far)
-  (declare (xargs :guard (and (and (integer-list-listp list-of-lists)
-                                   (integerp min-so-far)
-                                   (integerp max-so-far)))))
+  (declare (xargs :guard (and (integer-list-listp list-of-lists)
+                              (integerp min-so-far)
+                              (integerp max-so-far))))
   (if (endp list-of-lists)
       (mv min-so-far max-so-far)
     (mv-let (min-so-far max-so-far)
@@ -1272,7 +1274,7 @@
 
 ;dup
 (defun g-list (key records)
-  (declare (xargs :guard (and (true-listp records)))) ; strengthen?
+  (declare (xargs :guard (true-listp records))) ; strengthen?
   (if (endp records)
       nil
     (cons (g key (car records))
@@ -1287,7 +1289,7 @@
 ;; (skip -proofs (verify-guards bvminus-list))
 
 (defun g-list-list (key vals)
-  (declare (xargs :guard (and (true-list-listp vals)))) ; strengthen?
+  (declare (xargs :guard (true-list-listp vals))) ; strengthen?
   (if (endp vals)
       nil
     (cons (g-list key (car vals))
@@ -4306,15 +4308,16 @@
       nil ; won't be 2 nodes with the same var
     (let ((fn1 (ffn-symb expr1))
           (fn2 (ffn-symb expr2)))
-      (if (or (eq 'quote fn1)
-              (eq 'quote fn2))
-          (equal (unquote expr1) (unquote expr2))
-        ;; both are function calls:
-        (and (eq fn1 fn2)
-             (let ((dargs1 (dargs expr1))
-                   (dargs2 (dargs expr2)))
-               (identical-darg-lists-up-to-constant-inlining dargs1 dargs2 dag-array-name dag-array dag-len)))))))
-
+      (if (eq 'quote fn1)
+          (and (eq 'quote fn2)
+               (equal (unquote expr1) (unquote expr2)))
+        (if (eq 'quote fn2)
+            nil
+          ;; both are function calls:
+          (and (eq fn1 fn2)
+               (let ((dargs1 (dargs expr1))
+                     (dargs2 (dargs expr2)))
+                 (identical-darg-lists-up-to-constant-inlining dargs1 dargs2 dag-array-name dag-array dag-len))))))))
 
 ;; (defun clean-up-hyps (hyps)
 ;;   (declare (xargs :guard (pseudo-term-listp hyps)))
@@ -7505,6 +7508,7 @@
                               (pseudo-dag-arrayp miter-array-name miter-array (+ 1 nodenum))
                               (array1p tag-array-name tag-array)
                               (< nodenum (alen1 tag-array-name tag-array)))
+                  :guard-hints (("Goal" :in-theory (enable all-<=)))
                   :stobjs state))
   (non-tagged-supporters-with-rec-fns-to-handle-aux (list nodenum) miter-array-name miter-array tag-array-name tag-array
                                                     'done-array-name
@@ -8003,7 +8007,8 @@
 (defund node-is-purep (nodenum dag-array-name dag-array var-type-alist)
   (declare (xargs :guard (and (natp nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 nodenum))
-                              (var-type-alistp var-type-alist))))
+                              (var-type-alistp var-type-alist))
+                  :guard-hints (("Goal" :in-theory (enable all-<=)))))
   (nodes-are-purep (list nodenum) dag-array-name dag-array (+ 1 nodenum) (new-array1 'done-array-temp (+ 1 nodenum)) var-type-alist))
 
 ;; Checks whether smaller-nodenum and larger-nodenum and all of their supporters are pure.
@@ -8013,7 +8018,8 @@
                               (natp larger-nodenum)
                               (< smaller-nodenum larger-nodenum)
                               (pseudo-dag-arrayp dag-array-name dag-array (+ 1 larger-nodenum))
-                              (var-type-alistp var-type-alist))))
+                              (var-type-alistp var-type-alist))
+                  :guard-hints (("Goal" :in-theory (enable all-<=)))))
   (nodes-are-purep (list smaller-nodenum larger-nodenum) dag-array-name dag-array (+ 1 larger-nodenum) (new-array1 'done-array-temp (+ 1 larger-nodenum)) var-type-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -11403,8 +11409,7 @@
 ;returns (mv lst rand)
 (defun merge-rand (l1 l2 acc rand)
   (declare (xargs :measure (+ (len l1) (len l2))
-                  :guard (and
-                              (true-listp acc))
+                  :guard (true-listp acc)
                   :stobjs rand))
   (cond ((atom l1) (mv (revappend acc l2) rand)) ; todo: would null be faster than atom?
         ((atom l2) (mv (revappend acc l1) rand))
@@ -12453,7 +12458,7 @@
                                rand state))
                  ;;they didn't all prove, so do them one at a time to see which ones failed:
                  ;;if there is only one, don't try that one again
-                 (prog2$ (cw "At least one failed.  Trying them one at at time:)~%")
+                 (prog2$ (cw "At least one failed.  Trying them one at a time:)~%")
                          (mv-let (erp invariants-that-failed defthm-names rand state)
                            (find-failed-invariants invars (append hyps invars) base-theorem-name formal-update-expr-alist
                                                    invar-set-num 0 rewriter-rule-alist prover-rule-alist
@@ -16973,7 +16978,7 @@
 
 
 ;; TODO: Consider supporting miters that are not boolean-valued; currently we must prove the miter is T (not merely non-nil).
-; Returns (mv erp provedp all-assumptions state rand).
+; Returns (mv erp provedp all-assumptions state).
 ; todo: separate out the top-level-miter stuff from the rest of this? then call this instead of simplifying and then calling miter-and-merge?
 (defun prove-with-axe-core (dag-or-quotep
                             assumptions ; (untranslated) terms we can assume are true (non-nil)
@@ -17896,7 +17901,7 @@
          (debug-nodes "Nodenums whose values should be printed for each test-case, and whose subdags should be printing when attempting a merge.  These nodenums refer to the DAG used for sweeping-and-merging (after pre-simplification, etc, if any), specifically the DAG for the first sweep.")
          (extra-rules "A symbol list containing the names of extra rules to use when simplifying")
          (remove-rules "A symbol list containing the names of rules to be removed from the set of rules used when simplifying")
-         (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means used phased-bv-axe-rule-sets)")
+         (initial-rule-sets "Sequence of rule-sets to apply initially to simplify the miter (:auto means use phased-bv-axe-rule-sets)")
          (monitor "Rule names (symbols) to monitor when rewriting")
          (use-context-when-miteringp "Whether to use over-arching context when rewriting nodes (causes memoization to be turned off)")
          (random-seed "Seed for the random number generator used to make test cases, or nil meaning use the default.")
@@ -20004,7 +20009,7 @@
 ;;                                        (make-axe-rules (append '((:rewrite equal-of-constant-and-bvchop-when-bvlt) ;new!
 ;;                                                               (:rewrite bvlt-of-two-less-than-max-when-not-max)
 ;;                                                               (:rewrite EQUAL-OF-CONSTANT-AND-SLICE-WHEN-BVLT) ;new
-;;                                                               (:REWRITE EQUAL-OF-BVCHOP-AND-CONSTANT-WHEN-NOT-BVLT-CONSTANT-2)
+;;                                                               (:REWRITE NOT-EQUAL-OF-BVCHOP-AND-CONSTANT-WHEN-NOT-BVLT-CONSTANT-2)
 ;;                                                               (:rewrite EQUAL-OF-CONSTANT-AND-SLICE-WHEN-EQUAL-OF-CONSTANT-AND-BVCHOP)
 ;;                                                               (:REWRITE BVLT-WHEN-BVCHOP-KNOWN-SUBST)
 ;;                                                               (:REWRITE BVCHOP-SUBST-CONSTANT)

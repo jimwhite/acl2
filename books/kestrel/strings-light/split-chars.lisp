@@ -1,7 +1,7 @@
 ; A utility to split a list of characters at a given char
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
 ;
@@ -100,7 +100,9 @@
                  (len acc))))
   :hints (("Goal" :in-theory (enable split-chars-aux))))
 
-;; Splits the CHARS into two parts, the characters before the first occurence
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Splits the CHARS into two parts, the characters before the first occurrence
 ;; of CHAR and the characters after the first occurrence of CHAR.  Returns (mv
 ;; foundp chars-before chars-after).  If CHAR does not occur in CHARS, FOUNDP
 ;; will be nil, CHARS-BEFORE will contain all the chars, and CHARS-AFTER will
@@ -161,7 +163,7 @@
   :hints (("Goal" :in-theory (enable split-chars))))
 
 (defthmd split-chars-correct-1
-  (implies (and (member char chars) ;this case
+  (implies (and (member char chars) ; this case
                 (character-listp chars))
            (and (mv-nth 0 (split-chars chars char)) ; foundp
                 (equal (append (mv-nth 1 (split-chars chars char))
@@ -173,15 +175,14 @@
            :in-theory (e/d (split-chars) (split-chars-aux-correct-1)))))
 
 (defthmd split-chars-correct-2
-  (implies (and (not (member char chars)) ;this case
-                (character-listp chars)
-                (characterp char))
+  (implies (and (not (member char chars)) ; this case
+                (character-listp chars))
            (and (not (mv-nth 0 (split-chars chars char))) ; not found
                 (equal (mv-nth 1 (split-chars chars char)) chars)
                 (equal (mv-nth 2 (split-chars chars char)) nil)))
   :hints (("Goal" :use (:instance split-chars-aux-correct-2
                                   (acc nil))
-           :in-theory (e/d (split-chars) (split-chars-aux-correct-1)))))
+           :in-theory (e/d (split-chars) (split-chars-aux-correct-2)))))
 
 (defthm split-chars-when-not-consp
   (implies (not (consp chars))

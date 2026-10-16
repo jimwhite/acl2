@@ -1,7 +1,7 @@
 ; A lightweight book about floor, mod, and expt.
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; For mod-sum-cases, see the copyright on the RTL library.
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -82,15 +82,16 @@
            (equal (floor (+ 1 (* 2 i)) (expt 2 n))
                   (floor i (expt 2 (+ -1 n)))))
   :hints (("Goal"
-           :in-theory (enable not-equal-when-even-and-odd))))
+           ;; :in-theory (enable not-equal-when-even-and-odd)
+           )))
 
 ;for splitting off the top bit
 (defthmd mod-of-*-of-2-and-expt
-  (IMPLIES (AND (natp size)
-                (INTEGERP X))
-           (EQUAL (MOD X (* 2 (EXPT 2 SIZE)))
-                  (+ (MOD X (EXPT 2 SIZE))
-                     (* (MOD (FLOOR X (EXPT 2 SIZE)) 2)
-                        (EXPT 2 SIZE)))))
-  :hints (("Goal" :cases ((equal 0 (MOD (FLOOR X (EXPT 2 SIZE)) 2)))
-           :in-theory (enable mod ))))
+  (implies (and (natp size)
+                (integerp x))
+           (equal (mod x (* 2 (expt 2 size)))
+                  (+ (mod x (expt 2 size))
+                     (* (mod (floor x (expt 2 size)) 2)
+                        (expt 2 size)))))
+  :hints (("Goal" :cases ((equal 0 (mod (floor x (expt 2 size)) 2)))
+           :in-theory (enable mod))))

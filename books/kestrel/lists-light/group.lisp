@@ -43,11 +43,6 @@
 
 ;; todo: consider putting back the stuff that uses list::equiv
 
-;(local (in-theory (disable LIST::FIRSTN-1-REWRITE-STRONG)))
-
-;(in-theory (disable list::equal-append-reduction!-alt list::equal-append-reduction!))
-(local (in-theory (disable equal-of-append)))
-
 ;todo: move some of these rules:
 
 ;move
@@ -298,7 +293,7 @@
   :hints (("Goal" ;:induct (group n x)
            :expand ((GROUP N (CONS A X))
                     (group n x))
-           :in-theory (e/d (group)
+           :in-theory (e/d (group firstn)
                            (firstn-becomes-take
                             firstn-becomes-take-gen
                             floor-bounded-by-/
@@ -333,8 +328,7 @@
   :hints (("Goal"
            :expand ((GROUP N (FIRSTN (* M N) X)))
            :induct (firstn-of-group-induct x n m)
-           :in-theory (e/d (group ;firstn
-                            )
+           :in-theory (e/d (group firstn)
                            (NTHCDR-OF-CDR-COMBINE NTHCDR-OF-CDR-COMBINE-STRONG
                                                   FIRSTN-BECOMES-TAKE
                                                   firstn-becomes-take-gen)))))

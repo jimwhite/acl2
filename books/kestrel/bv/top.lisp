@@ -43,6 +43,7 @@
 (include-book "logtail")
 (include-book "logext")
 (include-book "logops")
+(include-book "logcount")
 
 ;; Books about underlying functions and BV functions:
 (include-book "ash")
@@ -64,6 +65,7 @@
 (include-book "putbits")
 
 ;; Bit-wise operations:
+(include-book "bvnot-def")
 (include-book "bvnot")
 (include-book "bvand-def")
 (include-book "bvand")
@@ -117,6 +119,7 @@
 (include-book "sbvlt")
 
 ;; If-then-else:
+(include-book "bvif-def")
 (include-book "bvif")
 (include-book "bvif2")
 
@@ -138,6 +141,7 @@
 (include-book "bvashr")
 
 ;; Counting one bits:
+(include-book "bvcount-def")
 (include-book "bvcount")
 
 ;; Trim (only for rewriting)
@@ -163,6 +167,7 @@
 (include-book "bool-to-bit-def")
 (include-book "bool-to-bit")
 (include-book "bit-to-bool-def")
+(include-book "bit-to-bool")
 
 ;; Rules to replace BV ops with more common BV ops and sizes:
 (include-book "idioms")

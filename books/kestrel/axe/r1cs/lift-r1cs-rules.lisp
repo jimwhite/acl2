@@ -679,6 +679,7 @@
                 (POWER-OF-2P K2))
            (INTEGERP (* (/ K1) K2)))
   :hints (("Goal" :use (:instance acl2::integerp-of-*-of-expt-and-/-of-expt
+                                  (r 2)
                                   (i (+ -1 (INTEGER-LENGTH K2)))
                                   (j (+ -1 (INTEGER-LENGTH K1))))
            :in-theory (e/d (POWER-OF-2P) (acl2::integerp-of-*-of-expt-and-/-of-expt)))))
@@ -708,8 +709,7 @@
   :hints (("Goal" :in-theory (e/d (ACL2::BVCAT acl2::logapp ADD mul power-of-2p)
                                   (ACL2::UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT
                                    PFIELD::MOD-WHEN-FEP
-                                   ACL2::<-OF-*-SAME-LINEAR-SPECIAL
-                                   PFIELD::MOD-WHEN-FEP)))))
+                                   ACL2::<-OF-*-SAME-LINEAR-SPECIAL)))))
 
 (defthm add-of-mul-and-mul-combine-extra
   (implies (and (syntaxp (and (quotep k1)
@@ -836,7 +836,6 @@
                            (ACL2::UNSIGNED-BYTE-P-OF-+-WHEN-<-OF-LOGTAIL-AND-EXPT
                             PFIELD::MOD-WHEN-FEP
                             ACL2::<-OF-*-SAME-LINEAR-SPECIAL
-                            PFIELD::MOD-WHEN-FEP
                             acl2::expt-of-lg-when-power-of-2p)))))
 
 (defthm add-of-mul-and-mul-combine-negated-special-case-for-bitp

@@ -1,7 +1,7 @@
 ; Tests of rewriter-basic
 ;
 ; Copyright (C) 2008-2011 Eric Smith and Stanford University
-; Copyright (C) 2013-2024 Kestrel Institute
+; Copyright (C) 2013-2026 Kestrel Institute
 ; Copyright (C) 2016-2020 Kestrel Technology, LLC
 ;
 ; License: A 3-clause BSD license. See the file books/3BSD-mod.txt.
@@ -21,6 +21,7 @@
 (include-book "make-equality-dag-basic")
 (include-book "std/testing/assert-bang-stobj" :dir :system)
 (include-book "kestrel/utilities/deftest" :dir :system)
+(include-book "kestrel/bv/bvlt" :dir :system)
 
 ;;;
 ;;; tests of simplify-term-to-term-basic (which returns a term)
@@ -34,6 +35,7 @@
                                     (known-booleans 'nil)
                                     (normalize-xors 'nil)
                                     (limits 'nil)
+                                    (rewrite-objective ':?)
                                     (memoizep 't)
                                     (count-hits 't)
                                     (print 't)
@@ -48,6 +50,7 @@
                     ,known-booleans
                     ,normalize-xors
                     ,limits
+                    ,rewrite-objective
                     ,memoizep
                     ,count-hits
                     ,print
@@ -95,7 +98,7 @@
 ;; A test that returns a variable
 (assert!
  (mv-let (erp res hits)
-     (simplify-term-to-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil nil)
+     (simplify-term-to-term-basic '(car (cons x y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil :? nil nil t nil nil nil)
    (declare (ignore hits))
    (and (not erp)
         (equal res 'x))))
@@ -103,7 +106,7 @@
 ;; A test that returns a constant
 (assert!
  (mv-let (erp res hits)
-   (simplify-term-to-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil nil nil t nil nil nil)
+   (simplify-term-to-term-basic '(car (cons '2 y)) nil (make-rule-alist! '(car-cons) (w state)) nil (known-booleans (w state)) nil nil :? nil nil t nil nil nil)
    (declare (ignore hits))
    (and (not erp)
         (equal res ''2))))
@@ -116,7 +119,8 @@
                                      (assumptions 'nil)
                                      (rules 'nil)
                                      (memoizep 't)
-                                     (count-hits 't))
+                                     (count-hits 't)
+                                     (rewrite-objective ':?))
   `(assert!
      (mv-let (erp term hits)
        (simplify-term-to-term-basic ',input-term
@@ -126,6 +130,7 @@
                         (known-booleans (w state))
                         nil ; normalize-xors
                         nil
+                        ,rewrite-objective
                         ,memoizep
                         ,count-hits   ; count-hits
                         nil ; print
@@ -239,6 +244,7 @@
                                        (known-booleans 'nil)
                                        (normalize-xors 'nil)
                                        (limits 'nil)
+                                       (rewrite-objective ':?)
                                        (memoizep 't)
                                        (count-hits 't)
                                        (print 't)
@@ -253,6 +259,7 @@
                         ,known-booleans
                         ,normalize-xors
                         ,limits
+                        ,rewrite-objective
                         ,memoizep
                         ,count-hits
                         ,print
@@ -766,6 +773,7 @@
                     (known-booleans (w state))
                     nil     ; normalize-xors
                     nil
+                    :?
                     t       ; memoizep
                     t       ; count-hits
                     t       ; print
@@ -788,6 +796,7 @@
                     (known-booleans (w state))
                     nil     ; normalize-xors
                     nil
+                    :?
                     t       ; memoizep
                     t       ; count-hits
                     t       ; print
@@ -832,3 +841,23 @@
   :normalize-xors :compact)
 
 (must-be-redundant (defconst *result3* ''t))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(include-book "axe-rules-mixed") ; for bvlt-of-constant-arg2-strengthen-axe
+
+;; since x>10 and is not 11, we can strengthen to x>11.
+(assert!
+ (mv-let (erp new-conjuncts hits)
+     (simplify-conjunction-basic '((bvlt '32 '10 x) (not (equal '11 (bvchop '32 x))))
+      (make-rule-alist! '(bvlt-of-constant-arg2-strengthen-axe
+                          not-equal-of-bvchop-and-constant-when-bvlt-constant-1 ; drops the (not (equal ..)) once it is implied by the strengthened bvlt
+                          ) (w state))
+      (known-booleans (w state))
+      nil ; rewrite-objective (strengthen)
+      '(bvlt-of-constant-arg2-strengthen-axe)
+      nil nil nil nil)
+   (and (not erp)
+        (equal new-conjuncts '((bvlt '32 '11 x)))
+        (null hits) ; since not counting hits
+        )))

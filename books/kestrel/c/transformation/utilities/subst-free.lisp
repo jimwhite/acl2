@@ -68,7 +68,7 @@
      ;; Interesting case
      :ident (b* ((lookup (omap::assoc expr.ident subst)))
               (expr-fix (if (and lookup
-                                 (not (in expr.ident bound-vars)))
+                                 (not (treeset::in expr.ident bound-vars)))
                             (cdr lookup)
                           expr)))
      :const (expr-fix expr)
@@ -98,18 +98,21 @@
      :member (c$::expr-member
                (expr-subst-free (c$::expr-member->arg expr)
                                 subst bound-vars)
-               (c$::expr-member->name expr))
+               (c$::expr-member->name expr)
+               (c$::expr-member->info expr))
      :memberp (c$::expr-memberp
                 (expr-subst-free (c$::expr-memberp->arg expr)
                                  subst bound-vars)
-                (c$::expr-memberp->name expr))
+                (c$::expr-memberp->name expr)
+                (c$::expr-memberp->info expr))
      :complit
      (c$::expr-complit
        (tyname-subst-free (c$::expr-complit->type expr)
                           subst bound-vars)
        (desiniter-list-subst-free (c$::expr-complit->elems expr)
                                   subst bound-vars)
-       (c$::expr-complit->final-comma expr))
+       (c$::expr-complit->final-comma expr)
+       (c$::expr-complit->info expr))
      :unary
      (c$::expr-unary (c$::expr-unary->op expr)
                      (expr-subst-free (c$::expr-unary->arg expr)
@@ -363,9 +366,11 @@
                        (c$::type-spec-struct->spec type-spec)
                        subst bound-vars)
                :info type-spec.info)
-     :union (type-spec-union (struni-spec-subst-free
-                               (c$::type-spec-union->spec type-spec)
-                               subst bound-vars))
+     :union (c$::make-type-spec-union
+             :spec (struni-spec-subst-free
+                    (c$::type-spec-union->spec type-spec)
+                    subst bound-vars)
+             :info type-spec.info)
      :enum
      (type-spec-enum
        (enum-spec-subst-free (c$::type-spec-enum->spec type-spec)
@@ -443,16 +448,19 @@
      align-spec
      :alignas-type
      (align-spec-alignas-type
+       (c$::align-spec-alignas-type->uscore align-spec)
        (tyname-subst-free
          (c$::align-spec-alignas-type->type align-spec)
          subst bound-vars))
      :alignas-expr
      (align-spec-alignas-expr
+       (c$::align-spec-alignas-expr->uscore align-spec)
        (const-expr-subst-free
          (c$::align-spec-alignas-expr->expr align-spec)
          subst bound-vars))
      :alignas-ambig
      (c$::align-spec-alignas-ambig
+       (c$::align-spec-alignas-ambig->uscore align-spec)
        (amb-expr/tyname-subst-free
          (c$::align-spec-alignas-ambig->expr/type align-spec)
          subst bound-vars)))
@@ -667,7 +675,7 @@
     (dirdeclor-case
      dirdeclor
      :ident (mv (dirdeclor-fix dirdeclor)
-                (insert dirdeclor.ident (ident-set-fix bound-vars))
+                (treeset::insert dirdeclor.ident (ident-set-fix bound-vars))
                 nil)
      :paren
      (b* (((mv inner bound-vars -)
@@ -909,10 +917,11 @@
                                           :info param-declor.info)
            (ident-set-fix bound-vars)))
      :abstract
-     (mv (param-declor-abstract
-           (absdeclor-subst-free
-             (c$::param-declor-abstract->declor param-declor)
-             subst bound-vars))
+     (mv (make-param-declor-abstract
+          :declor (absdeclor-subst-free
+                   (c$::param-declor-abstract->declor param-declor)
+                   subst bound-vars)
+          :info param-declor.info)
          (ident-set-fix bound-vars))
      :none (mv (param-declor-fix param-declor) (ident-set-fix bound-vars))
      :ambig
@@ -1008,7 +1017,7 @@
           (declor-option-subst-free
            (c$::struct-declor->declor? structdeclor)
            subst bound-vars)))
-      (mv (struct-declor declor? expr?)
+      (mv (struct-declor declor? expr? (c$::struct-declor->info structdeclor))
           (ident-set-fix bound-vars)))
     :measure (struct-declor-count structdeclor))
 
@@ -1064,6 +1073,7 @@
                                  (bound-vars ident-setp))
     :returns (result statassertp)
     (statassert
+     (c$::statassert->uscore statassert)
      (const-expr-subst-free (c$::statassert->test statassert)
                             subst bound-vars)
      (c$::statassert->message statassert))
@@ -1495,7 +1505,7 @@
        (specs (decl-spec-list-subst-free fundef.specs subst bound-vars))
        ((mv declor bound-vars param-bound-vars)
         (declor-subst-free fundef.declor subst bound-vars))
-       (body-bound-vars (union bound-vars param-bound-vars))
+       (body-bound-vars (treeset::union bound-vars param-bound-vars))
        (attribs (attrib-spec-list-subst-free fundef.attribs subst body-bound-vars))
        ((mv declons body-bound-vars)
         (declon-list-subst-free fundef.declons subst body-bound-vars))

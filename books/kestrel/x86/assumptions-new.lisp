@@ -38,9 +38,9 @@
                            x86isa::byte-listp-becomes-all-unsigned-byte-p ; todo
 
                            ;; these are for speed:
-                           acl2::acl2-numberp-of-car-when-acl2-number-listp
-                           acl2::rationalp-of-car-when-rational-listp
-                           acl2::rational-listp-of-cdr-when-rational-listp
+                           ;acl2::acl2-numberp-of-car-when-acl2-number-listp
+                           ;acl2::rationalp-of-car-when-rational-listp
+                           ;acl2::rational-listp-of-cdr-when-rational-listp
                            rationalp-implies-acl2-numberp
                            canonical-address-p-hack ; todo
                            acl2::len-when-atom ; todo, comes in via defrstobj
@@ -52,12 +52,12 @@
                            x86isa::canonical-address-p-when-unsigned-byte-p
                            x86isa::canonical-address-p-between
                            x86isa::canonical-address-p-of-sum-when-unsigned-byte-p-32
-                           acl2::true-listp-of-car-when-true-list-listp
+                           ;acl2::true-listp-of-car-when-true-list-listp
                            vl::consp-when-member-equal-of-vl-namedb-nameset-p ; yuck
                            vl::consp-when-member-equal-of-vl-namedb-prefixmap-p ; yuck
-                           acl2::natp-of-car-when-nat-listp-type
-                           acl2::consp-of-car-when-pseudo-dagp
-                           acl2::symbolp-of-car-when-symbol-listp
+                           ;acl2::natp-of-car-when-nat-listp-type
+                           ;acl2::consp-of-car-when-pseudo-dagp
+                           ;acl2::symbolp-of-car-when-symbol-listp
                            acl2::consp-of-car-when-symbol-term-alistp-cheap)))
 
 (set-induction-depth-limit 1)
@@ -388,7 +388,7 @@
       (er hard? 'make-standard-assumptions64-new "Offset too big.") ; todo: make this a proper error (once the target handling stuff is factored out)
     (let ((target-address-term (if position-independentp
                                    ;; Position-independent, so the target is the base-address-var plus the target-offset:
-                                   ;; We postulate that there exists some canonical base var wrt which  the executable is loaded.
+                                   ;; We postulate that there exists some canonical base var wrt which the executable is loaded.
                                    ;; When making assumptions for the regions, we will check that it is possible for them all to be canonical
                                    (if (= 0 target-offset)
                                        base-address-var ; avoids adding 0
@@ -471,7 +471,7 @@
                               (true-listp acc))
                   :guard-hints (("Goal" :in-theory (e/d (memory-regionsp
                                                          memory-regionp)
-                                                        (acl2::acl2-numberp-of-car-when-acl2-number-listp ; todo, for speed
+                                                        (;acl2::acl2-numberp-of-car-when-acl2-number-listp ; todo, for speed
                                                          rationalp-implies-acl2-numberp))))))
   (if (endp regions)
       (mv nil (reverse acc))
@@ -496,7 +496,8 @@
                    ;; Ensures that the canonical assumptions are satisfiable:
                    ((when (<= (expt 2 47) last-addr)) ; could relax to 2^48, since base-addr can be "negative"?
                     (mv :bad-address nil))
-                   (first-addr-term (symbolic-bvplus-constant ''64 addr base-address-var))
+                   ;; We can use 48 here because read-bytes and disjoint-regions48p chop their addresses down to 48 bits:
+                   (first-addr-term (symbolic-bvplus-constant ''48 addr base-address-var))
                    ;; (last-addr-term (symbolic-bvplus-constant ''48 (+ 1 ; todo: why is this needed?  I have code that ends in RET and checks whether the address after the RET is canonical.  however, making this change elsewhere broke other proofs.
                    ;;                                                 (+ -1 addr length))
                    ;;                                           base-address-var)

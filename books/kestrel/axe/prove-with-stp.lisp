@@ -28,6 +28,7 @@
 (include-book "dag-array-printing2") ; for print-dag-node-nicely
 (include-book "worklists")
 (include-book "merge-sort-less-than")
+(include-book "kestrel/terms-light/get-hyps-and-conc" :dir :system)
 (local (include-book "kestrel/acl2-arrays/acl2-arrays" :dir :system))
 (local (include-book "kestrel/lists-light/reverse-list" :dir :system))
 (local (include-book "kestrel/lists-light/cdr" :dir :system))
@@ -52,6 +53,7 @@
 (local (include-book "kestrel/bv/slice" :dir :system))
 (local (include-book "kestrel/bv/getbit" :dir :system))
 (local (include-book "kestrel/bv/bvuminus" :dir :system))
+(local (include-book "kestrel/bv/bvminus" :dir :system))
 (local (include-book "kestrel/bv/bvand" :dir :system))
 (local (include-book "kestrel/bv/bvor" :dir :system))
 
@@ -344,28 +346,6 @@
                              (unify-tree-with-any-dag-node-no-wrap-binds-all))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Returns (mv hyps conc).  Handles IMPLIES.
-;; (See also get-hyps-and-conc.  That one can handle some nested calls implies.  Should we use it?)
-(defund term-hyps-and-conc (term)
-  (declare (xargs :guard (pseudo-termp term)))
-  (if (and (consp term)
-           (eq 'implies (ffn-symb term))
-           (eql 2 (len (fargs term)))) ;for guards
-      (mv (get-conjuncts (farg1 term))
-          (farg2 term))
-    (mv nil ;no hyps
-        term)))
-
-(defthm pseudo-term-listp-of-mv-nth-0-of-term-hyps-and-conc
-  (implies (pseudo-termp term)
-           (pseudo-term-listp (mv-nth 0 (term-hyps-and-conc term))))
-  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
-
-(defthm pseudo-termp-of-mv-nth-1-of-term-hyps-and-conc
-  (implies (pseudo-termp term)
-           (pseudo-termp (mv-nth 1 (term-hyps-and-conc term))))
-  :hints (("Goal" :in-theory (enable term-hyps-and-conc))))
 
 (defconst *default-stp-max-conflicts* 60000) ; this is the number of conflicts, not seconds
 
@@ -840,7 +820,6 @@
                   (pseudo-dag-arrayp 'dag-array dag-array dag-len))
              (all-< (get-nodenums-of-negations-of-disjuncts disjuncts dag-array dag-len) dag-len))
     :hints (("Goal" :in-theory (enable possibly-negated-nodenumsp get-nodenums-of-negations-of-disjuncts
-                                       possibly-negated-nodenumsp
                                        strip-nots-from-possibly-negated-nodenums
                                        strip-not-from-possibly-negated-nodenum
                                        car-becomes-nth-of-0
@@ -949,6 +928,8 @@
 (thm (implies (natp n) (equal (getbit n (bvchop (+ 1 n) x)) (getbit n x))))
 
 (thm (implies (and (natp high) (natp low)) (equal (slice high low (bvchop (+ 1 high) x)) (slice high low x))))
+
+(thm (equal (bitnot (bvchop 1 x)) (bitnot x)))
 
 (thm (equal (bitand x (bvchop 1 y)) (bitand x y)))
 (thm (equal (bitor x (bvchop 1 y)) (bitor x y)))
@@ -1303,7 +1284,6 @@
 ;; todo: check more?
 ;; TODO: Consider printing a warning if a BV op with a size argument of 0 arises.
 ;; TODO: Compare this to pure-fn-call-exprp (currently, this takes the dag-array for checking bv-array operations -- why?)
-;; todo: add bvequal, once we can translate it
 (defund can-always-translate-expr-to-stp (fn args dag-array-name dag-array dag-len known-nodenum-type-alist print)
   (declare (xargs :guard (and (pseudo-dag-arrayp dag-array-name dag-array dag-len)
                               (symbolp fn)
@@ -1378,6 +1358,7 @@
                (darg-quoted-posp (first args)) ; disallows 0 width
                (darg-quoted-integerp (second args))
                (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits
+               (bv-arg-okp (third args)) ; index is a BV
                )
           (let* ((data-arg (fourth args))
                  (type-of-data (get-type-of-arg-safe data-arg dag-array-name dag-array known-nodenum-type-alist)))
@@ -1400,6 +1381,8 @@
               (darg-quoted-posp (first args)) ; disallows 0 width
               (darg-quoted-integerp (second args))
               (<= 2 (unquote (second args))) ;an array of length 1 would have 0 index bits..
+              (bv-arg-okp (third args)) ; index is a BV
+              (bv-arg-okp (fourth args)) ; val is a BV
               )
          t
        (prog2$ (and (eq :verbose print)
@@ -1651,13 +1634,13 @@
 
 (local
   (defthm node-given-empty-type-type
-    (implies (and (nodenum-type-alistp known-nodenum-type-alist)
-                  )
+    (implies (nodenum-type-alistp known-nodenum-type-alist)
              (or (null (node-given-empty-type known-nodenum-type-alist))
                  (and (integerp (node-given-empty-type known-nodenum-type-alist))
                       (<= 0 (node-given-empty-type known-nodenum-type-alist)))))
     :rule-classes :type-prescription
-    :hints (("Goal" :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
+    :hints (("Goal" :induct t
+             :in-theory (enable node-given-empty-type nodenum-type-alistp)))))
 
 (local
   (defthm node-given-empty-type-return-type-rewrite
@@ -2656,7 +2639,7 @@
                               (print-levelp print)
                               (stringp base-filename))
                   :stobjs state))
-  (b* (((mv hyps conc) (term-hyps-and-conc term))) ;split term into hyps and conclusion
+  (b* (((mv hyps conc) (get-hyps-and-conc term))) ;split term into hyps and conclusion
     (prove-term-implication-with-stp conc hyps counterexamplep print-cex-as-signedp max-conflicts print base-filename state)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
