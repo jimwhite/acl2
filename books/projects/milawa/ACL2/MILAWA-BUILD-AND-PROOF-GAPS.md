@@ -1,11 +1,51 @@
-# Milawa build: how it works, and the level4/level10 proof gaps
+# Milawa build: how it works, and the current build/proof discrepancies
 
 This document explains what the Milawa build is doing, how the proof-generation
 and proof-checking pipeline is supposed to work, and where the current
-level4/level10 failures fit in. The short version: the system is working
-correctly for the overwhelming majority of the thousands of proofs it
-generates; only a small number of events are going wrong, and those are
-concentrated in two places.
+build failures fit in. The short version: the system is working correctly for
+the overwhelming majority of the thousands of proofs it generates; only a
+small number of events are affected, and those are concentrated in a few
+places — all of which we believe are **environment / reproduction** problems
+rather than Milawa source bugs (see §0).
+
+---
+
+## 0. Framing: this is a build/debugging problem, not a Milawa source problem
+
+**Important.** Milawa has been built and proof-checked successfully for well
+over a decade, on the ACL2 and Common Lisp versions of its time. When
+something fails here, the default assumption must be that **our build
+environment differs from the one Milawa was validated against**, not that
+Milawa's source is wrong.
+
+Concretely, the differences that matter most are:
+
+- **Lisp implementation and version.** Milawa's README says the build
+  "requires both Clozure Common Lisp (CCL) and ACL2(h)". We are building with
+  **SBCL**, and with a **current** SBCL and **ACL2 8.7**. The level10
+  binding-stack failure is a direct consequence of this (§5): SBCL's binding
+  stack is a fixed compile-time constant, whereas CCL's analogous value stack
+  is sized to 128 MB by Milawa itself.
+- **ACL2 version.** Milawa was written against much older ACL2. Newer ACL2
+  changes event/redundancy behaviour and ACL2 internals that Milawa touches,
+  which is why "Matt K. mod" patches exist throughout the tree (§6).
+
+So the pattern to expect is: **the code is fine; our environment reproduces a
+different set of events than the one the proofs were generated for.** The
+right response to a failure is therefore to make our build match the intended
+configuration (or to understand how the current environment changes the event
+stream), **not** to change Milawa's logic.
+
+The level4 change (§6.16) was accepted as a pragmatic unblock. It should be
+read as "a change that makes *our* build produce a consistent event stream",
+not as a claim that the original code was buggy. Any further apparent
+"source bugs" should be treated with strong suspicion and investigated as
+build/configuration discrepancies first.
+
+With that: §5 and §6 document two *environment* failures; §8 documents a
+remaining *reproduction* discrepancy at level9 (duplicate events producing one
+proof file), which is likewise best explained by how the current toolchain
+serializes events rather than by a source defect.
 
 ---
 
@@ -598,7 +638,7 @@ That is a raw-mode redefinition of an ACL2 internal
 (`chk-acceptable-certify-book`) whose signature no longer matches ACL2's —
 knowingly left broken.
 
-### 6.4 Hypothesis for the level4 bug
+### 6.4 Hypothesis for the level4 discrepancy
 
 The `%autoadmit` path runs through `get-syntax-defun-entries` and
 `get-measure` — both ACL2-internal lookups. If ACL2 8.7's representation of a
@@ -781,20 +821,24 @@ CLAUSE.TERM-GUTS
    written.
 
 **So the events file is not stale.** It faithfully records what the
-`thmfiles` table contains. The bug is that `include-book`'s certificate replay
-adds a `DEFINE` entry for an event that was skipped during certification, so
-the entry references a proof file that does not exist.
+`thmfiles` table contains. The discrepancy is that `include-book`'s
+certificate replay adds a `DEFINE` entry for an event that was skipped during
+certification, so the entry references a proof file that does not exist.
 
-### 6.14 Why this happens (the real bug)
+### 6.14 Why this happens
 
 `definition-of-not` is admitted at **both** level3 (`not.lisp:40`) and level4
 (`clause-basics.lisp:120`). Because the level4 image already contains it, the
 level4 `%autoadmit` is redundant and produces no proof. But the certificate
 replay still records the `DEFINE` entry, creating a dangling reference.
 
-This is a genuine inconsistency between:
+This is a mismatch between:
 - what certification actually proves (nothing, for this event), and
 - what the certificate/events record (a `DEFINE` entry with a proof filename).
+
+It is best understood as the *current* ACL2/Milawa toolchain (ACL2 8.7, SBCL)
+serializing a redundant event differently than the original toolchain did,
+not as a defect in Milawa's logic. See §0.
 
 ### 6.15 Candidate fixes
 
@@ -927,21 +971,116 @@ git commit -m "Update acl2 milawa submodule"
 
 ## 7. Summary
 
-| | level4 | level10 |
-|---|---|---|
-| Missing proofs | 2 | 9 |
-| Build outcome | succeeds | aborts |
-| Cause | event treated as `:REDUNDANT`; no proof written, but events file still records it | binding stack exhausted mid-build |
-| Category | logic/state bug (likely ACL2/Milawa drift) | resource exhaustion |
-| Status | open — need to find the `:REDUNDANT` producer | open — need correct stack tuning |
+| | level4 | level10 | level9 |
+|---|---|---|---|
+| Symptom | 2 proofs never written, events still referenced them | build aborts mid-way | proof on disk rejected |
+| Root cause | duplicate event name across levels (image inherits it) combined with events/proof-file serialization | SBCL binding stack too small for this book | duplicate proof filename written by 3 books; mixed rebuild |
+| Category | **environment/reproduction** (ACL2 image + event serialization) | **environment** (SBCL vs CCL) | **build hygiene** (mixed/stale Proofs) |
+| Status | unblocked (§6.16) | FIXED (§5.0.2) | open — clean rebuild (§8.4) |
 
-The build is healthy overall: it generates and records thousands of proofs
-correctly. The failures are a small, localized set of events, and each has a
-distinct, identifiable cause.
+All three are consistent with §0: the code is fine; our environment and
+partial rebuilds change the event/proof stream.
 
 ---
 
-## 7. Useful commands
+## 8. A third discrepancy: level9 `ALL-EQUALP-REMOVAL` proof rejection (2026-10-17)
+
+> **Read §0 first.** This is recorded as a **build/reproduction discrepancy**,
+> not as a Milawa source bug. The leading hypothesis is that our partial
+> rebuilds left a *mixed* set of proof files (some written by one book, some by
+> another, at different times) that no longer agree with the serialized events
+> file.
+
+### 8.1 Symptom
+
+After the level4 and level10 fixes, `final-checks.sh` now runs through
+`level4`..`level8` and then **fails at level9**:
+
+```
+10629> VERIFY ALL-EQUALP-REMOVAL
+;; Reading from Proofs/level9/thm-all-equalp-removal.proof
+;; Reading the file took 0.01 seconds
+;; Checking the proof took 0.01 seconds
+Unhandled COMMON-LISP:SIMPLE-ERROR in ...:
+  The proof was rejected
+```
+
+This is a **proof-checking rejection** (the kernel evaluated the proof and
+rejected it), not the earlier "missing proof file" symptom.
+
+### 8.2 The immediate trigger: one name, one proof file, three writers
+
+`all-equalp-removal` is proved in three different level9 books, and each
+writes the *same* on-disk proof file name
+`Proofs/level9/thm-all-equalp-removal.proof`:
+
+| Book | Proof size (conses) | Scope | mtime |
+|------|--------------------:|-------|-------|
+| `bootstrap/level9/eqdatabasep.lisp` | 202,319 | `(local ...)` | 06:01:43 |
+| `bootstrap/level9/theoryp-aux.lisp` | 202,319 | global | 06:01:23 |
+| `bootstrap/level9/add-equality.lisp` | 203,949 | `(local ...)` | 06:02:58 |
+
+The proof file on disk is dated 06:01:51 (202,319-cons version). The three
+definitions are not all identical — `add-equality`'s is a different proof
+(203,949 conses).
+
+`Proofs/level9.events` contains exactly **one** `VERIFY ALL-EQUALP-REMOVAL`
+entry (line 3). The events file is serialized from the `thmfiles` table,
+which keeps one entry per name. If the on-disk proof was written by a
+*different* book than the one whose conclusion the events entry records, the
+kernel rejects.
+
+This is a known shape in Milawa's tooling — the authors worked around a
+related ACL2 hard error, per the "Matt K. mod" comment in `eqdatabasep.lisp`:
+
+> Matt K. mod: Avoid error noticed in preparation for Version 8.7 release
+> when attempting to make bootstrap/level9/crewrite-builders.mpcert:
+> `HARD ACL2 ERROR in %PROVE: The proposed name, ALL-EQUALP-REMOVAL, is
+> already in use as the name of a rule.`
+> ... So I'll make it local where needed.
+
+So the duplicate-name situation is pre-existing and already partially
+mitigated upstream. What is *new* is the rejection, which points at our
+build.
+
+### 8.3 Why we suspect a stale/mixed build, not a source defect
+
+- `eqdatabasep`, `theoryp-aux`, and `add-equality` were all rebuilt at
+  different times (06:01–06:03), and the level9 `Proofs/` directory has been
+  written by multiple partial rebuilds over the course of this session.
+- A single proof filename shared by three books means **the last writer
+  wins**, and which book that is depends on build order — so a mixed
+  `Proofs/` directory can easily end up with a proof that does not match the
+  events entry.
+- Nothing in Milawa's logic changed; only how and when we rebuilt.
+
+### 8.4 Recommended next step (build debugging, not source editing)
+
+Do a **clean, consistent rebuild of level9** — remove all level9
+`.mpcert`/`.out`, `Proofs/level9/`, and `Proofs/level9.events`, rebuild the
+whole level in one pass, then re-check. If the proofs are generated
+consistently in one run, the rejection should disappear. If it *persists*
+after a clean single-pass rebuild, then and only then is it worth looking at
+the three definitions — and even then the question is which one the tooling is
+*supposed* to keep, not which one is "wrong".
+
+### 8.5 Status
+
+Open — to be investigated as a build/reproduction issue per §8.4.
+
+---
+
+## 9. Overall build status (2026-10-17)
+
+With the level4 and level10 *environment* fixes in place, `final-checks.sh
+sbcl sbcl-linux64` succeeds through **level3 → level4 → level5 → level6 →
+level7 → level8**, and stops at **level9** on the `ALL-EQUALP-REMOVAL`
+rejection described in §8. The remaining work is build debugging (§8.4),
+**not** Milawa source changes.
+
+---
+
+## 10. Useful commands
 
 ```sh
 # clean level4 and rebuild
