@@ -278,10 +278,26 @@ records the entries even though no proofs are written. That mismatch is what
   `DEFINE`/`VERIFY` entries.
 - `acl2-images/level4-symmetry` (the image `clause-basics` is certified
   against) already contains `definition-of-not` in its `defs`
-  (`tactic.find-def` -> present; 654 defs). This image is the level3 image
-  (its startup notices list "Preloaded ... level3").
-- `acl2-images/level3-symmetry` is actually the level2 image (notices stop at
-  level2) and does **not** contain `definition-of-not`.
+  (`tactic.find-def` -> present; 654 defs).
+- `acl2-images/level3-symmetry` does **not** contain `definition-of-not`.
+
+> **Correction (2026-10-17).** These two facts were originally read as evidence
+> of a misaligned image chain. They are not: they are exactly how the Makefile
+> builds the images. `acl2-images/levelN-symmetry` is produced by running the
+> *`levelN-1`* image and including the `levelN-1` books
+> (`Makefile:185-197`: `acl2-images/level4-symmetry: acl2-images/level3-symmetry`
+> and its recipe feeds `../../acl2-images/level3-symmetry` to `make-image.lsp`).
+> So `level4-symmetry` legitimately contains level3's definitions (hence
+> "Preloaded ... level3" and hence `definition-of-not`) and `level3-symmetry`
+> legitimately stops at level2. The off-by-one in the *names* is by design.
+>
+> Moreover `bootstrap/level4/cert.image` -- which is **tracked upstream** --
+> contains the single line `level4-symmetry`, and `infer_book_image`
+> (`pcert-util.pl`) uses it for every book in that directory. Certification of
+> `clause-basics.lisp` against an image that already contains level3's
+> `definition-of-not` is therefore upstream's intended configuration, not a
+> build accident. The re-admission in that book is genuinely redundant under
+> any ACL2 that performs the redundancy check.
 - The image's `thmfiles` table is empty (length 0).
 - Running `(%autoadmit definition-of-not)` directly in `level4-symmetry`
   prints `:REDUNDANT` and leaves `thmfiles` length at 0.
@@ -433,15 +449,21 @@ CFLAGS="-DBINDING_STACK_SIZE=$((256*1024*1024))" \
              --without-compact-instance-header --fancy
 ```
 
-256 MB was chosen over the 128 MB that Milawa uses for CCL's value stack
-because SBCL bindings are wider on 64-bit. The compile log confirms
-`-DBINDING_STACK_SIZE=268435456` reaches the runtime.
+256 MB was used for this first, instrumented build (chosen over the 128 MB
+Milawa uses for CCL's value stack because SBCL bindings are wider on 64-bit).
+The compile log confirms `-DBINDING_STACK_SIZE=268435456` reaches the runtime.
+**This is not the shipped size:** that is 2,000,000 frames ~ 32 MB, validated
+against the level10 book in the *Dockerfile change* subsection below. 256 MB was
+kept here only because it is what the dev container happens to have installed.
 
 #### Measured effect
 
 | | stock (1 MB) | custom (256 MB) |
 |---|---|---|
-| binding stack depth before exhaustion | ~1,000,000 | ~17,000,000 |
+| binding stack depth before exhaustion | ~65,000 | ~16,700,000 |
+
+(Measured with one special-variable rebinding per recursion level; the stock
+figure matches SBCL's "chosen at random" 1 MB and 16.03 bytes/frame.)
 
 #### Gotcha: the core build-id
 
@@ -497,26 +519,30 @@ make -j 1 bootstrap/level10/crewrite-iffp.mpcert
 #### Dockerfile change
 
 The container's `sbcl-builder` stage accepts a build arg
-`SBCL_BINDING_STACK_MB`. Its default is **0**, meaning "leave SBCL alone"
-(build with SBCL's stock 1 MB binding stack). Any nonzero value rebuilds SBCL
-with that binding stack size, which is what Milawa needs (256 is a good value
-on 64-bit).
+`SBCL_BIG_BINDING_STACK`: **0** (default) builds stock SBCL with its 1 MB
+binding stack, **1** builds the big-stack variant that Milawa needs. The size
+of that variant is a compile-time constant (`big_mb=32`) inside the stage, so
+the knob is a plain on/off switch rather than a number. Stock and big-stack
+builds alike are compiled from source and installed with `install.sh`, so
+runtime, core and contribs always match and no build-id juggling is required;
+the build-id trick described under *Gotcha: the core build-id* above is only
+for retrofitting an existing container that must keep cores already dumped.
 
-When customizing, the stage wraps the `validate.h` define in `#ifndef` if
-needed (a no-op on SBCL releases that already do), then passes the size via
-`CFLAGS`:
+When enabled, the stage wraps the `validate.h` define in `#ifndef` if needed (a
+no-op on SBCL releases that already do), then passes the size via `CFLAGS`:
 
 ```dockerfile
-ARG SBCL_BINDING_STACK_MB=0
+ARG SBCL_BIG_BINDING_STACK=0
 ...
     && cd sbcl-* \
-    && if [ "${SBCL_BINDING_STACK_MB}" != "0" ]; then \
+    && big_mb=32 \
+    && if [ "${SBCL_BIG_BINDING_STACK}" = "1" ]; then \
            if ! grep -q '^#ifndef BINDING_STACK_SIZE' src/runtime/validate.h; then \
                sed -i \
                  -e 's|^\(#define BINDING_STACK_SIZE .*\)$|#ifndef BINDING_STACK_SIZE\n\1\n#endif|' \
                  src/runtime/validate.h; \
            fi; \
-           export CFLAGS="-DBINDING_STACK_SIZE=$((SBCL_BINDING_STACK_MB*1024*1024))"; \
+           export CFLAGS="-DBINDING_STACK_SIZE=$((big_mb*1024*1024))"; \
        fi \
     && sh make.sh \
          --without-immobile-space \
@@ -530,9 +556,34 @@ The `grep -q` guard makes the `sed` run at most once, so the patch is safe on
 SBCL releases that already wrap the define.
 
 The GitHub workflow (`docker-release.yml`) exposes the matching
-`sbcl_binding_stack_mb` input (default `0`) and passes it through as
-`SBCL_BINDING_STACK_MB` on each build. To build a Milawa-capable image, run
-the workflow with `sbcl_binding_stack_mb` set to `256` (or a similar value).
+`sbcl_big_binding_stack` input (default `0`) and passes it through as
+`SBCL_BIG_BINDING_STACK` on each build. To build a Milawa-capable image, run
+the workflow with `sbcl_big_binding_stack` set to `1`.
+
+Sizing rationale, measured here: one special-variable rebinding frame costs
+about **16.03 bytes** of binding stack, so the stock 1 MB aborts at ~65,000
+frames (which is what `CREWRITE-ALL` needs to exceed). The container build
+sizes the stack by **frame count** -- 2,000,000 frames, i.e. ~32 MB -- rather
+than by an arbitrary megabyte figure: measured on a 32 MB runtime, depth
+2,080,000 survives and 2,100,000 aborts, i.e. the ceiling is ~2,090,000 frames.
+16 bytes is the *cheapest* frame (one special binding); code that binds several
+specials per recursion level uses more per level, so 32 MB buys fewer than 2M
+recursion levels there. The
+stack is lazily-committed virtual memory, but it is allocated **per thread**,
+so the size does multiply by thread count -- which is the argument for keeping
+it modest rather than arbitrarily large. gdb spot checks of the proof *checker*
+-- even on level10's 205 MB `crewrite-core` proof -- showed only a few hundred
+bytes in use, so the whole requirement comes from the ACL2 builder. (To get the
+builder's peak rigorously, sample `binding_stack_pointer` while building
+`bootstrap/level10/crewrite-iffp`; see BUILD-PROCEDURE.md section 3.1.7.)
+
+**Validated end-to-end.** 32 MB is not merely capacity-verified: the heaviest
+known workload, `bootstrap/level10/crewrite-iffp`, was run against a 32 MB
+runtime via `provisionally-certify` and returned `PCERT_EXIT=44`, which is
+success. So 2M frames is enough for the workload that originally exhausted
+1 MB, with roughly a 4% margin over the measured ceiling (2,080,000 survives).
+If some future book does abort with "Binding stack exhausted", raise `big_mb`
+in the Dockerfile (frames / 65536 ~= MB, so 4M frames ~= 64 MB) and re-run.
 
 ### 5.1 Symptom
 
@@ -929,43 +980,143 @@ longer references the two proof files that were never written.
 (Note: a full `final-checks.sh` run still requires all level4 sub-books to be
 certified; the verification above rebuilt only `clause-basics` and `level4`.)
 
----
+### 6.18 SUPERSEDED: the source edit was reverted; fixed in the build (2026-10-17)
 
-## 8. Tracking changes: the ACL2 submodule
+Section 6.16 removed the duplicate `(%autoadmit definition-of-not)` from
+`bootstrap/level4/clause-basics.lisp`.  **That edit has been reverted.**  The
+upstream source is restored exactly as Jared wrote it, and the problem is now
+handled entirely on the build side.
 
-To keep track of Milawa changes against ACL2, the workspace
-(`/workspaces/acl2-jupyter`) now includes an ACL2 submodule:
+**Why revert.**  Milawa's sources are meant to certify as they are (they did for
+a decade), and `Proofs/` is generated rather than checked in -- too big for the
+ACL2 community books, which is why Jared shipped it as compressed archives.
+Since we have to generate the proofs anyway, the generator's output is the right
+place to fix, and the sources stay pristine for upstream review.
 
-- **Path:** `context/acl2`
-- **URL:** `https://github.com/jimwhite/acl2.git`
-- **Branch:** `milawa`
-- **Pinned commit:** `bfac1dd70dc0542436cda7e75cfd9db060203ea0`
+**Why reverting is safe.**  The diagnosis in 6.13-6.14 stands: the re-admission
+really is redundant (see the correction in 4.3 -- `bootstrap/level4/cert.image`
+is upstream-tracked and names `level4-symmetry`, which is built from
+`level3-symmetry` plus level3's books, so `definition-of-not` is already in the
+world).  The *only* defect is that the generated manifest can name a proof file
+that was never written.
 
-This is the fork/branch that carries the Milawa sources and the "Matt K. mod"
-patches described in section 6.3. It is the canonical place to record and
-review changes to Milawa's ACL2 coupling.
-
-Note the distinction:
-
-- `/home/acl2` is the **build directory** — a plain (non-git) ACL2 tree used to
-  actually build and run Milawa. It is not version-controlled.
-- `context/acl2` is the **tracked submodule** — the git checkout of the
-  `milawa` branch, used to track changes.
-
-To update the submodule to the latest `milawa` branch:
-
-```sh
-cd /workspaces/acl2-jupyter
-git submodule update --remote context/acl2
-```
-
-To record a new pinned commit after pulling changes:
+**The build-side fix:** `Sources/fix-events-missing-proofs.py`.  It scans
+`Proofs/*.events` and drops any `DEFINE`/`VERIFY` entry whose proof file does
+not exist, printing exactly what it dropped.  Dropping such an entry is sound:
+the object it introduces is already present in the image the level's checkpoint
+is built on, so the replay reproduces the intended state.
 
 ```sh
-cd /workspaces/acl2-jupyter
-git add context/acl2
-git commit -m "Update acl2 milawa submodule"
+cd /home/acl2/books/projects/milawa
+python3 fix-events-missing-proofs.py                    # dry run, all levels
+python3 fix-events-missing-proofs.py --apply            # rewrite in place
+python3 fix-events-missing-proofs.py Proofs/level4.events   # or one file
 ```
+
+**Verified.**  Injecting the two original dangling entries into the current
+`level4.events` and running the tool:
+
+```
+Proofs/level4.events: would drop 2 entries with a missing proof file
+    DEFINITION-OF-NOT   (missing: Proofs/level4/admit-definition-of-not.proofs)
+    DEFINITION-OF-NOT   (missing: Proofs/level4/thm-definition-of-not.proof)
+```
+
+and after `--apply` the manifest is **identical** to the known-good
+`level4.events` that produced a passing `level4.sbcl-linux64`.  On a fully
+generated tree the tool reports 0 broken entries (everything else is consistent).
+
+**Full post-build sequence** (run after generating proofs, before
+`final-checks.sh`):
+
+```sh
+cd /home/acl2/books/projects/milawa
+python3 fix-events-inline.py           --apply Proofs/*.events   # section 11
+python3 fix-events-missing-proofs.py   --apply                   # this section
+./final-checks.sh sbcl sbcl-linux64
+```
+
+Both tools are idempotent and dry-run by default.
+
+### 6.19 NOT a parallelism artefact; resolved by supplying the proof (2026-10-17)
+
+**Is this the same kind of race as the level9 `ALL-EQUALP-REMOVAL` failure
+(§8)?  No.**  §8 was three books writing one proof file name concurrently.  For
+level4 there is only one book, and the skip can be reproduced with no `make`
+involved at all -- typing the event straight into the image:
+
+```sh
+cd ACL2
+printf '(in-package "ACL2")\n(%%autoadmit definition-of-not)\n(exit 0)\n' \
+  | ./acl2-images/level4-symmetry
+# ->  ACL2 !> :REDUNDANT
+```
+
+No parallelism, no dependency graph, nothing else running.  ACL2 skips the event
+because `definition-of-not` is genuinely already in that world (see the
+correction in 4.3).  So a serial `make` will not change this, and neither will
+any build ordering.
+
+**The resolution: supply the proof instead of deleting the entry.**  The fact
+recorded by the level4 event is the *same fact* level3 already proved, and
+level3's proof is a legitimate witness.  Copying it keeps the source pristine,
+keeps the manifest intact, and keeps the obligation in place -- which is the
+important difference from 6.18's `fix-events-missing-proofs.py` (that tool
+*removes* an obligation from the manifest).
+
+```sh
+cd /home/acl2/books/projects/milawa
+python3 fix-missing-proofs.py            # dry run over Proofs/*.events
+python3 fix-missing-proofs.py --apply
+```
+
+It finds each referenced-but-absent proof file, looks for the identically-named
+file in another level's `Proofs/` directory, and copies it.
+
+**Soundness: copying cannot weaken verification.**  `final-checks.sh` still
+reads each proof and re-checks it against the level's world; the conclusion must
+match the obligation exactly.  A wrong copy is *rejected*, not silently
+accepted.  (Dropping the entry, by contrast, removes the check.)
+
+**Verified.**  With the two files removed and the two original entries
+re-injected into the manifest:
+
+```
+Proofs/level4-syn.events: DEFINITION-OF-NOT: Proofs/level4/admit-definition-of-not.proofs <- Proofs/level3/admit-definition-of-not.proofs
+Proofs/level4-syn.events: DEFINITION-OF-NOT: Proofs/level4/thm-definition-of-not.proof <- Proofs/level3/thm-definition-of-not.proof
+missing entries: 2   supplied: 2   unresolved: 0
+```
+
+and replaying those two entries through the kernel:
+
+```
+5659> DEFINE DEFINITION-OF-NOT
+;; Checking the proofs took 0.00 seconds
+;; DEFINE took 0.00 seconds
+5660> VERIFY DEFINITION-OF-NOT
+;; Checking the proof took 0.00 seconds
+;; VERIFY took 0.00 seconds
+All commands have been accepted.
+```
+
+On a fully generated tree the tool reports `missing entries: 0`.
+
+**End-to-end confirmation.** With the supplied proof in place,
+`level4.sbcl-linux64` replays `Proofs/level4.events` to `EXIT=0`, and a dry run
+across the whole tree reports `missing entries: 0   suppliable: 0
+unresolved: 0`.
+
+**Preferred post-build sequence** (sources pristine, manifests intact):
+
+```sh
+cd /home/acl2/books/projects/milawa
+python3 fix-events-inline.py  --apply Proofs/*.events   # section 11
+python3 fix-missing-proofs.py --apply                   # this section
+./final-checks.sh sbcl sbcl-linux64
+```
+
+`fix-events-missing-proofs.py` (6.18) remains available and documented, but is
+weaker: use it only if a missing proof has no counterpart anywhere else.
 
 ---
 
@@ -973,10 +1124,11 @@ git commit -m "Update acl2 milawa submodule"
 
 | | level4 | level10 | level9 |
 |---|---|---|---|
-| Symptom | 2 proofs never written, events still referenced them | build aborts mid-way | proof on disk rejected |
-| Root cause | duplicate event name across levels (image inherits it) combined with events/proof-file serialization | SBCL binding stack too small for this book | duplicate proof filename written by 3 books; mixed rebuild |
-| Category | **environment/reproduction** (ACL2 image + event serialization) | **environment** (SBCL vs CCL) | **build hygiene** (mixed/stale Proofs) |
-| Status | unblocked (§6.16) | FIXED (§5.0.2) | open — clean rebuild (§8.4) |
+| Symptom | 2 proofs never written, events still referenced them | build aborts mid-way | proof on disk rejected; earlier, a hang |
+| Root cause | duplicate event name across levels (image inherits it) combined with events/proof-file serialization | SBCL binding stack too small for this book | **parallel-build race**: 3 books write one proof filename (§8); plus SBCL inline blow-up (§11) |
+| Category | **environment/reproduction** (ACL2 image + event serialization) | **environment** (SBCL vs CCL) | **build reproducibility** (parallelism) + **toolchain** (SBCL inliner) |
+| Status | FIXED in the build (§6.19) | FIXED (§5.0.2) | FIXED (§11.6) |
+| Residue | none; sources pristine | none | apply `fix-events-inline.py` after regenerating events |
 
 All three are consistent with §0: the code is fine; our environment and
 partial rebuilds change the event/proof stream.
@@ -1043,46 +1195,125 @@ So the duplicate-name situation is pre-existing and already partially
 mitigated upstream. What is *new* is the rejection, which points at our
 build.
 
-### 8.3 Why we suspect a stale/mixed build, not a source defect
+### 8.3 Root cause CONFIRMED: a parallel-build race on the shared proof file
 
-- `eqdatabasep`, `theoryp-aux`, and `add-equality` were all rebuilt at
-  different times (06:01–06:03), and the level9 `Proofs/` directory has been
-  written by multiple partial rebuilds over the course of this session.
-- A single proof filename shared by three books means **the last writer
-  wins**, and which book that is depends on build order — so a mixed
-  `Proofs/` directory can easily end up with a proof that does not match the
-  events entry.
-- Nothing in Milawa's logic changed; only how and when we rebuilt.
+We reproduced the failure deterministically, so the cause is no longer a
+hypothesis:
 
-### 8.4 Recommended next step (build debugging, not source editing)
+1. **Parallel build (`make -jN`).** Cleaned the three books, then rebuilt them
+   with `make -j3`. The three certification processes all write
+   `Proofs/level9/thm-all-equalp-removal.proof` concurrently; the last writer
+   wins, non-deterministically. In the test the on-disk proof was **337,526
+   bytes** (md5 `0086345763952f8c6b5814c16c7b7896`).
+   Replaying `Proofs/level9.events` against the level8 image:
+   **`The proof was rejected`**.
 
-Do a **clean, consistent rebuild of level9** — remove all level9
-`.mpcert`/`.out`, `Proofs/level9/`, and `Proofs/level9.events`, rebuild the
-whole level in one pass, then re-check. If the proofs are generated
-consistently in one run, the rejection should disappear. If it *persists*
-after a clean single-pass rebuild, then and only then is it worth looking at
-the three definitions — and even then the question is which one the tooling is
-*supposed* to keep, not which one is "wrong".
+2. **Serial build (`make -j1`).** Same clean, but rebuilt the books one at a
+   time. Now the last writer is always `theoryp-aux` (the only **global**
+   copy), whose proof is **330,067 bytes** (md5
+   `44322eb29f8b8223a1da76cf201f7043`). Replaying the same events:
+   **accepted**.
 
-### 8.5 Status
+3. **A/B swap.** Putting the 337,526-byte proof next to the *same* events
+   reproduces the rejection; putting the 330,067-byte proof back makes it pass.
+   Only the proof file changed — the events file is identical. So the
+   discrepancy is entirely in **which book won the race to write the shared
+   filename**.
 
-Open — to be investigated as a build/reproduction issue per §8.4.
+The reason a *wrong* proof can be written at all is that the three copies are
+not identical. `theoryp-aux`'s copy is the global one the events entry expects;
+`add-equality`'s copy is a `local` copy with a different proof (an extra copied
+definition). If `add-equality` finishes last, its proof ends up at the shared
+path and does not match the events entry.
+
+### 8.4 Why this only bites us now
+
+This is a consequence of the ACL2 8.7 prep work, not of anything we did.
+Before commit `c1b77f4771` ("...Fixed Milawa issues", Matt Kaufmann, 2026-03),
+`all-equalp-removal` existed in only two books, `eqdatabasep` and
+`theoryp-aux`, and **both wrote byte-identical proofs** — so the race was
+harmless (whichever won, the proof matched). That commit made `eqdatabasep`'s
+copy `local` (to dodge a new ACL2 8.7 redundancy error) and **added a third
+`local` copy in `add-equality`** whose proof is *different*. Now there are
+three writers of one filename with two distinct payloads, so the parallel
+build is inherently non-deterministic.
+
+Note that the upstream proof-generation path is already serial: ACL2's
+`books/GNUmakefile` target `milawa-test-extended` runs
+`cd projects/milawa/ACL2; $(MAKE) ACL2=$(ACL2) all` with **no `-j`**, so the
+proofs Milawa ships were produced without this race. The failure only appears
+when the build is parallelised (as our container/CI build does with
+`make -j`).
+
+### 8.5 Recommended next step (build debugging, not source editing)
+
+Because the problem is build reproducibility, the fix belongs in how *we*
+generate and assemble the `Proofs/` directory — **not** in Milawa's logic:
+
+- Generate the bootstrapping proofs **serially** (single-threaded) so the
+  shared filename is written deterministically, **or**
+- pre-supply the canonical `Proofs/` tree (Milawa ships proofs precisely so
+  that `final-checks.sh` can check them without regenerating), **or** propose
+  (upstream) that the tooling de-duplicate/disambiguate proof filenames so a
+  shared name can never be clobbered by a different proof.
+
+Any upstream change would be to the *proof-generation tooling*, and would be
+justified by reproducibility, not by a claim that a decade of proofs is wrong.
+
+### 8.6 Status
+
+Root cause identified and reproduced; disambiguation is a build/tooling matter
+(§8.5). **No Milawa source change is warranted.** Resolved operationally by
+building serially: level9 and everything above it now check (§9).
 
 ---
 
 ## 9. Overall build status (2026-10-17)
 
-With the level4 and level10 *environment* fixes in place, `final-checks.sh
-sbcl sbcl-linux64` succeeds through **level3 → level4 → level5 → level6 →
-level7 → level8**, and stops at **level9** on the `ALL-EQUALP-REMOVAL`
-rejection described in §8. The remaining work is build debugging (§8.4),
-**not** Milawa source changes.
+**The pipeline is complete.** `final-checks.sh sbcl sbcl-linux64` replays every
+level and all 13 check:
+
+| level | image | result |
+|---|---|---|
+| base .. level8 | `level8.sbcl-linux64` | checked earlier the same day, before the level9 fix |
+| level9 | `level9.sbcl-linux64` (65 MB) | `EXIT=0`, ~8.5 min, after `fix-events-inline.py` (§11) |
+| level10 | `level10.sbcl-linux64` (68 MB) | `EXIT=0`, ~31 min measured event time; slowest proof 1245 s |
+| level11 | `level11.sbcl-linux64` (70 MB) | `EXIT=0`, 15,687 events, no missing proofs |
+| user | `user.sbcl-linux64` (70 MB) | `EXIT=0`, 18 s |
+
+Nothing in Milawa's logic, kernel or sources was changed to get here. All four
+discrepancies encountered were resolved on the build/toolchain side:
+
+| # | problem | resolution |
+|---|---|---|
+| 4 | level4 `definition-of-not` proof never written | supply level3's identically-named proof (§6.19) |
+| 5 | level10 binding stack exhaustion | big-stack SBCL build (§5.0.2) |
+| 8 | level9 `ALL-EQUALP-REMOVAL` proof rejected | serial build; one proof file, one writer (§8.3) |
+| 11 | level9 `DEFINE RW.FAST-EQDATABASE-EXTEND` hang | clear `inlinep` on recursive definitions (§11) |
+
+Remaining housekeeping: `Proofs/level7.events` still wants one `inlinep`
+rewrite (see §11.6). Level7 checks fine as it stands, so this is consistency
+rather than a blocker -- but apply the tool before regenerating level7.
+
+A from-scratch `make all` has **not** been run end to end with the current
+tools. The levels above were checked by replaying the manifests produced by the
+earlier build, which is exactly what `final-checks.sh` verifies.
 
 ---
 
 ## 10. Useful commands
 
 ```sh
+# the whole check, from the Sources directory (note the image extension)
+cd /home/acl2/books/projects/milawa
+python3 fix-events-inline.py  --apply Proofs/*.events   # §11
+python3 fix-missing-proofs.py --apply                   # §6.19
+./final-checks.sh sbcl sbcl-linux64
+
+# re-check one level (final-checks skips images that already exist)
+rm -f level4.sbcl-linux64
+./final-checks.sh sbcl sbcl-linux64
+
 # clean level4 and rebuild
 cd ACL2
 rm -f bootstrap/level4/*.mpcert bootstrap/level4/*.out
@@ -1094,8 +1325,313 @@ nohup env SBCL_USER_ARGS="--dynamic-space-size 65536 --control-stack-size 4096" 
 nohup env SBCL_USER_ARGS="--dynamic-space-size 65536 --control-stack-size 4096" \
   make bootstrap/level4/clause-basics.mpcert > /tmp/l4-cb.log 2>&1 &
 
+# run one book without letting make rebuild the whole image chain
+cd bootstrap/level10
+printf '(in-package "ACL2")\n(provisionally-certify "crewrite-iffp")\n(exit 0)\n' \
+  | ../../acl2-images/level10-symmetry          # exit status 44 = success
+
 # find missing proof files referenced by an events file
 cd ..
 grep -o 'Proofs/[a-z0-9]*/[^"]*\.proof[s]*' Proofs/level4.events | sort -u |
   while read f; do [ -e "$f" ] || echo "MISSING: $f"; done
+```
+
+---
+
+## 11. The level9 stall: `DEFINE RW.FAST-EQDATABASE-EXTEND` (2026-10-17)
+
+> **Read §0 first.** As with §8, this is recorded as an
+> **environment/toolchain** finding — SBCL's inliner, not Milawa's logic.
+
+### 11.1 Symptom
+
+`final-checks.sh` appears to **hang** during the level9 replay. The log stops
+dead after command 1895 (`Proofs/level9.events` line 1896):
+
+```
+12522> DEFINE RW.FAST-EQDATABASE-EXTEND
+;; Reading from Proofs/level9/admit-rw.fast-eqdatabase-extend.proofs
+;; Reading the file took 0.00 seconds
+;; Checking the proofs took 0.00 seconds
+```
+
+and then nothing for ~47 minutes (`real 53m38s`, `user 53m37s` — 100% CPU, no
+I/O wait), ending with:
+
+```
+;
+; compilation unit aborted
+;   caught 1 fatal ERROR condition
+```
+
+That trailing note is what SBCL prints when it is **signalled** mid-compile.
+The run had been killed, not aborted by itself — so the "1 fatal ERROR
+condition" was a red herring, and there was never an error message to find.
+
+**This is level9, not level10.** `level9.sbcl-linux64` was never written, so the
+run never got as far as level10.
+
+### 11.2 Where the time goes
+
+The per-event timings in `level9.sbcl-linux64.out` sum to **346 s** for all 1895
+commands that were processed. The run took **3220 s**. So roughly **47 minutes
+were spent inside this single event**, and the log proves where: the last two
+lines before the stall are the proof-reading and proof-checking reports, which
+means execution had already reached `defun-safe-fn` (`milawa.lsp:185`) and its
+`(eval `(compile (defun ,name ,formals ... ,body)))`.
+
+RSS stayed flat at 5.2 GB throughout, so this is not heap exhaustion or a GC
+death spiral; it is compile-time work.
+
+### 11.3 Fast reproduction (6 minutes + 3 seconds)
+
+The 47 minutes is *not* needed to reproduce. Replaying level9 from the level8
+image only takes ~6 minutes, and doing it once yields a reusable checkpoint:
+
+```sh
+cd /home/acl2/books/projects/milawa
+# everything up to (not including) the failing DEFINE
+tail -n +2 Proofs/level9.events | head -n 1894 > /tmp/l9pre.events
+echo '(FINISH "l9probe")' >> /tmp/l9pre.events
+sbcl --dynamic-space-size 32000 --control-stack-size 1024 \
+     --core level8.sbcl-linux64 --noinform --disable-debugger \
+     < /tmp/l9pre.events > /tmp/l9pre.out 2>&1      # ~6 min -> l9probe.sbcl-linux64
+
+# the failing event alone, in ~3 s (or forever, if it hangs)
+sed -n '1896p' Proofs/level9.events > /tmp/ev1896.lisp
+timeout 90 sbcl --dynamic-space-size 32000 --control-stack-size 1024 \
+     --core l9probe.sbcl-linux64 --noinform --disable-debugger \
+     < /tmp/ev1896.lisp
+```
+
+Every subsequent probe is then a 3-second experiment.
+
+> Note the SBCL option order: `--core` is a C runtime option, so it must come
+> **before** Lisp options like `--noinform` / `--disable-debugger`.
+
+### 11.4 Root cause: inline-expansion blow-up
+
+Bisecting the body inside that checkpoint (each probe ≤20 s) isolates it to one
+call:
+
+| probe (identical bindings, one extra call) | result |
+|---|---|
+| baseline, no extra call | 0.01 s |
+| `(RW.FAST-FIND-EQTRACE-CONTRADICTION ...)` | 0.44 s |
+| `(RW.FAST-EQSET->HEAD ...)` / `->IFFP` / `->TAIL` | 0.01 s |
+| `(RW.FIND-RELEVANT-FAST-EQSET ...)` | 0.07 s |
+| `(RW.FAST-EQSET ...)` / `(RW.REMOVE-FAST-EQSET-BY-HEAD ...)` | 0.01 s |
+| **`(RW.FIND-CONTRADICTION-IN-FAST-EQSET-LIST EQUALSETS)`** | **HANG** |
+
+`RW.FIND-CONTRADICTION-IN-FAST-EQSET-LIST` is **self-recursive** and its own
+`DEFINE` has `inlinep = T`; its body calls `RW.FAST-FIND-EQTRACE-CONTRADICTION`,
+which is also recursive and also `inlinep = T`. 159 of the 428 level9 `DEFINE`s
+carry `inlinep = T`.
+
+`defun-safe-fn` does:
+
+```lisp
+(when inlinep (eval `(declaim (inline ,name))))
+(eval `(compile (defun ,name ,formals (declare (ignorable ,@formals)) ,body)))
+```
+
+SBCL declines to inline the *immediate* self-call (it reports "could not be
+inlined because no definition for it was seen prior to its first use"), but when
+a **caller** is compiled the callee's body is expanded at the call site, and the
+nested inline chain multiplies. The cost grows by roughly a factor of 150-180
+per nesting level, so a chain two levels deep is effectively unbounded.
+
+Minimal reproducer, no Milawa involved (each function is recursive and declared
+inline, `f_i` calls `f_{i-1}`, then a caller is compiled):
+
+| chain depth | SBCL 2.6.9 | SBCL 2.6.1 |
+|---|---|---|
+| 0 | 0.002 s | 0.002 s |
+| 1 | 0.32 s | 0.39 s |
+| 2 | **>30 s (hang)** | **>30 s (hang)** |
+
+**Version test done:** SBCL 2.6.1, built with the same Dockerfile flags, behaves
+identically. This is long-standing inliner behaviour, **not** a regression in
+2.6.9, so changing SBCL version will not fix it.
+
+### 11.5 Fix options
+
+1. **Do not declare recursive definitions inline** (preferred). In
+   `defun-safe-fn`, skip the `(declaim (inline ,name))` when `name` occurs in
+   `body`. This changes only how the checker *compiles* the definition — the
+   events, the proofs and the accepted theorems are untouched, so nothing needs
+   to be rebuilt except the kernel and the level9+ checkpoints. Caveat: it edits
+   `milawa.lsp`, i.e. the trusted kernel; the edit is a compiler hint only and
+   cannot change which proofs are accepted, but it should be called out.
+2. **Fix the generator instead** (ACL2 side): make `%defun` / the
+   `get-functions-to-inline` path emit `inlinep = NIL` for recursive functions.
+   Cleaner conceptually, but it changes the `.events` files and therefore forces
+   a rebuild of every level (and CCL never needed it, so it is a portability fix,
+   not a correctness fix).
+3. **Wrap the shell-out** in `final-checks.sh` with a watchdog — hides the
+   problem, does not unblock the proof, so not recommended.
+
+### 11.6 FIX APPLIED and VERIFIED (2026-10-17)
+
+**Change:** option 1, implemented as an **events-file rewrite** rather than a
+kernel change. `inlinep` is read from the events file and passed straight to
+`defun-safe-fn`; it is only a compilation hint and cannot affect which proofs
+are accepted. Clearing it for recursive definitions therefore fixes the stall
+**without touching the trusted kernel (`milawa.lsp`) and without rebuilding any
+ACL2 book**.
+
+Tool: `Sources/fix-events-inline.py` (next to `final-checks.sh`). It parses each
+`.events` file, and for every `DEFINE` whose body mentions its own name and whose
+`inlinep` is `T`, rewrites just that token to `NIL`.
+
+```sh
+cd /home/acl2/books/projects/milawa
+python3 fix-events-inline.py Proofs/level9.events          # dry run
+python3 fix-events-inline.py --apply Proofs/level9.events  # rewrite
+```
+
+Affected definitions found when the tool was first run:
+
+| file | count | names | state now |
+|---|---|---|---|
+| `Proofs/level9.events` | 4 | `RW.FIND-CONTRADICTION-IN-EQSET-LIST`, `RW.FAST-FIND-EQTRACE-CONTRADICTION`, `RW.FIND-CONTRADICTION-IN-FAST-EQSET-LIST`, `RW.FIND-RELEVANT-FAST-EQSET` | rewritten; image checks |
+| `Proofs/user.events` | 1 | `*` (Milawa's multiplication, genuinely recursive) | rewritten; image checks |
+| `Proofs/level7.events` | 1 | `CLAUSE.NORMALIZE-NOTS-TERM` | **still pending** -- level7 checks either way |
+
+All other events files (primitives, utilities, logic, level2-6, 8, 10, 11) need
+no change. The rewrite is a single-token change per definition: the diff of
+`level9.events` is 4 lines, `T` -> `NIL`, +8 bytes total. The original is kept
+as `Proofs/level9.events.orig-inlinep`.
+
+**Verification (full level9 replay, not just the prefix):**
+
+```sh
+cd /home/acl2/books/projects/milawa
+sbcl --dynamic-space-size 32000 --control-stack-size 1024 \
+     --core level8.sbcl-linux64 --noinform --disable-debugger \
+     < Proofs/level9.events > /tmp/l9full.out 2>&1
+```
+
+| | before | after |
+|---|---|---|
+| `DEFINE RW.FAST-EQDATABASE-EXTEND` (event 12522) | ~47 min, never finished | **0.03 s** |
+| whole level9 replay (2907 commands) | never completed | **8.5 min**, `EXIT=0` |
+| measured per-event time | 346 s for the first 1895 events | 543 s for all 2907 |
+| output | none | `level9.sbcl-linux64` (65 MB) written by `(FINISH "level9")` |
+
+No errors, no rejected proofs, no missing proof files. The pipeline can now
+advance past level9.
+
+**Important caveat:** regenerating the proofs re-writes the `.events` files and
+undoes this. Re-run the tool (dry run first) after any ACL2-side regeneration of
+`Proofs/*.events`. A permanent fix belongs upstream in one of the two places
+named in §11.5 (kernel `defun-safe-fn`, or the generator's `inlinep` decision).
+
+**Why not just change the kernel / regenerate the events?** Either would force a
+full re-verification chain (base image plus every level, ~7.5 h for levels up to
+8). The events rewrite is cheap because it changes neither the kernel nor any
+proof file.
+
+### 11.7 Generator-side fix: `interface/core.lisp` (2026-10-17)
+
+The events rewrite in 11.6 repairs the manifests we already have. The fix that
+stops the problem being regenerated is one level up, in the ACL2 code that
+decides `inlinep` in the first place: `thmfiles-to-events`.
+
+Before:
+
+```lisp
+(inlinep  (memberp name functions-to-inline))
+```
+
+After:
+
+```lisp
+(inlinep  (and (memberp name functions-to-inline)
+               (not (%function-occursp name body))))
+```
+
+`%function-occursp` is a new `:mode :program` helper that walks the body for the
+definition's own name. A `DEFINE` whose body mentions its name is therefore
+serialized with `inlinep = NIL`. A ~30-line comment above the change records the
+measurement (x150-180 expansion per nesting level, the level9 chain, 47 min ->
+0.03 s) so the next reader does not have to rediscover it.
+
+Why this is safe:
+
+- `inlinep` is a compilation hint and nothing else. The kernel's `defun-safe-fn`
+  consumes it as `(declaim (inline ,name))`; it appears in no proof and cannot
+  change which theorems are accepted.
+- It only ever *removes* an inline request for a self-recursive function, which
+  the host Lisp cannot usefully inline anyway: the recursive call itself is
+  never inlined (SBCL: "could not be inlined because no definition for it was
+  seen prior to its first use"), and the expansion performed when compiling a
+  *caller* is what blows up.
+- CCL never exhibited the blow-up, so this is a portability fix, not a
+  correctness fix.
+
+Two limits worth stating plainly:
+
+1. **It has no effect on existing `.events` files.** Manifests generated before
+   this change keep their `T`s; 11.6's tool is still required for them.
+2. **It has not yet been exercised by a rebuild.** It edits `interface/`, which
+   invalidates every `<level>-symmetry` image, so confirming it needs a full
+   chain rebuild. The first such rebuild should show `inlinep NIL` for e.g.
+   `RW.FIND-CONTRADICTION-IN-FAST-EQSET-LIST` in a freshly generated
+   `level9.events`, with no post-processing.
+
+---
+
+## 12. Tracking changes: the ACL2 submodule
+
+To keep track of Milawa changes against ACL2, the workspace
+(`/workspaces/acl2-jupyter`) includes an ACL2 submodule:
+
+- **Path:** `context/acl2`
+- **URL:** `https://github.com/jimwhite/acl2.git`
+- **Branch:** `milawa`
+- **Base commit for the changes described in this document:**
+  `bfac1dd70dc0542436cda7e75cfd9db060203ea0`
+
+This is the fork/branch that carries the Milawa sources and the "Matt K. mod"
+patches described in section 6.3. It is the canonical place to record and
+review changes to Milawa's ACL2 coupling.
+
+Note the distinction:
+
+- `/home/acl2` is the **build directory** — a plain (non-git) ACL2 tree used to
+  actually build and run Milawa. It is not version-controlled.
+- `context/acl2` is the **tracked submodule** — the git checkout of the
+  `milawa` branch, used to track changes.
+
+What the branch carries on top of that base commit:
+
+| file | change |
+|---|---|
+| `ACL2/interface/core.lisp` | generator-side `inlinep` fix (§11.7) |
+| `ACL2/bootstrap/level4/clause-basics.lisp` | comment only; code identical to Jared's (§6.19) |
+| `ACL2/bootstrap/level9/eqdatabasep.lisp` | comment only |
+| `BUILD-PROCEDURE.md` | build/check runbook, incl. the SBCL and post-processing steps |
+| `ACL2/MILAWA-BUILD-AND-PROOF-GAPS.md` | this document |
+| `fix-events-inline.py` | clear `inlinep` on self-recursive `DEFINE`s (§11.6) |
+| `fix-missing-proofs.py` | supply a proof from another level (§6.19) |
+| `fix-events-missing-proofs.py` | alternative: drop a dangling manifest entry (§6.18) |
+
+Milawa's verified sources — `milawa.lsp`, `milawa2.lsp`, and everything under
+`ACL2/bootstrap/*/` other than the two comment-only files above — are
+**untouched**. The tools and the two documentation files are the only additions.
+
+To update the submodule to the latest `milawa` branch:
+
+```sh
+cd /workspaces/acl2-jupyter
+git submodule update --remote context/acl2
+```
+
+To record a new pinned commit after pulling changes:
+
+```sh
+cd /workspaces/acl2-jupyter
+git add context/acl2
+git commit -m "Update acl2 milawa submodule"
 ```

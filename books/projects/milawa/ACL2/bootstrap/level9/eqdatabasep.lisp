@@ -44,6 +44,7 @@ is already in use as the name of a rule.
 ; Unfortunately, an attempt failed to move it to the end of
 ; projects/milawa/ACL2/bootstrap/utilities/all-equalp.lisp.  An attempt
 ; also failed to rename it here.  So I'll make it local where needed.
+; jimwhite: The multiple proof files have a race.  Should local mean not writing the file?
 (local
 (%autoprove all-equalp-removal
             (%cdr-induction x)

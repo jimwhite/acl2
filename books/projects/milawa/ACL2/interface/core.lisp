@@ -1618,6 +1618,21 @@
    (let ((ACL2::state (print-list-of-objects objects channel ACL2::state)))
      (ACL2::close-output-channel channel ACL2::state))))
 
+; %function-occursp
+;
+; Does the symbol NAME occur anywhere in the tree X?  Used to detect
+; self-recursive definitions when serializing DEFINE events; see the comment on
+; INLINEP in thmfiles-to-events below.
+
+(defun %function-occursp (name x)
+  (declare (xargs :mode :program))
+  (cond ((equal name x)
+         t)
+        ((consp x)
+         (or (%function-occursp name (car x))
+             (%function-occursp name (cdr x))))
+        (t nil)))
+
 (defun thmfiles-to-events (thmfiles functions-to-inline)
   (declare (xargs :mode :program))
   (if (consp thmfiles)
@@ -1632,7 +1647,40 @@
                             (formals  (third entry))
                             (body     (fourth entry))
                             (measure  (fifth entry))
-                            (inlinep  (memberp name functions-to-inline))
+                            ;; Do not ask the host Lisp to inline a
+                            ;; SELF-RECURSIVE definition.
+                            ;;
+                            ;; The kernel's DEFINE handler (milawa.lsp,
+                            ;; defun-safe-fn) does
+                            ;;   (declaim (inline NAME))
+                            ;;   (compile (defun NAME ...))
+                            ;; Inlining a recursive function buys nothing: the
+                            ;; recursive call itself is never inlined (SBCL:
+                            ;; "could not be inlined because no definition for
+                            ;; it was seen prior to its first use").  Worse, in
+                            ;; SBCL the inline expansion performed when a
+                            ;; CALLER is compiled multiplies through a chain of
+                            ;; inline-declared recursive functions - measured at
+                            ;; roughly x150-180 per nesting level - so a
+                            ;; two-deep chain never finishes compiling.
+                            ;;
+                            ;; Observed on level9: DEFINE
+                            ;; RW.FAST-EQDATABASE-EXTEND calls
+                            ;; RW.FIND-CONTRADICTION-IN-FAST-EQSET-LIST, which
+                            ;; is recursive and was marked inline, and that in
+                            ;; turn calls the recursive, inline
+                            ;; RW.FAST-FIND-EQTRACE-CONTRADICTION.  The
+                            ;; resulting compile burned ~47 minutes of CPU
+                            ;; without finishing, stalling final-checks.sh at
+                            ;; level9.  Clearing INLINEP for the four
+                            ;; recursive level9 definitions made the same event
+                            ;; compile in 0.03s and let the whole level replay
+                            ;; in 8.5 minutes.
+                            ;;
+                            ;; This is a compilation hint only; it has no
+                            ;; effect on which proofs are accepted.
+                            (inlinep  (and (memberp name functions-to-inline)
+                                           (not (%function-occursp name body))))
                             (filename (ACL2::sixth entry)))
                        (list 'DEFINE name formals body measure inlinep filename)))
                     ((equal (first entry) 'SKOLEM)

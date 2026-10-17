@@ -117,17 +117,21 @@
 
 
 
-;; NOTE: definition-of-not is already admitted at level3 (see
-;; bootstrap/level3/not.lisp), and the level4 image is built on top of the
-;; level3 image, so it is already present here.  Re-admitting it with
-;; (%autoadmit definition-of-not) is redundant: ACL2 skips the event, no
-;; termination proof is generated, and no admit-definition-of-not.proofs file
-;; is written.  However, the certificate replay performed by
-;; (include-book "clause-basics") still records a DEFINE entry for it in the
-;; thmfiles table, so level4.events ends up referencing a proof file that does
-;; not exist, which makes final-checks.sh fail.  We therefore do not re-admit
-;; it here.  (%noexec ...) is still needed to keep the rewriter from trying to
-;; evaluate definition-of-not.
+;; NOTE: definition-of-not is admitted at level3 (bootstrap/level3/not.lisp)
+;; and is re-admitted here.  Because bootstrap/level4/cert.image names
+;; level4-symmetry, and that image is built from level3-symmetry plus level3's
+;; books, the definition is already in the world at this point, so with ACL2
+;; 8.7 this event is redundant: ACL2 skips it and no
+;; admit-definition-of-not.proofs is written.  Certificate replay during
+;; (include-book "clause-basics") can still leave a DEFINE entry in the
+;; thmfiles table, so a freshly generated level4.events may reference a proof
+;; file that does not exist.
+;;
+;; That is handled on the build side, NOT here: run
+;; Sources/fix-events-missing-proofs.py after generating the proofs.  See
+;; ACL2/MILAWA-BUILD-AND-PROOF-GAPS.md section 6.
+(%autoadmit definition-of-not)
+
 (%noexec definition-of-not)
 
 (%defderiv clause.substitute-iff-into-literal-bldr)
