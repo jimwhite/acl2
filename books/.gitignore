@@ -30,6 +30,8 @@ Makefile-tmp.lsp
 *.d64fsl
 *.dx64fsl
 *.lx64fsl
+*.da64fsl
+*.la64fsl
 *.fx64fsl
 *.bin
 *.sparcf
