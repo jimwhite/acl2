@@ -117,7 +117,17 @@
 
 
 
-(%autoadmit definition-of-not)
+;; NOTE: definition-of-not is already admitted at level3 (see
+;; bootstrap/level3/not.lisp), and the level4 image is built on top of the
+;; level3 image, so it is already present here.  Re-admitting it with
+;; (%autoadmit definition-of-not) is redundant: ACL2 skips the event, no
+;; termination proof is generated, and no admit-definition-of-not.proofs file
+;; is written.  However, the certificate replay performed by
+;; (include-book "clause-basics") still records a DEFINE entry for it in the
+;; thmfiles table, so level4.events ends up referencing a proof file that does
+;; not exist, which makes final-checks.sh fail.  We therefore do not re-admit
+;; it here.  (%noexec ...) is still needed to keep the rewriter from trying to
+;; evaluate definition-of-not.
 (%noexec definition-of-not)
 
 (%defderiv clause.substitute-iff-into-literal-bldr)
