@@ -23,7 +23,16 @@
 
 	// Installs Clozure CL (CCL), the default ACL2 host Lisp, and completes the
 	// user-level git-lfs setup.
-	"postCreateCommand": "bash .devcontainer/setup.sh"
+	"postCreateCommand": "bash .devcontainer/setup.sh",
+	"remoteEnv": {
+		// Put bin/acl2 on PATH; it launches saved_acl2 from the repo root.
+		"PATH": "${containerWorkspaceFolder}/bin:${containerEnv:PATH}",
+		// Conventional ACL2 environment; see the "Environment variables"
+		// block in the ACL2 installation/certification documentation.
+		"ACL2": "${containerWorkspaceFolder}/saved_acl2",
+		"ACL2_SYSTEM_BOOKS": "${containerWorkspaceFolder}/books",
+		"ACL2_CUSTOMIZATION": "NONE"
+	}
 
 	// Configure tool-specific properties.
 	// "customizations": {},
