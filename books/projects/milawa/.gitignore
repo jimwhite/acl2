@@ -1,7 +1,12 @@
 *.mpcert
 /Proofs/*.events
 /Proofs/*/
-/*.sbcl-linux64
+/*.sbcl-*
+/*.ccl-*
+/*.cmucl-*
+/*.clisp-*
+/*.acl-*
+/*.scl-*
 /*.out
 /final-checks*.log
 /size_macros.tex
