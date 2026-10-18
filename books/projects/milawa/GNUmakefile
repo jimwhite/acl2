@@ -20,24 +20,31 @@
 #
 #   make LISP=sbcl EXT=my-tag
 #
-# Only SBCL is wired up as a builder here; see README for the other Lisps.
+# CCL is the default builder: it needs no custom Lisp build, because its
+# value/control stacks are sized at runtime (-Z/-S) and milawa.lsp sets them
+# to 128 MB.  SBCL is supported as a fallback, but level10 needs an SBCL
+# runtime with a larger binding stack (BUILD-PROCEDURE.md section 3.1).
+# The milawa-cmucl/clisp/scl/acl launchers can run saved images but are not
+# builder targets here.
 
 SHELL := /bin/bash
 .SHELLFLAGS := -o pipefail -c
 
 # Host Lisp.  ACL2's own GNUmakefile uses the same variable name ("LISP = ccl"),
-# so honour it rather than hard-coding an implementation.  The recipe below
-# passes SBCL's memory flags, so SBCL is the supported builder.
-LISP ?= sbcl
+# so honour it rather than hard-coding an implementation.
+LISP ?= ccl
+LISPNAME ?= $(notdir $(firstword $(LISP)))
+CCL ?= $(LISP)
 SBCL ?= $(LISP)
 
 # The tag that names the kernel images.  Nothing in Milawa computes this:
 # milawa.lsp simply uses whatever IMAGE-EXTENSION is bound to before the load,
 # and Jared's examples were free-form names like "ccl-linux64" / "sbcl-win32".
-# Derive it from the environment instead, so it cannot claim the wrong platform.
-LISPNAME ?= $(notdir $(SBCL))
+# Derive it from the environment instead, so it cannot claim the wrong platform
+# (e.g. linux-aarch64, linux-x86_64, darwin-arm64).
 PLATFORM ?= $(shell uname -s | tr 'A-Z' 'a-z')-$(shell uname -m)
 EXT      ?= $(LISPNAME)-$(PLATFORM)
+CCL_STACK ?= 128M
 SBCL_DYNAMIC_SPACE ?= 32000
 SBCL_CONTROL_STACK ?= 1024
 
@@ -56,6 +63,14 @@ base: $(BASE)
 
 # milawa.lsp ends with (save-and-exit "base"), which names its output
 # "base." + IMAGE-EXTENSION, so that variable has to be bound before the load.
+ifeq ($(LISPNAME),ccl)
+$(BASE): milawa.lsp
+	$(CCL) -n -Z $(CCL_STACK) -S $(CCL_STACK) \
+	       -e '(defparameter image-extension "$(EXT)")' \
+	       -l milawa.lsp \
+	       -e '(ccl:quit)'
+	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
+else ifeq ($(LISPNAME),sbcl)
 $(BASE): milawa.lsp
 	$(SBCL) --dynamic-space-size $(SBCL_DYNAMIC_SPACE) \
 	        --control-stack-size $(SBCL_CONTROL_STACK) \
@@ -63,6 +78,12 @@ $(BASE): milawa.lsp
 	        --eval '(defconstant image-extension "$(EXT)")' \
 	        --load milawa.lsp
 	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
+else
+$(BASE): milawa.lsp
+	@echo "error: unsupported builder LISP=$(LISP); use ccl or sbcl" >&2
+	@echo "       (milawa-cmucl/clisp/scl/acl can run images, not build them)" >&2
+	@exit 1
+endif
 
 check: $(BASE)
 	./final-checks.sh $(LISPNAME) $(EXT) | tee final-checks.log

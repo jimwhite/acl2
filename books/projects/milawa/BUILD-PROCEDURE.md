@@ -4,9 +4,11 @@ Step-by-step instructions for building Milawa, cleaning up, and rebuilding.
 Written from the working setup in this container.
 
 Quantities in this document are **measured on this container** (aarch64,
-SBCL 2.6.9, ACL2 8.7), not copied from Jared's 2009 notes. Where a figure comes
-from a measurement, the measurement is stated so it can be re-run. Sections that
-describe the *state* of a build (rather than how to run one) are dated.
+CCL 1.13 on Linux ARM64, ACL2 8.7), not copied from Jared's 2009 notes.  The
+SBCL figures are retained for the fallback described in §3.1.  Where a figure
+comes from a measurement, the measurement is stated so it can be re-run.
+Sections that describe the *state* of a build (rather than how to run one) are
+dated.
 
 ---
 
@@ -14,22 +16,25 @@ describe the *state* of a build (rather than how to run one) are dated.
 
 | Path | What it is |
 |------|-----------|
-| `/home/acl2/books/projects/milawa` | **Sources directory** — `final-checks.sh`, `milawa-sbcl`, `milawa.lsp`, `milawa2.lsp`, the post-processing tools, and `base.sbcl-linux64` |
-| `/home/acl2/books/projects/milawa/ACL2` | **Build directory** — the `Makefile`, `bootstrap/`, `interface/`, `acl2-hacks/`, `acl2-images/` |
-| `/home/acl2/books/projects/milawa/Proofs` | Generated proof files, one subdirectory per level, plus `<level>.events` manifests |
-| `/home/acl2/books/projects/milawa/ACL2/acl2-images` | Generated ACL2 images (`<level>-symmetry`) |
-| `/home/acl2` | The ACL2 source/build tree (not git; the tracked copy is the `context/acl2` submodule in the workspace) |
+| `/workspaces/acl2/books/projects/milawa` | **Sources directory** — `GNUmakefile`, `final-checks.sh`, the `milawa-*` launchers, `milawa.lsp`, `milawa2.lsp`, and `base.<ext>` (for CCL here, `base.ccl-linux-aarch64`) |
+| `/workspaces/acl2/books/projects/milawa/ACL2` | **Build directory** — the `Makefile`, `bootstrap/`, `interface/`, `acl2-hacks/`, `acl2-images/` |
+| `/workspaces/acl2/books/projects/milawa/Proofs` | Generated proof files, one subdirectory per level, plus `<level>.events` manifests |
+| `/workspaces/acl2/books/projects/milawa/ACL2/acl2-images` | Generated ACL2 images (`<level>-symmetry`) |
+| `/workspaces/acl2` | The ACL2 source/build tree; built here with CCL (§4.0) |
 
-Note: `/home/acl2` is the plain build tree. The version-controlled ACL2 checkout
-is the `context/acl2` submodule in `/workspaces/acl2-jupyter` (branch `milawa`).
+Note: the ACL2 tree must be built with the same host Lisp used for the Milawa
+kernel.  With CCL, run `make LISP=ccl` in `/workspaces/acl2` and pass
+`ACL2=/workspaces/acl2/saved_acl2` to the Milawa build.
 
 Tools that live in the Sources directory:
 
 | Tool | Purpose |
 |------|---------|
-| `GNUmakefile` | Builds `base.<ext>` and runs the final checks (`make`, `make help`) |
+| `GNUmakefile` | Builds `base.<ext>` and runs the final checks (`make`, `make help`); CCL by default |
 | `final-checks.sh <lisp> <ext>` | Replays `Proofs/<level>.events` through the standalone kernel (§7) |
-| `milawa-sbcl` | `sbcl --core ...` wrapper used by `final-checks.sh`; heap and stack sizes come from the environment |
+| `milawa-ccl` | Default `ccl --batch -I ...` launcher; stack sizes come from `MILAWA_CCL_THREAD_STACK` / `MILAWA_CCL_STACK` |
+| `milawa-sbcl` | SBCL fallback launcher; heap and stack sizes come from the environment |
+| `milawa-cmucl`, `milawa-clisp`, `milawa-scl`, `milawa-acl` | Launchers for running saved images; not build targets |
 | `Proofs/clean-proofs.sh` | Removes the generated proofs |
 | `Proofs/zip-proofs.sh` | Bundles them for distribution |
 
@@ -52,8 +57,9 @@ the **next** one:
 ./milawa-$LISPNAME "$CURR.$EXT" < "Proofs/$NEXT.events" > "$NEXT.$EXT.out"
 ```
 
-So `level4.sbcl-linux64` is produced by replaying `Proofs/level4.events` into
-`level3.sbcl-linux64`.
+So `level4.<ext>` is produced by replaying `Proofs/level4.events` into
+`level3.<ext>`.  (`<ext>` is derived by the Sources `GNUmakefile` from
+`uname`, e.g. `ccl-linux-aarch64` here; override it with `make EXT=<tag>`.)
 
 The ACL2 side has the same shape one step earlier: the Makefile builds
 `acl2-images/level4-symmetry` from `acl2-images/level3-symmetry` plus level3's
@@ -73,21 +79,33 @@ every level above it.
 
 ## 3. Prerequisites
 
-- SBCL on `PATH` (the `milawa-sbcl` wrapper uses `sbcl`), with a build-id that
-  matches the images on disk (§3.1.4).
-- `base.sbcl-linux64` in the Sources directory. This is the **only** image that
-  must pre-exist; `utilities.sbcl-linux64` and everything above it are
-  *produced* by `final-checks.sh`.
-- Enough memory. The `milawa-sbcl` fallback (used on unconfigured hosts such as
-  containers) is `--dynamic-space-size 32000 --control-stack-size 1024`,
-  overridable via `MILAWA_SBCL_DYNAMIC_SPACE` and `MILAWA_SBCL_CONTROL_STACK`.
-  The saved ACL2 images carry their own settings
-  (`--dynamic-space-size 32000 --control-stack-size 64`), with
-  `$SBCL_USER_ARGS` appended to the command line (§4.2).
+CCL is the default builder and needs no custom Lisp build:
+
+- `ccl` on `PATH` (here `/usr/local/bin/ccl`, from the Clozure 1.13 Linux
+  ARM64 release).  The Sources `GNUmakefile` uses it by default.
+- ACL2 built with CCL (`make LISP=ccl` in the ACL2 tree, §4.0), so the
+  ACL2-side `acl2-images/*-symmetry` wrappers invoke CCL too.
+- `base.<ext>` in the Sources directory (e.g. `base.ccl-linux-aarch64` here).
+  This is the **only** kernel image that must pre-exist; `make base` builds it, and
+  `utilities.<ext>` and everything above it are produced by `make check` /
+  `final-checks.sh`.
+- Enough memory.  CCL's heap grows on demand; the kernel images size the
+  listener's value (binding) and control stacks to 128 MB, and `milawa-ccl`
+  passes `-Z 128M -S 128M` as well.  No runtime rebuild is involved.
+
+SBCL fallback: `milawa-sbcl` and `make LISP=sbcl` work, but level10 needs an
+SBCL runtime with a larger binding stack (32 MB), which means building SBCL
+from source.  See §3.1 for that path.  The figures in §3.1 are SBCL-specific;
+CCL does not need them.
 
 ---
 
-## 3.1 SBCL: the large binding stack needed by level10
+## 3.1 SBCL fallback: the large binding stack needed by level10
+
+CCL does **not** need this section.  CCL's value stack is the analogue of
+SBCL's binding stack, and it is sized at runtime: `milawa.lsp` sets it (and the
+control/temp stacks) to 128 MB, and `milawa-ccl` passes `-Z 128M -S 128M`.
+The material below applies only when you choose to build or check with SBCL.
 
 ### 3.1.1 Why this exists
 
@@ -227,8 +245,8 @@ differs. The shortcut is therefore: keep the original core, force the new
 runtime to claim the old build-id, and rebuild only the runtime (much faster
 than a second full build).
 
-This is what the dev container's `/usr/local/bin/sbcl` does; it is **not** what
-the Dockerfile does (§3.1.3).
+This is what the separate SBCL dev container's `/usr/local/bin/sbcl` does; it
+is **not** what the Dockerfile does (§3.1.3).
 
 ```sh
 cd /tmp && mkdir -p sbcl-build && cd sbcl-build
@@ -333,11 +351,25 @@ is reading the same `Proofs/<level>/` files** -- the build rewrites them.
 
 ## 4. Building
 
-All build commands are run from the **build directory**:
+First build ACL2 with the host Lisp you will use.  CCL is the default:
+
+### 4.0 Build ACL2 with CCL
 
 ```sh
-cd /home/acl2/books/projects/milawa/ACL2
+cd /workspaces/acl2
+make LISP=ccl            # produces saved_acl2
+./saved_acl2             # banner should say "Clozure Common Lisp"
 ```
+
+Then point the Milawa build at that image.  All Milawa build commands are run
+from the **build directory**:
+
+```sh
+cd /workspaces/acl2/books/projects/milawa/ACL2
+```
+
+Passing `ACL2=` explicitly avoids mixing CCL and SBCL images; it is required
+when `acl2` is not on `PATH`.
 
 > ### ⚠ Do NOT use `make -j` when generating proofs
 >
@@ -370,13 +402,14 @@ cd /home/acl2/books/projects/milawa/ACL2
 >
 > This has bitten this project once already (it truncated
 > `acl2-images/level5-symmetry.core` before it was stopped). It is *not* harmful
-> to `Proofs/` or the `.sbcl-linux64` checkpoints, only to derived images, but
+> to `Proofs/` or the `.<ext>` checkpoints, only to derived images, but
 > it wastes hours. See §4.6 for how to run a single book without this happening.
 
 ### 4.1 Full build
 
 ```sh
-make all
+cd /workspaces/acl2/books/projects/milawa/ACL2
+make ACL2=/workspaces/acl2/saved_acl2 all
 ```
 
 This builds every `.mpcert` and every image up to `user-symmetry`. Keep it
@@ -384,9 +417,17 @@ single-threaded — see the warning above. A full build takes many hours; the
 proof-generation part is the long pole (level10 alone is ~30 min of measured
 event time, with a single proof taking ~20 min).
 
-### 4.2 Overriding SBCL memory/stack
+### 4.2 Overriding Lisp memory/stack
 
-`SBCL_USER_ARGS` is interpolated near the **end** of the command line in both
+**CCL (default).**  `milawa-ccl` reads `MILAWA_CCL` (executable),
+`MILAWA_CCL_THREAD_STACK` (listener control and value stacks, default `128M`)
+and `MILAWA_CCL_STACK` (initial control stack, default `128M`) from the
+environment; the Sources `GNUmakefile` uses the same `-Z`/`-S` settings when it
+builds `base.<ext>`.  There is no separate binding-stack flag: `-Z` sizes the
+value stack, which is where special bindings live.  The image already carries
+128 MB defaults from `milawa.lsp`, so these are only for extra headroom.
+
+**SBCL fallback.**  `SBCL_USER_ARGS` is interpolated near the **end** of the command line in both
 `milawa-sbcl` and the `acl2-images/*-symmetry` wrappers, and SBCL applies
 runtime options in order, so a later `--control-stack-size` /
 `--dynamic-space-size` genuinely wins over the wrapper default. Verified:
@@ -405,7 +446,8 @@ So to raise the control stack for an ACL2-side build while leaving the image's
 own settings alone:
 
 ```sh
-SBCL_USER_ARGS="--control-stack-size 4096" make all
+SBCL_USER_ARGS="--control-stack-size 4096" \
+  make ACL2=/workspaces/acl2/saved_acl2 all
 ```
 
 Note that the **binding** stack is not reachable this way (§3.1.1); this only
@@ -414,13 +456,14 @@ covers the control stack and heap.
 ### 4.3 Building a single book
 
 ```sh
-make bootstrap/level4/clause-basics.mpcert
+make ACL2=/workspaces/acl2/saved_acl2 \
+  bootstrap/level4/clause-basics.mpcert
 ```
 
 ### 4.4 Building a single image
 
 ```sh
-make acl2-images/level4-symmetry
+make ACL2=/workspaces/acl2/saved_acl2 acl2-images/level4-symmetry
 ```
 
 ### 4.5 Running a long build detached
@@ -429,8 +472,13 @@ Long builds should be run detached with output to a log, so the terminal is
 not blocked:
 
 ```sh
-nohup env SBCL_USER_ARGS="--control-stack-size 4096" \
-  make bootstrap/level10/level10.mpcert > /tmp/level10.log 2>&1 &
+nohup make ACL2=/workspaces/acl2/saved_acl2 \
+  bootstrap/level10/level10.mpcert > /tmp/level10.log 2>&1 &
+
+# SBCL fallback:
+# nohup env SBCL_USER_ARGS="--control-stack-size 4096" \
+#   make ACL2=<acl2-root>/saved_acl2 \
+#   bootstrap/level10/level10.mpcert > /tmp/level10.log 2>&1 &
 ```
 
 Then inspect `/tmp/level10.log` and the per-book `.out` files.
@@ -501,7 +549,7 @@ To force a level to rebuild from scratch, remove its certificates, outputs,
 proofs, and events file:
 
 ```sh
-cd /home/acl2/books/projects/milawa/ACL2
+cd /workspaces/acl2/books/projects/milawa/ACL2
 rm -f bootstrap/level4/*.mpcert bootstrap/level4/*.out
 rm -rf ../Proofs/level4
 rm -f ../Proofs/level4.events
@@ -510,7 +558,7 @@ rm -f ../Proofs/level4.events
 Then rebuild:
 
 ```sh
-make bootstrap/level4/level4.mpcert
+make ACL2=/workspaces/acl2/saved_acl2 bootstrap/level4/level4.mpcert
 ```
 
 ### 6.2 Clean a level and everything above it
@@ -519,7 +567,7 @@ Because of the image chain, if you change level *N* you must also rebuild the
 images for *N+1* and up. Remove the images too:
 
 ```sh
-cd /home/acl2/books/projects/milawa/ACL2
+cd /workspaces/acl2/books/projects/milawa/ACL2
 rm -f acl2-images/level4-symmetry acl2-images/level5-symmetry \
       acl2-images/level6-symmetry acl2-images/level7-symmetry \
       acl2-images/level8-symmetry acl2-images/level9-symmetry \
@@ -532,7 +580,7 @@ rm -f acl2-images/level4-symmetry acl2-images/level5-symmetry \
 The Makefile has a `clean` target:
 
 ```sh
-cd /home/acl2/books/projects/milawa/ACL2
+cd /workspaces/acl2/books/projects/milawa/ACL2
 make clean
 ```
 
@@ -554,16 +602,22 @@ of that level's `.mpcert`/`.out` files (as in 6.1) before rebuilding.
 kernel, building one image per level. It is run from the **Sources directory**:
 
 ```sh
-cd /home/acl2/books/projects/milawa
-./final-checks.sh sbcl sbcl-linux64
+cd /workspaces/acl2/books/projects/milawa
+make                    # builds base.<ext> and checks every level
+# or directly:
+./final-checks.sh ccl ccl-linux-aarch64
 ```
 
-- Argument 1 is the Lisp name; it must match an executable `milawa-<lispname>`
-  (here `milawa-sbcl`).
+`make` derives `<ext>` from `uname` (`ccl-linux-aarch64` here, `ccl-linux-x86_64`
+on x86-64) and defaults to CCL.  Use `make LISP=sbcl` for the SBCL fallback
+(after building that `base.<ext>`).
+
+- Argument 1 is the Lisp name; it must match an executable
+  `milawa-<lispname>` (here `milawa-ccl`).
 - Argument 2 is the image extension; it must match a pre-existing
-  `base.<ext>` (here `base.sbcl-linux64`). Getting this wrong is the most common
-  usage error: `./final-checks.sh sbcl linux64` fails immediately with
-  "Error: base.linux64 does not exist."
+  `base.<ext>` (here `base.ccl-linux-aarch64`).  Getting this wrong is the most
+  common usage error: `final-checks.sh` immediately reports that `base.<ext>`
+  does not exist.
 
 Each step loads the image for the previous level and replays the next level's
 events (§2), writing `<level>.<ext>` and a log `<level>.<ext>.out`. It processes
@@ -574,7 +628,7 @@ It **skips a level whose image already exists**, so to re-run a level you must
 delete its image first:
 
 ```sh
-rm -f level4.sbcl-linux64
+rm -f level4.ccl-linux-aarch64   # use your own EXT
 ```
 
 Note that this only redoes the *checking*; the proofs themselves come from the
@@ -586,7 +640,7 @@ The manifests name every proof file they need, so the real check is that those
 paths all exist:
 
 ```sh
-cd /home/acl2/books/projects/milawa
+cd /workspaces/acl2/books/projects/milawa
 grep -o 'Proofs/[a-z0-9]*/[^"]*\.proof[s]*' Proofs/level4.events | sort -u |
   while read f; do [ -e "$f" ] || echo "MISSING: $f"; done
 ```
@@ -606,7 +660,8 @@ are regenerated. Specifically:
   carries the `inlinep` guard described in gaps §11, so any edit there
   invalidates every image.
 - `final-checks.sh` only *checks* existing proofs; it does not regenerate them.
-- After any rebuild that regenerates `Proofs/*.events`, re-run §5.1.
+- After any rebuild that regenerates `Proofs/*.events`, no repair step is
+  needed (§5.1); just run the final checks (§7).
 
 `Proofs/` is **generated and not checked in** (it is large; Jared shipped
 tarballs). `ACL2/acl2-images/*` are likewise generated.
@@ -628,43 +683,66 @@ tarballs). `ACL2/acl2-images/*` are likewise generated.
   not edited by hand, and nothing needs repairing after the build.  See gaps
   §6.18 and §6.19.
 
-- **level10 `crewrite-iffp`**: aborts with "Binding stack exhausted" on a
-  **stock** SBCL (its *binding* stack, distinct from `--control-stack-size`).
-  Raising `--control-stack-size` does not help. Fixed by the big-stack SBCL
-  build in §3.1; see also gaps §5.0.2.
-- **level9 `DEFINE RW.FAST-EQDATABASE-EXTEND` (events line 1896)**: used to hang
-  for tens of minutes inside SBCL's compiler. Root cause is inline expansion
-  blow-up through a chain of inline-declared *recursive* functions
+- **level10 `crewrite-iffp`**: CCL handles this with its runtime-sized value
+  stack (`-Z 128M`), so no custom CCL build is needed.  A **stock** SBCL
+  aborts with "Binding stack exhausted" (its *binding* stack, distinct from
+  `--control-stack-size`); raising `--control-stack-size` does not help.
+  SBCL users need the big-stack build in §3.1; see also gaps §5.0.2.
+- **level9 `DEFINE RW.FAST-EQDATABASE-EXTEND` (events line 1896)**: used to
+  hang for tens of minutes inside SBCL's compiler.  Root cause is inline
+  expansion blow-up through a chain of inline-declared *recursive* functions
   (`RW.FIND-CONTRADICTION-IN-FAST-EQSET-LIST` ->
-  `RW.FAST-FIND-EQTRACE-CONTRADICTION` -> ...). Reproduces identically on SBCL
-  2.6.1, so it is not a version regression. Fixed by rewriting `inlinep`
-  `T`->`NIL` for recursive definitions in the `.events` files (§5.1; no kernel
-  change, no ACL2 rebuild): level9 then completes in ~8.5 min and event 12522
-  takes 0.03 s. See gaps §11.
+  `RW.FAST-FIND-EQTRACE-CONTRADICTION` -> ...).  This is handled in the
+  generator now: `interface/core.lisp` clears `inlinep` for self-recursive
+  definitions when it writes the `.events` manifests (§5.1), so no
+  post-processing step is needed.  See gaps §11.
 - **A level's `Proofs/<level>.events` can still be stale** relative to a
-  repaired `Proofs/` tree. `final-checks.sh` replays whatever is in the
+  repaired `Proofs/` tree.  `final-checks.sh` replays whatever is in the
   manifests, so if a level's image was built before a fix was applied, delete
-  the image and re-check (§7). `Proofs/level9.events.orig-inlinep` is the
-  pre-fix level9 manifest, kept for comparison.
-- **One manifest still wants the level9 `inlinep` rewrite** (`level7.events`,
-  for `CLAUSE.NORMALIZE-NOTS-TERM`). It is not known to stall — level7 checks in
-  ~28 min with the rewrite still pending — so this is housekeeping rather than
-  a blocker. Apply the tool before regenerating level7 so that a future, deeper
-  recursion cannot hit the same blow-up.
-- **Apparent "hang" of SBCL after `--load`**: it is the interactive REPL
-  waiting on stdin. End scripts with `(sb-ext:exit)` or use
+  the image and re-check (§7).
+- **Apparent "hang" of SBCL after `--load`** (fallback only): it is the
+  interactive REPL waiting on stdin.  End scripts with `(sb-ext:exit)` or use
   `--non-interactive`.
+- **CCL image compatibility**: a saved CCL image must be loaded by a compatible
+  CCL kernel (here the 1.13 Linux ARM64 build).  After changing CCL, rebuild
+  `base.<ext>` and the level images (§6.3 and §7).
 - **Leftover probe image**: `l9probe.sbcl-linux64` in the Sources directory is
   a scratch image from the level9 investigation. `final-checks.sh` ignores it
   (it only looks for `base.<ext>` and `<level>.<ext>`), so it is safe to delete.
 
 ---
 
-## 10. Status of the last full run (2026-10-17)
+## 10. Status of the last runs
+
+### 10.1 CCL (default builder, 2026-10-18)
+
+`make base` builds `base.<ext>` (24 MB) in well under a second; on this host
+`<ext>` is `ccl-linux-aarch64`.  The pre-pull run used the older explicit
+`EXT=ccl-linux64`; `./final-checks.sh ccl ccl-linux64` completed
+`base -> level8`:
+
+| level | wall time |
+|---|---|
+| utilities | 3m38s |
+| logic | 9m37s |
+| level2 | 16m09s |
+| level3 | 28m17s |
+| level4 | 53m09s |
+| level5 | 49m54s |
+| level6 | 21m36s |
+| level7 | 8m46s |
+| level8 | 63m41s |
+
+level9 then rejected `ALL-EQUALP-REMOVAL`
+(`Proofs/level9/thm-all-equalp-removal.proof`).  That run predates the generator
+fixes in the 2026-10-18 pull, so regenerate the proofs (§4) and re-check before
+treating the rejection as a CCL discrepancy.  The CCL debugger backtrace printed
+for that event is the `admit-theorem` error path, not a stack overflow.
+
+### 10.2 SBCL fallback (historical, 2026-10-17)
 
 > **Historical.**  This section records a run made before the generator fixes
-> described in §5.1, so the proof-file names and the `fix-*.py` steps below no
-> longer apply.
+> described in §5.1, so the proof-file names below no longer apply.
 
 Checked with `./final-checks.sh sbcl sbcl-linux64`; every image is written to
 the Sources directory. **The pipeline is complete: all 13 levels check.**
@@ -672,23 +750,15 @@ the Sources directory. **The pipeline is complete: all 13 levels check.**
 | level | image | result |
 |---|---|---|
 | base .. level8 | `level8.sbcl-linux64` | replayed earlier the same day, before the level9 fix |
-| level9 | `level9.sbcl-linux64` (65 MB) | **EXIT=0**, ~8.5 min, after `fix-events-inline.py` |
+| level9 | `level9.sbcl-linux64` (65 MB) | **EXIT=0**, ~8.5 min, with the then-current inlinep fix |
 | level10 | `level10.sbcl-linux64` (68 MB) | **EXIT=0**, ~31 min of measured event time; slowest proof 1245 s |
 | level11 | `level11.sbcl-linux64` (70 MB) | **EXIT=0**, 15,687 events, no missing proofs |
 | user | `user.sbcl-linux64` (70 MB) | **EXIT=0**, 18 s (29 events on top of the 15,687 already in the level11 image) |
 
-What this means: the whole chain `base -> ... -> user` replays cleanly against
-the manifests produced by the ACL2 build, once the two post-processing steps in
-§5.1 have been applied. `fix-missing-proofs.py` reports `missing entries: 0
-suppliable: 0 unresolved: 0` across the tree.
-
-Remaining housekeeping:
-
-1. Apply `fix-events-inline.py --apply Proofs/level7.events` before level7 is
-   ever regenerated (§9).
-2. Optionally delete the scratch image `l9probe.sbcl-linux64`.
-3. Optionally delete `Proofs/level9.events.orig-inlinep` once it is no longer
-   wanted for comparison.
+The whole chain `base -> ... -> user` replayed cleanly against the manifests
+produced by that build.  The generator fixes now in `ACL2/interface/` supersede
+the two temporary Python repair tools used for that run; they have been removed
+(§5.1).
 
 A from-scratch `make all` has not been attempted end to end on this container
 with the current tools; the levels above were checked by replaying the manifests
