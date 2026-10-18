@@ -106,20 +106,40 @@
          ;; (formals        (third untranslated-defun))
          (formals        (third this-defun))
          ;; (body           (car (ACL2::last untranslated-defun))))
-         (body           (fourth this-defun)))
-    (if measure
-        `(defsection ,name
-           (%defun ,name ,formals
-                   ;; ,(ACL2::clean-up-body (annhialate-declarations body))
-                   ,body
-                   :measure ,measure)
-           (local (%auto))
-           (%admit))
+         (body           (fourth this-defun))
+         (body-trans      (logic.translate body))
+         (proposed-def    (and body-trans
+                               (logic.pequal (logic.function name formals) body-trans)))
+         (already-admitted (and proposed-def
+                                (memberp proposed-def (tactic.harness->defs world)))))
+    (cond
+     (already-admitted
+      ;; This definition has already been admitted, so this event is redundant.
+      ;; This happens for bootstrap/level4/clause-basics.lisp's re-admission of
+      ;; DEFINITION-OF-NOT: level4-symmetry is built from level3-symmetry plus
+      ;; the level3 books, so the definition is already in the harness.
+      ;;
+      ;; A redundant event must have no effect at all.  In particular it must
+      ;; not add a thmfiles entry: a make-event expansion is replayed from the
+      ;; certificate at include-book time, whereas the proof file is written
+      ;; only when the admit actually runs, so an entry created by a replayed
+      ;; expansion refers to a proof file that was never written.  See Milawa
+      ;; issue #2078.
+      '(ACL2::value-triple :invisible))
+     (measure
+      `(defsection ,name
+         (%defun ,name ,formals
+                 ;; ,(ACL2::clean-up-body (annhialate-declarations body))
+                 ,body
+                 :measure ,measure)
+         (local (%auto))
+         (%admit)))
+     (t
       `(defsection ,name
          (%defun ,name ,formals
                  ;; ,(ACL2::clean-up-body (annhialate-declarations body)))
                  ,body)
-         (%admit)))))
+         (%admit))))))
 
 (defmacro %autoadmit (name)
   `(ACL2::make-event (%autoadmit-fn ',name (ACL2::w ACL2::state))))

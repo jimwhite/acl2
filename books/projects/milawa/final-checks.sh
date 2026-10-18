@@ -26,11 +26,9 @@ EXT=$2
 
 print_generic_help ()
 {
-    echo "If the reason for this failure is not obvious, please see the instructions"
-    echo "either online at"
-    echo "  - http://www.cs.utexas.edu/users/jared/milawa/Web/checking.html"
-    echo "or, if you installed from Subversion, in the directory"
-    echo "  - Milawa/Web/checking.html"
+    echo "If the reason for this failure is not obvious, see"
+    echo "  - books/projects/milawa/BUILD-PROCEDURE.md (section 7) and"
+    echo "  - books/projects/milawa/README"
     echo ""
 }
 

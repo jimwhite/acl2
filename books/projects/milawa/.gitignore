@@ -1,3 +1,6 @@
 *.mpcert
 /Proofs/*.events
 /Proofs/*/
+/*.sbcl-linux64
+/*.out
+/final-checks*.log

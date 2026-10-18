@@ -61,8 +61,64 @@
          (dirstr     (STR::implode (ACL2::reverse rdirchars))))
     dirstr))
 
+(defun get-current-book (ACL2::state)
+  ;; The name of the book whose events are currently being run, e.g.
+  ;; "eqdatabasep", or NIL if we are not inside a book.  It comes from ACL2's
+  ;; INCLUDE-BOOK-PATH while a book's events are being replayed by include-book,
+  ;; and otherwise from the MILAWA-CURRENT-BOOK state global maintained by
+  ;; PROVISIONALLY-CERTIFY (interface/pcert.lisp) -- ACL2's own
+  ;; 'certify-book-info is not set by that mechanism.
+  ;;
+  ;; GENERATE-FILENAME uses this to give every proof file a directory named
+  ;; after the book that wrote it.  Without it, two books in the same directory
+  ;; that prove the same event name write the same file, and the last writer
+  ;; wins.  That is wrong even for a single-threaded build: the level9 manifest
+  ;; refers to the one proof of ALL-EQUALP-REMOVAL that was registered globally
+  ;; (theoryp-aux.lisp), but its file was overwritten by the proofs of the same
+  ;; name that eqdatabasep.lisp and add-equality.lisp make locally.  The kernel
+  ;; then reports "The proof was rejected", because the overwriting proof uses
+  ;; definitions that are not yet admitted at that point in the manifest.  See
+  ;; Milawa issue #2079.
+  (declare (xargs :mode :program :stobjs ACL2::state))
+  (let* ((path (ACL2::global-val 'ACL2::include-book-path (ACL2::w ACL2::state)))
+         ;; During include-book, ACL2 is replaying the events of the innermost
+         ;; book on INCLUDE-BOOK-PATH, and that is the book whose name we want:
+         ;; the entry being re-created there refers to the proof that same book
+         ;; wrote.  (Milawa books are provisionally certified, so include-book
+         ;; re-executes events rather than replaying stored make-event
+         ;; expansions; the filename is therefore recomputed at include time,
+         ;; and must come out the same as it did at certification.)
+         ;;
+         ;; Otherwise we are running a book's own events, directly under
+         ;; PROVISIONALLY-CERTIFY, which records that book in the state global
+         ;; MILAWA-CURRENT-BOOK.
+         (book (if (consp path)
+                   (car path)
+                 (ACL2::f-get-global 'ACL2::milawa-current-book ACL2::state))))
+    (and (COMMON-LISP::stringp book)
+         (let* ((rchars (ACL2::reverse (STR::explode book)))
+                ;; Last path component, still reversed.  The two sources above
+                ;; differ in whether they carry the ".lisp" extension: ACL2's
+                ;; INCLUDE-BOOK-PATH entries do, the name recorded by
+                ;; PROVISIONALLY-CERTIFY does not.  Drop the extension so that
+                ;; the name computed at certification and the name computed
+                ;; when the book's events are replayed come out identical.
+                (slash  (ACL2::position ACL2::*directory-separator* rchars))
+                (base   (if slash (ACL2::take slash rchars) rchars))
+                (dot    (ACL2::member #\. base))
+                (stem   (if dot (ACL2::cdr dot) base)))
+           (ACL2::string-downcase
+            (ACL2::mangle-filename
+             (STR::implode (ACL2::reverse stem))))))))
+
 (defun generate-filename (prefix name suffix ACL2::state)
-  ;; We generate files of the form "libdir/prefix-name.suffix"
+  ;; We generate files of the form "libdir/[book/]prefix-name.suffix", where
+  ;;
+  ;;   - libdir is the directory of the book being certified (e.g., "level9"),
+  ;;     so that proofs stay grouped by level; and
+  ;;   - book is the name of the book being certified, so that two books in the
+  ;;     same directory can prove the same event name without clobbering each
+  ;;     other's proof file (see GET-CURRENT-BOOK).
   ;;
   ;; Previously we also generated the path name for the proofs/ directory relative
   ;; to the current location for the book being certified, and some of the commented
@@ -86,12 +142,16 @@
    ;; clashes when they try to write their files.
    (ACL2::seed-random$ 'generate-filename)
    (let* ((libdir   (get-current-libdir ACL2::state))
+          (book     (get-current-book ACL2::state))
           (partname (STR::cat (ACL2::mangle-filename (ACL2::string-downcase (ACL2::symbol-name name)))
                               "."
                               (ACL2::string-downcase (ACL2::symbol-name suffix))))
           (basename (if prefix
                         (STR::cat (ACL2::string-downcase (ACL2::symbol-name prefix)) "-" partname)
-                      partname)))
+                      partname))
+          ;; Each book writes into its own directory; COMPACT-WRITE-FILE creates
+          ;; the directory on demand.
+          (basename (if book (STR::cat book "/" basename) basename)))
      (ACL2::extend-pathname libdir basename ACL2::state))))
 
 (defun logic.flag-warn-term-atblp (flag x atbl)

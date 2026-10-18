@@ -27,11 +27,11 @@ Tools that live in the Sources directory:
 
 | Tool | Purpose |
 |------|---------|
+| `GNUmakefile` | Builds `base.<ext>` and runs the final checks (`make`, `make help`) |
 | `final-checks.sh <lisp> <ext>` | Replays `Proofs/<level>.events` through the standalone kernel (§7) |
-| `fix-events-inline.py` | Clears `inlinep` on self-recursive `DEFINE`s (§5.1) |
-| `fix-missing-proofs.py` | Supplies a proof the manifest references but that was never written (§5.1) |
-| `fix-events-missing-proofs.py` | *Alternative* to the above: drops the dangling entry instead (§5.1) |
-| `milawa-sbcl` | `sbcl --core ...` wrapper used by `final-checks.sh` |
+| `milawa-sbcl` | `sbcl --core ...` wrapper used by `final-checks.sh`; heap and stack sizes come from the environment |
+| `Proofs/clean-proofs.sh` | Removes the generated proofs |
+| `Proofs/zip-proofs.sh` | Bundles them for distribution |
 
 ---
 
@@ -468,60 +468,28 @@ For each level:
 - `ACL2/bootstrap/<level>/*.mpcert` — provisional certificates.
 - `ACL2/bootstrap/<level>/*.out` — per-book build logs.
 - `ACL2/acl2-images/<level>-symmetry` — the level image.
-- `Proofs/<level>/` — proof files (`admit-*.proofs`, `thm-*.proof`).
+- `Proofs/<level>/<book>/` — proof files (`admit-*.proofs`, `thm-*.proof`),
+  one directory per certifying book.
 - `Proofs/<level>.events` — the event manifest, serialized from the
   `thmfiles` table by `%save-events`.
 
-### 5.1 Post-processing: make the manifests self-consistent
+### 5.1 Post-processing: none required
 
-Two generator artefacts need repairing before `final-checks.sh`, both fixed by
-small idempotent tools (dry run by default) rather than by editing Milawa's
-sources or the manifests by hand:
+Earlier revisions of this document prescribed two Python "repair" tools,
+`fix-events-inline.py` and `fix-missing-proofs.py`, which patched the generated
+manifests: one cleared `inlinep` on self-recursive `DEFINE`s, the other supplied
+a proof for an event that ACL2 skipped as redundant.  Both papered over bugs on
+the generator side, both are fixed in `ACL2/interface/` now, and both tools have
+been removed:
 
-```sh
-cd /home/acl2/books/projects/milawa
-python3 fix-events-inline.py  --apply Proofs/*.events   # recursive defs not inline
-python3 fix-missing-proofs.py --apply                    # supply proofs for redundant events
-```
+- `inlinep` is computed in `thmfiles-to-events` (`interface/core.lisp`), which
+  clears it for self-recursive definitions (see gaps §11).
+- A redundant admission now expands to nothing at all, so it records no
+  `thmfiles` entry and needs no proof file (Milawa issue #2078).
 
-- `fix-events-inline.py` clears `inlinep` for self-recursive definitions. The
-  kernel asks the host Lisp to inline them, which makes SBCL's compiler explode
-  (~x150-180 per nesting level) — the level9 stall in
-  `ACL2/MILAWA-BUILD-AND-PROOF-GAPS.md` §11. It prints exactly which definitions
-  it would rewrite:
-
-  ```
-  Proofs/level7.events: would rewrite 1 recursive definition(s) inlinep T->NIL
-      CLAUSE.NORMALIZE-NOTS-TERM
-  ```
-
-  At present only `level7.events` still wants it. `user.events` already had it
-  applied (Milawa's worked example, whose single definition is literally named
-  `*`), which is why `user` checks in 18 s.
-
-- `fix-missing-proofs.py` supplies a proof that the manifest references but
-  that was never written, by copying the identically-named proof from the level
-  that proved it. This happens for events ACL2 skips as redundant
-  (`DEFINITION-OF-NOT` at level4, gaps §6.19). The kernel still re-checks the
-  copy, so nothing is accepted on trust.
-
-A third tool, `fix-events-missing-proofs.py`, *removes* such entries instead. It
-is documented in gaps §6.18 but is the weaker option — prefer supplying the
-proof.
-
-Run both after generating proofs and before the final checks; re-run them after
-any regeneration of `Proofs/*.events`. **The required end state is that a dry
-run of each reports nothing to do**, i.e.:
-
-```
-<every level>.events: would rewrite 0 recursive definition(s)
-missing entries: 0   suppliable: 0   unresolved: 0
-```
-
-Order does not matter (they touch disjoint things), but note that supplying a
-proof is only possible when some other level actually proved that same theorem
-— if `unresolved` is non-zero, that is a real gap worth investigating rather
-than papering over.
+So `make` followed directly by the final checks is the expected workflow.  The
+sanity check worth running is that every proof file the manifests name actually
+exists; see §7.1.
 
 ---
 
@@ -614,8 +582,8 @@ ACL2 build (§4) and the manifests from §5.1.
 
 ### 7.1 Checking for missing proofs
 
-The `fix-missing-proofs.py` dry run in §5.1 is the better check, since it also
-knows where a replacement can come from. A quick grep-level sanity check:
+The manifests name every proof file they need, so the real check is that those
+paths all exist:
 
 ```sh
 cd /home/acl2/books/projects/milawa
@@ -647,17 +615,19 @@ tarballs). `ACL2/acl2-images/*` are likewise generated.
 
 ## 9. Known issues
 
-- **level4 `definition-of-not` — resolved in the build, source untouched.**
-  ACL2 8.7 skips `(%autoadmit definition-of-not)` in
-  `bootstrap/level4/clause-basics.lisp` as `:REDUNDANT` (the definition is
-  already in the world, because `bootstrap/level4/cert.image` names
-  `level4-symmetry`, which is built from level3's books). No
-  `admit-definition-of-not.proofs` is written, yet the replayed manifest still
-  references one. It is **not** a parallelism artefact — typing the event
-  straight into `acl2-images/level4-symmetry`, with no make involved, also
-  reports `:REDUNDANT`. The Milawa source is left exactly as Jared wrote it and
-  the manifest is not edited; `fix-missing-proofs.py` supplies level3's
-  identically-named proof (§5.1). See gaps §6.18 and §6.19.
+- **level4 `definition-of-not` — fixed in the generator (Milawa issue #2078).**
+  `(%autoadmit definition-of-not)` in `bootstrap/level4/clause-basics.lisp` is
+  redundant: `level4-symmetry` already contains the definition, from level3's
+  books.  The replayed `make-event` used to re-create a `thmfiles` entry for it
+  even though the admit never ran, so `level4.events` named an
+  `admit-definition-of-not.proofs` that was never written, and the kernel
+  reported `FILE-DOES-NOT-EXIST` at event 5722.  `%autoadmit-fn`
+  (`interface/acl2-connection.lisp`) now makes a redundant admission expand to
+  nothing, so no entry and no proof file are produced, and `level4.events`
+  simply does not mention the event.  Milawa's sources and the manifests are
+  not edited by hand, and nothing needs repairing after the build.  See gaps
+  §6.18 and §6.19.
+
 - **level10 `crewrite-iffp`**: aborts with "Binding stack exhausted" on a
   **stock** SBCL (its *binding* stack, distinct from `--control-stack-size`).
   Raising `--control-stack-size` does not help. Fixed by the big-stack SBCL
@@ -691,6 +661,10 @@ tarballs). `ACL2/acl2-images/*` are likewise generated.
 ---
 
 ## 10. Status of the last full run (2026-10-17)
+
+> **Historical.**  This section records a run made before the generator fixes
+> described in §5.1, so the proof-file names and the `fix-*.py` steps below no
+> longer apply.
 
 Checked with `./final-checks.sh sbcl sbcl-linux64`; every image is written to
 the Sources directory. **The pipeline is complete: all 13 levels check.**

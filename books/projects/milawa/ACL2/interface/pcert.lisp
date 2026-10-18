@@ -83,7 +83,13 @@
   (let ((lisp-file  (concatenate 'string filename ".lisp"))
         (pcert-file (concatenate 'string filename ".mpcert")))
     (ld `((cw "Provisionally certifying ~x0.~%" ,filename)
+          ;; Tell GENERATE-FILENAME which book is being loaded, so that the
+          ;; proof files it names are qualified by the writing book and cannot
+          ;; collide with another book's proof of the same event name.
+          ;; ACL2's own 'certify-book-info is not set by this mechanism.
+          (f-put-global 'milawa-current-book ,filename state)
           (ld ,lisp-file :ld-error-action :error)
+          (f-put-global 'milawa-current-book nil state)
           (mv-let (channel state) (open-output-channel ,pcert-file :character state)
             (mv-let (sum state) (check-sum-file ,lisp-file state)
               (let* ((state (fms! "~f0 check-sum ~f1~|"
