@@ -10,6 +10,9 @@
 #   make check                 replay the proofs (resumable: skips any level
 #                              whose image already exists)
 #   make check-level L=level9  redo a single level
+#   make report                event timings and proof-size tables
+#   make report-time           slowest events, from final-checks.log
+#   make sizes                 per-level proof sizes (writes size_macros.tex)
 #   make clean                 remove the core image, level images, and logs
 #   make clean-proofs          remove the generated proofs
 #
@@ -45,7 +48,7 @@ BASE   := base.$(EXT)
 IMAGES := $(addsuffix .$(EXT),$(LEVELS))
 LOGS   := $(addsuffix .$(EXT).out,$(LEVELS)) final-checks.log
 
-.PHONY: all base check check-level clean clean-proofs help
+.PHONY: all base check check-level report report-time sizes clean clean-proofs help
 
 all: check
 
@@ -72,6 +75,24 @@ check-level: $(BASE)
 	@test -n "$(L)" || { echo "usage: make check-level L=<level>" >&2; exit 1; }
 	rm -f $(L).$(EXT) $(L).$(EXT).out
 	./final-checks.sh $(LISPNAME) $(EXT) | tee final-checks.log
+
+report: report-time sizes
+
+# Which events took longest, biggest first.  Reads the log that `make check`
+# writes.  The whole ranking goes to report-time.txt; REPORT_N controls how
+# many lines are echoed.  (Do not pipe the script into `head`: it writes far
+# more than that, and SIGPIPE plus `pipefail` would fail the target.)
+REPORT_N ?= 40
+report-time:
+	@test -f final-checks.log || { echo "run 'make check' first" >&2; exit 1; }
+	./report-time.rb < final-checks.log > report-time.txt
+	@echo "Slowest events (full ranking: report-time.txt)"
+	@head -$(REPORT_N) report-time.txt
+
+# Per-level event counts and proof sizes, in the LaTeX table format Jared used
+# for the dissertation.  Also writes size_macros.tex in the current directory.
+sizes:
+	./summarize-sizes.rb
 
 clean:
 	rm -f $(BASE) $(IMAGES) $(LOGS)

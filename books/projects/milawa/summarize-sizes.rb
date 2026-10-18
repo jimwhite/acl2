@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby -w
+#!/usr/bin/env ruby
 
 def fix_string(str)
   # strip color codes by turning escape char into ?.

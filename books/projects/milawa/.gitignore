@@ -4,3 +4,5 @@
 /*.sbcl-linux64
 /*.out
 /final-checks*.log
+/size_macros.tex
+/report-time.txt
