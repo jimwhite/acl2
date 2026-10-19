@@ -93,7 +93,22 @@ $(PROOFS_DIRS):
 	@ls -l $*.mpcert
 
 
-.PHONY: all clean
+.PHONY: all clean check-proofs
+
+# Sanity-check the proof and .events files.  These are side effects of the
+# certification rules above and nothing in make tracks them, so a filename
+# bug, an interrupted build, or a stale certificate can leave an .events file
+# that names a proof nobody wrote (or a proof older than the source/image it
+# came from).  final-checks.sh would only discover that much later, when it
+# replays the manifest.  See check-proofs.pl for exactly what is tested.
+#
+# Set CHECK_PROOFS_WARN=1 to report problems without failing the build.
+check-proofs: $(ALL_PCERTS)
+	@if [ "$(CHECK_PROOFS_WARN)" = "1" ]; then \
+	   ./check-proofs.pl --warn; \
+	 else \
+	   ./check-proofs.pl; \
+	 fi
 
 # We could use cert.pl to clean up the certs, but it misses a few because of
 # images; this once led me to be pretty confused because an old cert was being
@@ -257,6 +272,8 @@ acl2-images/user-symmetry: acl2-images/level11-symmetry \
 all: acl2-images/user-symmetry
 
 all: $(ALL_PCERTS)
+
+all: check-proofs
 
 
 TAGS: $(BOOKS_TOP_SOURCES)

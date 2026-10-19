@@ -92,9 +92,25 @@
          ;; Otherwise we are running a book's own events, directly under
          ;; PROVISIONALLY-CERTIFY, which records that book in the state global
          ;; MILAWA-CURRENT-BOOK.
-         (book (if (consp path)
-                   (car path)
-                 (ACL2::f-get-global 'ACL2::milawa-current-book ACL2::state))))
+         (entry (if (consp path)
+                    (car path)
+                  (ACL2::f-get-global 'ACL2::milawa-current-book ACL2::state)))
+         ;; ACL2's INCLUDE-BOOK-PATH holds "full book names", which are either
+         ;; absolute path strings or--when the book lies under a directory in
+         ;; the world's PROJECT-DIR-ALIST--SYSFILE pairs such as
+         ;; (:SYSTEM . "projects/milawa/ACL2/bootstrap/utilities/foo.lisp").
+         ;; The latter is the case for this build: ACL2 is built from
+         ;; /workspaces/acl2, whose :SYSTEM project directory is
+         ;; /workspaces/acl2/books, so every Milawa book gets a SYSFILE entry.
+         ;; Only accepting strings here made this return NIL during
+         ;; include-book on CCL (where the project-dir-alist covered the
+         ;; sources), so proof filenames recorded in the .events files lost
+         ;; their per-book subdirectory.
+         (book (cond ((COMMON-LISP::stringp entry)
+                      entry)
+                     ((ACL2::sysfile-p entry)
+                      (ACL2::sysfile-filename entry))
+                     (t nil))))
     (and (COMMON-LISP::stringp book)
          (let* ((rchars (ACL2::reverse (STR::explode book)))
                 ;; Last path component, still reversed.  The two sources above
