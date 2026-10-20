@@ -34,7 +34,7 @@ Tools that live in the Sources directory:
 | `final-checks.sh <lisp> <ext>` | Replays `Proofs/<level>.events` through the standalone kernel (§7) |
 | `milawa-ccl` | Default `ccl --batch -I ...` launcher; stack sizes come from `MILAWA_CCL_THREAD_STACK` / `MILAWA_CCL_STACK` |
 | `milawa-sbcl` | SBCL fallback launcher; heap and stack sizes come from the environment |
-| `milawa-cmucl`, `milawa-clisp`, `milawa-scl`, `milawa-acl` | Launchers for running saved images; not build targets |
+| `milawa-cmucl`, `milawa-clisp`, `milawa-scl`, `milawa-acl` | Launchers for images built with `make LISP=cmucl`/`clisp`/`scl`/`acl` |
 | `Proofs/clean-proofs.sh` | Removes the generated proofs |
 | `Proofs/zip-proofs.sh` | Bundles them for distribution |
 
@@ -93,10 +93,19 @@ CCL is the default builder and needs no custom Lisp build:
   listener's value (binding) and control stacks to 128 MB, and `milawa-ccl`
   passes `-Z 128M -S 128M` as well.  No runtime rebuild is involved.
 
-SBCL fallback: `milawa-sbcl` and `make LISP=sbcl` work, but level10 needs an
-SBCL runtime with a larger binding stack (32 MB), which means building SBCL
-from source.  See §3.1 for that path.  The figures in §3.1 are SBCL-specific;
-CCL does not need them.
+SBCL fallback: `milawa-sbcl` and `make LISP=sbcl` work.  The larger binding
+stack (32 MB) described in §3.1 is needed by the ACL2 proof builder at
+level10, not by the kernel image or by `final-checks.sh`, so it does not
+restrict which Lisp can build `base.<ext>`.  Building that custom SBCL means
+compiling SBCL from source; see §3.1 for that path.  The figures there are
+SBCL-specific; CCL does not need them.
+
+The other Lisps that `milawa.lsp` knows how to dump are builders too:
+`make LISP=cmucl`, `make LISP=clisp`, `make LISP=scl`, and `make LISP=acl`
+select the matching recipe, and the corresponding `milawa-<lisp>` launcher
+runs the image.  On this container only CCL has been exercised end to end
+(SBCL is the documented fallback); the other recipes mirror `milawa.lsp`'s
+`save-and-exit` and the flags in their launchers.
 
 ---
 

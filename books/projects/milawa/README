@@ -29,8 +29,9 @@ Instead, to build Milawa, you should:
 
    SBCL also works, but level10 needs an SBCL runtime with a larger binding
    stack, so it requires a custom SBCL build; see BUILD-PROCEDURE.md section
-   3.1.  The other Lisp launchers (milawa-cmucl, milawa-clisp, milawa-scl,
-   milawa-acl) are only for running saved kernel images, not for building.
+   3.1.  That binding-stack requirement is on the ACL2 proof builder, not on
+   the standalone kernel: CMUCL, CLISP, SCL, and Allegro CL are also supported
+   builders for the kernel image itself (see below).
 
 2. Generate the proofs (this is the long step).  Run it serially:
 
@@ -77,6 +78,10 @@ containing this README:
 
      $ make                        # CCL: build base.<ext>, then check
      $ make LISP=sbcl              # SBCL fallback (see above)
+     $ make LISP=cmucl             # likewise for CMUCL, CLISP, SCL, Allegro CL:
+     $ make LISP=clisp             # any Lisp milawa.lsp can dump an image on
+     $ make LISP=scl               # is a builder here, and milawa-<lisp> runs
+     $ make LISP=acl               # the image it produced
 
 That is a wrapper around
 

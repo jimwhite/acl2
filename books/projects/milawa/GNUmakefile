@@ -22,20 +22,30 @@
 #
 # CCL is the default builder: it needs no custom Lisp build, because its
 # value/control stacks are sized at runtime (-Z/-S) and milawa.lsp sets them
-# to 128 MB.  SBCL is supported as a fallback, but level10 needs an SBCL
-# runtime with a larger binding stack (BUILD-PROCEDURE.md section 3.1).
-# The milawa-cmucl/clisp/scl/acl launchers can run saved images but are not
-# builder targets here.
+# to 128 MB.  Any other Lisp that milawa.lsp can dump is a builder too --
+# SBCL, CMUCL, CLISP, SCL, and Allegro CL -- and its milawa-<lisp> launcher
+# runs the image it produced.  The large SBCL binding stack in
+# BUILD-PROCEDURE.md section 3.1 is needed by the ACL2 proof builder, not by
+# these kernel images, so it says nothing about which Lisp can build base.
 
 SHELL := /bin/bash
 .SHELLFLAGS := -o pipefail -c
 
 # Host Lisp.  ACL2's own GNUmakefile uses the same variable name ("LISP = ccl"),
-# so honour it rather than hard-coding an implementation.
+# so honour it rather than hard-coding an implementation.  The value also
+# selects the builder recipe below and the milawa-<lisp> launcher that
+# final-checks.sh runs, so it must be one of the names milawa.lsp supports:
+# ccl, sbcl, cmucl, clisp, scl, or acl.
 LISP ?= ccl
 LISPNAME ?= $(notdir $(firstword $(LISP)))
 CCL ?= $(LISP)
 SBCL ?= $(LISP)
+CMUCL ?= $(LISP)
+CLISP ?= $(LISP)
+SCL ?= $(LISP)
+ACL ?= $(LISP)
+# The executable names are not always the same as these keys (CMUCL's is often
+# "lisp"), so override the variable, e.g. "make LISP=cmucl CMUCL=lisp".
 
 # The tag that names the kernel images.  Nothing in Milawa computes this:
 # milawa.lsp simply uses whatever IMAGE-EXTENSION is bound to before the load,
@@ -47,6 +57,8 @@ EXT      ?= $(LISPNAME)-$(PLATFORM)
 CCL_STACK ?= 128M
 SBCL_DYNAMIC_SPACE ?= 32000
 SBCL_CONTROL_STACK ?= 1024
+CMUCL_DYNAMIC_SPACE ?= 2048
+CLISP_MEMORY ?= 2048MB
 
 LEVELS ?= utilities logic level2 level3 level4 level5 level6 level7 level8 \
           level9 level10 level11 user
@@ -78,10 +90,36 @@ $(BASE): milawa.lsp
 	        --eval '(defconstant image-extension "$(EXT)")' \
 	        --load milawa.lsp
 	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
+else ifeq ($(LISPNAME),cmucl)
+$(BASE): milawa.lsp
+	$(CMUCL) -batch -dynamic-space-size $(CMUCL_DYNAMIC_SPACE) \
+	         -eval '(defparameter image-extension "$(EXT)")' \
+	         -load milawa.lsp
+	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
+else ifeq ($(LISPNAME),clisp)
+$(BASE): milawa.lsp
+	ulimit -s 65535; \
+	$(CLISP) -q -norc -m $(CLISP_MEMORY) \
+	         -x '(defparameter image-extension "$(EXT)")' \
+	         -i milawa.lsp
+	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
+else ifeq ($(LISPNAME),scl)
+$(BASE): milawa.lsp
+	$(SCL) -batch \
+	       -eval '(defparameter image-extension "$(EXT)")' \
+	       -load milawa.lsp
+	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
+else ifeq ($(LISPNAME),acl)
+$(BASE): milawa.lsp
+	ulimit -s 65535; \
+	$(ACL) -batch \
+	       -e '(defparameter image-extension "$(EXT)")' \
+	       -l milawa.lsp
+	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
 else
 $(BASE): milawa.lsp
-	@echo "error: unsupported builder LISP=$(LISP); use ccl or sbcl" >&2
-	@echo "       (milawa-cmucl/clisp/scl/acl can run images, not build them)" >&2
+	@echo "error: no builder recipe for LISP=$(LISP)" >&2
+	@echo "       milawa.lsp can dump images with ccl, sbcl, cmucl, clisp, scl, acl" >&2
 	@exit 1
 endif
 
