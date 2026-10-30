@@ -1,0 +1,84 @@
+#!/bin/sh
+
+# ECL cannot dump Lisp heap images, so an ECL "image" is a directory holding a
+# state.lisp file instead of a binary image (see save-and-exit in milawa.lsp).
+# This launcher loads the checker kernel, restores that state, and starts the
+# command loop.  A FINISH command then writes the next level's directory.
+#
+# Sizing comes from the environment:
+#
+#   MILAWA_ECL                ECL executable                (default: ecl)
+#   MILAWA_ECL_HEAP_SIZE      heap size, in MB             (default: ECL's own)
+#   MILAWA_ECL_LISP_STACK     Lisp stack, in objects       (default: 1048576)
+#   MILAWA_ECL_C_STACK        C stack, in bytes            (default: 67108864)
+#
+# ECL's stock Lisp stack is only 32768 objects and its C stack is the OS
+# default, which are both too small for recursing over proof trees.
+
+ECL="${MILAWA_ECL:-ecl}"
+
+if [ "$#" -ne "1" ]
+then
+	echo "Usage: milawa-ecl <IMAGE-DIRECTORY>"
+	echo "Where <IMAGE-DIRECTORY> is an ECL image, typically a"
+	echo "\".ecl-<platform>\" directory, such as \"base.ecl-linux-aarch64\"."
+	exit 1
+fi
+
+if ! command -v "$ECL" >/dev/null 2>&1
+then
+	echo "Error: ECL not found."
+	echo ""
+	echo "Possible causes:"
+	echo "  - ECL is not installed?"
+	echo "  - ECL is not in your current \$PATH?"
+	echo "  - ECL is in your path, but is not named '$ECL'?"
+	echo "  - ECL is in your path and is named '$ECL', but is not executable?"
+	echo ""
+	echo "Possible fixes:"
+	echo "  - Install ECL (https://ecl.common-lisp.dev/)?"
+	echo "  - Add a symlink to ECL named '$ECL' somewhere in your \$PATH?"
+	echo "  - Set MILAWA_ECL to the name of your ECL executable?"
+	echo ""
+	exit 1
+fi
+
+if [ ! -d "$1" ] || [ ! -f "$1/state.lisp" ]
+then
+	echo "Error: $1 is not an ECL image directory."
+	echo ""
+	echo "An ECL image is a directory containing state.lisp; the images of the"
+	echo "other Lisps are single files.  Possible causes:"
+	echo "  - The image was built by a different Lisp?"
+	echo "  - The image has not been built yet?"
+	echo ""
+	exit 1
+fi
+
+IMAGE_NAME=$(basename "$1")
+case "$IMAGE_NAME" in
+	*.*) EXT=${IMAGE_NAME#*.} ;;
+	*)   echo "Error: cannot find the image extension in '$IMAGE_NAME'." >&2
+	     echo "Expected a name such as base.ecl-linux-aarch64." >&2
+	     exit 1 ;;
+esac
+
+# The kernel has to be found from this script's directory, not the caller's.
+MILAWA_DIR=$(cd "$(dirname "$0")" && pwd)
+
+HEAP_ARG=
+if [ -n "$MILAWA_ECL_HEAP_SIZE" ]
+then
+	# ECL's --heap-size takes bytes; the variable is in MB.
+	HEAP_ARG="--heap-size $((MILAWA_ECL_HEAP_SIZE * 1048576))"
+fi
+
+exec "$ECL" -norc \
+	$HEAP_ARG \
+	--lisp-stack "${MILAWA_ECL_LISP_STACK:-1048576}" \
+	--c-stack "${MILAWA_ECL_C_STACK:-67108864}" \
+	-eval "(defparameter cl-user::image-extension \"$EXT\")" \
+	-eval '(defparameter cl-user::*loading-image* t)' \
+	-load "$MILAWA_DIR/milawa.lsp" \
+	-load "$1/state.lisp" \
+	-eval '(progn (cl-user::main) (ext:exit 0))'

@@ -35,6 +35,7 @@ Tools that live in the Sources directory:
 | `milawa-ccl` | Default `ccl --batch -I ...` launcher; stack sizes come from `MILAWA_CCL_THREAD_STACK` / `MILAWA_CCL_STACK` |
 | `milawa-sbcl` | SBCL fallback launcher; heap and stack sizes come from the environment |
 | `milawa-cmucl`, `milawa-clisp`, `milawa-scl`, `milawa-acl` | Launchers for images built with `make LISP=cmucl`/`clisp`/`scl`/`acl` |
+| `milawa-ecl` | Launcher for ECL images; an ECL image is a *directory* holding `state.lisp`, not a Lisp image file (§3.2) |
 | `Proofs/clean-proofs.sh` | Removes the generated proofs |
 | `Proofs/zip-proofs.sh` | Bundles them for distribution |
 
@@ -106,6 +107,10 @@ select the matching recipe, and the corresponding `milawa-<lisp>` launcher
 runs the image.  On this container only CCL has been exercised end to end
 (SBCL is the documented fallback); the other recipes mirror `milawa.lsp`'s
 `save-and-exit` and the flags in their launchers.
+
+ECL is a builder as well, but it cannot dump heap images; see §3.2.  The ACL2
+proof builder is *not* supported on ECL, so the proofs themselves still have
+to come from a CCL (or SBCL) build.
 
 ---
 
@@ -355,6 +360,62 @@ done
 
 Peak bytes / 16.03 = frames needed. **Do not run this while `final-checks.sh`
 is reading the same `Proofs/<level>/` files** -- the build rewrites them.
+
+---
+
+## 3.2 ECL (checker only)
+
+ECL can build and run `base.<ext>` and check every level, but the ACL2 proof
+builder is not supported on ECL, so the proofs still have to come from a CCL
+(or SBCL) build.
+
+Install ECL with the distribution package (`apt install ecl`, ECL 24.5 on this
+container) or build it from source: see
+<https://ecl.common-lisp.dev/static/manual/Building-ECL.html>; if changes to
+ECL turn out to be needed, use the fork at <https://gitlab.com/jimwhite/ecl>.
+A source build is roughly:
+
+```sh
+git clone https://gitlab.com/jimwhite/ecl
+cd ecl
+./configure --prefix=/usr/local
+make && sudo make install
+```
+
+ECL has no heap-image dumping, so its "images" are **directories**:
+
+```
+base.ecl-linux-aarch64/          # named exactly like the other Lisps' images
+    state.lisp                   # the checker's history, as Lisp data
+```
+
+`save-and-exit` writes `state.lisp` (the arity table, axioms, theorems, proof
+checker, event counter, and the definitions of the admitted functions) and
+`milawa-ecl` loads `milawa.lsp` and then that file before starting the command
+loop.  `GNUmakefile`, `final-checks.sh`, and `make check-level` work unchanged,
+except that removing an ECL image means `rm -rf level4.ecl-linux-aarch64`
+rather than `rm -f`.
+
+Building and checking:
+
+```sh
+cd /workspaces/acl2/books/projects/milawa
+make LISP=ecl                 # builds base.ecl-linux-aarch64/, then checks
+# or directly:
+./final-checks.sh ecl ecl-linux-aarch64
+```
+
+`milawa-ecl` raises ECL's stock stacks, which are too small for recursing over
+proof trees: `MILAWA_ECL_LISP_STACK` (objects, default 1048576),
+`MILAWA_ECL_C_STACK` (bytes, default 67108864), and, if you want to pin the
+heap, `MILAWA_ECL_HEAP_SIZE` (MB; ECL's own default is 4 GB on 64-bit hosts).
+Set `MILAWA_ECL` if the executable is not named `ecl`.
+
+Expect ECL to be much slower than CCL at proof checking: on this container the
+utilities level took 58 minutes under ECL 24.5 versus 3.5 minutes under CCL
+(about 16x), and some individual proofs are worse.  Each level also spends
+about 10 seconds recompiling the kernel from `milawa.lsp`, which is what
+replaces the missing image dump.
 
 ---
 
@@ -638,6 +699,7 @@ delete its image first:
 
 ```sh
 rm -f level4.ccl-linux-aarch64   # use your own EXT
+rm -rf level4.ecl-linux-aarch64  # ECL images are directories (§3.2)
 ```
 
 Note that this only redoes the *checking*; the proofs themselves come from the

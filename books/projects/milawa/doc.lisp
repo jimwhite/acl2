@@ -741,6 +741,25 @@ segfaults on me during the proofs in the utilities directory.  I have not spent 
 effort to debug this, and perhaps the problem is specific to my platform (Linux x86-64)
 or fixed in a more recent version.</p>
 
+<h5><a href='https://ecl.common-lisp.dev/'>ECL</a> -- free, slow</h5>
+
+<p>Instructions:</p>
+<ul>
+  <li>Install ECL (Ubuntu ships it, e.g., <tt>apt install ecl</tt>) and make
+      sure it is on your @('$PATH') as @('ecl'), or set @('MILAWA_ECL') to its
+      name.</li>
+</ul>
+
+<p>ECL cannot save Lisp heap images, so the ECL images are directories named
+@('base.<name>') and so on, holding a @('state.lisp') file.  The
+@('milawa-ecl') script restores that state, so the rest of this procedure is
+unchanged, except that deleting an image means @('rm -rf') rather than
+@('rm -f').  ECL is much slower than CCL at checking proofs (about 16x on the
+utilities level here), and each image start recompiles the kernel from
+<tt>milawa.lsp</tt> (about ten seconds), which takes the place of loading an
+image.  ECL is supported for the standalone checker only; it is not an ACL2
+host for the bootstrapping build.</p>
+
 <h5>Other Lisps?</h5>
 
 <p>It may not be difficult to port Milawa to another Lisp implementation.  In
@@ -774,7 +793,9 @@ images that will be generated.  I typically give names like \"ccl-linux64\" or
 for. (It's perfectly fine to check the proofs with multiple Lisps.)</p>
 
 <p>This should produce a new file named @('base.<name>'), which is the \"base
-system,\" i.e., the kernel, with no theorems loaded.</p>
+system,\" i.e., the kernel, with no theorems loaded.  (Under ECL it is a
+directory of that name, holding a @('state.lisp') file instead of a Lisp
+image; see @(see final-checks).)</p>
 
 <p>At this point, to make sure everything is working you should run </p>
 

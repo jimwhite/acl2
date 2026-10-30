@@ -23,10 +23,15 @@
 # CCL is the default builder: it needs no custom Lisp build, because its
 # value/control stacks are sized at runtime (-Z/-S) and milawa.lsp sets them
 # to 128 MB.  Any other Lisp that milawa.lsp can dump is a builder too --
-# SBCL, CMUCL, CLISP, SCL, and Allegro CL -- and its milawa-<lisp> launcher
-# runs the image it produced.  The large SBCL binding stack in
+# SBCL, CMUCL, CLISP, SCL, Allegro CL, and ECL -- and its milawa-<lisp>
+# launcher runs the image it produced.  The large SBCL binding stack in
 # BUILD-PROCEDURE.md section 3.1 is needed by the ACL2 proof builder, not by
 # these kernel images, so it says nothing about which Lisp can build base.
+#
+# ECL cannot dump heap images, so under ECL "base.<ext>" and the level images
+# are directories holding a state.lisp instead of Lisp image files.  They are
+# produced and consumed exactly like the other Lisps' images; see the
+# CHECKPOINTING section of milawa.lsp.
 
 SHELL := /bin/bash
 .SHELLFLAGS := -o pipefail -c
@@ -35,7 +40,7 @@ SHELL := /bin/bash
 # so honour it rather than hard-coding an implementation.  The value also
 # selects the builder recipe below and the milawa-<lisp> launcher that
 # final-checks.sh runs, so it must be one of the names milawa.lsp supports:
-# ccl, sbcl, cmucl, clisp, scl, or acl.
+# ccl, sbcl, cmucl, clisp, scl, acl, or ecl.
 LISP ?= ccl
 LISPNAME ?= $(notdir $(firstword $(LISP)))
 CCL ?= $(LISP)
@@ -44,6 +49,7 @@ CMUCL ?= $(LISP)
 CLISP ?= $(LISP)
 SCL ?= $(LISP)
 ACL ?= $(LISP)
+ECL ?= $(LISP)
 # The executable names are not always the same as these keys (CMUCL's is often
 # "lisp"), so override the variable, e.g. "make LISP=cmucl CMUCL=lisp".
 
@@ -116,10 +122,17 @@ $(BASE): milawa.lsp
 	       -e '(defparameter image-extension "$(EXT)")' \
 	       -l milawa.lsp
 	@test -f $@ || { echo "error: $@ was not produced" >&2; exit 1; }
+else ifeq ($(LISPNAME),ecl)
+# ECL writes a directory (base.<ext>/state.lisp), not a Lisp image file.
+$(BASE): milawa.lsp
+	$(ECL) -norc \
+	       -eval '(defparameter image-extension "$(EXT)")' \
+	       -load milawa.lsp
+	@test -e $@ || { echo "error: $@ was not produced" >&2; exit 1; }
 else
 $(BASE): milawa.lsp
 	@echo "error: no builder recipe for LISP=$(LISP)" >&2
-	@echo "       milawa.lsp can dump images with ccl, sbcl, cmucl, clisp, scl, acl" >&2
+	@echo "       milawa.lsp can dump images with ccl, sbcl, cmucl, clisp, scl, acl, ecl" >&2
 	@exit 1
 endif
 
@@ -129,10 +142,11 @@ check: $(BASE)
 	@echo "All levels checked.  Images written: $(BASE) $(IMAGES)"
 
 # final-checks.sh skips levels whose image already exists, so redisplaying one
-# level means dropping its image first.
+# level means dropping its image first.  (Under ECL an image is a directory,
+# hence -rf.)
 check-level: $(BASE)
 	@test -n "$(L)" || { echo "usage: make check-level L=<level>" >&2; exit 1; }
-	rm -f $(L).$(EXT) $(L).$(EXT).out
+	rm -rf $(L).$(EXT) $(L).$(EXT).out
 	./final-checks.sh $(LISPNAME) $(EXT) | tee final-checks.log
 
 report: report-time sizes
@@ -154,7 +168,7 @@ sizes:
 	./summarize-sizes.rb
 
 clean:
-	rm -f $(BASE) $(IMAGES) $(LOGS)
+	rm -rf $(BASE) $(IMAGES) $(LOGS)
 
 clean-proofs:
 	cd Proofs && ./clean-proofs.sh

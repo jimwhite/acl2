@@ -1857,6 +1857,50 @@
 
 ; CHECKPOINTING
 
+; Every Lisp but ECL checkpoints by writing a heap image.  ECL cannot do that,
+; so its image is a directory of the same name as the other Lisps' images,
+; holding a state.lisp file that recreates the history the checker has built
+; up: the arity table, the axioms, the theorems, the proof checker, the event
+; counter, and the Lisp definitions of the admitted functions.  milawa-ecl
+; loads milawa.lsp and then state.lisp before calling main, so the restored
+; checker carries on exactly where save-and-exit stopped.
+
+#+ecl
+(defun dump-ecl-state (stream)
+  (let ((*package*       (find-package "CL-USER"))
+        (*print-circle*  t)
+        (*print-pretty*  nil)
+        (*print-readably* t))
+    (flet ((dump (name value)
+             (format stream "(setf ~S '~S)~%" name value)))
+      (format stream ";;; Milawa state, written by save-and-exit.~%")
+      (format stream "(in-package \"CL-USER\")~%")
+      (dump '*arity-table* *arity-table*)
+      (dump '*axioms* *axioms*)
+      (dump '*theorems* *theorems*)
+      (dump '*proof-checker* *proof-checker*)
+      (dump '*event-number* *event-number*)
+      (dump '*defined-functions-table* *defined-functions-table*))
+    (format stream "~%;; Recreate the definitions of the admitted functions.~%")
+    (format stream "(dolist (entry *defined-functions-table*)~%")
+    (format stream "  (destructuring-bind (name formals body inlinep) entry~%")
+    (format stream "    (when inlinep~%")
+    (format stream "      (eval (list 'declaim (list 'inline name))))~%")
+    (format stream "    (eval (list 'defun name formals~%")
+    (format stream "                (list 'declare (cons 'ignorable formals))~%")
+    (format stream "                body))))~%")))
+
+#+ecl
+(defun dump-ecl-image (directory)
+  (let ((state (concatenate 'string directory "/state.lisp")))
+    (ensure-directories-exist state)
+    (with-open-file (stream state
+                            :direction         :output
+                            :if-exists         :supersede
+                            :if-does-not-exist :create)
+      (dump-ecl-state stream))
+    (format t ";; Wrote ECL image state to ~A~%" state)))
+
 (defun-comp save-and-exit (filename)
 
   #+allegro
@@ -1892,6 +1936,11 @@
                  :init-function #'main
                  :gc :full
                  :purify t)
+
+  #+ecl
+  (progn
+    (dump-ecl-image (concatenate 'string filename "." image-extension))
+    (quit))
 
   ;; handler for other lisps
   (error "implement save-and-exit on this lisp"))
@@ -1999,7 +2048,14 @@
 
   (try-to-accept-all-commands))
 
-(save-and-exit "base")
+; Loading milawa.lsp normally dumps the base image.  milawa-ecl loads it too,
+; but only to bring in the checker itself before restoring an image's state,
+; so it sets *loading-image* to suppress this dump.
+
+(defvar *loading-image* nil)
+
+(unless *loading-image*
+  (save-and-exit "base"))
 
 
 

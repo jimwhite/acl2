@@ -5,6 +5,8 @@
 #   * Makes sure git-lfs is usable by the container user (fixes the
 #     "clean filter 'lfs' failed" errors when running git commands).
 #   * Installs Clozure Common Lisp (CCL), the default host Lisp for ACL2.
+#   * Installs Embeddable Common Lisp (ECL), used to run the Milawa checker
+#     (books/projects/milawa; see BUILD-PROCEDURE.md section 3.2 there).
 #
 # The script is idempotent, so it is safe to run whenever the container is
 # recreated.
@@ -88,4 +90,20 @@ EOF
   sudo chmod 755 "$CCL_LAUNCHER"
 
   echo "Installed: $(ccl --version 2>&1 | head -n 1)"
+fi
+
+# ---------------------------------------------------------------------------
+# Embeddable Common Lisp (ECL)
+# ---------------------------------------------------------------------------
+# ECL builds and runs the Milawa standalone checker (not ACL2 itself).  Ubuntu
+# packages a recent release, which is enough; BUILD-PROCEDURE.md section 3.2
+# has the source-build alternative, including the fork to use if ECL needs
+# patching.
+if command -v ecl >/dev/null 2>&1; then
+  echo "ECL is already installed: $(ecl --version 2>&1 | head -n 1)"
+else
+  echo "Installing ECL from apt..."
+  sudo apt-get update
+  sudo apt-get install -y ecl
+  echo "Installed: $(ecl --version 2>&1 | head -n 1)"
 fi

@@ -7,6 +7,7 @@
 /*.clisp-*
 /*.acl-*
 /*.scl-*
+/*.ecl-*
 /*.out
 /final-checks*.log
 /size_macros.tex
