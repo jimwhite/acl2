@@ -407,15 +407,24 @@ make LISP=ecl                 # builds base.ecl-linux-aarch64/, then checks
 
 `milawa-ecl` raises ECL's stock stacks, which are too small for recursing over
 proof trees: `MILAWA_ECL_LISP_STACK` (objects, default 1048576),
-`MILAWA_ECL_C_STACK` (bytes, default 67108864), and, if you want to pin the
-heap, `MILAWA_ECL_HEAP_SIZE` (MB; ECL's own default is 4 GB on 64-bit hosts).
-Set `MILAWA_ECL` if the executable is not named `ecl`.
+`MILAWA_ECL_C_STACK` (bytes, default 268435456 = 256 MB), and, if you want to
+pin the heap, `MILAWA_ECL_HEAP_SIZE` (MB; ECL's own default is 4 GB on 64-bit
+hosts).  Set `MILAWA_ECL` if the executable is not named `ecl`.
+
+If a limit is still hit, ECL signals `EXT:STACK-OVERFLOW` with a `CONTINUE`
+restart that raises the limit by half and resumes.  `milawa.lsp`'s
+`main-extending-stacks` takes that restart automatically, so an unattended run
+never stops at ECL's restart prompt -- which matters because standard input is
+the `.events` file.  Level10 is the first level that deep; with a deliberately
+small 16 MB C stack it extends the stack four times and finishes the events
+that previously aborted.
 
 Expect ECL to be much slower than CCL at proof checking: on this container the
 utilities level took 58 minutes under ECL 24.5 versus 3.5 minutes under CCL
-(about 16x), and some individual proofs are worse.  Each level also spends
-about 10 seconds recompiling the kernel from `milawa.lsp`, which is what
-replaces the missing image dump.
+(about 16x), logic took about 3.6 hours versus 10 minutes, and level9 took
+about 4 hours.  Each level also spends about 10 seconds recompiling the kernel
+from `milawa.lsp`, which is what replaces the missing image dump.  A full
+13-level ECL run therefore takes on the order of a day or more.
 
 ---
 

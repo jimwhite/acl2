@@ -10,10 +10,13 @@
 #   MILAWA_ECL                ECL executable                (default: ecl)
 #   MILAWA_ECL_HEAP_SIZE      heap size, in MB             (default: ECL's own)
 #   MILAWA_ECL_LISP_STACK     Lisp stack, in objects       (default: 1048576)
-#   MILAWA_ECL_C_STACK        C stack, in bytes            (default: 67108864)
+#   MILAWA_ECL_C_STACK        C stack, in bytes            (default: 268435456)
 #
 # ECL's stock Lisp stack is only 32768 objects and its C stack is the OS
-# default, which are both too small for recursing over proof trees.
+# default (8 MB here), which are both too small for recursing over proof trees.
+# If the limits set here are still not enough, the checker's stack-overflow
+# handler raises them by half and carries on (see main-extending-stacks in
+# milawa.lsp), so an unattended run never stops at ECL's restart prompt.
 
 ECL="${MILAWA_ECL:-ecl}"
 
@@ -76,9 +79,9 @@ fi
 exec "$ECL" -norc \
 	$HEAP_ARG \
 	--lisp-stack "${MILAWA_ECL_LISP_STACK:-1048576}" \
-	--c-stack "${MILAWA_ECL_C_STACK:-67108864}" \
+	--c-stack "${MILAWA_ECL_C_STACK:-268435456}" \
 	-eval "(defparameter cl-user::image-extension \"$EXT\")" \
 	-eval '(defparameter cl-user::*loading-image* t)' \
 	-load "$MILAWA_DIR/milawa.lsp" \
 	-load "$1/state.lisp" \
-	-eval '(progn (cl-user::main) (ext:exit 0))'
+	-eval '(progn (cl-user::main-extending-stacks) (ext:exit 0))'

@@ -757,8 +757,10 @@ unchanged, except that deleting an image means @('rm -rf') rather than
 @('rm -f').  ECL is much slower than CCL at checking proofs (about 16x on the
 utilities level here), and each image start recompiles the kernel from
 <tt>milawa.lsp</tt> (about ten seconds), which takes the place of loading an
-image.  ECL is supported for the standalone checker only; it is not an ACL2
-host for the bootstrapping build.</p>
+image.  The @('milawa-ecl') script raises ECL's stack limits, and if a very
+deep proof needs more, the checker extends them automatically.  ECL is
+supported for the standalone checker only; it is not an ACL2 host for the
+bootstrapping build.</p>
 
 <h5>Other Lisps?</h5>
 

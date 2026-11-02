@@ -2048,6 +2048,26 @@
 
   (try-to-accept-all-commands))
 
+; ECL enforces a limit on the C stack, and checking the deepest proofs (level10
+; especially) can exceed a modest one.  When the limit is reached, ECL signals
+; EXT:STACK-OVERFLOW with a CONTINUE restart that raises the limit and resumes,
+; but it otherwise prompts -- which, on a run whose standard input is an
+; .events file, would read that file as the answer.  Take the restart
+; automatically instead, and raise the initial limit in milawa-ecl so that
+; most runs never get here.
+
+#+ecl
+(defun main-extending-stacks ()
+  (handler-bind
+      ((ext:stack-overflow
+        (lambda (condition)
+          (let ((restart (find-restart 'continue condition)))
+            (when restart
+              (format t ";; Stack limit reached; extending it.~%")
+              (finish-output)
+              (invoke-restart restart))))))
+    (main)))
+
 ; Loading milawa.lsp normally dumps the base image.  milawa-ecl loads it too,
 ; but only to bring in the checker itself before restoring an image's state,
 ; so it sets *loading-image* to suppress this dump.
