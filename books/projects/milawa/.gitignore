@@ -12,3 +12,5 @@
 /final-checks*.log
 /size_macros.tex
 /report-time.txt
+/.wasm-build
+/*.wasm*/

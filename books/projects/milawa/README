@@ -133,8 +133,16 @@ Files
     -- Launches an ECL image, which is a directory holding state.lisp rather
        than a saved image (ECL cannot dump heap images).
 
+  milawa-wasm
+    -- Runs the checker on WebAssembly (under node).  Build it first with
+       wasm/build.sh; see MILAWA-WASM.md.
+
   BUILD-PROCEDURE.md
     -- Detailed build procedure, as measured on a known-good setup
+
+  MILAWA-WASM.md, wasm/
+    -- How the checker is built and run on WebAssembly (ECL compiled with
+       emscripten), and the build scripts
 
   report-time.rb
     -- Tool for seeing which events took longest to process

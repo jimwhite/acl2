@@ -1,0 +1,86 @@
+#!/bin/sh
+
+# Run the Milawa proof checker on WebAssembly.
+#
+#   milawa-wasm <IMAGE-DIRECTORY> [EVENTS-FILE]
+#
+# <IMAGE-DIRECTORY> is a state directory such as "base.wasm".  Native ECL and
+# wasm share the state format, so an image written by milawa-ecl (for example
+# "base.ecl-linux-aarch64") works here too; the extension is taken from the
+# directory name and names the image written at FINISH.
+#
+# Commands are read from EVENTS-FILE, or from standard input when it is
+# omitted, so this script works with final-checks.sh as well.
+#
+# Build the program first with wasm/build.sh.  Settings come from the
+# environment:
+#
+#   MILAWA_WASM_DIR       where milawa-wasm.js lives   (default: .wasm-build)
+#   MILAWA_NODE           node executable              (default: node)
+#   MILAWA_WASM_OS_STACK  OS thread stack, in KB       (default: 262144)
+#   MILAWA_WASM_JS_STACK  V8 stack, in KB              (default: 240000)
+#
+# ECL's apply path crosses back into JavaScript, so both the OS stack and
+# V8's own stack limit have to be raised well above their defaults; the wasm
+# stack that the proof checker recurses in is sized by wasm/build.sh.
+
+set -eu
+
+if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]
+then
+	echo "Usage: milawa-wasm <IMAGE-DIRECTORY> [EVENTS-FILE]"
+	echo "Where <IMAGE-DIRECTORY> is an ECL state directory, such as"
+	echo "\"base.wasm\" (see MILAWA-WASM.md)."
+	exit 1
+fi
+
+if [ ! -d "$1" ] || [ ! -f "$1/state.lisp" ]
+then
+	echo "Error: $1 is not a Milawa image directory (no state.lisp)."
+	echo ""
+	echo "Native and wasm images share the state format, so you can start from"
+	echo "an image built by milawa-ecl, e.g. by copying base.ecl-linux-aarch64"
+	echo "to base.wasm, or build one with the native checker."
+	exit 1
+fi
+
+dir=$(cd "$(dirname "$0")" && pwd)
+build=${MILAWA_WASM_DIR:-$dir/.wasm-build}
+node=${MILAWA_NODE:-node}
+
+if [ ! -f "$build/milawa-wasm.js" ]
+then
+	echo "Error: $build/milawa-wasm.js does not exist."
+	echo ""
+	echo "Build it first with:"
+	echo "  $dir/wasm/build.sh"
+	exit 1
+fi
+
+if ! command -v "$node" >/dev/null 2>&1
+then
+	echo "Error: node not found.  Install Node.js or set MILAWA_NODE."
+	exit 1
+fi
+
+events=
+status=0
+if [ "$#" -eq 1 ]
+then
+	events=$(mktemp)
+	cat > "$events"
+else
+	events=$2
+fi
+
+ulimit -s "${MILAWA_WASM_OS_STACK:-262144}" 2>/dev/null || true
+
+"$node" --stack-size="${MILAWA_WASM_JS_STACK:-240000}" \
+	"$build/milawa-wasm.js" "$1" "$events" || status=$?
+
+if [ "$#" -eq 1 ]
+then
+	rm -f "$events"
+fi
+
+exit "$status"

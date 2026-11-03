@@ -97,6 +97,12 @@
 
 
 (defmacro defun-comp (&rest args)
+  #+milawa-cross-compiling
+  ;; When milawa.lsp is compiled for another target (see MILAWA-WASM.md), the
+  ;; host cannot compile the definitions for that target at image startup, so
+  ;; leave them as plain definitions for the target compiler.
+  `(defun ,@args)
+  #-milawa-cross-compiling
   `(compile (defun ,@args)))
 
 
