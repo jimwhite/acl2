@@ -379,6 +379,13 @@ Notes:
   run-time redefinitions to take effect. ACL2's own sources are still compiled
   with direct calls.
 
+A clean run of `make -k -j 16 basic` (16 cores, all book artifacts deleted
+first) on 2026-11-04 built 1486 certificates with no failures in about 48
+minutes. The books that failed before the fixes above are now certified:
+`misc/getprop`, `system/apply/apply-prim` (frame stack), `tools/time-dollar-with-gc`
+(status race), `std/io/read-string-tests`, `std/io/serialize-tests`,
+`xdoc/defxdoc-raw` (raw-code redefinition). `quicklisp/*` is skipped.
+
 ## Measurements
 
 - ACL2 startup from `saved_acl2`: ~19 s, split roughly as: `load "init.lisp"`
