@@ -138,6 +138,7 @@ Important details:
   `standard-character-output-0` channel at a broadcast stream, and sets
   `*load-verbose*` to `nil`; the real channel stream is restored before the
   banner and the ACL2 loop. Output drops to ~1.5 KB with no change in time.
+  This matters for logs: `cert.pl` stores each book's output in a `.out` file.
 
 ### Why startup is not cached
 
@@ -184,6 +185,11 @@ pays ~19 s of startup, but `cert.pl -j N` hides it behind useful work.
   - When compilation is needed, compile to a process-specific file
     (`acl2-fns-<pid>.fas`) and move it into place with `mv -f`, so concurrent
     ACL2 processes do not clobber each other.
+- `note-acl2-status`: under ECL, write `acl2-status.txt` atomically (temporary
+  file plus `rename-file` with `:if-exists :supersede`). Every ACL2 invocation
+  runs `initialize-acl2`, which deletes and rewrites this file with
+  `:INITIALIZED`; during a parallel books build that raced with `load-acl2`'s
+  read of the token and produced spurious "Please run (COMPILE-ACL2)" errors.
 
 ### `acl2-fns.lisp`
 
@@ -206,9 +212,16 @@ pays ~19 s of startup, but `cert.pl -j N` hides it behind useful work.
 - `save-acl2-in-ecl`, `save-exec-raw`, and the `save-acl2` dispatcher as
   described above.
 - `acl2-default-restart`: enter the ACL2 loop with `(eval '(lp))` for ECL.
+- `save-acl2-in-ecl` raises ECL's frame-stack limit to 262144 frames with
+  `(ext:set-limit 'ext:frame-stack 262144)`. The default of 2048 frames is
+  exhausted by `defconst` of a large quoted constant (`misc/getprop`) and by
+  proof-builder work (`system/apply/apply-prim`), producing
+  "FRAME-STACK overflow at size 2048".
 
 ### `axioms.lisp`
 
+- `setenv$`: use `si::setenv` for ECL. `(setf (ext:getenv ...) ...)` does not
+  exist in ECL.
 - `gc$-fn`: `#+ecl (apply 'ext:gc args)`.
 
 ### `hons-raw.lisp`
@@ -242,6 +255,27 @@ pays ~19 s of startup, but `cert.pl -j N` hides it behind useful work.
     `*compiled-file-extension*` remains `fas`. The cleanup now tries both
     extensions. Without this, ACL2 tries to delete a nonexistent `.fas` and
     aborts the `comp-fn` event after successfully loading the `.fasc`.
+- `initialize-acl2`: write `acl2-status.txt` via `note-acl2-status` (see
+  `acl2.lisp`) instead of deleting and rewriting it non-atomically.
+- `df-call` and the `guard-is-t` case of `oneify-cltl-code-1`: under ECL, emit
+  `(funcall 'fn ...)` rather than `(fn ...)` when a `*1*` function calls the raw
+  Lisp definition, so that a later redefinition (as done by `include-raw`) is
+  seen.
+- Book compilation (`compile-certified-file`): under ECL, bind
+  `ext:use-direct-C-call` to `nil` while calling `compile-file`, and restore it
+  afterwards. ECL otherwise compiles calls to functions defined earlier in the
+  same file as direct C calls, so an `include-raw` definition loaded at run
+  time would be ignored by already-compiled callers. This is what makes
+  `xdoc/defxdoc-raw` work: `defxdoc-raw-after-check` is compiled in
+  `xdoc/base` against the stub `defxdoc-raw-fn`.
+
+### `other-events.lisp`
+
+- `redefine-*1*-fns-for-raw-code`: after `include-raw` smashes definitions,
+  replace the `*1*` function of each affected guard-verified `:logic` function
+  by `(lambda (&rest args) (apply 'fn args))`, so that logical evaluation uses
+  the new raw definition. This is needed on ECL because `*1*` functions can
+  have been compiled with a direct call to the previous definition.
 
 ## ECL API mapping
 
@@ -308,6 +342,42 @@ pays ~19 s of startup, but `cert.pl -j N` hides it behind useful work.
 - ECL's bytecodes compiler and native compiler have very different performance
   characteristics. Use bytecodes for bootstrapping, native for books and user
   code.
+- ECL's C compiler emits direct C calls for functions defined earlier in the
+  same file. Redefining such a function later (which `include-raw` does) has no
+  effect on the already-compiled callers. Compile book files with
+  `ext:use-direct-C-call` off, and make `*1*` functions use `funcall`.
+- ECL's default frame stack (2048 frames) is far too small for ACL2; raise it in
+  the launcher.
+- `initialize-acl2` rewrites `acl2-status.txt` on every ECL startup, so
+  concurrent invocations must not see a truncated file; write it atomically.
+
+## Building the books
+
+From `books/`, with `saved_acl2` built:
+
+```sh
+make -k -j 16 basic ACL2=/workspaces/acl2-ecl/saved_acl2
+```
+
+or for individual books:
+
+```sh
+./build/cert.pl -j 16 --acl2 /workspaces/acl2-ecl/saved_acl2 std/lists/append
+```
+
+Notes:
+
+- Delete `*.cert`, `*.fas`, `*.fasc`, `*.port`, and `*.o` after rebuilding ACL2.
+  Certificates are not automatically invalidated when ACL2 changes, and stale
+  `.fas` files can produce confusing errors (for example, a bogus
+  `:LOAD-COMPILED-FILE :CREATE` failure).
+- Quicklisp books are skipped by default (`USE_QUICKLISP` is ignored for ECL,
+  as for GCL) because Quicklisp's `shellpool` says "Shellpool has not yet been
+  ported to this Lisp".
+- Book files are compiled with ECL's `use-direct-C-call` policy disabled. This
+  costs roughly 10% in call-heavy code but is required for `include-raw`'s
+  run-time redefinitions to take effect. ACL2's own sources are still compiled
+  with direct calls.
 
 ## Measurements
 
