@@ -91,13 +91,27 @@ exec /opt/ecl-26.5.5/bin/ecl -norc -load "$THISSCRIPTDIR/nsaved_acl2.lsp" -- "$@
 The bootstrap file:
 
 ```lisp
+(setq *load-verbose* nil)
 (defparameter cl-user::*acl2-ecl-invocation-dir* (ext:getcwd))
 (ext:chdir (make-pathname :name nil :type nil :defaults *load-pathname*))
 (load "init.lisp")
 (in-package "ACL2")
 (load-acl2)
+(defparameter cl-user::*acl2-ecl-real-standard-co*
+  (common-lisp:get 'acl2-output-channel::standard-character-output-0
+                   *open-output-channel-key*))
+(setf (common-lisp:get 'acl2-output-channel::standard-character-output-0
+                       *open-output-channel-key*)
+      (make-broadcast-stream))
 (ext:install-bytecodes-compiler)
-(ACL2::INITIALIZE-ACL2 (QUOTE ACL2::INCLUDE-BOOK))
+(unwind-protect
+    (let ((*standard-output* (make-broadcast-stream))
+          (*error-output* (make-broadcast-stream))
+          (*trace-output* (make-broadcast-stream)))
+      (ACL2::INITIALIZE-ACL2 (QUOTE ACL2::INCLUDE-BOOK)))
+  (setf (common-lisp:get 'acl2-output-channel::standard-character-output-0
+                       *open-output-channel-key*)
+        cl-user::*acl2-ecl-real-standard-co*))
 (ext:install-c-compiler)
 (ext:chdir cl-user::*acl2-ecl-invocation-dir*)
 (acl2-default-restart)
@@ -119,6 +133,12 @@ Important details:
   The native C compiler is restored before the ACL2 loop starts, so books and
   user functions compile to native `.fas` files.
 - `acl2-default-restart` was extended with `#+ecl (eval '(lp))`.
+- Initialization normally prints over a megabyte of output on every startup.
+  The bootstrap binds ECL's standard streams to a broadcast stream, points the
+  `standard-character-output-0` channel at a broadcast stream, and sets
+  `*load-verbose*` to `nil`; the real channel stream is restored before the
+  banner and the ACL2 loop. Output drops to ~1.5 KB with no change in time.
+  This matters for logs: `cert.pl` stores each book's output in a `.out` file.
 
 ## ACL2 source changes
 
@@ -281,7 +301,10 @@ Important details:
 
 ## Measurements
 
-- ACL2 startup from `saved_acl2`: ~19 s.
+- ACL2 startup from `saved_acl2`: ~19 s, split roughly as: `load "init.lisp"`
+  ~0.1 s, `load-acl2` ~0.7 s, `initialize-acl2` ~17.6 s. Almost all of the
+  time is world construction during `initialize-acl2`; caching compiled `*1*`
+  functions would not remove it, and ECL cannot dump the resulting image.
 - Bytecode functions in the built ACL2 image: 6,772.
 - Bytecode array memory with 32-bit slots: ~6.95 MB; with 16-bit slots:
   ~3.47 MB (estimated by halving the vector lengths).
