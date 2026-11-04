@@ -1,0 +1,319 @@
+# Porting ACL2 to ECL: implementation notes
+
+Last updated: 2026-11-04
+Branch: `ecl` in the ACL2 repository
+Host Lisp: patched ECL 26.5.5 (`/opt/ecl-26.5.5/bin/ecl`)
+Platform: Ubuntu 26.04, aarch64, 16 cores
+
+## Status
+
+Working:
+
+- `make compile LISP=/opt/ecl-26.5.5/bin/ecl`
+- `make init LISP=/opt/ecl-26.5.5/bin/ecl`
+- `./saved_acl2` starts ACL2 (~19 s startup), evaluates forms, admits
+  recursive `defun`s, proves `defthm`s, and certifies books.
+- `cert.pl -j 8` builds dependency chains under `books/`, including
+  `std/lists/append.cert`, `arithmetic/equalities.cert`, and
+  `misc/records0.cert`.
+
+Not yet done:
+
+- Full `make basic` / regression suite.
+- Quieting the verbose initialization output on every startup.
+- Avoiding re-initialization on every startup (ECL has no image dump).
+- Upstream ECL MR (branches prepared; see `ECL-MR.md`).
+
+## Quick start
+
+Build ECL 26.5.5 with the bytecode-operand patch:
+
+```sh
+cd /tmp/ecl-src                 # tag 26.5.5 plus patch
+./configure --prefix=/opt/ecl-26.5.5
+make -j16
+sudo make install
+```
+
+Build ACL2:
+
+```sh
+cd /workspaces/acl2-ecl
+make clean-all
+make compile LISP=/opt/ecl-26.5.5/bin/ecl
+make init    LISP=/opt/ecl-26.5.5/bin/ecl
+```
+
+Run:
+
+```sh
+cd /workspaces/acl2-ecl
+./saved_acl2
+```
+
+Certify a book:
+
+```sh
+cd books
+./build/cert.pl -j 8 --acl2 /workspaces/acl2-ecl/saved_acl2 std/lists/append.cert
+```
+
+When switching ECL versions, delete stale book artifacts first. `cert.pl`
+does not notice that the host Lisp changed, and old native `.fas` files can
+cause bogus failures such as:
+
+```
+The value :CREATE is illegal for :LOAD-COMPILED-FILE
+```
+
+The cleanup used here was:
+
+```sh
+find books -name '*.cert' -delete
+find books -name '*.fas'  -delete
+find books -name '*.port' -delete
+find books -name '*.o'    -delete
+```
+
+## How `saved_acl2` works on ECL
+
+ECL 24.5/26.5 has no equivalent of GCL's `si:save-system` or SBCL's
+`sb-ext:save-lisp-and-die`; there is no way to dump the initialized ACL2
+state. Therefore `save-acl2-in-ecl` (in `acl2-init.lisp`) writes:
+
+1. `nsaved_acl2.lsp`, a Lisp bootstrap file.
+2. `nsaved_acl2`, a shell script that runs:
+
+```sh
+exec /opt/ecl-26.5.5/bin/ecl -norc -load "$THISSCRIPTDIR/nsaved_acl2.lsp" -- "$@"
+```
+
+The bootstrap file:
+
+```lisp
+(defparameter cl-user::*acl2-ecl-invocation-dir* (ext:getcwd))
+(ext:chdir (make-pathname :name nil :type nil :defaults *load-pathname*))
+(load "init.lisp")
+(in-package "ACL2")
+(load-acl2)
+(ext:install-bytecodes-compiler)
+(ACL2::INITIALIZE-ACL2 (QUOTE ACL2::INCLUDE-BOOK))
+(ext:install-c-compiler)
+(ext:chdir cl-user::*acl2-ecl-invocation-dir*)
+(acl2-default-restart)
+```
+
+Important details:
+
+- The caller's working directory is saved and restored. The books build system
+  expects ACL2 to run in the book directory (for `.port` files, certificates,
+  and relative paths). Earlier versions of this launcher `cd`'d permanently to
+  the ACL2 directory, which broke `features.sh` and `cert.pl`.
+- `init.lisp` and `load-acl2` run with the ACL2 source directory as the current
+  directory, so all relative file names in the sources resolve.
+- `initialize-acl2` re-LDs the ACL2 sources, so the ECL "image" is
+  directory-dependent: the `.lisp` sources and `.fas` files must remain beside
+  `saved_acl2`.
+- The bytecodes compiler is installed for initialization only. It makes
+  bootstrapping much faster than invoking gcc for every admitted function.
+  The native C compiler is restored before the ACL2 loop starts, so books and
+  user functions compile to native `.fas` files.
+- `acl2-default-restart` was extended with `#+ecl (eval '(lp))`.
+
+## ACL2 source changes
+
+### `acl2.lisp`
+
+- ECL package locking:
+  - `(require :package-locks)`.
+  - `(ext:unlock-package "COMMON-LISP")` before reading the symbol list from
+    `axioms.lisp`, and again after `*compiled-file-extension*` is computed,
+    because loading ECL's compiler (`cmp`) re-locks `COMMON-LISP`.
+  - `with-suppression` uses `ext:with-unlocked-packages ("COMMON-LISP")` for
+    ECL.
+- Character encoding:
+  - `acl2-set-character-encoding` sets
+    `ext:*default-external-format*` to `:latin-1`. ECL defaults to UTF-8, but
+    ACL2 assumes ISO-8859-1 (see `acl2-characters`).
+- Dispatch macro characters:
+  - ECL predefines `#Y` and `#Z`; they are safe to redefine in ACL2's private
+    readtable.
+  - ECL stores function objects in the readtable. Allow replacing an existing
+    function-valued dispatch macro, and compare a symbol argument against the
+    symbol's function.
+- `initialize-state-globals`: recognize `#+ecl :ecl` as `host-lisp`.
+- `exit-lisp`: add `#+ecl (if status-p (ext:quit status) (ext:quit))`.
+  Without this, `(exit 43)` returned to ECL instead of terminating, which made
+  `cert.pl` report `**CERTIFICATION FAILED**` even though the certificate was
+  written.
+- `acl2-fns` startup:
+  - For ECL, reuse an up-to-date `acl2-fns.fas` instead of deleting and
+    recompiling it on every startup. Recompiling on every ACL2 invocation is
+    slow and makes parallel book builds race on the same `.c`, `.o`, and `.fas`
+    files.
+  - When compilation is needed, compile to a process-specific file
+    (`acl2-fns-<pid>.fas`) and move it into place with `mv -f`, so concurrent
+    ACL2 processes do not clobber each other.
+
+### `acl2-fns.lisp`
+
+- `getenv$-raw`: use `ext:getenv`.
+- `without-interrupts` / `with-interrupts`: use `mp:without-interrupts` /
+  `mp:with-interrupts`.
+- `our-truename`: ECL's `namestring` returns a non-simple string (an array with
+  a fill pointer). ACL2 requires simple strings, so the namestring is copied
+  with `(common-lisp::coerce ... 'simple-string)`. `common-lisp::coerce` is used
+  because ACL2's own `coerce` only accepts `string` and `list`.
+
+### `acl2-init.lisp`
+
+- `system-call`: `ext:system`. ECL returns the raw wait status; decode it with
+  `(ash code -8)` when it is at least 256.
+- `system-call+`: `ext:run-program ... :input nil :output :stream
+  :error :output :wait t`; read lines from the returned stream and use the
+  second value as the exit code.
+- `getpid$`: `ext:getpid`.
+- `save-acl2-in-ecl`, `save-exec-raw`, and the `save-acl2` dispatcher as
+  described above.
+- `acl2-default-restart`: enter the ACL2 loop with `(eval '(lp))` for ECL.
+
+### `axioms.lisp`
+
+- `gc$-fn`: `#+ecl (apply 'ext:gc args)`.
+
+### `hons-raw.lisp`
+
+- `hl-with-lock-grabbed`: ECL's reader mishandles the adjacent
+  `#-`/`#+` conditional idiom
+
+  ```lisp
+  #-(or ccl gcl)
+  #+gcl (declare ...)
+  #-(or ccl gcl)
+  (error ...)
+  ```
+
+  and reports an unmatched right parenthesis. The ECL branch is now a single
+  `#-(or ccl gcl) (progn (declare ...) (error ...))` form.
+
+### `interface-raw.lisp`
+
+- Bootstrap batch compilation:
+  - `compile-file-for-acl2-bootstrap` wraps `compile-file`. If ECL's bytecodes
+    compiler is active (`:ecl-bytecmp` is in `*features*`) and compilation
+    signals an error, ACL2 switches to the native compiler, recompiles the
+    batch, then restores the bytecodes compiler. This is a generic safety net
+    for stock ECL and replaces hardcoded exclusions for `apply$-prim` and
+    `ev-fncall-rec-logical`.
+  - Caveat: the native compiler is extremely slow on very large batches, so
+    this is a fallback, not a performance path.
+- Cleanup of compiled bootstrap files:
+  - When the bytecodes compiler is active, `compile-file` writes `.fasc`, while
+    `*compiled-file-extension*` remains `fas`. The cleanup now tries both
+    extensions. Without this, ACL2 tries to delete a nonexistent `.fas` and
+    aborts the `comp-fn` event after successfully loading the `.fasc`.
+
+## ECL API mapping
+
+| ACL2 use | ECL API |
+| --- | --- |
+| Run a shell command, ignore output | `ext:system` (returns raw wait status) |
+| Run a command and capture output | `ext:run-program` |
+| Process id | `ext:getpid` |
+| Environment variable | `ext:getenv` |
+| Garbage collection | `ext:gc` |
+| Exit process with status | `ext:quit` |
+| Block/unblock interrupts | `mp:without-interrupts`, `mp:with-interrupts` |
+| Unlock a package | `ext:unlock-package` after `(require :package-locks)` |
+| Unlock packages temporarily | `ext:with-unlocked-packages` |
+| Bytecode compiler | `ext:install-bytecodes-compiler` |
+| Native compiler | `ext:install-c-compiler` |
+| Current directory | `ext:getcwd`, `ext:chdir` |
+| Feature for bytecodes compiler | `:ecl-bytecmp` |
+
+## Gotchas and lessons
+
+- ECL's `namestring` is not a simple string. Any ACL2 pathname code that
+  assumes simple strings must copy the result.
+- Loading ECL's compiler module (`cmp`) re-locks `COMMON-LISP`; unlock after it
+  is loaded, not only before.
+- ECL's `ext:system` does not return a shell-style exit code; decode the wait
+  status.
+- ECL's readtable stores function objects, not the symbols passed to
+  `set-dispatch-macro-character`.
+- ECL's `#Y`/`#Z` conflict with ACL2's serialization readers; they can be
+  replaced in ACL2's private readtable.
+- Adjacent `#-`/`#+` read-time conditionals are not portable. Use a single
+  conditional whose body is a `progn`.
+- ECL's bytecode compiler writes `.fasc`, whereas the native compiler writes
+  `.fas`. `*compiled-file-extension*` is computed once, before the bytecodes
+  compiler is installed, so code that deletes or loads compiled files must
+  tolerate both.
+- ECL 24.5 and 26.5 both limit bytecode jump offsets to `MAX_OPARG` (0x7FFF).
+  ACL2's `apply$-prim` and `ev-fncall-rec-logical` executable counterparts
+  exceed that. Options:
+  1. Patch ECL to widen operand slots (current proposal; see `ECL-MR.md`).
+  2. Add long-jump opcodes that index 32-bit deltas in a side table (more
+     compact, more complex).
+  3. Fall back to the native compiler on error (implemented in ACL2 as a
+     safety net; slow for large batches).
+- `exit-lisp` must really terminate the process for the books build system.
+  `cert.pl` relies on the ACL2 process exiting with status 43 after a
+  successful certification.
+- Parallel ACL2 invocations must not share writable compiled artifacts. The
+  `acl2-fns.fas` quick-start check and process-specific compile output fix the
+  race seen with `cert.pl -j`.
+- The books build system invokes ACL2 from the book's directory. Never `cd`
+  permanently in the launcher; save and restore the working directory.
+- `features.sh` must be run from `books/build` with `ACL2` pointing at the
+  built `saved_acl2`:
+
+  ```sh
+  cd books/build
+  ACL2=/workspaces/acl2-ecl/saved_acl2 STARTJOB=/bin/bash ./features.sh
+  ```
+
+  It produces `Makefile-features` with `ACL2_HOST_LISP := ECL` and
+  `ACL2_COMP_EXT := fas`.
+- ECL's bytecodes compiler and native compiler have very different performance
+  characteristics. Use bytecodes for bootstrapping, native for books and user
+  code.
+
+## Measurements
+
+- ACL2 startup from `saved_acl2`: ~19 s.
+- Bytecode functions in the built ACL2 image: 6,772.
+- Bytecode array memory with 32-bit slots: ~6.95 MB; with 16-bit slots:
+  ~3.47 MB (estimated by halving the vector lengths).
+- `std/lists/append.cert` fresh dependency chain with `-j 8`: ~227 s.
+- Simple `cert.pl` book with no dependencies: ~27 s.
+
+## Useful debugging commands
+
+Check ECL features and compiler state:
+
+```lisp
+(member :ecl-bytecmp *features*)
+(member :ieee-floating-point *features*)
+```
+
+Check a function's bytecode size:
+
+```lisp
+(multiple-value-bind (lex vec) (si::bc-split (symbol-function 'fn))
+  (declare (ignore lex))
+  (length vec))   ; bytes; divide by 4 for 32-bit slots
+```
+
+Run a saved ACL2 with a script:
+
+```sh
+./saved_acl2 < /tmp/test.lsp
+```
+
+Inspect the generated launcher after `make init`:
+
+```sh
+cat saved_acl2
+cat nsaved_acl2.lsp
+```
