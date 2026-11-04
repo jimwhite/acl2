@@ -2467,6 +2467,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; book directory reflects the invocation directory (as it does for other host
 ; Lisps).
 
+       (format str "(setq *load-verbose* nil)~%")
        (format str
                "(defparameter cl-user::*acl2-ecl-invocation-dir* (ext:getcwd))~%")
        (format str
@@ -2479,8 +2480,31 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
        (format str "(load \"init.lisp\")~%(in-package \"ACL2\")~%")
        (format str "(load-acl2)~%")
+
+; Initialization produces a great deal of output (over a megabyte), which is
+; unwelcome on every startup and especially in the books build logs.  ACL2
+; writes through its standard-co channel, whose underlying Lisp stream is the
+; value of the ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0 property.  We
+; temporarily redirect that property and ECL's standard streams to a broadcast
+; stream, and restore the real channel stream afterwards so that the startup
+; banner and the ACL2 loop print normally.  ECL's own "Loading" messages are
+; suppressed by *LOAD-VERBOSE* above.
+
+       (format str "(defparameter cl-user::*acl2-ecl-real-standard-co*~%")
+       (format str "  (common-lisp:get 'acl2-output-channel::standard-character-output-0~%")
+       (format str "                   *open-output-channel-key*))~%")
+       (format str "(setf (common-lisp:get 'acl2-output-channel::standard-character-output-0~%")
+       (format str "                       *open-output-channel-key*)~%")
+       (format str "      (make-broadcast-stream))~%")
        (format str "(ext:install-bytecodes-compiler)~%")
-       (format str "~s~%" mode)
+       (format str "(unwind-protect~%")
+       (format str "    (let ((*standard-output* (make-broadcast-stream))~%")
+       (format str "          (*error-output* (make-broadcast-stream))~%")
+       (format str "          (*trace-output* (make-broadcast-stream)))~%")
+       (format str "      ~s)~%" mode)
+       (format str "  (setf (common-lisp:get 'acl2-output-channel::standard-character-output-0~%")
+       (format str "                       *open-output-channel-key*)~%")
+       (format str "        cl-user::*acl2-ecl-real-standard-co*))~%")
 
 ; Restore ECL's native compiler, so that ACL2 can compile books and other
 ; functions on the fly (see the corresponding comment in SAVE-ACL2).
