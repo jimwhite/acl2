@@ -1,0 +1,40 @@
+#!/bin/sh
+# Run ACL2 on WebAssembly, using the ECL built by wasm/build-ecl-wasm.sh and
+# Node.js as the wasm runtime.
+#
+# Environment variables:
+#
+#   ACL2_WASM_DIR    ACL2 source directory (default: the parent of this script)
+#   ACL2_WASM_ECL    directory with ecl.js and ecl.wasm
+#                    (default: /opt/eclwasm/dist/node-raw)
+#
+# Extra command-line arguments are passed to ECL, e.g.
+#
+#   ./wasm/acl2-wasm --eval '(acl2::ld "foo.lisp")'
+
+set -e
+
+THISDIR=$(cd "$(dirname "$0")" && pwd)
+ACL2_WASM_DIR=${ACL2_WASM_DIR:-$(cd "$THISDIR/.." && pwd)}
+ACL2_WASM_ECL=${ACL2_WASM_ECL:-/opt/eclwasm/dist/node-raw}
+export ACL2_WASM_DIR
+
+if [ ! -f "$ACL2_WASM_ECL/ecl.js" ]; then
+  echo "acl2-wasm: cannot find $ACL2_WASM_ECL/ecl.js" >&2
+  echo "acl2-wasm: build it with wasm/build-ecl-wasm.sh (ECL_SRC=...)" >&2
+  exit 1
+fi
+
+# ACL2 needs a large C stack, and V8 (Node) enforces its own limit for the
+# same calls.  Raising the shell stack lets Node accept --stack-size; the wasm
+# module itself has a 1.5GB stack baked in at link time.
+ulimit -s 1048576 2>/dev/null || true
+
+# ACL2_SMALL_FIXNUMS: the wasm build has 30-bit fixnums.
+# ACL2_SNAPSHOT_INFO: there is no git subprocess to derive a commit hash.
+ACL2_SMALL_FIXNUMS=1
+ACL2_SNAPSHOT_INFO=${ACL2_SNAPSHOT_INFO:-NONE}
+export ACL2_SMALL_FIXNUMS ACL2_SNAPSHOT_INFO
+
+exec node --stack-size=524288 "$ACL2_WASM_ECL/ecl.js" \
+  --load "$THISDIR/acl2-wasm.lsp" -- "$@"
