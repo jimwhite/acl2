@@ -194,6 +194,63 @@ Interpreted recursion depth before the C stack is exhausted: natively about
 20 000 frames per 2 MB; in wasm at `-O0` about 2 000 frames per 100 MB. At
 `-O2` the wasm stack is no longer the binding limit; V8's `--stack-size` is.
 
+## Where the 24x slowdown comes from
+
+The wasm build is about 24x slower than a native ECL build. That factor
+decomposes into two nearly independent parts, which is important because only
+one of them is about WebAssembly.
+
+The first factor is that the wasm build has **no native compiler**: every
+function, including the `*1*` executable counterparts that ACL2 compiles
+during `initialize-acl2`, is bytecode. Running the same `.fasc` files on
+native ECL isolates it:
+
+| Configuration | `load-acl2` + `initialize-acl2` |
+| --- | --- |
+| native, sources compiled to C (`.fas`), bytecoded `*1*` functions | 17.3 s |
+| native, everything bytecoded (`.fasc`) | 56.5 s |
+| wasm, everything bytecoded (`.fasc`) | 413 s |
+
+So bytecode-only costs **3.3x**, and wasm on top of bytecode costs **7.3x**.
+
+The second factor is how ECL's bytecode interpreter behaves in wasm. It is not
+that wasm is slow: a plain C `fib` compiled with emcc is within 1.5-2x of gcc,
+and allocation-heavy Lisp is only ~2x slower. It is the interpreter loop in
+particular:
+
+| Benchmark (bytecodes compiler both sides) | native | wasm | ratio |
+| --- | --- | --- | --- |
+| 1e6-iteration fixnum loop | 0.032 s | 0.394 s | 12x |
+| `fib 30` (call heavy) | 0.192 s | 3.502 s | 18x |
+| 300k hash-table inserts | 0.033 s | 0.256 s | 7.8x |
+| 300k conses | 0.119 s | 0.255 s | 2.1x |
+| full GC | 0.005 s | 0.001 s | - |
+
+The more dispatch-bound the code, the worse the ratio, while allocation and
+GC are fine. ACL2 proofs show the same factor as the call-heavy benchmark:
+`app-assoc` takes 0.01 s natively and 0.11 s in wasm; `app-len` 0.02 s vs
+0.16 s.
+
+Two Emscripten details matter here, and both were measured:
+
+* Direct-threaded dispatch is unavailable: `ECL_THREADED_INTERPRETER` is
+  disabled for clang/LLVM in `src/h/bytecodes.h`, so the wasm build runs the
+  `switch`-based interpreter while the native gcc build uses computed gotos.
+* Removing ECL's binaryen passes (`--spill-pointers`, `--profiling-funcs`)
+  makes the interpreter 1.5-2x faster, but `--spill-pointers` is **required**
+  for GC correctness: without it ECL aborts early in `load-acl2` with
+  `BUFFER-STRING is not a string`, i.e. bdwgc collected live data because no
+  pointer to it was visible on the wasm shadow stack.
+* V8's optimizing tier is not helping this code: `node --liftoff-only` is
+  about 1.5x faster than the default tiered pipeline on the interpreter
+  benchmarks, which suggests TurboFan produces worse code for `ecl_interpret`
+  than the baseline compiler.
+
+Finally, wasm32's 30-bit fixnums (see `ACL2_SMALL_FIXNUMS`) turn arithmetic
+that stays fixnum on a native 64-bit build into bignum arithmetic; the
+`sum of i*i` benchmark is 25x slower in wasm against 8x for a fixnum-only
+loop. wasm64 (memory64) would remove that tax and allow 62-bit fixnums.
+
 ## Wasmtime
 
 Wasmtime is attractive: a plain CLI with WASI and no JavaScript. The module
