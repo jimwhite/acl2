@@ -1815,14 +1815,15 @@ notation causes an error and (b) the use of ,. is not permitted."
                  (cdr (assoc (intern string :keyword)
                              ext::*environment-list*
                              :test #'eq))))
-          #+(or gcl allegro lispworks ccl sbcl clisp)
+          #+(or gcl allegro lispworks ccl sbcl clisp ecl)
           (let ((fn
                  #+gcl       'si::getenv
                  #+allegro   'sys::getenv
                  #+lispworks 'hcl::getenv
                  #+ccl       'ccl::getenv
                  #+sbcl      'sb-ext::posix-getenv
-                 #+clisp     'ext:getenv))
+                 #+clisp     'ext:getenv
+                 #+ecl       'ext:getenv))
             (and (fboundp fn)
                  (funcall fn string))))
          (msg (and val
@@ -1946,7 +1947,13 @@ notation causes an error and (b) the use of ,. is not permitted."
 ; excl::pathname-resolve-symbolic-links is not defined.
 
             (ignore-errors (truename filename)))))
-         (namestring (and truename (namestring truename))))
+         (namestring
+          (and truename
+
+; ECL's NAMESTRING returns a non-simple string (an array with a fill pointer),
+; but ACL2 requires simple strings (see bad-lisp-stringp).  So we copy it here.
+
+               (common-lisp::coerce (namestring truename) 'simple-string))))
     (cond ((null namestringp)
            truename)
           ((null truename)
@@ -2263,7 +2270,9 @@ notation causes an error and (b) the use of ,. is not permitted."
   `(excl:without-interrupts ,@forms)
   #+cmucl
   `(system:without-interrupts ,@forms)
-  #-(or allegro ccl cmucl gcl lispworks sbcl)
+  #+ecl
+  `(mp:without-interrupts ,@forms)
+  #-(or allegro ccl cmucl gcl lispworks sbcl ecl)
   '(error "This Lisp implementation does not support ~s, which is used, for~%~
            example, to support certain atomic operations when installing an~%~
            ACL2 logical world.  One could define (without-interrupts ...) ~%~
@@ -2282,7 +2291,9 @@ notation causes an error and (b) the use of ,. is not permitted."
   `(ccl:with-interrupts-enabled ,@forms)
   #+sbcl
   `(sb-sys:with-interrupts ,@forms)
-  #-(or ccl sbcl)
+  #+ecl
+  `(mp:with-interrupts ,@forms)
+  #-(or ccl sbcl ecl)
 
 ; Note that in GCL, si::without-interrupts (when implemented) disables :q but
 ; does not disable control-c.  So although there is no si::with-interrupts,

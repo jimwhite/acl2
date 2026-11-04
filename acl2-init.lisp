@@ -491,9 +491,23 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
                   (integerp (cadr status))))
         1 ; just some non-zero exit code here
       (cadr status)))
-  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  #+ecl
+  (let ((code (ext:system
+               (let ((result string))
+                 (dolist (x arguments)
+                   (setq result (concatenate 'string result " " x)))
+                 result))))
+
+; ECL's EXT:SYSTEM returns the raw wait status, which typically encodes the
+; exit code in its high bits (as for the shell's $?), so we decode it here.
+
+    (if (and (integerp code)
+             (>= code 256))
+        (ash code -8)
+      (or code 0)))
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl ecl)
   (declare (ignore string arguments))
-  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl ecl)
   (error "SYSTEM-CALL is not yet defined in this Lisp."))
 
 (defun read-file-by-lines (file &optional delete-after-reading)
@@ -536,7 +550,8 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
                             fn0)))
          #+ccl 'ccl::getpid
          #+lispworks 'system::getpid
-         #-(or allegro gcl sbcl cmu clisp ccl lispworks) nil))
+         #+ecl 'ext:getpid
+         #-(or allegro gcl sbcl cmu clisp ccl lispworks ecl) nil))
     (and fn
          (fboundp fn)
          (funcall fn))))
@@ -548,9 +563,9 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
 ; Unlike system-call, we catch Lisp errors and treat the status as 1 in those
 ; cases.
 
-  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl ecl)
   (declare (ignore string arguments))
-  #-(or gcl lispworks allegro cmu sbcl clisp ccl)
+  #-(or gcl lispworks allegro cmu sbcl clisp ccl ecl)
   (error "SYSTEM-CALL is not yet defined in this Lisp.")
 
   #+gcl
@@ -658,6 +673,18 @@ respectively at least (1- (expt 2 29)) and (expt 2 29), which are
                                              :output tmp-file)
                             0))
                   (read-file-by-lines tmp-file t))
+           #+ecl
+           (multiple-value-bind (stream code)
+               (ext:run-program string arguments
+                                :input nil
+                                :output :stream
+                                :error :output
+                                :wait t)
+             (setq exit-code code)
+             (with-output-to-string (s)
+               (loop for line = (read-line stream nil nil)
+                     while line
+                     do (write-line line s))))
            #+ccl
            (with-output-to-string
              (s)
@@ -1599,6 +1626,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
       #+allegro (lp)
       #+lispworks (lp)
       #+ccl (eval '(lp)) ; using eval to avoid compiler warning
+      #+ecl (eval '(lp)) ; using eval to avoid compiler warning
       )
     nil))
 
@@ -2414,6 +2442,71 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   (setq *acl2-default-restart-complete* nil)
   (save-acl2-in-ccl-aux sysout-name sysout-name host-lisp-args inert-args))
 
+#+ecl
+(defun save-acl2-in-ecl (sysout-name &optional mode other-info)
+
+; ECL 24.5 has no facility for dumping the current Lisp image (unlike GCL's
+; SI::SAVE-SYSTEM or SBCL's SB-EXT:SAVE-LISP-AND-DIE), so we cannot save the
+; state built by INITIALIZE-ACL2.  Instead, we write a small shell script that
+; starts ECL, loads the ACL2 sources and compiled files, initializes ACL2, and
+; enters the ACL2 loop.  We also write a companion Lisp file, named
+; <sysout-name>.lsp, that is loaded by that script; see the comment at the end
+; of this function about why we keep those two files separate.
+
+  (declare (ignore other-info))
+  (let* ((lisp-file (concatenate 'string sysout-name ".lsp"))
+         (ecl-program (or (car (ext:command-args)) "ecl")))
+    (with-open-file (str lisp-file :direction :output :if-exists :supersede)
+      (our-with-standard-io-syntax
+
+; The ACL2 sources and compiled files live in the directory containing this
+; file, which may differ from the directory in which the user invoked
+; saved_acl2.  We temporarily change to this file's directory so that the
+; relative file names in ACL2's INIT files are found, and we restore the
+; original directory before starting the ACL2 loop, so that ACL2's connected
+; book directory reflects the invocation directory (as it does for other host
+; Lisps).
+
+       (format str
+               "(defparameter cl-user::*acl2-ecl-invocation-dir* (ext:getcwd))~%")
+       (format str
+               "(ext:chdir (make-pathname :name nil :type nil :defaults *load-pathname*))~%")
+
+; The form (load "init.lisp") must come first, before we change packages,
+; because it is what creates the ACL2 package.  After that we are in package
+; ACL2, so that the symbols in MODE are read with the correct package.  Note
+; that MODE is typically (INITIALIZE-ACL2 (QUOTE INCLUDE-BOOK)).
+
+       (format str "(load \"init.lisp\")~%(in-package \"ACL2\")~%")
+       (format str "(load-acl2)~%")
+       (format str "(ext:install-bytecodes-compiler)~%")
+       (format str "~s~%" mode)
+
+; Restore ECL's native compiler, so that ACL2 can compile books and other
+; functions on the fly (see the corresponding comment in SAVE-ACL2).
+
+       (format str "(ext:install-c-compiler)~%")
+       (format str
+               "(ext:chdir cl-user::*acl2-ecl-invocation-dir*)~%")
+       (format str "(acl2-default-restart)~%")))
+    (when (probe-file sysout-name)
+      (delete-file sysout-name))
+    (with-open-file (str sysout-name :direction :output :if-exists :supersede)
+      (format str "#!/bin/sh~%~%")
+      (format str "# Saved ~a~%~%" (saved-build-dates "#  then "))
+      (format str "~a" *thisscriptdir-def*)
+      (format str "exec ~a -norc -load \"$THISSCRIPTDIR/~a\" -- \"$@\"~%"
+              ecl-program
+              lisp-file))
+    (chmod-executable sysout-name)
+    (format t "Saving of ACL2 is complete.~%")))
+
+#+ecl
+(defun save-exec-raw (sysout-name host-lisp-args inert-args)
+  (declare (ignore host-lisp-args inert-args))
+  (setq *acl2-default-restart-complete* nil)
+  (save-acl2-in-ecl sysout-name '(initialize-acl2 (quote include-book))))
+
 ; Since saved-build-date-string is avoided for MCL, we avoid the following too
 ; (which is not applicable to MCL sessions anyhow).
 #-(and mcl (not ccl))
@@ -2425,7 +2518,7 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 
                             do-not-save-gcl)
   #-gcl (declare (ignore do-not-save-gcl))
-  #-(or gcl allegro cmu sbcl clisp ccl)
+  #-(or gcl allegro cmu sbcl clisp ccl ecl)
   (declare (ignore other-info))
 
   #+gcl
@@ -2440,7 +2533,22 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
 ; for the Mac.
 
   (load-acl2 :load-acl2-proclaims *do-proclaims*)
+
+; ECL's C compiler (the default) is extremely slow when invoked on each of the
+; many functions admitted during the boot-strap.  The bytecodes compiler is
+; much faster, at the cost of slower execution.  Since ECL cannot save the
+; resulting image anyway (see save-acl2-in-ecl), this code is only exercised
+; while building, and the bytecodes compiler keeps the build tractable.
+
+  #+ecl
+  (ext:install-bytecodes-compiler)
   (eval mode)
+
+; Restore the native (C) compiler, since ACL2's on-the-fly compilation of
+; books and other functions expects native compiled files.
+
+  #+ecl
+  (ext:install-c-compiler)
   (princ "
 ******************************************************************************
           Initialization complete, beginning the check and save.
@@ -2471,7 +2579,9 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
   (save-acl2-in-clisp "nsaved_acl2" mode other-info)
   #+ccl
   (save-acl2-in-ccl "nsaved_acl2" mode other-info)
-  #-(or gcl lucid lispworks allegro clisp ccl cmu sbcl)
+  #+ecl
+  (save-acl2-in-ecl "nsaved_acl2" mode other-info)
+  #-(or gcl lucid lispworks allegro clisp ccl cmu sbcl ecl)
   (error "We do not know how to save ACL2 in this Common Lisp.")
   (format t "Saving of ACL2 is complete.~%"))
 

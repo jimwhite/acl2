@@ -11025,6 +11025,34 @@ such that feature :acl2-loop-only is true."))
              (list (cons #\0 full-book-string))
              (proofs-co state) state nil)))
 
+#-acl2-loop-only
+(defun compile-file-for-acl2-bootstrap (lisp-file)
+
+; We use ECL's portable bytecodes compiler during the boot-strap (see the call
+; of EXT:INSTALL-BYTECODES-COMPILER in SAVE-ACL2), because the native C
+; compiler is very slow on the many functions admitted during initialization.
+; However, the bytecodes compiler limits jump distances, so a function with a
+; very large IF or COND can cause a "Too large jump" error.  We fall back to
+; the native compiler for that batch in that case; a patched ECL with wider
+; jump offsets will not trigger this fallback.
+
+  #+ecl
+  (if (member :ecl-bytecmp *features*)
+      (handler-case (compile-file lisp-file)
+        (error (c)
+          (declare (ignore c))
+          (format t
+                  "~&Note: ECL's bytecodes compiler failed on ~s; ~
+                   retrying with the native compiler.~%"
+                  lisp-file)
+          (ext:install-c-compiler)
+          (unwind-protect
+              (compile-file lisp-file)
+            (ext:install-bytecodes-compiler))))
+    (compile-file lisp-file))
+  #-ecl
+  (compile-file lisp-file))
+
 (defun compile-uncompiled-defuns (file &optional (fns :some) gcl-flg
                                        &aux (state *the-live-state*))
 
@@ -11227,15 +11255,26 @@ such that feature :acl2-loop-only is true."))
                  (our-truename (pathname-unix-to-os fn-file state)
                                "Note: Calling OUR-TRUENAME from ~
                                 COMPILE-UNCOMPILED-DEFUNS.")))
-            (compile-file lisp-file)
+            (compile-file-for-acl2-bootstrap lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)
               #+clisp
               (delete-file (concatenate 'string os-file ".lib"))))))
         (load-compiled os-file t)
         (if (not (keep-tmp-files state))
+            #-ecl
             (delete-file (concatenate 'string os-file "."
-                                      *compiled-file-extension*))))
+                                      *compiled-file-extension*))
+            #+ecl
+
+; ACL2's *COMPILED-FILE-EXTENSION* is "fas" (computed using ECL's native
+; compiler), but when ECL's bytecodes compiler is installed it produces
+; portable FASL files with type "fasc".  So try both here.
+
+            (dolist (ext '("fas" "fasc"))
+              (let ((f (concatenate 'string os-file "." ext)))
+                (when (probe-file f)
+                  (delete-file f))))))
       (value nil)))
     os-file))
 
@@ -11462,15 +11501,24 @@ such that feature :acl2-loop-only is true."))
                  (our-truename (pathname-unix-to-os fn-file state)
                                "Note: Calling OUR-TRUENAME from ~
                                 COMPILE-UNCOMPILED-*1*-DEFUNS.")))
-            (compile-file lisp-file)
+            (compile-file-for-acl2-bootstrap lisp-file)
             (when (not (keep-tmp-files state))
               (delete-file lisp-file)
               #+clisp
               (delete-file (concatenate 'string os-file ".lib"))))))
         (load-compiled os-file t)
         (if (not (keep-tmp-files state))
+            #-ecl
             (delete-file (concatenate 'string os-file "."
-                                      *compiled-file-extension*)))
+                                      *compiled-file-extension*))
+            #+ecl
+
+; See the corresponding comment in COMPILE-UNCOMPILED-DEFUNS.
+
+            (dolist (ext '("fas" "fasc"))
+              (let ((f (concatenate 'string os-file "." ext)))
+                (when (probe-file f)
+                  (delete-file f)))))
         (value nil))))
     os-file))
 

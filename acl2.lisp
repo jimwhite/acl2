@@ -452,6 +452,13 @@
 ; #+gcl -- already iso-8859-1, it seems, and nothing we can do to change
 ;          the encoding anyhow
 
+; ECL defaults to UTF-8, but ACL2 assumes ISO-8859-1 (see the discussion
+; above).  Setting EXT:*DEFAULT-EXTERNAL-FORMAT* affects files opened without
+; an explicit :EXTERNAL-FORMAT argument.
+
+  #+ecl
+  (setq ext:*default-external-format* :latin-1)
+
   #+lispworks
 ; This the default on our linux system, at least on both 32- and 64-bit,
 ; version 6.1.0.  But it doesn't seem to suffice; see
@@ -1220,6 +1227,18 @@ ACL2 from scratch.")
       (let ((sym (intern "*SUPPRESS-CHECK-REDEFINITION*" "CUSTOM")))
         (eval `(defvar ,sym nil)))))
 
+; ECL locks the "COMMON-LISP" package, as CLISP does; see the comments just
+; above.  Unlock it so that we can intern symbols such as DEFCONST in that
+; package while reading *common-lisp-symbols-from-main-lisp-package* from
+; axioms.lisp.  Package locking support is in a separate module, which we need
+; to load first.
+
+#+ecl
+(require :package-locks)
+
+#+ecl
+(eval '(ext:unlock-package "COMMON-LISP"))
+
 (with-open-file
  (fl "axioms.lisp" :direction :input)
 
@@ -1277,6 +1296,13 @@ ACL2 from scratch.")
 
   (pathname-type (compile-file-pathname "foo.lisp")))
 
+; Loading ECL's compiler (which happens implicitly above, via
+; COMPILE-FILE-PATHNAME) locks the "COMMON-LISP" package again.  See the
+; comment about ECL package locking above.
+
+#+ecl
+(eval '(ext:unlock-package "COMMON-LISP"))
+
 (defmacro initialize-state-globals ()
   (let ((acl2-compiler-enabled-var
          #+cltl2 'common-lisp-user::*acl2-compiler-enabled*
@@ -1323,7 +1349,8 @@ ACL2 from scratch.")
            #+clisp :clisp
            #+cmu :cmu
            #+lispworks :lispworks
-           #-(or gcl ccl sbcl allegro clisp cmu lispworks)
+           #+ecl :ecl
+           #-(or gcl ccl sbcl allegro clisp cmu lispworks ecl)
            (error
             "Error detected in initialize-state-globals: ~%The underlying ~
              host Lisp appears not to support ACL2. ~%Contact the ACL2 ~
@@ -1513,6 +1540,8 @@ ACL2 from scratch.")
   (if status-p (lispworks:quit :status status) (lispworks:quit))
   #+gcl
   (if status-p (si::bye status) (si::bye))
+  #+ecl
+  (if status-p (ext:quit status) (ext:quit))
   #+lucid
   (lisp::exit) ; don't know how to handle status, but don't support lucid
   #+ccl
@@ -1755,6 +1784,8 @@ ACL2 from scratch.")
     sb-ext:with-unlocked-packages #+sbcl ("COMMON-LISP")
     #+clisp
     ext:without-package-lock #+clisp ("COMMON-LISP")
+    #+ecl
+    ext:with-unlocked-packages #+ecl ("COMMON-LISP")
     #+allegro
     excl::without-package-locks
     #+ccl
@@ -1763,7 +1794,7 @@ ACL2 from scratch.")
     let #+lispworks ((hcl:*packages-for-warn-on-redefinition* nil))
     #+cmucl
     lisp::without-package-locks
-    #-(or sbcl clisp allegro ccl lispworks cmucl)
+    #-(or sbcl clisp ecl allegro ccl lispworks cmucl)
     progn
     (with-warnings-suppressed ,@forms)))
 
@@ -1924,6 +1955,66 @@ ACL2 from scratch.")
 ; the system with Allegro under Linux, the same ".fasl" extension could fool us
 ; into thinking that recompilation is not necessary.
 
+ #+ecl
+ (with-suppression
+
+; For ECL we avoid recompiling acl2-fns.lisp when a compiled file is present
+; that is at least as new as the source.  Compiling it on every startup is
+; expensive, and doing so is disastrous for the books build system: several
+; ACL2 processes (e.g., under "cert.pl -j") would recompile the same file
+; concurrently, racing on the generated object and compiled files.
+
+  (let* ((acl2-fns-compiled
+          (make-pathname :name "acl2-fns"
+                         :type *compiled-file-extension*))
+         (acl2-fns-tmp
+          (make-pathname :name (format nil "acl2-fns-~a"
+                                       (or (ignore-errors (ext:getpid)) 0))
+                         :type *compiled-file-extension*)))
+    (cond
+     ((and (not *suppress-compile-build-time*)
+           (probe-file acl2-fns-compiled)
+           (let ((src (probe-file "acl2-fns.lisp")))
+             (and src
+                  (<= (file-write-date src)
+                      (file-write-date acl2-fns-compiled)))))
+      (load acl2-fns-compiled))
+     (t
+      (load "acl2-fns.lisp") ;we like to load before compiling
+      (when (probe-file acl2-fns-tmp)
+        (delete-file acl2-fns-tmp))
+      (when (not *suppress-compile-build-time*)
+
+; We compile to a process-specific file and then rename it into place, so that
+; concurrent ACL2 processes (e.g., under "cert.pl -j") do not race on the
+; generated C, object, and compiled files.
+
+        (compile-file "acl2-fns.lisp" :output-file acl2-fns-tmp)
+        #+unix
+        (multiple-value-bind (stream code)
+            (ext:run-program "mv"
+                             (list "-f"
+                                   (namestring acl2-fns-tmp)
+                                   (namestring acl2-fns-compiled))
+                             :input nil
+                             :output t
+                             :error :output
+                             :wait t)
+          (declare (ignore stream))
+          (when (not (eql code 0))
+            (error "Unable to move ~s to ~s."
+                   acl2-fns-tmp acl2-fns-compiled)))
+        #-unix
+        (progn
+          (when (probe-file acl2-fns-compiled)
+            (delete-file acl2-fns-compiled))
+          (rename-file acl2-fns-tmp acl2-fns-compiled))
+
+; Note that load-compiled is not used below, but on the other hand we are still
+; using the original readtable here so that's not a problem.
+
+        (load acl2-fns-compiled))))))
+ #-ecl
  (with-suppression
   (load "acl2-fns.lisp") ;we like to load before compiling
   (let ((acl2-fns-compiled
@@ -2144,6 +2235,22 @@ which is saved just in case it's needed later.")
   (let ((old (get-dispatch-macro-character char subchar)))
     (cond ((or (null old)
                (eql fn old)
+
+; In ECL (and perhaps other Lisps), the value stored by
+; SET-DISPATCH-MACRO-CHARACTER is the function object rather than the symbol
+; that was supplied, so the EQL test above can fail for a symbol FN that has
+; already been installed.  The test below handles that case.
+
+               (and (symbolp fn)
+                    (fboundp fn)
+                    (eq old (symbol-function fn)))
+
+; We only modify the private readtable, *ACL2-READTABLE*, so it is safe to
+; replace an existing function-valued dispatch macro (which is how ECL stores
+; them) with another function object.
+
+               (and (functionp fn)
+                    (functionp old))
                #+cmu
 
 ; This is really just a guess, but it's a pretty good one, as several values of
@@ -2158,6 +2265,13 @@ which is saved just in case it's needed later.")
 
                (and (eql char #\#)
                     (member subchar '(#\@ #\! #\u #\Y #\Z)))
+               #+ecl
+
+; ECL predefines #Y and #Z.  Since we only smash these characters in
+; *acl2-readtable* (a copy of the host readtable), this is harmless.
+
+               (and (eql char #\#)
+                    (member subchar '(#\Y #\Z)))
                #+allegro
 
 ; The #u reader has been defined in Allegro CL to invoke parse-uri.  It seems

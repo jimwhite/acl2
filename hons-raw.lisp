@@ -1600,10 +1600,9 @@
   #+gcl (declare (ignore lock-form))
   #+gcl `(progn ,@args) ; GCL wart: We are assuming GCL is single-threaded.
   #-(or ccl gcl)
-  #+gcl (declare (ignore lock-form args))
-  #-(or ccl gcl)
-  (error "~s is not implemented in this Lisp."
-         'hl-with-lock-grabbed))
+  (progn (declare (ignore lock-form args))
+         (error "~s is not implemented in this Lisp."
+                'hl-with-lock-grabbed)))
 
 #+static-hons
 (defmacro hl-symbol-addr (s)

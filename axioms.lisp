@@ -28476,7 +28476,8 @@ Lisp definition."
   #+lispworks (apply 'hcl::gc-generation (or args (list #+lispworks-64bit 7
                                                         #-lispworks-64bit 3)))
   #+sbcl (apply 'sb-ext:gc args)
-  #-(or allegro gcl clisp cmu sbcl ccl lispworks)
+  #+ecl (apply 'ext:gc args)
+  #-(or allegro gcl clisp cmu sbcl ccl lispworks ecl)
   (illegal 'gc$ "GC$ is not supported in this Common Lisp." nil)
   nil)
 
