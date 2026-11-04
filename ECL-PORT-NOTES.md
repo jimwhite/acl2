@@ -566,7 +566,8 @@ Run the clean `basic` build:
 cd /workspaces/acl2-ecl/books
 find . \( -name '*.cert' -o -name '*.cert.out' -o -name '*.fas' \
           -o -name '*.fasc' -o -name '*.port' -o -name '*.o' \) -delete
-make -k -j 16 basic ACL2=/workspaces/acl2-ecl/saved_acl2
+make -k -j 16 basic ACL2=/workspaces/acl2-ecl/saved_acl2 \
+  > /tmp/basic-ecl.log 2>&1; echo BASIC_EXIT=$?
 ```
 
 Scan the result for failures:
