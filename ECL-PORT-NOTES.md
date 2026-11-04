@@ -7,22 +7,105 @@ Platform: Ubuntu 26.04, aarch64, 16 cores
 
 ## Status
 
-Working:
+Done (as of 2026-11-04, commit `2d307edf78` on `origin/ecl`):
 
-- `make compile LISP=/opt/ecl-26.5.5/bin/ecl`
-- `make init LISP=/opt/ecl-26.5.5/bin/ecl`
-- `./saved_acl2` starts ACL2 (~19 s startup), evaluates forms, admits
-  recursive `defun`s, proves `defthm`s, and certifies books.
-- `cert.pl -j 8` builds dependency chains under `books/`, including
-  `std/lists/append.cert`, `arithmetic/equalities.cert`, and
-  `misc/records0.cert`.
+- Patched ECL 26.5.5 built and installed at `/opt/ecl-26.5.5` (bytecode
+  operand widening; see `ECL-MR.md`).
+- `make compile LISP=/opt/ecl-26.5.5/bin/ecl` and
+  `make init LISP=/opt/ecl-26.5.5/bin/ecl` succeed.
+- `./saved_acl2` starts ACL2 (~19 s), evaluates forms, admits recursive
+  `defun`s, proves `defthm`s, and certifies books.
+- Startup output is quiet (~1.5 KB instead of ~1.23 MB).
+- Full `make -k -j 16 basic` on a clean tree: **1486 certificates, 0
+  failures, ~48 minutes** on 16 cores.
+- Earlier dependency-chain checks: `std/lists/append.cert`,
+  `textbook/chap10/fact.cert`, `misc/records0.cert`, and parallel `cert.pl
+  -j 8` runs.
 
-Not yet done:
+Not done yet:
 
-- Full `make basic` / regression suite.
-- Quieting the verbose initialization output on every startup.
-- Avoiding re-initialization on every startup (ECL has no image dump).
-- Upstream ECL MR (branches prepared; see `ECL-MR.md`).
+- Book suites beyond `basic` (full `make all`/regression; see “What’s left”).
+- Quicklisp books (`shellpool` is not ported to ECL; they are skipped).
+- Upstream ECL merge request (branches are pushed; the MR is not created).
+- Upstream ACL2 submission: the patches work but are not yet in a form the
+  ACL2 maintainers are likely to accept as-is (see “What’s left”).
+- Caching or avoiding `initialize-acl2` on every startup (see below for why
+  this is hard).
+
+## What's left
+
+In rough priority order.
+
+### 1. Make the ACL2 patches acceptable upstream
+
+Several changes are already narrowly conditionalized with `#+ecl`, but these
+touch generic code paths and need review:
+
+- `note-compile-ok` / `note-acl2-status` (`acl2.lisp`, `interface-raw.lisp`).
+  The atomic-write helper uses `ext:getpid`, `random`, and
+  `rename-file ... :if-exists :supersede`. An upstream-friendly version could
+  use a portable "write to a fresh file and rename" helper, or only change the
+  ECL branch.
+- `df-call` and the `guard-is-t` case of `oneify-cltl-code-1`
+  (`interface-raw.lisp`). These emit `(funcall 'fn ...)` under ECL so that
+  `include-raw` redefinitions are seen.
+- `compile-certified-file` (`interface-raw.lisp`) turns off
+  `ext:use-direct-C-call` while compiling book files. This is the most
+  intrusive change and the ~10% slowdown it implies should be measured on real
+  books before proposing it. Alternatives to investigate:
+  1. Patch ECL so that redefining a function invalidates or redirects existing
+     direct calls (closest to correct semantics, most work).
+  2. Declare `notinline` only for symbols in `logic-fns-with-raw-code` /
+     `program-fns-with-raw-code` when compiling a book. This does not fix
+     `xdoc/base` (the stub is compiled before the raw code is loaded), so it
+     would need an additional mechanism such as recompiling affected callers
+     or a per-book `declaim`.
+  3. Keep the global policy change but make it opt-in with a documented
+     trade-off.
+- `redefine-*1*-fns-for-raw-code` (`other-events.lisp`). After `include-raw`
+  replaces a definition, it redefines the `*1*` function as `(&rest args)` +
+  `apply`. Upstream may prefer keeping the original formals or reusing the
+  existing `*1*` regeneration machinery.
+- Add ECL to ACL2's documentation/manual wherever host Lisps are listed, and
+  check any host-suitability tables or version checks (for example
+  `:doc host-lisp`, the installation notes, and `check-suitability-for-acl2`).
+- Exercise `save-exec`, trust-tag heavy books, and ACL2(p) paths; none of these
+  have been tested yet.
+
+### 2. Run more of the book suite
+
+`basic` is a large but limited subset. The next validation steps are:
+
+- `make -k -j 16 all` (or the regression target used by the project) and
+  inventory failures. Expect host-specific raw code (`#+sbcl`, `#+ccl`, ...),
+  memoization, and parallel books to be the usual suspects.
+- Decide whether to port Quicklisp's `shellpool` to ECL. Until then,
+  `uses-quicklisp` books are skipped (`tools/oracle-timelimit` is the one that
+  pulls Quicklisp into `basic`).
+
+### 3. Startup and performance
+
+- `initialize-acl2` is ~17.6 s of the ~19 s startup. Without an ECL image
+  dump, caching would have to serialize the world and reload compiled `*1*`
+  functions; see "Why startup is not cached".
+- Re-measure proof performance with `ext:use-direct-C-call` disabled for book
+  files, and decide whether a narrower fix is worth the engineering.
+- Consider benchmarking ACL2 on ECL against CCL/SBCL on the same books to know
+  where ECL stands.
+
+### 4. ECL merge request
+
+The branches are ready but the upstream MR has not been created. Before
+opening it, decide between uniform 32-bit operands and a long-jump encoding,
+and run the GitLab CI pipeline on `develop`. See `ECL-MR.md`.
+
+### 5. Repository hygiene
+
+- `.devcontainer/` and `acl2-ecl.code-workspace` are untracked. Decide whether
+  they belong in the branch.
+- The port is currently a series of commits on `ecl`; an upstream submission
+  will probably want a cleaner split (infrastructure, raw-code handling,
+  book-build fixes, docs).
 
 ## Quick start
 
@@ -94,6 +177,7 @@ The bootstrap file:
 (setq *load-verbose* nil)
 (defparameter cl-user::*acl2-ecl-invocation-dir* (ext:getcwd))
 (ext:chdir (make-pathname :name nil :type nil :defaults *load-pathname*))
+(ext:set-limit 'ext:frame-stack 262144)
 (load "init.lisp")
 (in-package "ACL2")
 (load-acl2)
@@ -149,11 +233,7 @@ ACL2(h)'s serializer can persist a hons space and parts of the world, but it
 does not persist compiled Lisp functions, and the bootstrap would still have to
 process the source events. The practical mitigation is parallelism: each book
 pays ~19 s of startup, but `cert.pl -j N` hides it behind useful work.
-  This matters for logs: `cert.pl` stores each book's output in a `.out` file.
 
-## ACL2 source changes
-
-### `acl2.lisp`
 
 - ECL package locking:
   - `(require :package-locks)`.
@@ -427,3 +507,75 @@ Inspect the generated launcher after `make init`:
 cat saved_acl2
 cat nsaved_acl2.lsp
 ```
+
+## Work log
+
+ACL2 repository, branch `ecl` (pushed to `origin/ecl` at `2d307edf78`):
+
+| Commit | Contents |
+| --- | --- |
+| `6a41b44d0d` | Core port: packages/readtable/encoding, host API (`ext:system`, `getenv`, `quit`, interrupts, `namestring`), ECL launcher, bootstrap compilation fallback |
+| `b974861b25` | `ECL-PORT-NOTES.md` and `ECL-MR.md` |
+| `cea3e4cd38` | Quiet initialization (~1.23 MB to ~1.5 KB) |
+| `cb4794f92a`, `48d69940f5` | Startup timing and rationale for not caching it |
+| `9937f90c96` | Frame stack, status-file race, `include-raw`/direct-call fixes, `setenv$`, Quicklisp skip |
+| `757ec5f2ee`, `2d307edf78` | Documentation of the book-build fixes and the clean `basic` result |
+
+ECL fork (`jimwhite/ecl`):
+
+| Branch | Base | Commit | Purpose |
+| --- | --- | --- | --- |
+| `widen-bytecode-operands` | `develop` | `cb1e2e84` | Upstream MR branch |
+| `widen-bytecode-operands-26.5.5` | tag `26.5.5` | `51b3f4d5` | Release-line branch |
+
+## Resuming
+
+Current environment (as of 2026-11-04):
+
+- Patched ECL installed at `/opt/ecl-26.5.5`; `/usr/bin/ecl` is the stock
+  24.5.10 and must not be used for ACL2.
+- ACL2 sources at `/workspaces/acl2-ecl`, branch `ecl`.
+- `books/` contains the certificates from the clean `basic` run; delete them
+  before comparing builds (see below).
+- Sources for the ECL build were under `/tmp/ecl-src`; if that is gone, clone
+  the fork branch and rebuild/reinstall:
+
+  ```sh
+  git clone -b widen-bytecode-operands-26.5.5 \
+      git@gitlab.com:jimwhite/ecl.git /tmp/ecl-src
+  cd /tmp/ecl-src
+  ./configure --prefix=/opt/ecl-26.5.5
+  make -j16
+  sudo make install
+  ```
+
+- `make clean-all` in `/workspaces/acl2-ecl` removes the generated ACL2 `.fas`
+  files and `saved_acl2`; a full rebuild after reinstalling ECL is `make
+  clean-all`, then `make compile` and `make init` as above.
+
+Rebuild ACL2 after changing ACL2 sources:
+
+```sh
+make -C /workspaces/acl2-ecl compile LISP=/opt/ecl-26.5.5/bin/ecl
+make -C /workspaces/acl2-ecl init    LISP=/opt/ecl-26.5.5/bin/ecl
+```
+
+Run the clean `basic` build:
+
+```sh
+cd /workspaces/acl2-ecl/books
+find . \( -name '*.cert' -o -name '*.cert.out' -o -name '*.fas' \
+          -o -name '*.fasc' -o -name '*.port' -o -name '*.o' \) -delete
+make -k -j 16 basic ACL2=/workspaces/acl2-ecl/saved_acl2
+```
+
+Scan the result for failures:
+
+```sh
+grep -a 'CERTIFICATION FAILED' /tmp/basic-ecl.log
+grep -a 'make: \*\*\*'        /tmp/basic-ecl.log
+```
+
+If ECL itself is rebuilt or a different ECL is installed, do a full ACL2
+rebuild (`make clean-all` first) and delete all book artifacts, as above.
+Certificates do not record the host Lisp version.

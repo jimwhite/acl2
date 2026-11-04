@@ -104,9 +104,29 @@ verification, run it again from:
   during bootstrapping: no "Too large jump" errors and no hardcoded function
   exclusions.
 - ACL2 books certified with `cert.pl -j 8`, including `std/lists/append.cert`.
+- Clean full `make -k -j 16 basic` in ACL2's `books/` directory: 1486
+  certificates, 0 failures, ~48 minutes on 16 cores. This exercises the
+  bytecode-compiled bootstrap extensively (every ACL2 invocation starts by
+  bytecompiling the sources).
 
 ## Rebase note
 
 The 26.5.5 branch patch touches `src/c/read.d`; on `develop`, the bytecode
 reader moved to `src/c/reader/rtab_cl.d`. The `develop` branch has the
 equivalent change in the new location.
+
+## Next steps
+
+1. Decide the design question: uniform 32-bit operands (current patch) versus a
+   long-jump encoding. The ACL2 side works either way; the ACL2 fallback to the
+   native compiler remains useful for stock ECL.
+2. When the time comes to open the MR, use the link above, target
+   `embeddable-common-lisp/ecl:develop`, and check that the fork's account
+   verification is complete so the CI pipeline runs. The pipeline only runs on
+   `develop` or MR events.
+3. Rebase `widen-bytecode-operands` on current `develop` before opening the MR,
+   since bytecode/closure work is active there.
+4. Add a NEWS/changelog entry if the ECL tree has one, and mention the memory
+   trade-off in the MR description (already drafted above).
+5. Optional: benchmark bytecoded code (not just memory) with 16-bit versus
+   32-bit slots to confirm there is no unexpected slowdown.
