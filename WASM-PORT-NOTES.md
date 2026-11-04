@@ -187,7 +187,7 @@ Environment: aarch64, 16 cores. Wasm ECL built with the flags above.
 | Build wasm ECL | ~5 min |
 | `compile-acl2` in wasm (82 files -> `.fasc`) | 66 s at `-O2` (96 s at `-O0`) |
 | `load-acl2` + `initialize-acl2` in wasm | 6 min 53 s |
-| Same, native ECL 26.5.5 (bytecodes compiler, 2 MB stack) | 17.3 s |
+| Same, native ECL 26.5.5, standard build (C `.fas`, bytecoded `*1*`) | 16.4 s |
 | ACL2 start-to-prompt through `wasm/acl2-wasm` | ~6 min 40 s |
 
 Interpreted recursion depth before the C stack is exhausted: natively about
@@ -198,20 +198,41 @@ Interpreted recursion depth before the C stack is exhausted: natively about
 
 The wasm build is about 24x slower than a native ECL build. That factor
 decomposes into two nearly independent parts, which is important because only
-one of them is about WebAssembly.
+one of them is about WebAssembly. (An earlier revision of these notes reported
+56.5 s for the all-bytecode native row; that run turned out to have used more
+than one core -- `user` 2m02 against `real` 56 s -- and is not reproducible.
+The table below has been re-measured, each row three times, single core.)
 
 The first factor is that the wasm build has **no native compiler**: every
 function, including the `*1*` executable counterparts that ACL2 compiles
-during `initialize-acl2`, is bytecode. Running the same `.fasc` files on
-native ECL isolates it:
+during `initialize-acl2`, is bytecode. Native ECL has a third configuration
+available, which isolates the factor:
 
 | Configuration | `load-acl2` + `initialize-acl2` |
 | --- | --- |
-| native, sources compiled to C (`.fas`), bytecoded `*1*` functions | 17.3 s |
-| native, everything bytecoded (`.fasc`) | 56.5 s |
+| native, sources compiled to C (`.fas`), bytecoded `*1*` (the standard ECL build) | 16.4 s |
+| native, everything bytecoded (`.fasc`) | 119 s |
 | wasm, everything bytecoded (`.fasc`) | 413 s |
 
-So bytecode-only costs **3.3x**, and wasm on top of bytecode costs **7.3x**.
+So bytecode-only costs **7.3x**, and wasm on top of bytecode costs **3.5x**.
+Raw event processing (the sum of ACL2's own per-event `Time:` lines) is 1.0 s,
+18.9 s and 70.6 s respectively, i.e. only about 6% of init is proving or guard
+checking; the rest is bootstrap mechanics (LD of the sources, and compiling
+and installing the `*1*` definitions).
+
+### The standard ECL build runs ACL2's executable counterparts as bytecode
+
+`acl2-init.lisp` installs the bytecodes compiler around `(eval mode)` and then
+restores the C compiler, because compiling ~8600 `*1*` functions with ECL's C
+compiler on every start would take far too long. The consequence is visible in
+the released build: `(si::bc-split (symbol-function 'ACL2_*1*_ACL2::REWRITE))`
+returns a bytecode vector, and so does `EV-FNCALL`. In other words the prover
+core of ACL2-on-ECL is bytecoded, which is worth remembering when comparing
+prover speed with SBCL or CCL (where those functions are native).
+
+Compiling those functions ahead of time therefore has two payoffs on native
+ECL -- faster startup and a faster prover -- and the same change ported to
+wasm would replace bytecode with wasm code.
 
 The second factor is how ECL's bytecode interpreter behaves in wasm. It is not
 that wasm is slow: a plain C `fib` compiled with emcc is within 1.5-2x of gcc,
@@ -274,18 +295,28 @@ module. Node is used instead for this first pass.
 
 ## Next steps
 
-1. Certify books under wasm (`cert.pl`), starting with a small chain. Note
-   that `cert.pl` runs ACL2 once per book and every start costs ~7 minutes, so
-   this needs either parallelism or a faster startup first.
-2. Startup cost is the dominant practical problem. Two ideas:
-   * Reduce the work done by `initialize-acl2`, which compiles thousands of
-     `*1*` functions with the bytecodes compiler on every start.
-   * Look into caching: ECL cannot dump an image, but the portable `.fasc`
-     files and perhaps parts of the world could be persisted.
-3. Browser: needs a filesystem (Emscripten's MEMFS is fine if the ACL2 sources
-   are preloaded) and a way to feed the ACL2 loop. The startup cost also needs
-   attention for interactive use.
-4. Wasmtime/WASI: blocked on ECL (see above).
-5. Upstream: the two ECL patches and the ACL2 `:emscripten` branches are small
+1. **Split init properly, on native ECL.** Only ~6% of init is ACL2 event
+   processing; the rest is bootstrap mechanics, but that bucket is not yet
+   broken down. Instrument `ld.lisp` at the source level (raw-Lisp-only
+   timers) to separate LD/evaluation, compilation of raw definitions,
+   compilation of `*1*` definitions, and world construction. Note that
+   wrapping `compile`/`compile-file` at run time does *not* work: ECL compiles
+   calls to those functions into direct C calls, so the wrappers only see a
+   fraction of the calls.
+2. **Prototype ahead-of-time compilation of the `*1*` functions on native
+   ECL.** Capture the forms that `compile-uncompiled-*1*-defuns` compiles
+   during a build run, ship them as compiled code, and have `comp-fn` install
+   them instead of compiling. This is expected to help twice on native ECL
+   (startup and prover speed, since the prover core is currently bytecoded)
+   and to be the same design that makes wasm fast, where ECL's cross
+   compilation can target wasm objects instead of the host C compiler.
+3. Only after (1) and (2) decide about image save. If world construction is
+   the residual cost, the options are ACL2-level serialization of the world
+   (data only, no code pointers), an image facility in ECL, or a wasm memory
+   snapshot (Wizer-style preinitialization). Each has a different platform
+   payoff; the split decides which is worth building.
+4. Certify books under wasm (`cert.pl`) once startup is acceptable.
+5. Wasmtime/WASI: blocked on ECL (see above).
+6. Upstream: the two ECL patches and the ACL2 `:emscripten` branches are small
    and self-contained; the `-O0` override in ECL's configure is worth
    revisiting upstream.
