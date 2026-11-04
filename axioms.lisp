@@ -21705,6 +21705,8 @@ evaluated.  See :DOC certify-book, in particular, the discussion about ``Step
         (setf (sys::getenv str) val)
         #+clisp
         (setf (ext::getenv str) val)
+        #+ecl
+        (si::setenv str val)
         #+lispworks
 ; Martin Simmons mentioned the following example in a 4/9/2024 email:
 ;   (setf (environment-variable "LANG") "en_US.UTF-8")

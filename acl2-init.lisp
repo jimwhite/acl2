@@ -2473,6 +2473,13 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
        (format str
                "(ext:chdir (make-pathname :name nil :type nil :defaults *load-pathname*))~%")
 
+; ECL's default frame-stack limit (2048 frames) is easily exhausted by deep
+; recursion in raw Lisp.  For example, DEFCONST of a large quoted constant and
+; some proof-builder work overflow it.  Raise the limit before loading ACL2; a
+; quarter-million frames costs only a few megabytes.
+
+       (format str "(ext:set-limit 'ext:frame-stack 262144)~%")
+
 ; The form (load "init.lisp") must come first, before we change packages,
 ; because it is what creates the ACL2 package.  After that we are in package
 ; ACL2, so that the symbols in MODE are read with the correct package.  Note

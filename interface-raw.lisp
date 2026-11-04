@@ -1943,8 +1943,8 @@
              (,*1*fn ,@formals))))
 
 (defun df-call (fn formals)
-  (let ((stobjs-in (stobjs-in fn (w *the-live-state*))))
-    (cons fn
+  (let* ((stobjs-in (stobjs-in fn (w *the-live-state*)))
+         (args
           (loop for f in formals
                 as s in stobjs-in
                 collect
@@ -1956,7 +1956,15 @@
 ; definition.
 
                     `(to-df ,f)
-                  f)))))
+                  f))))
+
+; Under ECL a call of a function that is compiled in the same file becomes a
+; direct call, so redefining the function later (as INCLUDE-RAW does) would not
+; affect the call.  We use FUNCALL so that the current definition is used; see
+; the related comments in REDEFINE-*1*-FNS-FOR-RAW-CODE.
+
+    #+ecl `(funcall ',fn ,@args)
+    #-ecl (cons fn args)))
 
 (defun oneify-cltl-code-1 (defun-mode def stobj-flag wrld trace-rec-for-none)
 
@@ -2111,6 +2119,14 @@
 ; stobjs except for the recognizer, whose raw Lisp code can handle non-live
 ; stobjs.
 
+; Under ECL we use FUNCALL rather than a direct call so that a later raw Lisp
+; redefinition of fn is respected; see the comment in DF-CALL.
+
+       #+ecl
+       `(,*1*fn
+         ,formals
+         (funcall ',fn ,@formals))
+       #-ecl
        `(,*1*fn
          ,formals
          ,(cons fn formals)))
@@ -9812,6 +9828,8 @@
 
          (check-acl2-initialization))
      (cond
+      #+ecl (t (note-acl2-status :initialized))
+      #-ecl
       ((or (not (probe-file *acl2-status-file*))
            (delete-file *acl2-status-file*))
        (with-open-file (str *acl2-status-file*
@@ -10948,7 +10966,21 @@ such that feature :acl2-loop-only is true."))
                'stack-access-defeat-hook-cert))
           (declare (special ccl::*stack-access-defeat-hook*))
           (compile-file os-expansion-filename :output-file ofile)))
-       (t (compile-file os-expansion-filename :output-file ofile))))
+       #+ecl
+
+; ECL compiles a call of a function that is defined earlier in the same file
+; as a direct C call.  That breaks INCLUDE-RAW, which relies on replacing raw
+; Lisp definitions at run time: a direct call would still invoke the old
+; definition.  Disable that optimization while compiling the book, so that
+; calls go through the function object.
+
+       (progn
+         (proclaim '(ext:use-direct-C-call nil))
+         (unwind-protect
+             (compile-file os-expansion-filename :output-file ofile)
+           (proclaim '(ext:use-direct-C-call t))))
+       #-(or ccl ecl)
+       (compile-file os-expansion-filename :output-file ofile)))
 
 ; Warning: Keep the following "compile on the fly" readtime conditional in sync
 ; with the one in initialize-state-globals.  Here, we avoid loading the

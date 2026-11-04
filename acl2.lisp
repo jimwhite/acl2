@@ -1832,7 +1832,37 @@ ACL2 from scratch.")
 
    t))
 
+#+ecl
+(defun note-acl2-status (value)
+
+; Write VALUE to *acl2-status-file*.  Under ECL there is no way to dump an
+; image, so every ACL2 invocation runs INITIALIZE-ACL2 and hence writes this
+; file; during a parallel books build many ACL2 processes write it at once.
+; Writing a temporary file and renaming it into place makes the update atomic,
+; so that a concurrent reader cannot see a truncated (empty) file and
+; mistakenly report that ACL2 has not been compiled.
+
+  (let* ((tmp (make-pathname
+               :name (format nil "acl2-status-~d-~d"
+                             (ext:getpid)
+                             (random 1000000))
+               :type "txt")))
+    (unwind-protect
+        (progn (with-open-file (str tmp
+                                    :direction :output
+                                    :if-exists :supersede)
+                 (format str "~s" value))
+               (rename-file tmp *acl2-status-file* :if-exists :supersede)
+               nil)
+      (when (probe-file tmp)
+        (delete-file tmp)))))
+
 (defun note-compile-ok ()
+  #+ecl
+  (note-acl2-status (if *suppress-compile-build-time*
+                        :compile-skipped
+                      :compiled))
+  #-ecl
   (progn (or (not (probe-file *acl2-status-file*))
              (delete-file *acl2-status-file*))
          (with-open-file (str *acl2-status-file*

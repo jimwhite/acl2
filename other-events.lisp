@@ -35132,6 +35132,24 @@
                     (sort-fboundps (cdr lst) wrld ps ls ms)))))))
 
 #-acl2-loop-only
+(defun redefine-*1*-fns-for-raw-code (fns wrld)
+
+; See the comment in EXTEND-WITH-RAW-CODE.  Under ECL, a call of a function is
+; compiled as a direct call when the caller is compiled in the same file.  So
+; when INCLUDE-RAW replaces the raw Lisp definition of a :logic function, the
+; already-compiled *1* function still calls the old definition.  Here we
+; replace the *1* function of each affected guard-verified function so that it
+; calls the current raw Lisp definition through FUNCALL, which ECL compiles as
+; an indirect call.
+
+  (dolist (fn fns)
+    (when (eq (symbol-class fn wrld) :common-lisp-compliant)
+      (let ((*1*fn (*1*-symbol fn)))
+        (when (not (eq *1*fn fn))
+          (eval `(defun ,*1*fn (&rest args)
+                   (apply ',fn args))))))))
+
+#-acl2-loop-only
 (defun extend-with-raw-code (form state)
 
 ; The popular macro include-raw, defined in community book
@@ -35177,6 +35195,7 @@
                ht)
       (mv-let (ps ls ms)
         (sort-fboundps lst (w state) nil nil nil)
+        #+ecl (redefine-*1*-fns-for-raw-code ls (w state))
         (pprogn
          (cond
           (ps (f-put-global

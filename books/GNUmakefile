@@ -491,11 +491,15 @@ endif # ifneq ($(ACL2_HAS_PARALLEL), )
 # so someone might want to try to simplify.)
 
 ifeq ($(USE_QUICKLISP), 1)
-  ifeq ($(ACL2_HOST_LISP), GCL)
-    $(info Note: Ignoring USE_QUICKLISP=1 since Quicklisp does not work on GCL!)
-    REALLY_USE_QUICKLISP := 0
-  else
+  ifeq ($(filter $(ACL2_HOST_LISP),GCL ECL),)
+
+; [ECL] Quicklisp does not work on ECL either: its SHELLPOOL library (needed by
+; the bundle) says "Shellpool has not yet been ported to this Lisp".
+
     REALLY_USE_QUICKLISP := 1
+  else
+    $(info Note: Ignoring USE_QUICKLISP=1 since Quicklisp does not work on $(ACL2_HOST_LISP)!)
+    REALLY_USE_QUICKLISP := 0
   endif
 else
   REALLY_USE_QUICKLISP := 0
