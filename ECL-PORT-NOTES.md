@@ -138,6 +138,16 @@ Important details:
   `standard-character-output-0` channel at a broadcast stream, and sets
   `*load-verbose*` to `nil`; the real channel stream is restored before the
   banner and the ACL2 loop. Output drops to ~1.5 KB with no change in time.
+
+### Why startup is not cached
+
+Without an image dump there is no cheap way to skip initialization. The
+resulting state is not just data: it contains thousands of ACL2 events, and the
+corresponding `*1*` functions are compiled code that must be loaded or rebuilt.
+ACL2(h)'s serializer can persist a hons space and parts of the world, but it
+does not persist compiled Lisp functions, and the bootstrap would still have to
+process the source events. The practical mitigation is parallelism: each book
+pays ~19 s of startup, but `cert.pl -j N` hides it behind useful work.
   This matters for logs: `cert.pl` stores each book's output in a `.out` file.
 
 ## ACL2 source changes
