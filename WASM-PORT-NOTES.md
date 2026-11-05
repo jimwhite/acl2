@@ -383,9 +383,48 @@ A Wasmtime build therefore needs either a WASI port of ECL (the ECL author
 describes WASI as still in progress) or a real filesystem layer inside the
 module. Node is used instead for this first pass.
 
+## Blocking: certifying books in wasm
+
+`(certify-book "test" 0)` on a three-`defthm` book under `wasm/acl2-wasm`
+takes 371 s (essentially all initialization) and fails at step 5, "compile the
+functions defined in the book":
+
+```
+An error occurred during initialization:
+The variable PROGN is unbound.
+```
+
+Steps 1-4 succeed -- the events are admitted, the guard warning is printed,
+and `test.cert.temp` is written -- but no `.cert` and no compiled book file
+appear, and the process still exits 0.  Until this is fixed no book can be
+certified under wasm, so it comes before everything else on this track.
+
+A native reproduction has to install the bytecodes compiler *before*
+`init.lisp`, because that is where `*compiled-file-extension*` is computed
+(`(pathname-type (compile-file-pathname "foo.lisp"))` in `acl2.lisp`).  Two
+traps found the hard way:
+
+- Installed after `init.lisp`, the extension is `"fas"` while the bytecodes
+  compiler writes `"fasc"`, and certification fails at step 5 with
+  `Could not load .../test.fas (invalid ELF header)` -- a different failure.
+- Installed before `init.lisp` in the existing tree, `load-acl2` looks for
+  `interface-raw.fasc`, which a native tree does not have, so ACL2 does not
+  load at all.
+
+So a fast (10 s) reproduction needs a native tree compiled to `.fasc`, i.e.
+`make compile` with the bytecodes compiler installed -- in a copy of the tree,
+leaving the `.fas` build alone.  `/tmp/bc-driver.lsp` is a starting point for
+that driver but currently loads the `.fas` tree.
+
 ## Next steps
 
-1. **Split init properly, on native ECL.** *Done.* The tool is
+1. **Fix wasm book certification (blocking).** See "Blocking: certifying
+   books in wasm". First build a bytecodes-only native tree to get a 10 s
+   reproduction, then get a backtrace from step 5 (`hcomp-build-from-state`
+   in `other-events.lisp`, reached from `certify-book`), then make
+   `*compiled-file-extension*` and `ACL2_COMP_EXT` agree for a
+   bytecodes-only build (`fasc`).
+2. **Split init properly, on native ECL.** *Done.* The tool is
    `ecl-tools/init-profile.lsp`, and the numbers are in `ECL-PORT-NOTES.md`
    ("Where `initialize-acl2` spends its time"): of the 15.3 s, 11.8 s was the
    first pass over the sources, 1.4 s the second pass, 1.35 s the `*1*`
@@ -396,7 +435,7 @@ module. Node is used instead for this first pass.
    compiled code, or inside ECL's evaluator); wrapping `ld-fn` and the
    `compile-uncompiled-*` functions does, and `gdb` stack sampling fills in
    what neither sees.
-2. **Find out why passes 1 and 2 cost 80-100x their native time.** Measured:
+3. **Find out why passes 1 and 2 cost 80-100x their native time.** Measured:
    `initialize-acl2` in wasm is 352 s with the boot-strap fix (382 s without),
    of which pass 2 is 156 s against 1.4 s natively. That is far worse than the
    3.5x interpreter factor and is now the dominant wasm cost. Timers on named
@@ -406,7 +445,7 @@ module. Node is used instead for this first pass.
    time a few `defun` admissions on both sides to see whether the 98x is the
    interpreter on list-heavy code or something fixable (bignums from 30-bit
    fixnums, GC).
-3. **Ahead-of-time compilation of the `*1*` functions on native ECL.**
+4. **Ahead-of-time compilation of the `*1*` functions on native ECL.**
    *Done for ECL.* `*acl2-*1*-aot-file*` in `interface-raw.lisp`
    loads a precompiled file of the counterparts instead of generating and
    compiling them; `make exec-aot` builds it, and the launcher refuses it when
@@ -415,13 +454,13 @@ module. Node is used instead for this first pass.
    `type-set` and `ev-fncall` were already native; it speeds up `ev-fncall`
    paths. The same design would let wasm ship wasm code produced by ECL's
    cross compilation.
-4. Image save is now the only way to remove the remaining ~5.4 s. The options
+5. Image save is now the only way to remove the remaining ~5.4 s. The options
    are ACL2-level serialization of the world (data only, no code pointers), an
    image facility in ECL, or a wasm memory snapshot (Wizer-style
    preinitialization). Each has a different platform payoff.
-5. Certify books under wasm (`cert.pl`) once startup is acceptable.
-6. Wasmtime/WASI: blocked on ECL (see above).
-7. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
+6. Certify books under wasm (`cert.pl`) once startup is acceptable.
+7. Wasmtime/WASI: blocked on ECL (see above).
+8. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)
    are small and self-contained; the `-O0` override in ECL's configure is
    worth revisiting upstream.
