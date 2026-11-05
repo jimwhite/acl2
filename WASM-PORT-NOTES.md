@@ -478,6 +478,40 @@ everything else is initialization (~361 s for a single trivial book).  This
 makes certification possible, not yet practical; the startup work below is
 the prerequisite for a full suite.
 
+### Driver: `wasm/run-basic-wasm.sh`
+
+The `basic` suite can nevertheless be certified with the startup as it is; it
+is just slow.  `wasm/run-basic-wasm.sh` runs it through the books Makefile,
+which is `make -j 16 basic` with `ACL2=<launcher>`:
+
+```sh
+CLEAN=1 ./wasm/run-basic-wasm.sh   # first run: start from a clean tree
+./wasm/run-basic-wasm.sh           # resume; cert.pl skips finished books
+```
+
+The script recompiles the ACL2 sources with the wasm compiler first (~90 s),
+then deletes existing book artifacts if `CLEAN=1`, then runs
+`make -k -j $JOBS basic ACL2=./wasm/acl2-wasm`.  `JOBS` (default 16), `LOG`
+(default `/tmp/wasm-basic.log`) and `TARGETS` (default `basic`) are
+environment variables.
+
+The deletion is not bookkeeping: the tree normally holds certificates from
+the native build, `cert.pl` treats a book as up to date when its `.cert`
+exists, and a native `.fas` cannot be loaded by wasm in any case.  Rebuilding
+the native suite afterwards costs about 23 minutes (`make -j 16 basic
+ACL2=../saved_acl2`).
+
+Two overheads are paid per run.  The Makefile runs `features.sh` with
+`$(ACL2)` on every invocation, so each invocation starts with a full wasm
+start-up (~7 minutes) before the first book, and the dependency scan that
+follows walks all 1,486 books.  Each book then costs ~6 minutes, ~5.9 of them
+boot-strap.
+
+Expected cost at `-j 16`: 1,486 books x ~6 min / 16 = ~9-10 hours, i.e.
+overnight.  At `-j 8` it is about twice that.  `cert.pl`'s `.cert` files make
+the run resumable with the same command minus `CLEAN=1`, which is why the
+script does not clean by default.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not
@@ -574,9 +608,11 @@ The realistic options are:
    `make -k -j 16 basic` with the replay launcher, compared against
    `saved_acl2`; do not use an image before it passes.
 6. **Certify books under wasm at scale** (`cert.pl`).  Works for a handful of
-   dependency-free books.  At ~375 s per book, `make -k -j 16 basic`
-   (1,486 books) would take roughly 10 hours.  Cut the startup (item 5) or
-   amortize it over books in a batch driver before attempting this.
+   dependency-free books, and the full `basic` suite can now be attempted:
+   `wasm/run-basic-wasm.sh` runs `make -k -j 16 basic` with the wasm
+   launcher (~10 hours; see "Driver: `wasm/run-basic-wasm.sh`").  At ~375 s
+   per book the only way to make this fast is item 5 -- cut the startup, or
+   amortize it over books in a batch driver.
 7. Wasmtime/WASI: blocked on ECL (see above).
 8. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)
