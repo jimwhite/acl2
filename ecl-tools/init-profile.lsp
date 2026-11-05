@@ -65,10 +65,14 @@
 
 ; Run from the ACL2 source directory: it is the parent of this script's
 ; directory, which is more reliable than the caller's working directory.
+; Under the WebAssembly build (see wasm/acl2-wasm) there is no meaningful
+; script directory inside the module, so ACL2_WASM_DIR names it instead.
 
-(ext:chdir (make-pathname
-            :directory (butlast (pathname-directory (truename *load-pathname*)))
-            :name nil :type nil))
+(ext:chdir (or (ext:getenv "ACL2_WASM_DIR")
+               (make-pathname
+                :directory (butlast (pathname-directory
+                                     (truename *load-pathname*)))
+                :name nil :type nil)))
 (ext:set-limit 'ext:frame-stack 262144)
 (load "init.lisp")
 (in-package "ACL2")
@@ -139,7 +143,11 @@
 ; direct C calls that defeat wrapping at run time are only for functions
 ; defined earlier in the same file.)
 
-(ext:unlock-package "COMMON-LISP")
+; The wasm build has no package-locks module, so there is nothing to unlock
+; there.
+
+(when (fboundp 'ext:unlock-package)
+  (ext:unlock-package "COMMON-LISP"))
 (cl-user::wrap-with-timer 'cl:eval #'eval-label)
 (cl-user::wrap-with-timer 'cl:compile #'compile-label)
 (cl-user::wrap-with-timer 'cl:compile-file #'compile-file-label)

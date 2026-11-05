@@ -1,0 +1,29 @@
+#!/bin/sh
+# Compile the ACL2 sources with the WebAssembly build of ECL.
+#
+# The wasm build has no C compiler, so COMPILE-ACL2 writes portable .fasc
+# files into the ACL2 source directory.  Run this after editing ACL2 sources,
+# before ./wasm/acl2-wasm.
+#
+# Takes the same environment variables as ./wasm/acl2-wasm.
+
+set -e
+
+THISDIR=$(cd "$(dirname "$0")" && pwd)
+ACL2_WASM_DIR=${ACL2_WASM_DIR:-$(cd "$THISDIR/.." && pwd)}
+ACL2_WASM_ECL=${ACL2_WASM_ECL:-/opt/eclwasm/dist/node-raw}
+export ACL2_WASM_DIR
+
+if [ ! -f "$ACL2_WASM_ECL/ecl.js" ]; then
+  echo "acl2-wasm-compile: cannot find $ACL2_WASM_ECL/ecl.js" >&2
+  exit 1
+fi
+
+ulimit -s 1048576 2>/dev/null || true
+
+ACL2_SMALL_FIXNUMS=1
+ACL2_SNAPSHOT_INFO=${ACL2_SNAPSHOT_INFO:-NONE}
+export ACL2_SMALL_FIXNUMS ACL2_SNAPSHOT_INFO
+
+exec node --stack-size=524288 "$ACL2_WASM_ECL/ecl.js" \
+  --load "$THISDIR/acl2-wasm-compile.lsp"

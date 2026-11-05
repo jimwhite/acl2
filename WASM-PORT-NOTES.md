@@ -17,7 +17,7 @@ and some may be lifted by upstream work.
 | ECL wasm under Node.js (real filesystem) | works |
 | ECL wasm under Wasmtime | starts, aborts: the standalone Emscripten runtime has no `getcwd`/filesystem (see below) |
 | ACL2 `compile-acl2` in wasm (82 source files to `.fasc`) | works, ~1 minute |
-| ACL2 `initialize-acl2` in wasm | works, ~7 minutes (measured before the boot-strap fix of 2026-11-05; see "Next steps") |
+| ACL2 `initialize-acl2` in wasm | works, 352 s with the boot-strap fix of 2026-11-05 (382 s without) |
 | `defun`, `thm`, induction proofs in the ACL2 loop | works |
 | Book certification (`cert.pl`) in wasm | not tried yet |
 | Browser (no Node) | not started (needs a filesystem layer and a way to feed the loop) |
@@ -185,8 +185,8 @@ Environment: aarch64, 16 cores. Wasm ECL built with the flags above.
 | --- | --- |
 | Build host ECL (first time) | ~4 min |
 | Build wasm ECL | ~5 min |
-| `compile-acl2` in wasm (82 files -> `.fasc`) | 66 s at `-O2` (96 s at `-O0`) |
-| `load-acl2` + `initialize-acl2` in wasm | 6 min 53 s |
+| `compile-acl2` in wasm (41 sources plus `acl2-fns` to `.fasc`) | 66 s at `-O2` (96 s at `-O0`) |
+| `load-acl2` + `initialize-acl2` in wasm | 6 min 53 s (2026-11-04, before the boot-strap fix; `initialize-acl2` alone is 382 s then and 352 s now) |
 | Same, native ECL 26.5.5, standard build (C `.fas`, bytecoded `*1*`) | 16.4 s |
 | ACL2 start-to-prompt through `wasm/acl2-wasm` | ~6 min 40 s |
 
@@ -228,10 +228,43 @@ regenerates, compiles and loads the `*1*` definitions, is only 1.35 s of
 15.3 s. Most of the rest was ACL2's own analysis of every `defun` event, in
 particular the irrelevant-formals check, which is super-linear in the size of
 a clique; skipping that check during the boot-strap took native startup from
-17 s to 6.5 s. In the wasm build those same analysis functions run as
-bytecode, so a good part of the 7.3x is spent there, and the skip should help
-wasm at least as much as it helps native ECL. This has not been re-measured
-in wasm yet.
+17 s to 6.5 s.
+
+### Measured: wasm initialization, with and without the boot-strap fix
+
+The same profiler runs in wasm, after `./wasm/acl2-wasm-compile`:
+
+```sh
+ACL2_WASM_DRIVER=ecl-tools/init-profile.lsp ./wasm/acl2-wasm
+```
+
+| phase | wasm, check on | wasm, check off | native, check off |
+| --- | --- | --- | --- |
+| pass 1: `ld` of the sources | 207 s | 160 s | 2.0 s |
+| pass 2: `ld` of the pass-2 forms | 145 s | 156 s | 1.4 s |
+| `(comp-fn :exec ...)`: the `*1*` definitions | 9.7 s | 15.5 s | 1.26 s |
+| **`initialize-acl2`** | **382 s** | **352 s** | **5.8 s** |
+
+So the irrelevant-formals check costs about 30 s in wasm (it costs 9.6 s
+natively, so roughly the interpreter factor), but it was never the dominant
+wasm cost. Two numbers stand out:
+
+* Pass 2 is 145-156 s in wasm against 1.4 s natively: over 100x, not the
+  3.5x implied by the interpreter benchmarks, and 44% of the whole boot-strap.
+* Pass 1 without the check is 160 s against 2.0 s natively: 80x.
+
+Both are far beyond what the interpreter penalty explains (12-18x on
+dispatch-bound microbenchmarks), so the wasm startup problem is not simply
+"wasm is slow"; something specific to the boot-strap is much worse there.
+Candidates, none yet tested: wasm32's 30-bit fixnums turning counts and
+positions in the world bookkeeping into bignum arithmetic; GC behavior with
+the 4 GB heap; and the slowdown that made it necessary to keep
+`--spill-pointers` (required for GC correctness, but it inhibits
+optimization). Pass 2 is the first thing to profile in detail.
+
+The `*1*` step is 12x its native cost, which is the bytecodes compiler running
+under the interpreter; the difference between the two wasm columns there is
+mostly variance in V8's tiering and GC, not an effect of the boot-strap fix.
 
 ### The standard ECL build runs ACL2's executable counterparts as bytecode
 
@@ -324,12 +357,14 @@ module. Node is used instead for this first pass.
    compiled code, or inside ECL's evaluator); wrapping `ld-fn` and the
    `compile-uncompiled-*` functions does, and `gdb` stack sampling fills in
    what neither sees.
-2. **Re-measure initialization in wasm with the boot-strap fix.** The
-   irrelevant-formals check is bytecode there, so it should account for a
-   larger share of the 413 s than it did natively. Rebuild the wasm ECL,
-   re-run `compile-acl2` and time `initialize-acl2` before deciding anything
-   else; this is the cheapest remaining experiment and it may make the wasm
-   startup acceptable without any of the machinery below.
+2. **Find out why passes 1 and 2 cost 80-100x their native time.** Measured:
+   `initialize-acl2` in wasm is 352 s with the boot-strap fix (382 s without),
+   of which pass 2 is 156 s against 1.4 s natively. That is far worse than the
+   3.5x interpreter factor and is now the dominant wasm cost. Profile pass 2
+   in wasm the same way (`ecl-tools/init-profile.lsp` plus wrapper timers on
+   whatever it points at) before building any of the machinery below; if the
+   cause is, say, bignum arithmetic from 30-bit fixnums, wasm64 may be worth
+   more than everything else in this list.
 3. **Prototype ahead-of-time compilation of the `*1*` functions on native
    ECL.** Still worth doing, but no longer as a startup fix: it is now worth
    ~1.2 s of the 5.7 s, and a native prover core (the prover is bytecode

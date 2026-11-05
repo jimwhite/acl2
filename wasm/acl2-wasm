@@ -7,6 +7,8 @@
 #   ACL2_WASM_DIR    ACL2 source directory (default: the parent of this script)
 #   ACL2_WASM_ECL    directory with ecl.js and ecl.wasm
 #                    (default: /opt/eclwasm/dist/node-raw)
+#   ACL2_WASM_DRIVER Lisp file to load instead of acl2-wasm.lsp, e.g.
+#                    ecl-tools/init-profile.lsp to time initialization
 #
 # Extra command-line arguments are passed to ECL, e.g.
 #
@@ -37,4 +39,4 @@ ACL2_SNAPSHOT_INFO=${ACL2_SNAPSHOT_INFO:-NONE}
 export ACL2_SMALL_FIXNUMS ACL2_SNAPSHOT_INFO
 
 exec node --stack-size=524288 "$ACL2_WASM_ECL/ecl.js" \
-  --load "$THISDIR/acl2-wasm.lsp" -- "$@"
+  --load "${ACL2_WASM_DRIVER:-$THISDIR/acl2-wasm.lsp}" -- "$@"

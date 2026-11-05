@@ -511,7 +511,7 @@ and accumulates seconds and call counts by label.
 
 | phase | before | after |
 | --- | --- | --- |
-| pass 1: `ld` of the 82 system source files | 11.8 s | 2.0 s |
+| pass 1: `ld` of the system source files (all of `*acl2-files*` except the pass-2 and `-raw` files) | 11.8 s | 2.0 s |
 | pass 2: `ld` of the pass-2 forms | 1.4 s | 1.4 s |
 | `(comp-fn :exec ...)`: write, compile, load the `*1*` definitions | 1.35 s | 1.26 s |
 | outside those `ld` calls | 0.7 s | 1.1 s |
@@ -564,6 +564,13 @@ It writes `ecl-init-profile.txt` with one line per label: total seconds, call
 count, label. `ACL2_INIT_PROFILE_KEEP_TMP=1` keeps the generated `TMP*.lisp`
 and compiled files, and `ACL2_INIT_PROFILE_VERBOSE=1` lets initialization print
 normally instead of through a broadcast stream.
+
+The same script runs in the WebAssembly build (see `WASM-PORT-NOTES.md`):
+
+```sh
+./wasm/acl2-wasm-compile      # only needed after changing ACL2 sources
+ACL2_WASM_DRIVER=ecl-tools/init-profile.lsp ./wasm/acl2-wasm
+```
 
 The timers go on `ld-fn`, `compile-uncompiled-defuns` and
 `compile-uncompiled-*1*-defuns` because each of those is called from a
