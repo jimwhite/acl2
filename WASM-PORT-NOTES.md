@@ -19,7 +19,7 @@ and some may be lifted by upstream work.
 | ACL2 `compile-acl2` in wasm (82 source files to `.fasc`) | works, ~1 minute |
 | ACL2 `initialize-acl2` in wasm | works, 352 s with the boot-strap fix of 2026-11-05 (382 s without) |
 | `defun`, `thm`, induction proofs in the ACL2 loop | works |
-| Book certification (`cert.pl`) in wasm | not tried yet |
+| Book certification (`cert.pl`) in wasm | not working yet: `certify-book` passes steps 1-4 and fails in step 5 (compiling the book) with "The variable PROGN is unbound" |
 | Browser (no Node) | not started (needs a filesystem layer and a way to feed the loop) |
 
 Startup is slow because ECL cannot dump an image: every start loads the
