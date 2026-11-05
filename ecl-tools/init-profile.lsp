@@ -27,6 +27,12 @@
 ;   ACL2_INIT_PROFILE_VERBOSE=1   -- do not suppress ACL2's initialization
 ;                                   output (suppressed by default, as in
 ;                                   nsaved_acl2.lsp).
+;   ACL2_INIT_PROFILE_AOT=<file>  -- load <file> as the ahead-of-time file of
+;                                   executable counterparts (see
+;                                   *ACL2-*1*-AOT-FILE* in interface-raw.lisp).
+;   ACL2_INIT_PROFILE_EXTRA=a,b,c -- also time the named ACL2 functions.  This
+;                                   works in the wasm build for functions that
+;                                   a native build turns into direct C calls.
 
 (in-package "CL-USER")
 
@@ -157,6 +163,36 @@
 (cl-user::wrap-with-timer 'compile-uncompiled-*1*-defuns
                           (make-comp-label "*1*-defuns")
                           #'keep-tmp-files-before)
+
+; ACL2_INIT_PROFILE_EXTRA is a comma-separated list of ACL2 function names to
+; time as well, e.g. ACL2_INIT_PROFILE_EXTRA=translate,ev-fncall.  Calls made
+; from a compiled file to a function defined earlier in that same file are
+; direct C calls in a native build and cannot be intercepted; in the
+; bytecodes-only wasm build every call goes through the function cell, so this
+; is the way to look inside pass 2 there.
+
+(let ((extra (getenv$-raw "ACL2_INIT_PROFILE_EXTRA")))
+  (when (and extra (not (equal extra "")))
+    (let ((start 0) (len (length extra)))
+      (loop
+       (let* ((end (or (position #\, extra :start start) len))
+              (name (subseq extra start end))
+              (sym (and (not (equal name ""))
+                        (find-symbol (string-upcase name) "ACL2"))))
+         (when (and sym
+                    (fboundp sym)
+                    (not (macro-function sym))
+                    (not (special-operator-p sym)))
+           (cl-user::wrap-with-timer
+            sym
+            (let ((s sym))
+              (lambda (args)
+                (declare (ignore args))
+                (symbol-name s)))))
+         (when (>= end len)
+           (return))
+         (setq start (1+ end)))))))
+
 
 ; The three below are Common Lisp functions; ACL2 code reaches them through
 ; the function cell, so these wrappers do see the bootstrap's calls.  (The

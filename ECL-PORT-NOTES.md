@@ -631,7 +631,11 @@ then calls `initialize-acl2` with timers installed:
 It writes `ecl-init-profile.txt` with one line per label: total seconds, call
 count, label. `ACL2_INIT_PROFILE_KEEP_TMP=1` keeps the generated `TMP*.lisp`
 and compiled files, and `ACL2_INIT_PROFILE_VERBOSE=1` lets initialization print
-normally instead of through a broadcast stream.
+normally instead of through a broadcast stream. `ACL2_INIT_PROFILE_EXTRA` is a
+comma-separated list of ACL2 function names to time as well, which is the way
+to look inside pass 2 in the wasm build, where every call goes through the
+function cell; in a native build such calls are often direct C calls and
+cannot be intercepted.
 
 The same script runs in the WebAssembly build (see `WASM-PORT-NOTES.md`):
 

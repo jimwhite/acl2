@@ -266,6 +266,38 @@ The `*1*` step is 12x its native cost, which is the bytecodes compiler running
 under the interpreter; the difference between the two wasm columns there is
 mostly variance in V8's tiering and GC, not an effect of the boot-strap fix.
 
+### What the wasm pass-2 time is spent in
+
+`ACL2_INIT_PROFILE_EXTRA` (a comma-separated list of ACL2 function names)
+adds timers to named functions; in the bytecodes-only wasm build every call
+goes through the function cell, so this reaches code that a native build
+compiles into direct C calls. Timed in wasm:
+
+| function | calls | inclusive time |
+| --- | --- | --- |
+| `defun-fn` (one per `defun` event) | 6,699 | 129.0 s |
+| `chk-acceptable-defuns1` | 7,273 | 72.4 s |
+| `install-event` | 12,470 | 32.7 s |
+| `add-trip` | 150,441 | 30.3 s |
+| `oneify-cltl-code` | 9,604 | 23.9 s |
+| `type-set-and-returned-formals` | 59,745 | the largest of all |
+
+The same wrappers in the native build timed `defun-fn` at 6,699 calls and
+1.313 s inclusive, and `install-event` at 0.650 s, so these are 98x and 50x
+slower in wasm -- again far beyond the interpreter factor. (`chk-acceptable-defuns1`
+and `type-set-and-returned-formals` do not show up natively: they are called
+from within `defuns.lisp`, so a native build turns those calls into direct C
+calls and the wrapper never sees them.) Note that the inclusive times nest and
+must not be added.
+
+So pass 2 is the admission of each `defun` event, and inside that the type-set
+computation in `chk-acceptable-defuns1` (`type-set-and-returned-formals` is
+called about nine times per defun) dominates. The next experiment should
+compare one type-set computation across the two builds -- a handful of
+`defun` admissions, timed on both sides -- to decide whether this is simply
+the interpreter on list-heavy code or something else (bignum arithmetic from
+30-bit fixnums, GC) that a fix could remove.
+
 ### The standard ECL build runs ACL2's executable counterparts as bytecode
 
 `acl2-init.lisp` installs the bytecodes compiler around `(eval mode)` and then
@@ -367,11 +399,13 @@ module. Node is used instead for this first pass.
 2. **Find out why passes 1 and 2 cost 80-100x their native time.** Measured:
    `initialize-acl2` in wasm is 352 s with the boot-strap fix (382 s without),
    of which pass 2 is 156 s against 1.4 s natively. That is far worse than the
-   3.5x interpreter factor and is now the dominant wasm cost. Profile pass 2
-   in wasm the same way (`ecl-tools/init-profile.lsp` plus wrapper timers on
-   whatever it points at) before building any of the machinery below; if the
-   cause is, say, bignum arithmetic from 30-bit fixnums, wasm64 may be worth
-   more than everything else in this list.
+   3.5x interpreter factor and is now the dominant wasm cost. Timers on named
+   functions ("What the wasm pass-2 time is spent in") show that
+   `defun-fn` accounts for 129 s of the 348 s and is 98x its native time, and
+   that the type-set work inside `chk-acceptable-defuns1` dominates it. Next:
+   time a few `defun` admissions on both sides to see whether the 98x is the
+   interpreter on list-heavy code or something fixable (bignums from 30-bit
+   fixnums, GC).
 3. **Ahead-of-time compilation of the `*1*` functions on native ECL.**
    *Done for ECL.* `*acl2-*1*-aot-file*` in `interface-raw.lisp`
    loads a precompiled file of the counterparts instead of generating and
