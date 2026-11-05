@@ -146,6 +146,33 @@ and run the GitLab CI pipeline on `develop`. See `ECL-MR.md`.
   will probably want a cleaner split (infrastructure, raw-code handling,
   book-build fixes, docs).
 
+### 6. `make devel-check` is not green on ECL
+
+ACL2's `devel-check` target (`chk-new-verified-guards` and
+`check-system-events`) fails here, for two independent reasons that also
+reproduce on the clean branch (they are not caused by the world-image work):
+
+1. The generated `nsaved_acl2` does not raise ECL's C-stack limit, so the
+   default 8 MB overflows part way through `chk-new-verified-guards`
+   (`C-STACK overflow at size 8388608`).  A launcher that runs
+   `(ext:set-limit 'ext:c-stack (* 1000 1024 1024))` under
+   `ulimit -s 1000000` gets past this, and raising the limit in
+   `save-acl2-in-ecl`'s script would be a small improvement.
+2. With the stack raised, `chk-new-verified-guards` fails because including
+   `books/system/devel-check` verifies **0** new functions: the image already
+   has the functions of `*system-verify-guards-alist*` (checked
+   `abbrev-evisc-tuple`, `all-fnnames1`, `alistp-listp`, `badge` and `arity`
+   are all `:common-lisp-compliant`).  Separately, `check-system-events`
+   cannot translate its quoted `WELL-FOUNDED-L<` theorem because `LTOO` is
+   undefined; that function is defined in
+   `books/ordinals/lexicographic-book.lisp`, which the devel-check book chain
+   does not leave in this world.
+
+This matters beyond the native port: `make devel-check` was going to be the
+acceptance gate for the wasm world image (see `WASM-PORT-NOTES.md`), so it
+needs to be made meaningful on ECL, or replaced by a gate that is (`make -k
+-j 16 basic` plus targeted `include-book` tests).
+
 ## Quick start
 
 Build ECL 26.5.5 with the bytecode-operand patch:
