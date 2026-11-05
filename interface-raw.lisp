@@ -11335,11 +11335,38 @@ such that feature :acl2-loop-only is true."))
 ; time from exactly the forms that COMPILE-UNCOMPILED-*1*-DEFUNS writes to
 ; TMP1.lisp at the end of the boot-strap.  When this is non-nil, the boot-strap
 ; loads that file instead of regenerating the definitions from the world and
-; compiling them.  The caller is responsible for making sure the file is
-; current with respect to the ACL2 sources and the host Lisp; see
-; ECL-PORT-NOTES.md.
+; compiling them.  See ACL2-*1*-AOT-FILE, which supplies a value only when the
+; file is up to date, and ECL-PORT-NOTES.md for how it is produced.
 
   nil)
+
+(defun acl2-*1*-aot-file ()
+
+; Returns "acl2-exec-aot" (a filename without extension, to be used as the
+; value of *ACL2-*1*-AOT-FILE*) when there is an up-to-date compiled file of
+; executable counterparts, and nil otherwise.  The file is out of date if any
+; source in *ACL2-FILES* or ACL2-FNS.LISP is newer than it, or if it was built
+; by a different host Lisp.  ACL2-EXEC-AOT.STAMP, written by
+; ecl-tools/make-exec-aot.lsp just before compiling, records the host Lisp and
+; must itself be no newer than the compiled file.
+
+  (let* ((fas "acl2-exec-aot.fas")
+         (stamp "acl2-exec-aot.stamp")
+         (fas-date (and (probe-file fas) (file-write-date fas)))
+         (stamp-date (and (probe-file stamp) (file-write-date stamp))))
+    (and fas-date
+         stamp-date
+         (<= stamp-date fas-date)
+         (with-open-file (str stamp :direction :input)
+           (equal (read str nil nil) (lisp-implementation-version)))
+         (let ((newest 0))
+           (dolist (fl (cons "acl2-fns" *acl2-files*))
+             (let* ((src (make-pathname :name fl :type *lisp-extension*))
+                    (date (and (probe-file src) (file-write-date src))))
+               (when (and date (> date newest))
+                 (setq newest date))))
+           (<= newest fas-date))
+         "acl2-exec-aot")))
 
 (defun compile-uncompiled-*1*-defuns (file &optional (fns :some) gcl-flg chan0
                                            &aux

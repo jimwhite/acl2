@@ -20,6 +20,10 @@ Done (as of 2026-11-05):
 - `initialize-acl2` no longer runs the irrelevant-formals check during the
   boot-strap, which was two thirds of the startup cost. Details and the
   measurement method are below; the profiler is `ecl-tools/init-profile.lsp`.
+- The executable counterparts can be compiled ahead of time: `make exec-aot`
+  builds `acl2-exec-aot.fas` and the launcher uses it when it is up to date,
+  which is worth another ~1.2 s of startup. See "Ahead-of-time compilation of
+  the executable counterparts".
 - The WebAssembly experiment was merged in (see `WASM-PORT-NOTES.md`); its
   ACL2 source changes are guarded by `:emscripten` and do not affect native
   ECL.
@@ -40,9 +44,6 @@ Not done yet:
 - Caching or avoiding `initialize-acl2` on every startup (see below for why
   this is hard). It is now 5.7 s rather than 17.6 s, so this is much less
   pressing.
-- Ahead-of-time compilation of the `*1*` functions: prototyped, worth 1.2 s of
-  startup; it needs build integration (a staleness check) before it can be
-  relied on. See "Ahead-of-time compilation of the executable counterparts".
 
 ## What's left
 
@@ -104,11 +105,10 @@ first pass over the sources, 1.4 s for the second pass, and 1.26 s for the
 single `(comp-fn :exec ...)` that ends the boot-strap. The two remaining
 levers are therefore:
 
-- Ahead-of-time compilation of the `*1*` functions. Prototyped and measured:
-  it removes the 1.26 s write/compile/load step, leaving 0.017 s, and takes
-  startup to 5.3–5.5 s. What is left is build integration — chiefly a
-  staleness check — not measurement; see "Ahead-of-time compilation of the
-  executable counterparts" below.
+- Ahead-of-time compilation of the `*1*` functions. Done for ECL: it removes
+  the 1.26 s write/compile/load step, leaving 0.017 s, and takes startup to
+  5.0–5.5 s. `make exec-aot` builds the file; the launcher ignores it when it
+  is stale. See "Ahead-of-time compilation of the executable counterparts".
 - An image, which removes all of the boot-strap.
 
 - Re-measure proof performance with `ext:use-direct-C-call` disabled for book
@@ -566,18 +566,21 @@ ahead of time with ECL's C compiler and merely loaded, the step costs 0.017 s.
 The mechanism is in place. `*acl2-*1*-aot-file*` (`interface-raw.lisp`), when
 set, makes `compile-uncompiled-*1*-defuns` load that file during the boot-strap
 instead of scanning the world, regenerating the definitions with
-`oneify-cltl-code`, writing `TMP1.lisp`, compiling it, and loading it. The
-launcher that `save-acl2-in-ecl` writes sets the variable when
-`acl2-exec-aot.fas` exists.
+`oneify-cltl-code`, writing `TMP1.lisp`, compiling it, and loading it.
+`acl2-*1*-aot-file`, in the same file, supplies a value only when the compiled
+file is up to date: newer than every source in `*acl2-files*` and
+`acl2-fns.lisp`, with a stamp recording the host Lisp, itself no newer than
+the compiled file. The launcher that `save-acl2-in-ecl` writes calls it.
 
-To produce the file, from the ACL2 source directory:
+To produce the file, after `make compile`:
 
 ```sh
-ACL2_INIT_PROFILE_KEEP_TMP=1 /opt/ecl-26.5.5/bin/ecl -norc \
-    -load ecl-tools/init-profile.lsp          # leaves TMP@<pid>@1.lisp
-cp /tmp/TMP@<pid>@1.lisp acl2-exec-aot.lisp
-/opt/ecl-26.5.5/bin/ecl -norc -load ecl-tools/make-exec-aot.lsp
+make exec-aot LISP=/opt/ecl-26.5.5/bin/ecl
 ```
+
+(`ecl-tools/make-exec-aot.lsp`, which runs a full `initialize-acl2`, keeps the
+`TMP1.lisp` that the boot-strap writes, renames it to `acl2-exec-aot.lisp`,
+compiles it with the C compiler, and writes `acl2-exec-aot.stamp`.)
 
 Measured, three runs each:
 
@@ -589,15 +592,16 @@ Measured, three runs each:
 
 Costs and caveats:
 
-- The file takes the C compiler about 31 s to produce and is 8.6 MB, against
+- The file takes the C compiler about 30 s to produce and is 8.6 MB, against
   1.7 MB for the bytecode `TMP1.fasc`. Loading it is cheap because ECL maps a
   compiled FASL rather than reading it eagerly.
 - It must be produced by a full initialization of these sources on this host
-  Lisp, and compiled by that host; like `acl2-fns.fas`, it is not portable.
-- **Staleness**: the launcher loads `acl2-exec-aot.fas` whenever it exists. A
-  production version has to check that the file is newer than the ACL2 sources
-  (or record a hash of them), as `acl2.lisp` does for `acl2-fns.fas`. That is
-  the main piece of build-system work left.
+  Lisp, and compiled by that host; like `acl2-fns.fas`, it is not portable. A
+  file that is out of date in either respect is ignored, so the worst case is
+  the slow path and a `make exec-aot` to get the fast one back. Verified: after
+  `touch basis-a.lisp` startup went back to 6.4–6.7 s, and so it did when the
+  stamp was changed to name another host Lisp; rebuilding the file restored
+  5.3 s.
 - It covers the `:logic` mode functions that go into `TMP1.lisp`. The
   `:program` mode counterparts are compiled one at a time during the
   boot-strap; together they cost about 0.1 s, so they are not worth including.

@@ -373,14 +373,14 @@ module. Node is used instead for this first pass.
    cause is, say, bignum arithmetic from 30-bit fixnums, wasm64 may be worth
    more than everything else in this list.
 3. **Ahead-of-time compilation of the `*1*` functions on native ECL.**
-   *Prototyped and measured.* `*acl2-*1*-aot-file*` in `interface-raw.lisp`
+   *Done for ECL.* `*acl2-*1*-aot-file*` in `interface-raw.lisp`
    loads a precompiled file of the counterparts instead of generating and
-   compiling them; the file is produced by `ecl-tools/make-exec-aot.lsp` from
-   a `TMP1.lisp` kept by `ecl-tools/init-profile.lsp`. Startup goes from
-   6.4-6.8 s to 5.3-5.5 s. It does not speed up rewriting, because `rewrite`,
+   compiling them; `make exec-aot` builds it, and the launcher refuses it when
+   any source is newer or the host Lisp differs. Startup goes from
+   6.4-6.8 s to 5.0-5.5 s. It does not speed up rewriting, because `rewrite`,
    `type-set` and `ev-fncall` were already native; it speeds up `ev-fncall`
-   paths. The remaining work is a staleness check in the launcher. The same
-   design would let wasm ship wasm code produced by ECL's cross compilation.
+   paths. The same design would let wasm ship wasm code produced by ECL's
+   cross compilation.
 4. Image save is now the only way to remove the remaining ~5.4 s. The options
    are ACL2-level serialization of the world (data only, no code pointers), an
    image facility in ECL, or a wasm memory snapshot (Wizer-style

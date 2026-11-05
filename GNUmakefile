@@ -598,6 +598,15 @@ init: acl2-proclaims.lisp
 	$(MAKE) chmod_image
 	@echo "Successfully built $(ACL2_WD)/${PREFIXsaved_acl2}."
 
+.PHONY: exec-aot
+exec-aot:
+# Build the ahead-of-time file of executable counterparts, acl2-exec-aot.fas,
+# which the ECL launcher loads instead of regenerating and compiling them
+# during initialization.  This target is for ECL only; see
+# ecl-tools/make-exec-aot.lsp and ECL-PORT-NOTES.md.  Run it after
+# "make compile"; the launcher ignores the file if any source is newer.
+	${LISP} -norc -load ecl-tools/make-exec-aot.lsp
+
 # The following "proofs" target assumes that files for the specified LISP have
 # been compiled.  We use :load-acl2-proclaims nil so that we don't
 # have to worry about perhaps having wiped out acl2-proclaims.lisp

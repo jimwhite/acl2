@@ -2506,14 +2506,13 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
        (format str "(ext:install-bytecodes-compiler)~%")
 
 ; If the executable counterparts have been compiled ahead of time (see
-; *ACL2-*1*-AOT-FILE* in interface-raw.lisp and the prototype notes in
+; ACL2-*1*-AOT-FILE in interface-raw.lisp and the prototype notes in
 ; ECL-PORT-NOTES.md), load them instead of regenerating and compiling them
-; during initialization.
+; during initialization.  The function returns nil unless the file is newer
+; than every ACL2 source and was built by this host Lisp.
 
        (format str
-               "(when (probe-file \"acl2-exec-aot.fas\")~%")
-       (format str
-               "  (setq *acl2-*1*-aot-file* \"acl2-exec-aot\"))~%")
+               "(setq *acl2-*1*-aot-file* (acl2-*1*-aot-file))~%")
        (format str "(unwind-protect~%")
        (format str "    (let ((*standard-output* (make-broadcast-stream))~%")
        (format str "          (*error-output* (make-broadcast-stream))~%")

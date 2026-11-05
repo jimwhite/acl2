@@ -12,6 +12,7 @@ acl2-status.txt
 acl2r.lisp
 acl2-proclaims.lisp
 acl2-exec-aot.lisp
+acl2-exec-aot.stamp
 ecl-init-profile.txt
 .acl2rc
 *saved_acl2*
