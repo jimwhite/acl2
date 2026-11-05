@@ -187,7 +187,7 @@ Environment: aarch64, 16 cores. Wasm ECL built with the flags above.
 | Build wasm ECL | ~5 min |
 | `compile-acl2` in wasm (41 sources plus `acl2-fns` to `.fasc`) | 66 s at `-O2` (96 s at `-O0`) |
 | `load-acl2` + `initialize-acl2` in wasm | 6 min 53 s (2026-11-04, before the boot-strap fix; `initialize-acl2` alone is 382 s then and 352 s now) |
-| Same, native ECL 26.5.5, standard build (C `.fas`, bytecoded `*1*`) | 16.4 s |
+| Same, native ECL 26.5.5, standard build (C `.fas`, bytecoded `*1*`) | 16.4 s before the boot-strap fix of 2026-11-05, 5.8 s after (4.3 s with the ahead-of-time counterparts) |
 | ACL2 start-to-prompt through `wasm/acl2-wasm` | ~6 min 40 s |
 
 Interpreted recursion depth before the C stack is exhausted: natively about
@@ -275,15 +275,22 @@ holds about 1,600 of them -- the logic-mode ones -- and the image ends up with
 about 6,800 bytecode functions, the remainder being compiled one at a time as
 events are admitted.) The consequence is visible in
 the released build: `(si::bc-split (symbol-function 'ACL2_*1*_ACL2::REWRITE))`
-returns a bytecode vector, and so does `EV-FNCALL`. In other words the prover
-core of ACL2-on-ECL is bytecoded, which is worth remembering when comparing
-prover speed with SBCL or CCL (where those functions are native).
+returns a bytecode vector.
 
-Compiling those functions ahead of time therefore has two payoffs on native
-ECL -- a faster prover, and about 1.2 s of the 5.7 s that `initialize-acl2`
-now takes -- and the same change ported to wasm would replace bytecode with
-wasm code. It is no longer the lever for *startup*; the boot-strap analysis
-was.
+Only the counterparts are bytecode, though. The systems functions that the
+prover actually calls are compiled to C from the sources: `(si::bc-split
+(symbol-function 'REWRITE))` and the same for `EV-FNCALL` both return `NIL`.
+An earlier revision of this section said the prover core was bytecoded; that
+was wrong, and it matters for judging the value of compiling the counterparts
+ahead of time.
+
+Those counterparts are what `ev-fncall` runs, so compiling them ahead of time
+pays off in evaluation -- `defconst`, `make-event`, guard checking, clause
+processors, the boot-strap itself -- rather than in rewriting. On native ECL
+the measured gain is 1.2 s of startup (see `ECL-PORT-NOTES.md`, "Ahead-of-time
+compilation of the executable counterparts"); it has not been tried in wasm,
+where the counterparts are wasm bytecode executed by an interpreter that is
+itself wasm, so the relative gain should be larger.
 
 The second factor is how ECL's bytecode interpreter behaves in wasm. It is not
 that wasm is slow: a plain C `fib` compiled with emcc is within 1.5-2x of gcc,
@@ -365,14 +372,16 @@ module. Node is used instead for this first pass.
    whatever it points at) before building any of the machinery below; if the
    cause is, say, bignum arithmetic from 30-bit fixnums, wasm64 may be worth
    more than everything else in this list.
-3. **Prototype ahead-of-time compilation of the `*1*` functions on native
-   ECL.** Still worth doing, but no longer as a startup fix: it is now worth
-   ~1.2 s of the 5.7 s, and a native prover core (the prover is bytecode
-   today). Capture the forms that `compile-uncompiled-*1*-defuns` compiles
-   during a build run, ship them as compiled code, and have `comp-fn` install
-   them instead of compiling. The same design would let wasm ship wasm code
-   produced by ECL's cross compilation.
-4. Image save is now the only way to remove the remaining ~5.7 s. The options
+3. **Ahead-of-time compilation of the `*1*` functions on native ECL.**
+   *Prototyped and measured.* `*acl2-*1*-aot-file*` in `interface-raw.lisp`
+   loads a precompiled file of the counterparts instead of generating and
+   compiling them; the file is produced by `ecl-tools/make-exec-aot.lsp` from
+   a `TMP1.lisp` kept by `ecl-tools/init-profile.lsp`. Startup goes from
+   6.4-6.8 s to 5.3-5.5 s. It does not speed up rewriting, because `rewrite`,
+   `type-set` and `ev-fncall` were already native; it speeds up `ev-fncall`
+   paths. The remaining work is a staleness check in the launcher. The same
+   design would let wasm ship wasm code produced by ECL's cross compilation.
+4. Image save is now the only way to remove the remaining ~5.4 s. The options
    are ACL2-level serialization of the world (data only, no code pointers), an
    image facility in ECL, or a wasm memory snapshot (Wizer-style
    preinitialization). Each has a different platform payoff.

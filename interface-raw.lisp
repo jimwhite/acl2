@@ -11328,6 +11328,19 @@ such that feature :acl2-loop-only is true."))
       (value nil)))
     os-file))
 
+(defvar *acl2-*1*-aot-file* nil
+
+; When non-nil, a filename (without extension) of a compiled file that holds
+; the executable counterparts of all :logic mode functions, produced ahead of
+; time from exactly the forms that COMPILE-UNCOMPILED-*1*-DEFUNS writes to
+; TMP1.lisp at the end of the boot-strap.  When this is non-nil, the boot-strap
+; loads that file instead of regenerating the definitions from the world and
+; compiling them.  The caller is responsible for making sure the file is
+; current with respect to the ACL2 sources and the host Lisp; see
+; ECL-PORT-NOTES.md.
+
+  nil)
+
 (defun compile-uncompiled-*1*-defuns (file &optional (fns :some) gcl-flg chan0
                                            &aux
                                            (state *the-live-state*)
@@ -11356,6 +11369,17 @@ such that feature :acl2-loop-only is true."))
     (warning$ 'compile-uncompiled-defuns nil
               "No functions to compile.")
     (return-from compile-uncompiled-*1*-defuns file)))
+  (when (and *acl2-*1*-aot-file*
+             (eq fns :some)
+             (null chan0)
+             (f-get-global 'boot-strap-flg *the-live-state*))
+
+; The whole point of the ahead-of-time file: skip the scan of the world below
+; (which regenerates every definition with ONEIFY-CLTL-CODE and prints it) and
+; the compile-file and load that follow it.
+
+    (load-compiled *acl2-*1*-aot-file* t)
+    (return-from compile-uncompiled-*1*-defuns (value nil)))
   (let ((os-file (pathname-unix-to-os file state)))
     (state-global-let*
      ((print-circle (f-get-global 'print-circle-files state))

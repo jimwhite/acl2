@@ -2504,6 +2504,16 @@ THISSCRIPTDIR=\"$( cd \"$( dirname \"$absdir\" )\" && pwd -P )\"
        (format str "                       *open-output-channel-key*)~%")
        (format str "      (make-broadcast-stream))~%")
        (format str "(ext:install-bytecodes-compiler)~%")
+
+; If the executable counterparts have been compiled ahead of time (see
+; *ACL2-*1*-AOT-FILE* in interface-raw.lisp and the prototype notes in
+; ECL-PORT-NOTES.md), load them instead of regenerating and compiling them
+; during initialization.
+
+       (format str
+               "(when (probe-file \"acl2-exec-aot.fas\")~%")
+       (format str
+               "  (setq *acl2-*1*-aot-file* \"acl2-exec-aot\"))~%")
        (format str "(unwind-protect~%")
        (format str "    (let ((*standard-output* (make-broadcast-stream))~%")
        (format str "          (*error-output* (make-broadcast-stream))~%")

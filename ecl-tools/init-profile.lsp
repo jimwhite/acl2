@@ -56,10 +56,11 @@
              *profile-table*)
     total))
 
-(defun wrap-with-timer (name label-fn)
+(defun wrap-with-timer (name label-fn &optional before)
   (let ((orig (symbol-function name)))
     (setf (symbol-function name)
           (lambda (&rest args)
+            (when before (funcall before args))
             (call-timed (funcall label-fn args)
                         (lambda () (apply orig args)))))))
 
@@ -132,11 +133,30 @@
 (when (equal (getenv$-raw "ACL2_INIT_PROFILE_KEEP_TMP") "1")
   (f-put-global 'keep-tmp-files t *the-live-state*))
 
+; ACL2_INIT_PROFILE_AOT names a compiled file of executable counterparts to
+; load instead of regenerating and compiling them (see *ACL2-*1*-AOT-FILE* in
+; interface-raw.lisp).
+
+(let ((aot (getenv$-raw "ACL2_INIT_PROFILE_AOT")))
+  (when (and aot (not (equal aot "")))
+    (setq *acl2-*1*-aot-file* aot)))
+
+; ENTER-BOOT-STRAP-MODE resets every state global through
+; INITIALIZE-STATE-GLOBALS, so KEEP-TMP-FILES has to be set again once the
+; boot-strap has begun; the wrapper below does that.
+
+(defun keep-tmp-files-before (args)
+  (declare (ignore args))
+  (when (equal (getenv$-raw "ACL2_INIT_PROFILE_KEEP_TMP") "1")
+    (f-put-global 'keep-tmp-files t *the-live-state*)))
+
 (cl-user::wrap-with-timer 'ld-fn #'ld-fn-label)
 (cl-user::wrap-with-timer 'compile-uncompiled-defuns
-                          (make-comp-label "raw-defuns"))
+                          (make-comp-label "raw-defuns")
+                          #'keep-tmp-files-before)
 (cl-user::wrap-with-timer 'compile-uncompiled-*1*-defuns
-                          (make-comp-label "*1*-defuns"))
+                          (make-comp-label "*1*-defuns")
+                          #'keep-tmp-files-before)
 
 ; The three below are Common Lisp functions; ACL2 code reaches them through
 ; the function cell, so these wrappers do see the bootstrap's calls.  (The

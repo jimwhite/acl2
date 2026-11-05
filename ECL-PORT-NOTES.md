@@ -14,8 +14,9 @@ Done (as of 2026-11-05):
 - `make compile LISP=/opt/ecl-26.5.5/bin/ecl` (~2m40s) and
   `make init LISP=/opt/ecl-26.5.5/bin/ecl` (~8 s) succeed.
 - `./saved_acl2` starts ACL2 in **~6.5 s** (was ~17 s; see
-  "Where `initialize-acl2` spends its time"), evaluates forms, admits
-  recursive `defun`s, proves `defthm`s, and certifies books.
+  "Where `initialize-acl2` spends its time"), or **~5.4 s** when the
+  ahead-of-time file of executable counterparts is present. It evaluates
+  forms, admits recursive `defun`s, proves `defthm`s, and certifies books.
 - `initialize-acl2` no longer runs the irrelevant-formals check during the
   boot-strap, which was two thirds of the startup cost. Details and the
   measurement method are below; the profiler is `ecl-tools/init-profile.lsp`.
@@ -39,8 +40,9 @@ Not done yet:
 - Caching or avoiding `initialize-acl2` on every startup (see below for why
   this is hard). It is now 5.7 s rather than 17.6 s, so this is much less
   pressing.
-- Ahead-of-time compilation of the `*1*` functions (1.26 s of the startup,
-  and a faster prover; see `WASM-PORT-NOTES.md` for the design).
+- Ahead-of-time compilation of the `*1*` functions: prototyped, worth 1.2 s of
+  startup; it needs build integration (a staleness check) before it can be
+  relied on. See "Ahead-of-time compilation of the executable counterparts".
 
 ## What's left
 
@@ -95,16 +97,18 @@ touch generic code paths and need review:
 
 ### 3. Startup and performance
 
-Startup is 6.5 s, of which `initialize-acl2` is 5.7–6.3 s. The measured
+Startup is 6.5 s, or 5.4 s with the ahead-of-time file described below, of
+which `initialize-acl2` is 5.7–6.3 s (4.3–5.0 s with it). The measured
 breakdown is in "Where `initialize-acl2` spends its time" below: 2.0 s for the
 first pass over the sources, 1.4 s for the second pass, and 1.26 s for the
 single `(comp-fn :exec ...)` that ends the boot-strap. The two remaining
 levers are therefore:
 
-- Ahead-of-time compilation of the `*1*` functions (as proposed in
-  `WASM-PORT-NOTES.md`). It would remove ~1.2 s of startup — the write,
-  compile and load of TMP1.lisp — and it also makes the prover native, since
-  the prover core is bytecoded today (see that document).
+- Ahead-of-time compilation of the `*1*` functions. Prototyped and measured:
+  it removes the 1.26 s write/compile/load step, leaving 0.017 s, and takes
+  startup to 5.3–5.5 s. What is left is build integration — chiefly a
+  staleness check — not measurement; see "Ahead-of-time compilation of the
+  executable counterparts" below.
 - An image, which removes all of the boot-strap.
 
 - Re-measure proof performance with `ext:use-direct-C-call` disabled for book
@@ -549,6 +553,66 @@ branch to check the system sources again.
 This is not ECL-specific, so it should speed up the build on any host. It is
 worth more on ECL than elsewhere because every ACL2 invocation (each book
 certified by `cert.pl`, for example) pays for the boot-strap.
+
+### Ahead-of-time compilation of the executable counterparts (prototype)
+
+The executable counterparts (the `*1*` functions) of all `:logic` mode
+functions are bytecode in the standard build: the single `(comp-fn :exec ...)`
+at the end of the boot-strap writes about 1,600 definitions to `TMP1.lisp`,
+compiles them with the bytecodes compiler, and loads them. That step is 1.26 s
+of the 5.8 s that `initialize-acl2` takes. If the same definitions are compiled
+ahead of time with ECL's C compiler and merely loaded, the step costs 0.017 s.
+
+The mechanism is in place. `*acl2-*1*-aot-file*` (`interface-raw.lisp`), when
+set, makes `compile-uncompiled-*1*-defuns` load that file during the boot-strap
+instead of scanning the world, regenerating the definitions with
+`oneify-cltl-code`, writing `TMP1.lisp`, compiling it, and loading it. The
+launcher that `save-acl2-in-ecl` writes sets the variable when
+`acl2-exec-aot.fas` exists.
+
+To produce the file, from the ACL2 source directory:
+
+```sh
+ACL2_INIT_PROFILE_KEEP_TMP=1 /opt/ecl-26.5.5/bin/ecl -norc \
+    -load ecl-tools/init-profile.lsp          # leaves TMP@<pid>@1.lisp
+cp /tmp/TMP@<pid>@1.lisp acl2-exec-aot.lisp
+/opt/ecl-26.5.5/bin/ecl -norc -load ecl-tools/make-exec-aot.lsp
+```
+
+Measured, three runs each:
+
+| | without AOT | with AOT |
+| --- | --- | --- |
+| `(comp-fn :exec ...)` step | 1.26 s | 0.017 s |
+| `initialize-acl2` | 5.84–6.08 s | 4.32–4.97 s |
+| startup to prompt (`saved_acl2`) | 6.41–6.78 s | 5.29–5.50 s |
+
+Costs and caveats:
+
+- The file takes the C compiler about 31 s to produce and is 8.6 MB, against
+  1.7 MB for the bytecode `TMP1.fasc`. Loading it is cheap because ECL maps a
+  compiled FASL rather than reading it eagerly.
+- It must be produced by a full initialization of these sources on this host
+  Lisp, and compiled by that host; like `acl2-fns.fas`, it is not portable.
+- **Staleness**: the launcher loads `acl2-exec-aot.fas` whenever it exists. A
+  production version has to check that the file is newer than the ACL2 sources
+  (or record a hash of them), as `acl2.lisp` does for `acl2-fns.fas`. That is
+  the main piece of build-system work left.
+- It covers the `:logic` mode functions that go into `TMP1.lisp`. The
+  `:program` mode counterparts are compiled one at a time during the
+  boot-strap; together they cost about 0.1 s, so they are not worth including.
+- Checks run: `initialize-acl2` still passes `check-acl2-initialization`
+  (which evaluates the built-in constants, exercising the counterparts); a
+  `defconst` computed by a counterpart, an inductive `defthm`, the
+  user-level irrelevant-formals error, and `certify-book` on a small book all
+  behave as before.
+
+What it does *not* buy: the prover's own functions (`rewrite`, `type-set`,
+`ev-fncall`, ...) are compiled to C from the sources, not bytecoded, so
+rewriting is unaffected. The counterparts are what `ev-fncall` runs, so the
+gain there is in evaluation — `defconst`, `make-event`, guard checking, clause
+processors, and the boot-strap itself — not in the rewrite loop. (This
+corrects an earlier guess in `WASM-PORT-NOTES.md`.)
 
 ### Profiling initialization
 
