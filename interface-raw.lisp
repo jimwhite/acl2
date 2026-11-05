@@ -9445,13 +9445,16 @@
 ; #.*infinity-double* and #.*negative-infinity-double*), so we do so, but we
 ; don't bother testing for Nan in LispWorks.
 
-; We return form unchanged in other than Allegro CL and LispWorks, because we
-; already know that an error is signalled on overflow for other Lisps that host
-; ACL2; see break-on-overflow-and-nan.
+; We return form unchanged in other than Allegro CL, LispWorks, SBCL on ARM64,
+; and the WebAssembly build of ECL, because we already know that an error is
+; signalled on overflow for other Lisps that host ACL2; see
+; break-on-overflow-and-nan.
 
-  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64))
+  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64)
+        (and ecl emscripten))
   (declare (ignore op))
-  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64))
+  #-(or allegro lispworks (and gcl no-sigfpe) (and ccl arm64)
+        (and ecl emscripten))
   form
 ; Camm Maguire suggestion:
   #+(and gcl no-sigfpe)
@@ -9477,7 +9480,22 @@
        (ccl::%fp-check-inline-exception
         ',op nil
         (ccl::%fp-inline-exception-status))
-       result)))
+       result))
+
+; The WebAssembly build of ECL cannot observe IEEE floating-point exception
+; flags: there is no equivalent of feclearexcept/fetestexcept, so ECL cannot
+; raise an error on overflow or on division of zero by zero.  Check the result
+; for NaN and for infinities explicitly, as we do for Allegro CL and
+; LispWorks.  (A NaN fails every comparison, hence the negated <=.)
+
+  #+(and ecl emscripten)
+  `(let ((result ,form))
+     (unless (<= (- common-lisp:most-positive-double-float)
+                 result
+                 common-lisp:most-positive-double-float)
+       (error "Floating-point exception for a call of ~s"
+              ',op))
+     result))
 
 (defun check-fp-signals ()
 

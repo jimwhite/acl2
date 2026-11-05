@@ -1233,10 +1233,20 @@ ACL2 from scratch.")
 ; axioms.lisp.  Package locking support is in a separate module, which we need
 ; to load first.
 
-#+ecl
+; The C-compiled WebAssembly build of ECL (see the WASM port notes) has no
+; separate modules: the package-locks module's portable FASL uses C-INLINE
+; forms, which the bytecodes compiler cannot handle.  Package locks are built
+; into the ECL core, though, and are checked against the global variable
+; SI::*IGNORE-PACKAGE-LOCKS*, so setting that variable has the effect of the
+; missing EXT:UNLOCK-PACKAGE.
+
+#+(and ecl (not emscripten))
 (require :package-locks)
 
-#+ecl
+#+emscripten
+(setq si::*ignore-package-locks* t)
+
+#+(and ecl (not emscripten))
 (eval '(ext:unlock-package "COMMON-LISP"))
 
 (with-open-file
@@ -1300,7 +1310,7 @@ ACL2 from scratch.")
 ; COMPILE-FILE-PATHNAME) locks the "COMMON-LISP" package again.  See the
 ; comment about ECL package locking above.
 
-#+ecl
+#+(and ecl (not emscripten))
 (eval '(ext:unlock-package "COMMON-LISP"))
 
 (defmacro initialize-state-globals ()
@@ -1784,8 +1794,10 @@ ACL2 from scratch.")
     sb-ext:with-unlocked-packages #+sbcl ("COMMON-LISP")
     #+clisp
     ext:without-package-lock #+clisp ("COMMON-LISP")
-    #+ecl
-    ext:with-unlocked-packages #+ecl ("COMMON-LISP")
+    #+(and ecl (not emscripten))
+    ext:with-unlocked-packages #+(and ecl (not emscripten)) ("COMMON-LISP")
+    #+emscripten
+    progn
     #+allegro
     excl::without-package-locks
     #+ccl
@@ -2020,7 +2032,11 @@ ACL2 from scratch.")
 ; generated C, object, and compiled files.
 
         (compile-file "acl2-fns.lisp" :output-file acl2-fns-tmp)
-        #+unix
+
+; The WebAssembly build (Emscripten) reports :UNIX but cannot spawn
+; subprocesses, so it takes the rename-file path below.
+
+        #+(and unix (not emscripten))
         (multiple-value-bind (stream code)
             (ext:run-program "mv"
                              (list "-f"
@@ -2034,7 +2050,7 @@ ACL2 from scratch.")
           (when (not (eql code 0))
             (error "Unable to move ~s to ~s."
                    acl2-fns-tmp acl2-fns-compiled)))
-        #-unix
+        #+(or (not unix) emscripten)
         (progn
           (when (probe-file acl2-fns-compiled)
             (delete-file acl2-fns-compiled))

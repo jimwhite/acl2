@@ -1,0 +1,16 @@
+--- a/src/c/stacks.d
++++ b/src/c/stacks.d
+@@ -98,7 +98,12 @@
+   cl_index margin = ecl_option_values[ECL_OPT_C_STACK_SAFETY_AREA];
+   if (new_size > env->c_stack.max_size)
+     new_size = env->c_stack.max_size;
+-#ifdef ECL_CAN_SET_STACK_SIZE
++/* Emscripten reports the module's fixed stack size through getrlimit() and
++ * does not let a program change it, so the code below would silently ignore
++ * (EXT:SET-LIMIT 'EXT:C-STACK n) and always use the whole stack.  Honour the
++ * requested size instead; that is what lets an application leave headroom for
++ * ECL's own stack-overflow handler. */
++#if defined(ECL_CAN_SET_STACK_SIZE) && !defined(__EMSCRIPTEN__)
+   {
+     struct rlimit rl;
+     if (!getrlimit(RLIMIT_STACK, &rl)) {
