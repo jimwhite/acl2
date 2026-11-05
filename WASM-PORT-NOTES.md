@@ -514,6 +514,318 @@ The realistic options are:
   factor; the larger ~7x that comes from having the prover in bytecode at
   all is only removed by a native backend for wasm.
 
+## Avoiding the boot-strap: research and the next experiment (2026-11-05)
+
+Both builds pay for `initialize-acl2` on every start (352 s of the wasm 361 s;
+5.0-5.5 s native with `exec-aot`).  Native ECL has no image dump --
+`compiler::build-program` only links a `cl_boot` plus a list of `.fas` files
+into a new executable, so it cannot capture state that was computed at run
+time -- and `save-exec` is unimplemented for ECL.  The three facts below
+change the shape of the problem.
+
+### 1. The post-boot world is ordinary data, and ACL2 already saves it
+
+`(w state)` after `initialize-acl2` is 138,373 triples.  ACL2's own
+`serialize`/`deserialize` round-trips it on native ECL:
+
+| operation | time | size |
+| --- | --- | --- |
+| `serialize-write` | 5.1-10.7 s | 21.7 MB |
+| `serialize-read` | 0.40 s | -- |
+
+Two host details: raise the C stack first
+(`(ext:set-limit 'ext:c-stack (* 1000 1024 1024))`; the 8 MB default overflows
+on the 138k-long list), and `(ext:unlock-package "COMMON-LISP")` before
+reading (package locks; the wasm build has them off).  Spot checks after the
+round-trip pass (`append`'s formals, `'world-globals`, and `defun-fn`'s
+theorem are `equal`).  So an image of ACL2's *logical* state needs no ECL
+support and works identically in wasm.
+
+### 2. Replaying the world with `set-w` does not skip the raw-Lisp work
+
+`(set-w 'extension saved-world state)` installs the world, but
+`extend-world1` calls `add-trip` per triple and `add-trip` re-evaluates each
+`'cltl-command`, so every `defun` is reinstalled and recompiled (natively we
+watched `gcc` run once per source function).  Replay therefore removes ACL2's
+translation and type-set analysis -- the 80-100x part -- but not code
+installation.  The missing primitive is an *install-properties-only* path:
+push each triple into the symbol's world alist (the code `add-trip` already
+has) without evaluating anything, since `load-acl2` has already installed
+every compiled function from the `.fasc` files and `exec-aot` supplies the
+`*1*` counterparts.
+
+### 3. An Emscripten memory snapshot works and does not need WASI
+
+A probe (16 MB module, `-sMODULARIZE=1 -sINVOKE_RUN=0
+-sEXPORTED_RUNTIME_METHODS=HEAPU8,wasmMemory`) establishes the mechanics:
+
+- `ecl.wasm` has **no wasm `start` section**; `__wasm_call_ctors` is called by
+  the JS glue in `initRuntime()`, and it runs even when
+  `Module.noInitialRun` is set.
+- The driver can therefore copy a saved linear-memory image into a fresh
+  instance *after* the ctors have run (`onRuntimeInitialized`) and *before*
+  invoking anything, then call a fresh exported entry point.  A global int
+  and a `strdup`'d string survive, i.e. the snapshot wins.
+- The data segments and ctors re-run against the initial memory and are then
+  overwritten, which is exactly the ordering the trick needs.
+
+### Can ECL simply grow a save-image?
+
+Not as a small maintenance item, and not portably.  `cl_boot`
+(`src/c/main.d`) constructs the whole runtime from compiled-in tables: it
+installs `NIL`/`T`, builds every package and stream, initialises bdwgc and the
+module tables; there is no restore path, and calling `main` a second time in
+the same process aborts with `RuntimeError: unreachable` (measured).  The only
+"image" ECL offers is compile-time linking -- `compile-file :system-p t` plus
+`c:build-static-library` / `c:build-program` -- and the resulting executable
+still calls `cl_boot` and loads its modules, so it captures code, never state.
+
+The reason a general dump is hard is the heap.  It is bdwgc-managed and
+conservative, objects are private C structs, and the pointers in it include C
+function entry points (compiled Lisp functions), file descriptors and module
+registrations.  A *relocating* dumper would need per-object type and pointer
+metadata that ECL does not keep.  An *address-preserving* dumper (Emacs
+"unexec" style) needs the data at the same addresses on restore, which is
+brittle for a PIE executable with ASLR but is exactly true for wasm32, where
+linear memory always starts at 0 and indirect calls go through a stable
+function table.  So "ECL lacks a save-image" is a consequence of its design,
+and the wasm-shaped version of a save-image *is* E1.
+
+### Measurements (2026-11-05)
+
+| what | result |
+| --- | --- |
+| post-init world | 138,373 triples, 21.7 MB serialized |
+| `serialize-write` (native; build time only) | 5.1-10.7 s |
+| `serialize-read` (native, fresh session) | 0.39-0.43 s |
+| `enter-boot-strap-mode` (primordial world) | 0.02 s |
+| `set-w 'extension` replay of the whole world with the bytecodes compiler (native) | 0.65 s |
+| wasm memory after init | 2 GB reserved, ~720 MB resident (host RSS) |
+| a second call of ECL's `main` (i.e. `cl_boot` again) | `RuntimeError: unreachable` |
+
+Two details the experiments turned up:
+
+* `serialize-read` cannot run its package check before a world is installed
+  (`PKG-IMPORTS` is a world function).  Call `ser-decode-from-stream` with
+  `check-packagesp = nil`, or install the primordial world first; package
+  locks must be off or undone either way (the wasm build has them off).
+* A **cold** replay is not correct yet.  Replaying the world right after
+  `load-acl2` trips the pass-1 gates in `install-defs-for-add-trip`
+  (`"*system-verify-guards-alist-1* is not boundp!"`): some raw definitions
+  in the world were created by the boot-strap's `ld`, so they do not exist
+  after loading the compiled files.  In a session that has already run
+  `initialize-acl2`, the same replay installs the world in 0.65 s and proofs
+  work, but the raw-install path leaves later `defun`s broken (`defun-fn`'s
+  function cell ends up being its `*1*` definition).
+
+**World replay therefore needs a small "replay mode" in `add-trip` /
+`install-defs-for-add-trip`** (the `boot-strap-flg` gates at roughly lines
+7163, 7224 and 7547 of `interface-raw.lisp`), rather than being a drop-in.
+
+### Plan, in priority order
+
+**E1 -- a wasm memory snapshot ("the image").**  Best payoff: startup becomes
+a copy plus one entry call.  Sketch:
+
+1. Add a small C shim to the wasm ECL link (same place the existing
+   `-sSUPPORT_LONGJMP` flags are injected, `src/cmp/cmpdefs.lsp` and
+   `src/compile.lsp.in`) exposing two functions to Lisp via ECL's FFI:
+   `acl2_snapshot(path)`, which writes `[0, __data_end)` and
+   `[__heap_base, sbrk(0))` (skipping the 1.5 GB stack region), and
+   `acl2_resume()`, which re-registers the GC stack bottom
+   (`GC_get_stack_base` + `GC_set_stackbottom`) and evaluates the resume
+   driver.
+2. Link with `-sINVOKE_RUN=0 -sEXPORTED_FUNCTIONS=_main,_acl2_resume
+   -sEXPORTED_RUNTIME_METHODS=HEAPU8,wasmMemory`.
+3. Build step: run the normal driver with `initialize-acl2`, then
+   `(acl2_snapshot "/opt/eclwasm/dist/acl2.snap")` from a hook placed where
+   `acl2-wasm.lsp` now calls `acl2-default-restart`, then `(ext:quit)`.
+   Stamp the file with the module hash and the ACL2 source hashes, as
+   `acl2-*1*-aot-file` does.
+4. Runtime: instantiate with `noInitialRun`, copy the snapshot into
+   `HEAPU8` (growing memory first if `brk` exceeded the initial size), call
+   `_acl2_resume`, which re-enters `acl2-default-restart`.
+5. Validate with the four `textbook/chap10` books and the `defun`/`thm`
+   smoke tests, then re-run `cert.pl -j 16`.
+
+Risks, in decreasing order: bdwgc may cache a stack bottom taken at snapshot
+time (fix in the resume shim, then force a `GC_gcollect`); open file
+descriptors and ECL streams are only sound if nothing is open at snapshot
+time (true immediately after initialization); snapshot size (measure
+`sbrk(0)`; expected a few hundred MB, and it must be rebuilt whenever
+`sources` or `ecl.wasm` change).
+
+**E2 -- a portable world image (fallback, also good for native ECL).**  Add
+`*acl2-saved-world-file*` to `initialize-acl2`: when the file is current,
+`serialize-read` the world and install it with the properties-only path from
+fact 2, then `update-wrld-structures`, `exit-boot-strap-mode`,
+`initialize-pc-acl2`, `f-put-ld-specials`, `check-acl2-initialization`.
+Expected wasm cost: ~10 s loading `.fasc` + ~4 s reading 21.7 MB + property
+installation (must be measured), versus 352 s.  It is portable, but
+`defattach`/`memoize`/`defttag` raw effects must be shown to be rebuilt by
+`load-acl2` + `update-wrld-structures` or replayed explicitly.
+
+#### Prototype: a world replay reaches the loop in 1.8 s (2026-11-05)
+
+Implemented in `interface-raw.lisp` behind a new `*world-image-replay*` flag:
+
+* `add-trip` installs only the world properties during a replay.  Its
+  `cltl-command` block (which re-runs events) is skipped: the compiled sources
+  plus the ahead-of-time `*1*` file already provide the code, and the live
+  world is stale while `extend-world1` is running, so re-evaluating definitions
+  there is both redundant and wrong (doing it produced a segfault, then a
+  wrong function cell for `defun-fn`).
+* `compile-uncompiled-*1*-defuns` takes part in the replay: it explores the
+  whole world instead of stopping at the `exit-boot-strap-mode` landmark, and
+  it writes counterparts for functions that do not have one yet (normally it
+  only rewrites counterparts that exist but are uncompiled).
+* The driver must (i) load `acl2-exec-aot.fas`, (ii) call `(memoize-init)`
+  (the boot-strap normally does that when it processes its `memoize` events),
+  and (iii) generate the missing counterparts oldest-first, evaluating each as
+  it is generated, because `oneify-cltl-code` itself needs counterparts such as
+  `let-mbe-guard-form` and `defun-fn`.
+
+Measured natively, image = 138,373 triples:
+
+| step | time |
+| --- | --- |
+| `load-acl2` | 0.75 s |
+| load `acl2-exec-aot.fas` | 0.02 s |
+| deserialize the world (21.7 MB) | 0.40 s |
+| install the properties (`set-w` replay) | 0.18 s |
+| generate 4,827 missing `*1*` counterparts | ~0.4 s |
+| **start to the first ACL2 prompt** | **1.78 s** |
+
+`initialize-acl2` is 5.4-6.5 s on the same machine, so this is already a 3x
+native win; the wasm win should be much larger because all of the boot-strap's
+analysis is skipped.  A `thm` proves in the replayed image and the world comes
+out right.
+
+Remaining defect: admitting a new `defun` breaks with "Fast alist discipline
+violated in HONS-GET" -- the hons/fast-alist bookkeeping that the boot-strap
+performs when it compresses the world's alists has not been redone for the
+deserialized world.  Next: find the re-registration the `include-book` path
+performs (or deserialize with hons mode `:always` and recompress the affected
+alists), then validate with `make -k -j 16 basic` before porting to wasm.
+
+#### Verification: not yet sound-equivalent (2026-11-05)
+
+Soundness comes first here, so the replay is held to ACL2's own checks rather
+than to "it can prove a theorem".
+
+Passing:
+
+* `(check-acl2-initialization)` returns NIL on the replayed world, i.e.
+  `check-built-in-constants`, `plist-worldp-with-formals`,
+  `check-state-globals-initialized`, `check-none-ideal`, `check-slashable`,
+  `check-some-builtins-for-executability` and `check-fp-signals` all succeed
+  (0.8 s).
+* `defun`, a ground call, and an inductive `thm` work in the loop.
+
+Failing (found by running the `devel-check` checks, after certifying
+`books/system/devel-check`):
+
+* Including an apply$ book fails on the replayed image but succeeds on the
+  normal one.  Isolated repro: `(include-book "projects/apply/base" :dir
+  :system)` gives
+  "ACL2 cannot ev the call of non-executable function :BADGE-USERFN-STRUCTURE"
+  / "The TABLE :guard for BADGE-TABLE on the key :BADGE-USERFN-STRUCTURE ...
+  could not be evaluated", from the `(table badge-table
+  :badge-userfn-structure ... :put)` event in
+  `books/projects/apply-model-2/apply.lisp`.
+* The base-world state compared identical in both images (`badge-table-guard`
+  is `:program` with a `*1*`, the `'table-guard` and `'table-alist` of
+  `badge-table` match), so the divergence is in the book-include machinery --
+  most plausibly the attachment (`defattach`) bookkeeping that the skipped
+  `cltl-command` block normally performs, since `*defattach-fns*` is empty
+  after a replay.  That is the next thing to chase.
+* `hons-get` falls back to `hons-assoc-equal` (the "Fast alist discipline"
+  warnings).  That fallback is correct, so it is a performance issue rather
+  than a soundness one: the faltable entries for the world's fast alists are
+  lost by serialization.  A normal image also has `slow-alist-warning` set to
+  `:break`, so the difference is that a normal image never encounters a slow
+  alist.
+
+Acceptance gate before this ships: `make devel-check` (chk-new-verified-guards
+and check-system-events) plus `make -k -j 16 basic` with the replay launcher,
+compared against the same run with `saved_acl2`.  The image must also be
+stamped with the source and host-Lisp hashes, like `acl2-exec-aot.stamp`, and
+ignored when stale.
+
+**E3 -- amortize startup over books (no new machinery).**  `certify-book!`
+certifies and then undoes a book, so one process can certify many books; a
+driver around it would pay 361 s per worker rather than per book.  Sound only
+for books whose side effects undo cleanly (packages cannot be reincarnated,
+`include-raw` persists, memory accumulates against the 4 GB limit), so
+validate on a book family first.
+
+**E0 -- measurements.**  *Done (2026-11-05); see the table above.*  One more
+is still worth having: the exact `sbrk(0)`/`__heap_base` difference in wasm,
+which is the snapshot size (the 720 MB RSS above includes node and the touched
+parts of the 1.5 GB stack).  `(room)` cannot supply it: ECL reports that it
+has no way to measure memory when linked against bdwgc.
+
+### Decision (2026-11-05): E2 first, E1 later
+
+The numbers above settle the choice:
+
+* **E2's cost is not the replay.**  The world round-trips in 0.4 s and is
+  reinstalled in 0.65 s natively, so in wasm the estimate is `load-acl2`
+  (10 s) + deserialize (~3 s) + replay (~5 s) = **18-20 s, against 361 s**
+  today.  The work is a bounded change in ACL2's world-install path, it is
+  testable natively in seconds, it gives native ECL an image as well
+  (5.3 s -> ~1.8 s), and the artifact is host-independent (ACL2's own
+  serializer format, so it works for any ECL and can be inspected).
+* **E1 is the only route to seconds**, and the probe plus the `cl_boot`
+  result show exactly what it needs -- but it is wasm-only, it leans on
+  Emscripten and bdwgc internals, and it buys a further 8-10x in per-process
+  startup over an 18-20 s figure that is already workable at `-j 16`.
+  Recommend keeping it as a later optimisation (the two layers compose).
+
+This is also the answer to "does ECL just need an image": for a *general*
+ECL image the answer is no (design, not maintenance), so the general solution
+that is actually reachable is the ACL2-level one (E2).
+
+### Revised for the browser target (2026-11-05)
+
+The goal is to run ACL2, and include certified books on demand, in a web
+browser.  That settles the E1/E2 order, because a snapshot is not something
+one can ship to a browser.  Delivery sizes measured today:
+
+| artifact | raw | gzipped |
+| --- | --- | --- |
+| ACL2 world image (`world.ser`) | 21.7 MB | 9.6 MB |
+| compiled ACL2 sources (`*.fasc` in the repo root) | 21 MB | -- |
+| `ecl.wasm` | 5.2 MB | -- |
+| wasm memory snapshot | at least the 323 MB native RSS of a live ACL2; ~720 MB resident in wasm | ~2.3x at best |
+
+So an E2 browser bundle is ~48 MB raw (split into world image, `.fasc`, wasm;
+~14 MB compressed and cacheable), while an E1 snapshot is hundreds of MB.
+E2 also takes `initialize-acl2` -- and therefore the `.lisp` sources -- out of
+the runtime path, which is what currently forces `-sSTACK_SIZE=1.5GB` and
+`-sINITIAL_MEMORY=2GB`.  Those can shrink to whatever proofs need, which
+matters because browsers and mobile devices do not happily reserve 2 GB of
+linear memory.  Measure how deep `ser-decode-from-stream` recurses first: it
+walks the 138k-triple list recursively.
+
+E1 stays on the shelf for a server-side or long-lived deployment, or for a
+browser revisit if the snapshot can be made small (heap-only dump plus
+compression).
+
+The browser also needs work that is independent of either startup route:
+
+* Filesystem: `-sNODERAWFS=1` must become MEMFS with a preloaded bundle, or a
+  fetch-backed `FS` layer, since a browser has no `fs` module.
+* Standard input: the ACL2 loop must read from a stream fed by the page
+  (`Module.stdin`/a custom TTY device), not from fd 0 of a terminal.
+* Books on demand: `include-book` needs the `.cert` and `.fasc` for the book
+  available at include time, so either preload them or add an asynchronous
+  fetch hook (ECL opens files synchronously, so this needs care).
+
+The interpreter levers (`--liftoff-only`, wasm64 for 62-bit fixnums) and a
+native wasm backend remain orthogonal multipliers; none of them removes the
+boot-strap, which is the 97% item.
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed
@@ -555,13 +867,14 @@ The realistic options are:
    cross compilation.
 5. **Remove the repeated `initialize-acl2` on wasm**, which is ~352 s of
    every ~361 s start.  The options and expected payoffs are in "Options for
-   cutting the ~361 s startup": a wasm memory snapshot (best), serializing
-   the world / an ECL image, batching books per process (`certify-book!`
-   undoes the book, so startup can be amortized), and the interpreter
-   levers.  Source AOT is already done; AOT of the `*1*` counterparts would
+   cutting the ~361 s startup"; the reasons for preferring a memory snapshot
+   over a world image, and the concrete design for both, are in "Avoiding the
+   boot-strap: research and the next experiment" above.  **Next action: E1,**
+   which is now known to be mechanically possible under Node without a WASI
+   port.  Source AOT is already done; AOT of the `*1*` counterparts would
    save only ~15 s.  For native ECL, image save is likewise the only way to
    remove the remaining ~5.4 s (serialization, an ECL image facility, or a
-   memory snapshot).
+   memory snapshot), and E2 would give that too.
 6. **Certify books under wasm at scale** (`cert.pl`).  Works for a handful of
    dependency-free books.  At ~375 s per book, `make -k -j 16 basic`
    (1,486 books) would take roughly 10 hours.  Cut the startup (item 5) or

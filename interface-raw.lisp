@@ -6797,11 +6797,11 @@
                do
                (install-for-add-trip-hcomp-build def reclassifying-p evalp)))
         (t
-         (assert evalp)
-         (loop for def in defs
-               do (with-debug (incf-pass2-def-time? (eval def))
-                              "[~s] Eval def for ~s.~%"
-                              'idfat-10 (cadr def))))))
+         (when evalp
+           (loop for def in defs
+                 do (with-debug (incf-pass2-def-time? (eval def))
+                                "[~s] Eval def for ~s.~%"
+                                'idfat-10 (cadr def)))))))
 
 (defun ifat-defparameter (name val form)
 
@@ -7044,6 +7044,16 @@
                (remhash fn *proclaim-dfs-ht*))
               (t nil))))))
 
+(defvar *world-image-replay* nil
+
+; When true we are installing a saved world -- a "world image" -- instead of
+; running the boot-strap, so the raw Lisp side is expected to come from the
+; already-loaded compiled sources rather than from the events being replayed.
+; Add-trip then installs definitions instead of requiring them to be present,
+; and a constant that is already bound keeps the value it was given when the
+; image was built.  See WASM-PORT-NOTES.md.
+  )
+
 (defun-one-output add-trip (world-name world-key trip status)
 
 ; Warning: If you change this function, consider making corresponding changes
@@ -7083,12 +7093,22 @@
 ; symbol-function or symbol-value cell of the appropriate name, first
 ; saving the old value (form) on the undo-stack.
 
+; When installing a saved world (see *world-image-replay*), this is skipped:
+; the definitions, packages, attachments and so on were all installed by the
+; loaded compiled sources plus the ahead-of-time file of *1* definitions, and
+; the live world is stale while the replay is in progress, so re-executing the
+; events here would be both redundant and wrong.  Only the world properties are
+; installed, which is what a world image is.
+
   (when (and (eq world-name 'current-acl2-world)
+             (not *world-image-replay*)
              (eq (car trip) 'cltl-command)
              (eq (cadr trip) 'global-value)
              (consp (cddr trip)))
     (let* ((wrld (w *the-live-state*))
-           (boot-strap-flg (f-get-global 'boot-strap-flg *the-live-state*))
+           (boot-strap-flg (and (not *world-image-replay*)
+                                (f-get-global 'boot-strap-flg
+                                              *the-live-state*)))
            (cltl-cmd (cddr trip)))
       (case (car cltl-cmd)
         (defuns
@@ -7160,7 +7180,27 @@
 
              (dolist
                (def (cdddr cltl-cmd))
-               (cond ((and boot-strap-flg
+               (cond ((and *world-image-replay*
+                           (equal *main-lisp-package-name*
+                                  (symbol-package-name (car def))))
+
+; The compiled sources already define this function, and Common Lisp does not
+; allow a function in the main Lisp package to be redefined, so install only
+; its *1* definition -- exactly what the first boot-strap pass does above.
+
+                      (unless (member-eq (car def)
+                                         `(mv-list return-last wormhole-eval
+                                                   ,@*df-primitives*
+                                                   ,@*defun-overrides*))
+                        (setq new-*1*-defs
+                              (cons (list* 'oneify-cltl-code
+                                           defun-mode
+                                           def
+                                           (if (consp ignorep)
+                                               (cdr ignorep)
+                                             nil))
+                                    new-*1*-defs))))
+                     ((and boot-strap-flg
                            (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
@@ -7260,8 +7300,17 @@
             (install-defs-for-add-trip new-defs
                                        (eq ignorep 'reclassifying)
                                        wrld
-                                       (not boot-strap-flg)
-                                       t)
+                                       (and (not boot-strap-flg)
+                                            (not *world-image-replay*))
+
+; During a world-image replay the definitions, including their *1*
+; counterparts, are already installed by the loaded compiled sources and the
+; ahead-of-time file.  Moreover the live world is stale while the replay is
+; in progress, so evaluating definitions here -- in particular oneifying them,
+; which consults the world -- would produce the wrong code.  So only the world
+; bookkeeping is done.
+
+                                       (not *world-image-replay*))
             (cond ((not (eq (f-get-global 'compiler-enabled *the-live-state*)
                             t))
 ; Then skip compilation.
@@ -7544,7 +7593,22 @@
 
 ; Note: cltl-cmd here is (defconst var form val).
 
-          (cond (boot-strap-flg
+          (cond ((and *world-image-replay*
+                      (boundp (cadr cltl-cmd)))
+
+; The value of this constant was computed by the boot-strap when the image was
+; built and is already bound by the loaded compiled sources.  Record the
+; discriminator as the boot-strap does, rather than recomputing the value or
+; rejecting the definition.
+
+                 (or (get (cadr cltl-cmd)
+                          'redundant-raw-lisp-discriminator)
+                     (setf (get (cadr cltl-cmd)
+                                'redundant-raw-lisp-discriminator)
+                           (list* 'defconst
+                                  (caddr cltl-cmd) ; form
+                                  (cadddr cltl-cmd)))))
+                (boot-strap-flg
                  (or (boundp (cadr cltl-cmd))
                      (interface-er "~x0 is not boundp!"
                                    (cadr cltl-cmd)))
@@ -7587,7 +7651,15 @@
                     (setf (cdr status)
                           'maybe-push-undo-stack-completed)))))
         (defmacro
-            (cond ((and boot-strap-flg
+            (cond ((and *world-image-replay*
+                        (equal *main-lisp-package-name*
+                               (symbol-package-name (cadr cltl-cmd))))
+
+; Already defined by the loaded compiled sources, and Common Lisp does not
+; allow a macro in the main Lisp package to be redefined; nothing to do.
+
+                   nil)
+                  ((and boot-strap-flg
                         (not (global-val 'boot-strap-pass-2 wrld)))
 
 ; During the first pass of initialization, we insist that every function
@@ -11456,8 +11528,11 @@ such that feature :acl2-loop-only is true."))
                                          (current-package state))
                                    chan state))
                    (t state))
-             (dolist (trip wrld)
+             (dolist (trip (if *world-image-replay*
+                               (reverse wrld) ; oldest first, as in the boot-strap
+                             wrld))
                (cond ((and (eq fns :some)
+                           (not *world-image-replay*)
                            (eq (car trip) 'command-landmark)
                            (eq (cadr trip) 'global-value)
                            (equal (access-command-tuple-form (cddr trip))
@@ -11482,7 +11557,10 @@ such that feature :acl2-loop-only is true."))
                                               ,@*defun-overrides*)))
                           (let ((*1*fn (*1*-symbol (car x))))
                             (cond
-                             ((and (fboundp *1*fn)
+                             ((and (or (fboundp *1*fn)
+                                       (and *world-image-replay*
+                                            (eq fns :some)
+                                            not-boot-strap-p))
                                    (cond
                                     ((eq fns :some)
                                      (and (not (gethash (car x) seen))
@@ -11504,8 +11582,9 @@ such that feature :acl2-loop-only is true."))
 ; add-trip.
 
                                           (if not-boot-strap-p
-                                              (not (compiled-function-p!
-                                                    *1*fn))
+                                              (or (not (fboundp *1*fn))
+                                                  (not (compiled-function-p!
+                                                        *1*fn)))
 
 ; We have noticed about a corresponding 0.6% to 1.2% slowdown in the regression
 ; suite when we avoid compiling :program mode *1* functions for GCL during the
