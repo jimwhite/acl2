@@ -507,7 +507,13 @@ start-up (~7 minutes) before the first book, and the dependency scan that
 follows walks all 1,486 books.  Each book then costs ~6 minutes, ~5.9 of them
 boot-strap.
 
-Expected cost at `-j 16`: 1,486 books x ~6 min / 16 = ~9-10 hours, i.e.
+Checked end to end through `make` on `textbook/chap10/fact`: features run
+under the wasm ACL2 report `ACL2_COMP_EXT := fasc`, `ACL2_HOST_LISP := ECL`
+and "Ignoring USE_QUICKLISP=1 since Quicklisp does not work on ECL", the scan
+takes 7 s, and the book gives
+`Built .../fact.cert (351.150s)` with a `.fasc` next to it.
+
+Expected cost at `-j 16`: 1,486 books x ~5.9 min / 16 = ~9 hours, i.e.
 overnight.  At `-j 8` it is about twice that.  `cert.pl`'s `.cert` files make
 the run resumable with the same command minus `CLEAN=1`, which is why the
 script does not clean by default.
