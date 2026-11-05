@@ -1,20 +1,27 @@
 # Porting ACL2 to ECL: implementation notes
 
-Last updated: 2026-11-04
+Last updated: 2026-11-05
 Branch: `ecl` in the ACL2 repository
 Host Lisp: patched ECL 26.5.5 (`/opt/ecl-26.5.5/bin/ecl`)
 Platform: Ubuntu 26.04, aarch64, 16 cores
 
 ## Status
 
-Done (as of 2026-11-04, commit `2d307edf78` on `origin/ecl`):
+Done (as of 2026-11-05):
 
 - Patched ECL 26.5.5 built and installed at `/opt/ecl-26.5.5` (bytecode
   operand widening; see `ECL-MR.md`).
-- `make compile LISP=/opt/ecl-26.5.5/bin/ecl` and
-  `make init LISP=/opt/ecl-26.5.5/bin/ecl` succeed.
-- `./saved_acl2` starts ACL2 (~19 s), evaluates forms, admits recursive
-  `defun`s, proves `defthm`s, and certifies books.
+- `make compile LISP=/opt/ecl-26.5.5/bin/ecl` (~2m40s) and
+  `make init LISP=/opt/ecl-26.5.5/bin/ecl` (~8 s) succeed.
+- `./saved_acl2` starts ACL2 in **~6.5 s** (was ~17 s; see
+  "Where `initialize-acl2` spends its time"), evaluates forms, admits
+  recursive `defun`s, proves `defthm`s, and certifies books.
+- `initialize-acl2` no longer runs the irrelevant-formals check during the
+  boot-strap, which was two thirds of the startup cost. Details and the
+  measurement method are below; the profiler is `ecl-tools/init-profile.lsp`.
+- The WebAssembly experiment was merged in (see `WASM-PORT-NOTES.md`); its
+  ACL2 source changes are guarded by `:emscripten` and do not affect native
+  ECL.
 - Startup output is quiet (~1.5 KB instead of ~1.23 MB).
 - Full `make -k -j 16 basic` on a clean tree: **1486 certificates, 0
   failures, ~48 minutes** on 16 cores.
@@ -30,7 +37,10 @@ Not done yet:
 - Upstream ACL2 submission: the patches work but are not yet in a form the
   ACL2 maintainers are likely to accept as-is (see “What’s left”).
 - Caching or avoiding `initialize-acl2` on every startup (see below for why
-  this is hard).
+  this is hard). It is now 5.7 s rather than 17.6 s, so this is much less
+  pressing.
+- Ahead-of-time compilation of the `*1*` functions (1.26 s of the startup,
+  and a faster prover; see `WASM-PORT-NOTES.md` for the design).
 
 ## What's left
 
@@ -85,9 +95,18 @@ touch generic code paths and need review:
 
 ### 3. Startup and performance
 
-- `initialize-acl2` is ~17.6 s of the ~19 s startup. Without an ECL image
-  dump, caching would have to serialize the world and reload compiled `*1*`
-  functions; see "Why startup is not cached".
+Startup is 6.5 s, of which `initialize-acl2` is 5.7–6.3 s. The measured
+breakdown is in "Where `initialize-acl2` spends its time" below: 2.0 s for the
+first pass over the sources, 1.4 s for the second pass, and 1.26 s for the
+single `(comp-fn :exec ...)` that ends the boot-strap. The two remaining
+levers are therefore:
+
+- Ahead-of-time compilation of the `*1*` functions (as proposed in
+  `WASM-PORT-NOTES.md`). It would remove ~1.2 s of startup — the write,
+  compile and load of TMP1.lisp — and it also makes the prover native, since
+  the prover core is bytecoded today (see that document).
+- An image, which removes all of the boot-strap.
+
 - Re-measure proof performance with `ext:use-direct-C-call` disabled for book
   files, and decide whether a narrower fix is worth the engineering.
 - Consider benchmarking ACL2 on ECL against CCL/SBCL on the same books to know
@@ -123,8 +142,8 @@ Build ACL2:
 ```sh
 cd /workspaces/acl2-ecl
 make clean-all
-make compile LISP=/opt/ecl-26.5.5/bin/ecl
-make init    LISP=/opt/ecl-26.5.5/bin/ecl
+make compile LISP=/opt/ecl-26.5.5/bin/ecl   # ~2 min 40 s on 16 cores
+make init    LISP=/opt/ecl-26.5.5/bin/ecl   # ~8 s
 ```
 
 Run:
@@ -232,7 +251,7 @@ corresponding `*1*` functions are compiled code that must be loaded or rebuilt.
 ACL2(h)'s serializer can persist a hons space and parts of the world, but it
 does not persist compiled Lisp functions, and the bootstrap would still have to
 process the source events. The practical mitigation is parallelism: each book
-pays ~19 s of startup, but `cert.pl -j N` hides it behind useful work.
+pays ~6.5 s of startup, but `cert.pl -j N` hides it behind useful work.
 
 
 - ECL package locking:
@@ -468,15 +487,94 @@ minutes. The books that failed before the fixes above are now certified:
 
 ## Measurements
 
-- ACL2 startup from `saved_acl2`: ~19 s, split roughly as: `load "init.lisp"`
-  ~0.1 s, `load-acl2` ~0.7 s, `initialize-acl2` ~17.6 s. Almost all of the
-  time is world construction during `initialize-acl2`; caching compiled `*1*`
-  functions would not remove it, and ECL cannot dump the resulting image.
+Environment as above, one process at a time, with initialization output
+suppressed as in `saved_acl2`.
+
+- ACL2 startup from `saved_acl2` to the first prompt: **6.4–6.8 s** (three
+  runs), of which `load "init.lisp"` is ~0.1 s, `load-acl2` ~0.7 s, and
+  `initialize-acl2` 5.7–6.3 s. Before the boot-strap change described below,
+  the same measurement was 16.8–17.4 s.
+- Certifying a trivial book (three `defthm`s, no dependencies) takes
+  6.7–6.8 s, essentially the startup alone; it was 16.7–17.0 s before.
 - Bytecode functions in the built ACL2 image: 6,772.
 - Bytecode array memory with 32-bit slots: ~6.95 MB; with 16-bit slots:
   ~3.47 MB (estimated by halving the vector lengths).
 - `std/lists/append.cert` fresh dependency chain with `-j 8`: ~227 s.
-- Simple `cert.pl` book with no dependencies: ~27 s.
+- Simple `cert.pl` book with no dependencies: ~27 s before the boot-strap
+  change (expect ~15 s now; not re-measured).
+
+### Where `initialize-acl2` spends its time
+
+Measured with `ecl-tools/init-profile.lsp` (see "Profiling initialization"),
+which wraps `ld-fn` and the two `compile-uncompiled-*` functions from outside
+and accumulates seconds and call counts by label.
+
+| phase | before | after |
+| --- | --- | --- |
+| pass 1: `ld` of the 82 system source files | 11.8 s | 2.0 s |
+| pass 2: `ld` of the pass-2 forms | 1.4 s | 1.4 s |
+| `(comp-fn :exec ...)`: write, compile, load the `*1*` definitions | 1.35 s | 1.26 s |
+| outside those `ld` calls | 0.7 s | 1.1 s |
+| **`initialize-acl2` total** | **15.3 s** | **5.8 s** |
+
+The `*1*` step writes about 1,600 definitions (a 1.5 MB `TMP1.lisp`), which
+takes ~0.2 s, compiles them with the bytecodes compiler in ~1.0 s, and loads
+them in ~0.05 s. So compiling the executable counterparts was never the main
+cost of the boot-strap: there are fewer of them than the "~8,600" estimated
+earlier, and bytecode compilation of small functions is fast (about 0.6 ms
+each on average here).
+
+Most of the old pass-1 cost was ACL2's own analysis of each `defun` event.
+Sampling the running process with `gdb` (`bt 45`, 374 samples at ~0.2 s
+intervals) put at least a third of the samples inside `chk-irrelevant-formals`
+(much of the remainder was `ecl_equal` recursion on its clique-alists, which
+the 45-frame backtrace did not always reach past). The check closes a
+clique-alist by iterating `relevant-posns-clique-recur`, which uses
+`assoc-equal` on the growing clique-alist on every round, so its cost is
+super-linear in the size of the clique. The rest of the pass-1 time was
+`translate11`, `type-set-and-returned-formals`/`normalize`, the reader, and
+about 10% in ECL's bytecode compiler.
+
+### The boot-strap no longer checks irrelevant formals
+
+`chk-irrelevant-formals` (`defuns.lisp`) now returns immediately when
+`boot-strap-flg` is set, mirroring the existing skip of
+`chk-badged-quoted-subfunctions` in the same routine. The check is a
+user-interface aid for catching typos, not a soundness check, and the system
+sources are known to be free of irrelevant formals. It still applies to user
+code in the loop: `(set-ignore-ok t)` followed by `(defun f2 (x y) x)` still
+reports "The second formal of F2, Y, is irrelevant...". Delete the new `cond`
+branch to check the system sources again.
+
+This is not ECL-specific, so it should speed up the build on any host. It is
+worth more on ECL than elsewhere because every ACL2 invocation (each book
+certified by `cert.pl`, for example) pays for the boot-strap.
+
+### Profiling initialization
+
+`ecl-tools/init-profile.lsp` reproduces what `nsaved_acl2.lsp` does — load
+`init.lisp`, load the compiled sources, install the bytecodes compiler — and
+then calls `initialize-acl2` with timers installed:
+
+```sh
+/opt/ecl-26.5.5/bin/ecl -norc -load ecl-tools/init-profile.lsp
+```
+
+It writes `ecl-init-profile.txt` with one line per label: total seconds, call
+count, label. `ACL2_INIT_PROFILE_KEEP_TMP=1` keeps the generated `TMP*.lisp`
+and compiled files, and `ACL2_INIT_PROFILE_VERBOSE=1` lets initialization print
+normally instead of through a broadcast stream.
+
+The timers go on `ld-fn`, `compile-uncompiled-defuns` and
+`compile-uncompiled-*1*-defuns` because each of those is called from a
+different file than the one that defines it; such calls go through the
+symbol's function cell and can therefore be replaced at run time. Calls to
+`compile`/`compile-file`/`eval` are mostly *direct* C calls, or internal to the
+evaluator, and so are invisible to symbol wrapping — that is why the earlier
+attempt to time `compile` captured only a small fraction of the work. To look
+inside that code, attach a debugger to the running process and sample stacks;
+`gdb -p $pid -batch -ex "bt 45"` in a loop is enough, and 374 samples were
+sufficient to identify the hot path.
 
 ## Useful debugging commands
 
@@ -520,6 +618,9 @@ ACL2 repository, branch `ecl` (pushed to `origin/ecl` at `2d307edf78`):
 | `cb4794f92a`, `48d69940f5` | Startup timing and rationale for not caching it |
 | `9937f90c96` | Frame stack, status-file race, `include-raw`/direct-call fixes, `setenv$`, Quicklisp skip |
 | `757ec5f2ee`, `2d307edf78` | Documentation of the book-build fixes and the clean `basic` result |
+| `a0da110269` | Merge of the WebAssembly experiment (`WASM-PORT-NOTES.md`, `wasm/`); its ACL2 source changes are `:emscripten`-only |
+| `13e73966e5` | `ecl-tools/init-profile.lsp`: timing profile of `initialize-acl2` |
+| `6baeefb5b4` | Skip `chk-irrelevant-formals` during the boot-strap: startup 17 s to 6.5 s |
 
 ECL fork (`jimwhite/ecl`):
 
@@ -530,7 +631,7 @@ ECL fork (`jimwhite/ecl`):
 
 ## Resuming
 
-Current environment (as of 2026-11-04):
+Current environment (as of 2026-11-05):
 
 - Patched ECL installed at `/opt/ecl-26.5.5`; `/usr/bin/ecl` is the stock
   24.5.10 and must not be used for ACL2.

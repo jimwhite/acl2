@@ -1,8 +1,8 @@
 # Porting ACL2 to WebAssembly
 
-Last updated: 2026-11-04
-Branch: `ecl-wasm` (based on `ecl`, which contains the native ECL port; see
-`ECL-PORT-NOTES.md`)
+Last updated: 2026-11-05
+Branch: `ecl` (this document describes the `ecl-wasm` work, now merged into
+`ecl`; the native ECL port is in `ECL-PORT-NOTES.md`)
 
 This document describes running ACL2 on ECL compiled to WebAssembly with
 Emscripten, and running the result under Node.js. It is a work log: several
@@ -17,7 +17,7 @@ and some may be lifted by upstream work.
 | ECL wasm under Node.js (real filesystem) | works |
 | ECL wasm under Wasmtime | starts, aborts: the standalone Emscripten runtime has no `getcwd`/filesystem (see below) |
 | ACL2 `compile-acl2` in wasm (82 source files to `.fasc`) | works, ~1 minute |
-| ACL2 `initialize-acl2` in wasm | works, ~7 minutes |
+| ACL2 `initialize-acl2` in wasm | works, ~7 minutes (measured before the boot-strap fix of 2026-11-05; see "Next steps") |
 | `defun`, `thm`, induction proofs in the ACL2 loop | works |
 | Book certification (`cert.pl`) in wasm | not tried yet |
 | Browser (no Node) | not started (needs a filesystem layer and a way to feed the loop) |
@@ -217,22 +217,40 @@ available, which isolates the factor:
 So bytecode-only costs **7.3x**, and wasm on top of bytecode costs **3.5x**.
 Raw event processing (the sum of ACL2's own per-event `Time:` lines) is 1.0 s,
 18.9 s and 70.6 s respectively, i.e. only about 6% of init is proving or guard
-checking; the rest is bootstrap mechanics (LD of the sources, and compiling
-and installing the `*1*` definitions).
+checking.
+
+An earlier revision of this section attributed the remaining 15 s of the
+native row to "compiling and installing the `*1*` definitions". That is wrong,
+and it mattered: a source-level profile of `initialize-acl2` on native ECL
+(see `ECL-PORT-NOTES.md`, "Where `initialize-acl2` spends its time") shows
+that the single `(comp-fn :exec ...)` step at the end of the boot-strap, which
+regenerates, compiles and loads the `*1*` definitions, is only 1.35 s of
+15.3 s. Most of the rest was ACL2's own analysis of every `defun` event, in
+particular the irrelevant-formals check, which is super-linear in the size of
+a clique; skipping that check during the boot-strap took native startup from
+17 s to 6.5 s. In the wasm build those same analysis functions run as
+bytecode, so a good part of the 7.3x is spent there, and the skip should help
+wasm at least as much as it helps native ECL. This has not been re-measured
+in wasm yet.
 
 ### The standard ECL build runs ACL2's executable counterparts as bytecode
 
 `acl2-init.lisp` installs the bytecodes compiler around `(eval mode)` and then
-restores the C compiler, because compiling ~8600 `*1*` functions with ECL's C
-compiler on every start would take far too long. The consequence is visible in
+restores the C compiler, because compiling the `*1*` functions with ECL's C
+compiler on every start would take far too long. (The boot-strap's `TMP1.lisp`
+holds about 1,600 of them -- the logic-mode ones -- and the image ends up with
+about 6,800 bytecode functions, the remainder being compiled one at a time as
+events are admitted.) The consequence is visible in
 the released build: `(si::bc-split (symbol-function 'ACL2_*1*_ACL2::REWRITE))`
 returns a bytecode vector, and so does `EV-FNCALL`. In other words the prover
 core of ACL2-on-ECL is bytecoded, which is worth remembering when comparing
 prover speed with SBCL or CCL (where those functions are native).
 
 Compiling those functions ahead of time therefore has two payoffs on native
-ECL -- faster startup and a faster prover -- and the same change ported to
-wasm would replace bytecode with wasm code.
+ECL -- a faster prover, and about 1.2 s of the 5.7 s that `initialize-acl2`
+now takes -- and the same change ported to wasm would replace bytecode with
+wasm code. It is no longer the lever for *startup*; the boot-strap analysis
+was.
 
 The second factor is how ECL's bytecode interpreter behaves in wasm. It is not
 that wasm is slow: a plain C `fib` compiled with emcc is within 1.5-2x of gcc,
@@ -295,28 +313,37 @@ module. Node is used instead for this first pass.
 
 ## Next steps
 
-1. **Split init properly, on native ECL.** Only ~6% of init is ACL2 event
-   processing; the rest is bootstrap mechanics, but that bucket is not yet
-   broken down. Instrument `ld.lisp` at the source level (raw-Lisp-only
-   timers) to separate LD/evaluation, compilation of raw definitions,
-   compilation of `*1*` definitions, and world construction. Note that
-   wrapping `compile`/`compile-file` at run time does *not* work: ECL compiles
-   calls to those functions into direct C calls, so the wrappers only see a
-   fraction of the calls.
-2. **Prototype ahead-of-time compilation of the `*1*` functions on native
-   ECL.** Capture the forms that `compile-uncompiled-*1*-defuns` compiles
+1. **Split init properly, on native ECL.** *Done.* The tool is
+   `ecl-tools/init-profile.lsp`, and the numbers are in `ECL-PORT-NOTES.md`
+   ("Where `initialize-acl2` spends its time"): of the 15.3 s, 11.8 s was the
+   first pass over the sources, 1.4 s the second pass, 1.35 s the `*1*`
+   compile step, and the rest overhead. Two thirds of the first pass turned
+   out to be `chk-irrelevant-formals`, which ACL2 now skips during the
+   boot-strap, taking startup from 17 s to 6.5 s. Wrapping
+   `compile`/`compile-file` does not work (they are called directly in
+   compiled code, or inside ECL's evaluator); wrapping `ld-fn` and the
+   `compile-uncompiled-*` functions does, and `gdb` stack sampling fills in
+   what neither sees.
+2. **Re-measure initialization in wasm with the boot-strap fix.** The
+   irrelevant-formals check is bytecode there, so it should account for a
+   larger share of the 413 s than it did natively. Rebuild the wasm ECL,
+   re-run `compile-acl2` and time `initialize-acl2` before deciding anything
+   else; this is the cheapest remaining experiment and it may make the wasm
+   startup acceptable without any of the machinery below.
+3. **Prototype ahead-of-time compilation of the `*1*` functions on native
+   ECL.** Still worth doing, but no longer as a startup fix: it is now worth
+   ~1.2 s of the 5.7 s, and a native prover core (the prover is bytecode
+   today). Capture the forms that `compile-uncompiled-*1*-defuns` compiles
    during a build run, ship them as compiled code, and have `comp-fn` install
-   them instead of compiling. This is expected to help twice on native ECL
-   (startup and prover speed, since the prover core is currently bytecoded)
-   and to be the same design that makes wasm fast, where ECL's cross
-   compilation can target wasm objects instead of the host C compiler.
-3. Only after (1) and (2) decide about image save. If world construction is
-   the residual cost, the options are ACL2-level serialization of the world
-   (data only, no code pointers), an image facility in ECL, or a wasm memory
-   snapshot (Wizer-style preinitialization). Each has a different platform
-   payoff; the split decides which is worth building.
-4. Certify books under wasm (`cert.pl`) once startup is acceptable.
-5. Wasmtime/WASI: blocked on ECL (see above).
-6. Upstream: the two ECL patches and the ACL2 `:emscripten` branches are small
-   and self-contained; the `-O0` override in ECL's configure is worth
-   revisiting upstream.
+   them instead of compiling. The same design would let wasm ship wasm code
+   produced by ECL's cross compilation.
+4. Image save is now the only way to remove the remaining ~5.7 s. The options
+   are ACL2-level serialization of the world (data only, no code pointers), an
+   image facility in ECL, or a wasm memory snapshot (Wizer-style
+   preinitialization). Each has a different platform payoff.
+5. Certify books under wasm (`cert.pl`) once startup is acceptable.
+6. Wasmtime/WASI: blocked on ECL (see above).
+7. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
+   boot-strap skip of the irrelevant-formals check (which helps every host)
+   are small and self-contained; the `-O0` override in ECL's configure is
+   worth revisiting upstream.
