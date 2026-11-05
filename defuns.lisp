@@ -8245,6 +8245,21 @@
          (cdr (assoc-eq :irrelevant-formals-ok
                         (table-alist 'acl2-defaults-table (w state))))))
     (cond
+     ((global-val 'boot-strap-flg (w state))
+
+; Skip this check while building ACL2.  Irrelevant formals are a
+; user-interface aid for catching typos, not a soundness check, and the
+; sources are known to be free of them; the caller, chk-acceptable-defuns,
+; skips chk-badged-quoted-subfunctions during the boot-strap for the same
+; reason.  This matters because the check is expensive: it closes a
+; clique-alist by iterating relevant-posns-clique-recur, using assoc-equal
+; on the growing clique-alist each round, so it is super-linear in the size
+; of the clique.  Measured on ECL (see ECL-PORT-NOTES.md), skipping it
+; during the boot-strap takes initialize-acl2 from 15.3 s to 5.7 s, i.e.
+; it is most of the cost of the boot-strap.  To check the system sources
+; anyway, delete this branch (or call chk-irrelevant-formals-msg directly).
+
+      (value nil))
      ((or (eq irrelevant-formals-ok t)
           (and (eq irrelevant-formals-ok :warn)
                (warning-disabled-p "Irrelevant-formals")))
