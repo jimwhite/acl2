@@ -28,8 +28,14 @@ Done (as of 2026-11-05):
   ACL2 source changes are guarded by `:emscripten` and do not affect native
   ECL.
 - Startup output is quiet (~1.5 KB instead of ~1.23 MB).
-- Full `make -k -j 16 basic` on a clean tree: **1486 certificates, 0
-  failures, ~48 minutes** on 16 cores.
+- Full `make -k -j 16 basic` on a clean tree (all book artifacts deleted,
+  1486 books): **1486 certificates, 0 failures, 23 min 8 s** (1385 s) on
+  2026-11-05, against ~48 minutes for the same suite on 2026-11-04, before the
+  boot-strap and ahead-of-time changes. One book,
+  `std/strings/char-kinds`, failed on the first pass with `Cannot open
+  "acl2-status.txt"` during initialization -- a transient of the parallel run,
+  not a proof failure -- and re-running the suite certified it and the three
+  books that depend on it in 38 s.
 - Earlier dependency-chain checks: `std/lists/append.cert`,
   `textbook/chap10/fact.cert`, `misc/records0.cert`, and parallel `cert.pl
   -j 8` runs.
@@ -255,7 +261,7 @@ corresponding `*1*` functions are compiled code that must be loaded or rebuilt.
 ACL2(h)'s serializer can persist a hons space and parts of the world, but it
 does not persist compiled Lisp functions, and the bootstrap would still have to
 process the source events. The practical mitigation is parallelism: each book
-pays ~6.5 s of startup, but `cert.pl -j N` hides it behind useful work.
+pays ~5.3 s of startup, but `cert.pl -j N` hides it behind useful work.
 
 
 - ECL package locking:
@@ -552,7 +558,11 @@ branch to check the system sources again.
 
 This is not ECL-specific, so it should speed up the build on any host. It is
 worth more on ECL than elsewhere because every ACL2 invocation (each book
-certified by `cert.pl`, for example) pays for the boot-strap.
+certified by `cert.pl`, for example) pays for the boot-strap: re-certifying
+all 1486 books took 23 min instead of 48, and 1486 invocations times the
+~13.7 s saved divided by 16 cores accounts for essentially all of the
+difference. The before figure is not available for the ahead-of-time file
+separately, since it landed in the same working tree.
 
 ### Ahead-of-time compilation of the executable counterparts (prototype)
 
