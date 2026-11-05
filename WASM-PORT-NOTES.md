@@ -19,7 +19,7 @@ and some may be lifted by upstream work.
 | ACL2 `compile-acl2` in wasm (82 source files to `.fasc`) | works, ~1 minute |
 | ACL2 `initialize-acl2` in wasm | works, 352 s with the boot-strap fix of 2026-11-05 (382 s without) |
 | `defun`, `thm`, induction proofs in the ACL2 loop | works |
-| Book certification (`cert.pl`) in wasm | not working yet: `certify-book` passes steps 1-4 and fails in step 5 (compiling the book) with "The variable PROGN is unbound" |
+| Book certification (`cert.pl`) in wasm | works (2026-11-05): four dependency-free books certified, 375-384 s per book at `-j 4`, of which ~361 s is startup |
 | Browser (no Node) | not started (needs a filesystem layer and a way to feed the loop) |
 
 Startup is slow because ECL cannot dump an image: every start loads the
@@ -284,7 +284,8 @@ compiles into direct C calls. Timed in wasm:
 
 The same wrappers in the native build timed `defun-fn` at 6,699 calls and
 1.313 s inclusive, and `install-event` at 0.650 s, so these are 98x and 50x
-slower in wasm -- again far beyond the interpreter factor. (`chk-acceptable-defuns1`
+slower in wasm.  The next subsection shows that this decomposes into two
+interpreter factors. (`chk-acceptable-defuns1`
 and `type-set-and-returned-formals` do not show up natively: they are called
 from within `defuns.lisp`, so a native build turns those calls into direct C
 calls and the wrapper never sees them.) Note that the inclusive times nest and
@@ -292,11 +293,35 @@ must not be added.
 
 So pass 2 is the admission of each `defun` event, and inside that the type-set
 computation in `chk-acceptable-defuns1` (`type-set-and-returned-formals` is
-called about nine times per defun) dominates. The next experiment should
-compare one type-set computation across the two builds -- a handful of
-`defun` admissions, timed on both sides -- to decide whether this is simply
-the interpreter on list-heavy code or something else (bignum arithmetic from
-30-bit fixnums, GC) that a fix could remove.
+called about nine times per defun) dominates.
+
+### Measured: the 98x decomposes into two interpreter factors
+
+The same timers in a *native bytecodes-only* build (the tree described in
+"Certifying books in wasm") separate the two multipliers:
+
+| | native C | native bytecodes | wasm bytecodes |
+| --- | --- | --- | --- |
+| `initialize-acl2` | 5.8 s | 40.0 s | 352 s |
+| `defun-fn` (6,699 calls) | 1.313 s | 16.6 s | 129.0 s |
+| `chk-acceptable-defuns1` (7,273 calls) | -- | 9.68 s | 72.4 s |
+
+native C to native bytecodes is ~12.6x and native bytecodes to wasm is ~7.8x;
+12.6 x 7.8 = 98x.  Nothing size-dependent appears that would point at bignum
+arithmetic or GC: the wasm-on-bytecode factor stays in the same 6-8x band for
+real book proofs:
+
+| book | native C | native bytecodes | wasm bytecodes |
+| --- | --- | --- | --- |
+| `fact` | 0.16 s (prove 0.01) | 0.09 s (0.03) | 0.66 s (0.42) |
+| `insertion-sort` | 0.27 s (0.02) | 0.38 s (0.20) | 1.59 s (1.20) |
+| `tree` | 0.30 s (0.05) | 0.93 s (0.63) | 5.92 s (5.21) |
+| `adder` | 0.39 s (0.06) | 0.77 s (0.56) | 4.94 s (4.21) |
+
+So the dominant fixed cost is that the wasm build has no native compiler and
+the prover itself is bytecode; wasm's own interpreter adds the expected
+factor on top.  Making this better needs either a native backend for wasm or
+the interpreter improvements listed in "Where the 24x slowdown comes from".
 
 ### The standard ECL build runs ACL2's executable counterparts as bytecode
 
@@ -383,47 +408,80 @@ A Wasmtime build therefore needs either a WASI port of ECL (the ECL author
 describes WASI as still in progress) or a real filesystem layer inside the
 module. Node is used instead for this first pass.
 
-## Blocking: certifying books in wasm
+## Certifying books in wasm (fixed 2026-11-05)
 
-`(certify-book "test" 0)` on a three-`defthm` book under `wasm/acl2-wasm`
-takes 371 s (essentially all initialization) and fails at step 5, "compile the
-functions defined in the book":
+Until 2026-11-05, `certify-book` passed steps 1-4 and failed at step 5
+("compile the functions defined in the book") with
 
 ```
 An error occurred during initialization:
 The variable PROGN is unbound.
 ```
 
-Steps 1-4 succeed -- the events are admitted, the guard warning is printed,
-and `test.cert.temp` is written -- but no `.cert` and no compiled book file
-appear, and the process still exits 0.  Until this is fixed no book can be
-certified under wasm, so it comes before everything else on this track.
+`test.cert.temp` was written, no `.cert` or compiled book file appeared, and
+the process still exited 0.
 
-A native reproduction has to install the bytecodes compiler *before*
-`init.lisp`, because that is where `*compiled-file-extension*` is computed
-(`(pathname-type (compile-file-pathname "foo.lisp"))` in `acl2.lisp`).  Two
-traps found the hard way:
+Cause: the ECL branch of `acl2-compile-file` (`interface-raw.lisp`) was a
+COND clause written as `#+ecl (progn ...)` when commit 9937f90c96 replaced the
+original `(t (compile-file ...))` clause.  A COND clause `(progn ...)` has the
+symbol PROGN as its *test* and the other forms as its body, so the test reads
+PROGN as a variable.  ECL's C compiler tolerates that -- it only warns
+`Variable PROGN was undefined. Compiler assumes it is a global.` and
+evaluates the body -- which is why the native build certified books.  The
+bytecodes compiler and the interpreter follow ANSI and signal an unbound
+variable.  The fix keeps the clause well formed: `(t (progn ...))`, and
+`(t (compile-file ...))` for the other-host clause.
+
+A reproduction that does not need wasm is a *native bytecodes-only* tree: copy
+the sources without `.fas` files, install `ext:install-bytecodes-compiler`
+before loading `init.lisp` (so that `*compiled-file-extension*` is `"fasc"`),
+and run `make compile`.  Startup is ~42 s instead of ~6.5 s, and step 5 fails
+the same way.  Two traps found the hard way:
 
 - Installed after `init.lisp`, the extension is `"fas"` while the bytecodes
   compiler writes `"fasc"`, and certification fails at step 5 with
   `Could not load .../test.fas (invalid ELF header)` -- a different failure.
-- Installed before `init.lisp` in the existing tree, `load-acl2` looks for
-  `interface-raw.fasc`, which a native tree does not have, so ACL2 does not
-  load at all.
+- Installed before `init.lisp` in the `.fas` tree itself, `load-acl2` looks
+  for `interface-raw.fasc`, which that tree does not have, so ACL2 does not
+  load at all.  Hence the copy.
 
-So a fast (10 s) reproduction needs a native tree compiled to `.fasc`, i.e.
-`make compile` with the bytecodes compiler installed -- in a copy of the tree,
-leaving the `.fas` build alone.  `/tmp/bc-driver.lsp` is a starting point for
-that driver but currently loads the `.fas` tree.
+### Extension: `fasc`
+
+A bytecodes-only build computes `*compiled-file-extension*` as `"fasc"`
+(`(pathname-type (compile-file-pathname "foo.lisp"))` in `acl2.lisp`, after
+the bytecodes compiler is installed).  `books/build/cert_features.lsp` writes
+that same value to `ACL2_COMP_EXT`, so `books/build/features.sh` run with the
+bytecodes ACL2 (or with `./wasm/acl2-wasm`) produces `ACL2_COMP_EXT := fasc`.
+`cert.pl` itself works from `.cert` files and does not consult
+`ACL2_COMP_EXT`; the variable is informational.
+
+### Measured: cert.pl under wasm
+
+Four dependency-free books (`textbook/chap10/{fact,insertion-sort,tree,adder}`)
+with `./build/cert.pl -j 4 --acl2 <timing wrapper around ./wasm/acl2-wasm>`:
+
+| book | wall on wasm | wall natively |
+| --- | --- | --- |
+| `fact` | 381.0 s | 6.1 s |
+| `insertion-sort` | 380.7 s | 6.2 s |
+| `tree` | 375.0 s | 6.4 s |
+| `adder` | 384.0 s | 6.3 s |
+
+All four wrote `.cert` and `.fasc`; the parallel run was 384 s in total.  The
+ACL2-level `certify-book` times are 0.66 s, 1.59 s, 5.92 s and 4.94 s, so
+everything else is initialization (~361 s for a single trivial book).  This
+makes certification possible, not yet practical; the startup work below is
+the prerequisite for a full suite.
 
 ## Next steps
 
-1. **Fix wasm book certification (blocking).** See "Blocking: certifying
-   books in wasm". First build a bytecodes-only native tree to get a 10 s
-   reproduction, then get a backtrace from step 5 (`hcomp-build-from-state`
-   in `other-events.lisp`, reached from `certify-book`), then make
-   `*compiled-file-extension*` and `ACL2_COMP_EXT` agree for a
-   bytecodes-only build (`fasc`).
+1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed
+   COND clause in `acl2-compile-file`; see "Certifying books in wasm" above.
+   Four dependency-free books certify under `cert.pl`.  A native
+   bytecodes-only tree makes further work on this ~9x cheaper (42 s vs ~375 s
+   per run), and `make -k -j 16 basic` still passes natively (1,486
+   certificates; two books hit the known `acl2-status.txt` startup race on the
+   first pass and were certified by a 56 s re-run).
 2. **Split init properly, on native ECL.** *Done.* The tool is
    `ecl-tools/init-profile.lsp`, and the numbers are in `ECL-PORT-NOTES.md`
    ("Where `initialize-acl2` spends its time"): of the 15.3 s, 11.8 s was the
@@ -435,16 +493,16 @@ that driver but currently loads the `.fas` tree.
    compiled code, or inside ECL's evaluator); wrapping `ld-fn` and the
    `compile-uncompiled-*` functions does, and `gdb` stack sampling fills in
    what neither sees.
-3. **Find out why passes 1 and 2 cost 80-100x their native time.** Measured:
-   `initialize-acl2` in wasm is 352 s with the boot-strap fix (382 s without),
-   of which pass 2 is 156 s against 1.4 s natively. That is far worse than the
-   3.5x interpreter factor and is now the dominant wasm cost. Timers on named
-   functions ("What the wasm pass-2 time is spent in") show that
-   `defun-fn` accounts for 129 s of the 348 s and is 98x its native time, and
-   that the type-set work inside `chk-acceptable-defuns1` dominates it. Next:
-   time a few `defun` admissions on both sides to see whether the 98x is the
-   interpreter on list-heavy code or something fixable (bignums from 30-bit
-   fixnums, GC).
+3. **Find out why passes 1 and 2 cost 80-100x their native time.** *Answered
+   (2026-11-05): two interpreter factors, not a wasm-specific pathology.*
+   Native bytecodes-only `initialize-acl2` is 40.0 s (native C 5.8 s, wasm
+   352 s); `defun-fn` is 16.6 s / 6,699 calls natively in bytecode (native C
+   1.313 s, wasm 129.0 s), and `chk-acceptable-defuns1` is 9.68 s / 7,273
+   calls (wasm 72.4 s).  Thus native C to native bytecode is ~12.6x and wasm
+   on top of bytecode is ~7.8x; 12.6 x 7.8 = 98x.  Real book proofs show the
+   same 6-8x wasm-on-bytecode band, with nothing growing with book size, so
+   bignum arithmetic and GC are not the explanation.  The remaining levers
+   are a native backend for wasm and the interpreter improvements below.
 4. **Ahead-of-time compilation of the `*1*` functions on native ECL.**
    *Done for ECL.* `*acl2-*1*-aot-file*` in `interface-raw.lisp`
    loads a precompiled file of the counterparts instead of generating and
@@ -458,7 +516,9 @@ that driver but currently loads the `.fas` tree.
    are ACL2-level serialization of the world (data only, no code pointers), an
    image facility in ECL, or a wasm memory snapshot (Wizer-style
    preinitialization). Each has a different platform payoff.
-6. Certify books under wasm (`cert.pl`) once startup is acceptable.
+6. **Certify books under wasm at scale** (`cert.pl`).  Works for a handful of
+   dependency-free books.  At ~375 s per book, `make -k -j 16 basic`
+   (1,486 books) would take roughly 10 hours, so startup is the prerequisite.
 7. Wasmtime/WASI: blocked on ECL (see above).
 8. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)

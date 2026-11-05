@@ -36,6 +36,16 @@ Done (as of 2026-11-05):
   "acl2-status.txt"` during initialization -- a transient of the parallel run,
   not a proof failure -- and re-running the suite certified it and the three
   books that depend on it in 38 s.
+- Re-verified after the `acl2-compile-file` fix that unblocked the bytecodes
+  (and wasm) build (2026-11-05): the first pass produced 1474 certificates in
+  1247 s (20 min 47 s, faster than the 23 min 8 s above on the same machine);
+  two books (`std/strings/explode-implode-equalities` and
+  `std/bitsets/sbitsets`) hit the same `Cannot open "acl2-status.txt"` startup
+  race, and a second `make -k -j 16 basic` certified them and their dependents
+  in 56 s -- 1486 certificates, 0 failures.  The bug and its analysis are in
+  `WASM-PORT-NOTES.md`, "Certifying books in wasm": a COND clause
+  `#+ecl (progn ...)` in `acl2-compile-file` had `progn` as its test, which
+  ECL's C compiler happened to accept but the bytecodes compiler does not.
 - Earlier dependency-chain checks: `std/lists/append.cert`,
   `textbook/chap10/fact.cert`, `misc/records0.cert`, and parallel `cert.pl
   -j 8` runs.

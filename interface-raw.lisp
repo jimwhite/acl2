@@ -10992,13 +10992,14 @@ such that feature :acl2-loop-only is true."))
 ; definition.  Disable that optimization while compiling the book, so that
 ; calls go through the function object.
 
-       (progn
-         (proclaim '(ext:use-direct-C-call nil))
-         (unwind-protect
-             (compile-file os-expansion-filename :output-file ofile)
-           (proclaim '(ext:use-direct-C-call t))))
+       (t
+        (progn
+          (proclaim '(ext:use-direct-C-call nil))
+          (unwind-protect
+              (compile-file os-expansion-filename :output-file ofile)
+            (proclaim '(ext:use-direct-C-call t)))))
        #-(or ccl ecl)
-       (compile-file os-expansion-filename :output-file ofile)))
+       (t (compile-file os-expansion-filename :output-file ofile))))
 
 ; Warning: Keep the following "compile on the fly" readtime conditional in sync
 ; with the one in initialize-state-globals.  Here, we avoid loading the
