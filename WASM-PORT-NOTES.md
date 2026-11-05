@@ -188,7 +188,7 @@ Environment: aarch64, 16 cores. Wasm ECL built with the flags above.
 | `compile-acl2` in wasm (41 sources plus `acl2-fns` to `.fasc`) | 66 s at `-O2` (96 s at `-O0`) |
 | `load-acl2` + `initialize-acl2` in wasm | 6 min 53 s (2026-11-04, before the boot-strap fix; `initialize-acl2` alone is 382 s then and 352 s now) |
 | Same, native ECL 26.5.5, standard build (C `.fas`, bytecoded `*1*`) | 16.4 s before the boot-strap fix of 2026-11-05, 5.8 s after (4.3 s with the ahead-of-time counterparts) |
-| ACL2 start-to-prompt through `wasm/acl2-wasm` | ~6 min 40 s |
+| ACL2 start-to-prompt through `wasm/acl2-wasm` | ~6 min 1 s (361 s, measured 2026-11-05) |
 
 Interpreted recursion depth before the C stack is exhausted: natively about
 20 000 frames per 2 MB; in wasm at `-O0` about 2 000 frames per 100 MB. At
@@ -215,6 +215,11 @@ available, which isolates the factor:
 | wasm, everything bytecoded (`.fasc`) | 413 s |
 
 So bytecode-only costs **7.3x**, and wasm on top of bytecode costs **3.5x**.
+(These rows were measured on 2026-11-04, before the boot-strap fix, and
+include `load-acl2`; they are not directly comparable with the
+`initialize-acl2`-only figures later in this document.  After the fix, native
+bytecode-only `initialize-acl2` is 40.0 s and wasm is 352 s, i.e. ~6.9x from
+native C and ~8.8x from native bytecode on the aggregate.)
 Raw event processing (the sum of ACL2's own per-event `Time:` lines) is 1.0 s,
 18.9 s and 70.6 s respectively, i.e. only about 6% of init is proving or guard
 checking.
@@ -473,6 +478,42 @@ everything else is initialization (~361 s for a single trivial book).  This
 makes certification possible, not yet practical; the startup work below is
 the prerequisite for a full suite.
 
+### Options for cutting the ~361 s startup
+
+`compile-acl2` -- the ahead-of-time step the build already performs -- is not
+what is missing: it removes a 66 s compile from each start, and loading the
+resulting `.fasc` files costs ~10 s.  The 352 s is `initialize-acl2`'s two
+`ld` passes plus the `*1*` step, and no amount of source AOT removes that.
+The realistic options are:
+
+- **AOT of the `*1*` counterparts** (`make exec-aot`) already exists for
+  native ECL; porting it to wasm would replace the `(comp-fn :exec ...)`
+  step, which is 15.5 s of the wasm 352 s (~4%).  Worth doing eventually,
+  but it does not change the order of magnitude.
+- **Wasm memory snapshot (Wizer-style).**  Run `initialize-acl2` at module
+  build time, return to the top level, snapshot linear memory, and ship a
+  module that starts initialized.  Largest payoff (seconds instead of
+  minutes) and no ACL2 changes; the work is in the Emscripten glue (JS
+  imports, NODERAWFS, and getting GC roots and the C stack into the
+  snapshot correctly).
+- **Serialize the post-boot state.**  Either an image facility in ECL or an
+  ACL2-level dump of the world and the globals holding live data (arrays,
+  hash tables, streams, function objects).  More portable, but the live
+  objects are the hard part; the payoff is the same as a snapshot.
+- **Amortize startup over books.**  `certify-book!` certifies and then undoes
+  the book, so a batch driver could start ACL2 once and certify many books
+  in one process, paying 361 s per worker instead of per book (50 books per
+  worker would cut suite startup ~50x).  It needs its own driver (`cert.pl`
+  assumes one process per book) and is only sound for books whose side
+  effects undo cleanly: packages cannot be undefined, `include-raw`
+  redefinitions persist, and memory accumulates against the 4 GB wasm
+  limit.  Validate on a book family before relying on it.
+- **Interpreter only.**  `--liftoff-only` was ~1.5x on the interpreter
+  benchmarks, direct threading is unavailable for LLVM, and wasm64 would
+  remove the 30-bit-fixnum bignum tax.  These multiply the ~8.8x wasm
+  factor; the larger ~7x that comes from having the prover in bytecode at
+  all is only removed by a native backend for wasm.
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed
@@ -512,13 +553,19 @@ the prerequisite for a full suite.
    `type-set` and `ev-fncall` were already native; it speeds up `ev-fncall`
    paths. The same design would let wasm ship wasm code produced by ECL's
    cross compilation.
-5. Image save is now the only way to remove the remaining ~5.4 s. The options
-   are ACL2-level serialization of the world (data only, no code pointers), an
-   image facility in ECL, or a wasm memory snapshot (Wizer-style
-   preinitialization). Each has a different platform payoff.
+5. **Remove the repeated `initialize-acl2` on wasm**, which is ~352 s of
+   every ~361 s start.  The options and expected payoffs are in "Options for
+   cutting the ~361 s startup": a wasm memory snapshot (best), serializing
+   the world / an ECL image, batching books per process (`certify-book!`
+   undoes the book, so startup can be amortized), and the interpreter
+   levers.  Source AOT is already done; AOT of the `*1*` counterparts would
+   save only ~15 s.  For native ECL, image save is likewise the only way to
+   remove the remaining ~5.4 s (serialization, an ECL image facility, or a
+   memory snapshot).
 6. **Certify books under wasm at scale** (`cert.pl`).  Works for a handful of
    dependency-free books.  At ~375 s per book, `make -k -j 16 basic`
-   (1,486 books) would take roughly 10 hours, so startup is the prerequisite.
+   (1,486 books) would take roughly 10 hours.  Cut the startup (item 5) or
+   amortize it over books in a batch driver before attempting this.
 7. Wasmtime/WASI: blocked on ECL (see above).
 8. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)
