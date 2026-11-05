@@ -562,6 +562,17 @@ The realistic options are:
    save only ~15 s.  For native ECL, image save is likewise the only way to
    remove the remaining ~5.4 s (serialization, an ECL image facility, or a
    memory snapshot).
+
+   A prototype of the world-image route (serialize the post-boot-strap world
+   and replay its properties, which reaches the ACL2 prompt in ~1.8 s
+   natively) is on branch `ecl-world-image`, deliberately kept off this
+   branch: it is **not yet sound-equivalent**.  `(check-acl2-initialization)`
+   passes, but `(include-book "projects/apply/base" :dir :system)` fails a
+   `badge-table` guard on the replayed image while `saved_acl2` includes it
+   fine, and the replay loses the hons fast-alist registrations.  The
+   acceptance gate for that branch is `make devel-check` plus
+   `make -k -j 16 basic` with the replay launcher, compared against
+   `saved_acl2`; do not use an image before it passes.
 6. **Certify books under wasm at scale** (`cert.pl`).  Works for a handful of
    dependency-free books.  At ~375 s per book, `make -k -j 16 basic`
    (1,486 books) would take roughly 10 hours.  Cut the startup (item 5) or
