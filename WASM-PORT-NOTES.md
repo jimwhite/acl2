@@ -518,6 +518,51 @@ overnight.  At `-j 8` it is about twice that.  `cert.pl`'s `.cert` files make
 the run resumable with the same command minus `CLEAN=1`, which is why the
 script does not clean by default.
 
+### First full run (2026-11-05): 1,028 books, and a GC bug
+
+The suite was run for real: `CLEAN=1` at 08:11, 16 jobs, finished 20:12 after
+12 hours with make exit status 2 and 1,015 certificates; a resume run
+(22:58-23:43) added 13 more.  **No `acl2-status.txt` races occurred.**  The 14
+books that failed in the first pass and the 10 that still failed after the
+retry fall into three groups:
+
+| symptom | books |
+| --- | --- |
+| bdwgc `Unexpected mark stack overflow`, `GC_mark_some` -> `GC_push_roots` -> `stacks_scanner` -> `GC_push_all` | `data-structures/{portcullis,no-duplicates,list-defuns,alist-defuns,set-defuns,array1}`, and `arithmetic-5/top` (which includes them) |
+| ECL fatal `not a lisp data object [54: Not a directory]` in `cl_class_of`, called from `clos_std_compute_applicable_methods` | `arithmetic-3/bind-free/banner`, `kestrel/strings-light/char`, `kestrel/event-macros/fail-event`, `kestrel/error-checking/ensure-function-is-logic-mode`, `std/system/guard-theorem-no-simplify-dollar-tests` |
+| ACL2 returned 0 but no certificate (banner printed, loop exited to the ECL top level, ACL2 re-entered) | `misc/profiling`, `tools/time-dollar-with-gc` |
+
+Both crash modes are one bug, and it is in the wasm ECL's garbage collector,
+not in any book:
+
+- `data-structures/portcullis` (a `defpkg`, nothing else) reproduces in **1.3
+  seconds**, i.e. while `load-acl2` is still loading the compiled ACL2 files,
+  long before the book is touched.
+- It is deterministic *for the launcher's working directory*: the same command
+  crashes 5 times out of 5 when started from `books/data-structures`, and
+  survives when started from `books/`, `books/data-structures/..`, or `/tmp`,
+  including a `/tmp` path with the same length.  Adding two `format` calls and
+  a `(ext:getcwd)` to the driver makes the crashing directory work, so the
+  trigger is a small change in allocation timing, not the directory itself.
+- `GC_DONT_GC=1` and `GC_INITIAL_HEAP_SIZE=2000000000` both avoid it;
+  `GC_PRINT_STATS=1` flips it to the other symptom (`cl_class_of` on a bogus
+  object).  That is the signature of a collector handing out an object that is
+  still referenced, i.e. a root that is not being scanned.
+
+Consequences to keep in mind:
+
+1. **Retrying does not fix it.**  A directory (or timing) that triggers the
+   bug fails again; only the *lucky* starts can be resumed.
+2. **Certificates from this build are not yet trustworthy.**  A collector that
+   can miss a root can also corrupt a proof in silence, which is exactly the
+   failure mode a theorem prover must not have.  The 1,028 certificates are
+   evidence that the pipeline works, not a soundness claim; a fix must be
+   followed by a clean re-run before this build certifies anything for use.
+3. The likeliest culprits are conservative stack scanning under wasm (the
+   module's stack is 1.5 GB and lives in linear memory) and the mark stack
+   (`GC_INITIAL_MARK_STACK_SIZE_BYTES`); both are worth trying before believing
+   the bytecodes compiler is at fault.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not
