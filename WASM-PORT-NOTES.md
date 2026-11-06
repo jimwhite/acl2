@@ -698,6 +698,51 @@ combined with the HTML target ECL's link step emits; a worker must be told
 no environment, so `ACL2_SMALL_FIXNUMS`/`ACL2_SNAPSHOT_INFO` must be set from
 Lisp with `ext:setenv`; and `(setf (ext:getenv ...))` does not exist in ECL.
 
+### AOT and dynamic loading: what has been verified (2026-11-06)
+
+The wasm build runs the prover as bytecode, which is the 12.6x interpreter
+factor in the 98x slowdown.  Compiling Lisp to wasm instead would leave only
+the ~7.8x wasm factor, so this is the largest speed lever available.  Three
+questions, three answers, all measured:
+
+1. **Can a running Emscripten module load a separately compiled wasm module?**
+   Yes.  `wasm/dylink-poc/` does it with these tools: `emcc
+   -sSIDE_MODULE=2 -o side.wasm side.c` and `emcc -sMAIN_MODULE=2 -o main.js
+   main.c`, then `dlopen("side.wasm", RTLD_NOW)` + `dlsym` + call, and Node
+   prints `side_double(21) = 42`.  Functions in the side module must carry
+   `EMSCRIPTEN_KEEPALIVE` to be visible to `dlsym`.  For a browser, the async
+   `emscripten_dlopen` is present in this Emscripten (it is declared in
+   `system/include/emscripten/emscripten.h` and implemented in `libdylink.js`),
+   which matches fetching a book module after the fact; a synchronous `dlopen`
+   works if the bytes are already in the filesystem, which is what preloading
+   into MEMFS gives us.
+2. **Does ECL survive being that main module?**  Yes.  `wasm/build-ecl-wasm.sh`
+   now takes `EXTRA_WFLAGS` and `TAG`, and `EXTRA_WFLAGS=-sMAIN_MODULE=2
+   TAG=dylink` produced `dist/node-raw-dylink` that boots and evaluates Lisp
+   (`hello 3`); the module grew from 5,191,190 to 5,195,162 bytes and the
+   loader now contains `loadDynamicLibrary` and the dylink sections.  So the
+   main-module side of the design costs nothing worth measuring -- but it has
+   to be decided before a base snapshot is taken, as the delivery plan says.
+3. **Can ECL ask for such a module today?**  No.  The wasm ECL is built
+   `--disable-shared`, and its features say so: no `:dlopen`, no `:shared`, no
+   `:threads`; the `FFI` package exists but has nothing to load with, and there
+   is no `ext:load-shared-object` symbol.  That is the actual gap.
+
+The gap is small, because an ECL-compiled book module has a *fixed* entry
+point: `init_<name>`, a `void(void)` function that registers the compiled
+functions with ECL.  So the missing piece is a wasm branch of
+`load-shared-object` that does `dlopen` + `dlsym("init_<name>")` + call -- no
+libffi, no dynamic-call machinery, roughly a dozen lines of C plus a Lisp
+wrapper in ECL -- and then routing `load` of a compiled book file through it.
+
+The other piece is producing those modules: ECL's compiler emits C, and the
+cross build already compiles Lisp to wasm objects for ECL's own library
+(`CROSS-COMPILER` runs the host ECL's `compile`, `emcc` compiles the result;
+the ABI lives in `wasm32.cross_config`, and `cmp::*cross-compiling*` is the
+switch).  What is missing is exposing that for arbitrary files -- an
+`ECL_TO_RUN` + cross-config `compile-file` invocation -- which is mechanical
+work rather than research.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not
