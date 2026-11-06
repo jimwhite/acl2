@@ -662,6 +662,29 @@ already works: ACL2 in a Node (or similar) process with the raised stack, with
 the WebView only drawing the UI -- a Tauri/Electron front end driving
 `wasm/acl2-wasm` over a pipe needs no snapshot at all.
 
+**Why the boot-strap wants that much stack.**  Measured on this build: a
+bytecode-compiled recursive Lisp function overflows a 1 MB native stack at
+depth 500 and is fine at 300, i.e. each Lisp call costs roughly 2.5 KB of
+native stack (wasm frames, `-O2`), whether the callee is bytecode or
+interpreted.  A 256 MB budget is therefore about 100,000 nested calls.  The
+depth is not counted by ECL's own limit: `(ext:set-limit 'ext:frame-stack 50)`
+does not stop a 300-deep recursion, so a run with `ext:frame-stack` capped at
+20,000 completes the boot-strap just as before.  A backtrace from the overflow
+is nothing but `ecl_interpret` / `ecl_apply_from_stack_frame` pairs, so the
+nesting is Lisp-call nesting rather than a deeply nested form.
+
+That is what makes "put the stack in dynamic storage" the interesting question:
+if Lisp calls kept their frames in the heap (a VM with an explicit frame stack,
+or CPS/trampolining) the depth would be bounded by memory, not by the native
+stack, and the browser limit would disappear for good.  In ECL that is not a
+flag: the interpreter (`ecl_interpret`, `ecl_apply_from_stack_frame`) and the
+bytecode VM both use the C stack per call, so it means changing the calling
+convention -- a real project, and one that would help every wasm deployment.
+Cheaper first: find out *what* nests 100,000 calls during the boot-strap.  The
+native build tolerates it only because its frames are ~100 bytes, so a native
+run under `gdb` with `ulimit -s 4096` will fault with the recursion cycle on
+the stack, which is a much better starting point than guessing.
+
 Smaller things learned, each of which cost a cycle: `-sEXPORT_NAME` cannot be
 combined with the HTML target ECL's link step emits; a worker must be told
 `locateFile` (or `wasmBinary`, which needs `INCOMING_MODULE_JS_API`); a page has
