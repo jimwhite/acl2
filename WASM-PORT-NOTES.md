@@ -643,15 +643,24 @@ RangeError: Maximum call stack size exceeded
 The same module under Node with its *default* JS stack fails identically, and
 `wasm/acl2-wasm` sets `node --stack-size=524288`, so the limit is V8's stack
 for wasm code, not the module's own `-sSTACK_SIZE`.  Measured thresholds, with
-the wasm stack at 1.5 GB in every case: `--stack-size` default -> overflow,
-8192 KB -> overflow, 65536 KB -> overflow, 524288 KB (the launcher) -> the
-boot-strap completes.  A page or worker cannot raise that limit (Chrome's is
-roughly 1 MB and not configurable from script), so **the boot-strap cannot be
-re-run in a browser**: the browser target has to start from a prepared base --
-the E1 snapshot or the E2 world image -- which is precisely the order the
-delivery plan already has.  The corollary is worth measuring later: whatever
-state we ship must keep recursion shallow enough for the browser's stack, so
-the replay path needs the same check.
+the wasm stack at 1.5 GB and an ample `ulimit -s` in every case: `--stack-size`
+default, 8192 KB, 65536 KB, 131072 KB and 262144 KB all end in
+`RangeError: Maximum call stack size exceeded` during `load-acl2`; 524288 KB
+(the launcher's setting) completes.  The boot-strap therefore wants **more than
+256 MB** of native stack: a page's is about 1 MB and a page cannot raise it, so
+**the boot-strap cannot be re-run in a browser** and the browser target has to
+start from a prepared base (the E1 snapshot or the E2 world image).  The
+corollary is worth measuring later: whatever state we ship must keep recursion
+shallow enough for the browser's stack, so the replay path needs the same check.
+
+An embedder can still do it -- a shell that runs the isolate on a thread with a
+512 MB stack and passes `--js-flags=--stack-size=524288` -- but no stock WebView
+can: Chromium gives renderer threads the OS default and WebKit's
+`maxPerThreadStackUsage` is under a megabyte, neither reachable from script or
+from a WebView host.  The practical desktop shape is therefore the one that
+already works: ACL2 in a Node (or similar) process with the raised stack, with
+the WebView only drawing the UI -- a Tauri/Electron front end driving
+`wasm/acl2-wasm` over a pipe needs no snapshot at all.
 
 Smaller things learned, each of which cost a cycle: `-sEXPORT_NAME` cannot be
 combined with the HTML target ECL's link step emits; a worker must be told
