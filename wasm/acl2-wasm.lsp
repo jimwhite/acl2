@@ -67,4 +67,18 @@
 
 (ext:chdir cl-user::*acl2-wasm-invocation-dir*)
 
+; Keep the expansion file that CERTIFY-BOOK writes (<book>@expansion.lsp), so
+; that wasm/aot-books.lsp can cross-compile it into a wasm module afterwards.
+; ACL2 does this itself from ACL2_SAVE_EXPANSION, but only on its first entry
+; to the ACL2 loop, which in this driver happens in ACL2-DEFAULT-RESTART below;
+; setting the global here as well makes it independent of that.
+
+(when (let ((s (ext:getenv "ACL2_SAVE_EXPANSION")))
+        (and s
+             (not (equal s ""))
+             (not (equal (string-upcase s) "NIL"))))
+  (f-put-global 'save-expansion-file t *the-live-state*)
+  (format t "~&;; ACL2_SAVE_EXPANSION: certify-book keeps <book>@expansion.lsp~%")
+  (force-output))
+
 (acl2-default-restart)
