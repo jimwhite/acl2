@@ -743,6 +743,24 @@ switch).  What is missing is exposing that for arbitrary files -- an
 `ECL_TO_RUN` + cross-config `compile-file` invocation -- which is mechanical
 work rather than research.
 
+That last step is now mapped too.  `compile-file` takes `:target
+<target-info>`; it dispatches through `compile-with-target-info`, which binds
+`c::*config-options*` (the compiler program variables `c:*cc*`, `*cc-flags*`,
+`*ld*`, `*nm*`, `*ar*`, `*ranlib*`, `*cmpinclude*`, `*features*` and the ABI
+constants) around the compilation and sets `*cross-compiling*`.  Two snags
+found: the file it wants is a *Lisp alist* written by `c::write-target-info`
+(`read-target-info` chokes on the shell `cross_config` with "CL_FIXNUM_TYPE=INT
+is not of type LIST"), and the wasm ECL cannot write it for itself, because
+`(require :cmp)` there fails with "Don't know how to REQUIRE CMP" -- it ships
+only the bytecodes compiler.  So the missing artefact is a `wasm32.target` file:
+the host's own target info (the host ECL can produce it once `cmp` is loaded)
+with `c:*cc*`/`*ld*` set to `emcc`, the Emscripten flags, `*nm*`/`*ar*`/
+`*ranlib*` set to the LLVM tools, `*cmpinclude*` pointed at the target include
+directory, `*features*` set to the wasm build's features, and the ABI constants
+taken from `wasm32.cross_config`.  With that file the AOT chain is:
+`compile-file ... :system-p t :target wasm32.target` -> C -> `emcc -c` -> object
+-> `emcc -sSIDE_MODULE=2` -> `dlopen` + `init_<name>` in the MAIN_MODULE ECL.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not
