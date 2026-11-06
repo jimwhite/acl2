@@ -33,6 +33,10 @@
 #   WEB_STACK_MB   browser build stack size in MB (default 512)
 #   WEB_MEMORY_MB  browser build initial memory in MB (default 1024; must
 #                  cover the stack)
+#   EXTRA_WFLAGS   extra Emscripten link flags, e.g. '-sMAIN_MODULE=2' to make
+#                  the module able to dlopen side modules
+#   TAG            suffix for the output directory, e.g. TAG=dylink gives
+#                  $WORK/dist/node-raw-dylink, so the working module is kept
 #
 set -euo pipefail
 
@@ -41,6 +45,8 @@ WORK=${WORK:-/opt/eclwasm}
 EMSDK_DIR=${EMSDK_DIR:-/opt/emsdk}
 JOBS=${JOBS:-$(nproc)}
 REBUILD=${REBUILD:-0}
+EXTRA_WFLAGS=${EXTRA_WFLAGS:-}
+TAG=${TAG:-}
 
 HOST_PREFIX=$WORK/ecl-host
 
@@ -54,6 +60,9 @@ else
   NODE_PREFIX=$WORK/ecl-node
   NODE_SRC=$WORK/ecl-node-src
   DIST=$WORK/dist/node-raw
+fi
+if [ -n "$TAG" ]; then
+  DIST=$DIST-$TAG
 fi
 CROSS_CONFIG=$WORK/wasm32.cross_config
 
@@ -106,6 +115,9 @@ if [ "${WEB:-0}" = 1 ]; then
 -sEXIT_RUNTIME=1 -sMODULARIZE=1 -sINVOKE_RUN=0 \
 -sEXPORTED_RUNTIME_METHODS=FS,callMain"
 fi
+
+# Anything the caller wants to add (e.g. -sMAIN_MODULE=2 for dynamic linking).
+WFLAGS="$WFLAGS $EXTRA_WFLAGS"
 EHFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
 
 log() { printf '\n=== %s ===\n' "$*" >&2; }
