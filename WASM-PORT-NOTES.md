@@ -610,6 +610,14 @@ conclusions for the delivery plan:
    builds, which supports the base-snapshot-plus-bundles architecture: the
    world extension does not depend on which Lisp compiled the book.
 
+Under `./wasm/acl2-wasm` the same script is fully clean: three Q.E.D.s,
+`((A . 1))` and `:ALL-INCLUDES-DONE`, with no compiled-file warning, because
+the `.fasc` files match the certificates.  It took 12m10s end to end while
+sixteen certification jobs were running; the three includes and their proofs
+are seconds of that, the rest is the boot-strap.  So the wasm build certifies
+books *and* loads them interactively from the same certificates, which is the
+behaviour the delivery plan needs before any bundling work.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not

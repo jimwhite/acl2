@@ -10,22 +10,29 @@
 #
 # The result is a JavaScript loader plus a wasm module:
 #
-#   $WORK/dist/node-raw/ecl.js
+#   $WORK/dist/node-raw/ecl.js        (WEB=0, default: Node.js, real fs)
 #   $WORK/dist/node-raw/ecl.wasm
+#   $WORK/dist/web/ecl.js            (WEB=1: browser, MEMFS)
+#   $WORK/dist/web/ecl.wasm
 #
 # See WASM-PORT-NOTES.md for the reasoning behind each flag.
 #
 # Usage:
 #
 #   ECL_SRC=/path/to/ecl-source ./wasm/build-ecl-wasm.sh
+#   WEB=1 ECL_SRC=/path/to/ecl-source ./wasm/build-ecl-wasm.sh
 #
 # Environment variables:
 #
-#   ECL_SRC      ECL source tree (required; must match the host ECL version)
-#   WORK         build/install root (default /opt/eclwasm)
-#   EMSDK_DIR    Emscripten SDK (default /opt/emsdk)
-#   JOBS         parallel make jobs (default: nproc)
-#   REBUILD      1 to rebuild the host ECL even if it is installed
+#   ECL_SRC        ECL source tree (required; must match host ECL version)
+#   WORK           build/install root (default /opt/eclwasm)
+#   EMSDK_DIR      Emscripten SDK (default /opt/emsdk)
+#   JOBS           parallel make jobs (default: nproc)
+#   REBUILD        1 to rebuild the host ECL even if it is installed
+#   WEB            1 for the browser module (MEMFS, no Node filesystem)
+#   WEB_STACK_MB   browser build stack size in MB (default 512)
+#   WEB_MEMORY_MB  browser build initial memory in MB (default 1024; must
+#                  cover the stack)
 #
 set -euo pipefail
 
@@ -36,9 +43,18 @@ JOBS=${JOBS:-$(nproc)}
 REBUILD=${REBUILD:-0}
 
 HOST_PREFIX=$WORK/ecl-host
-NODE_PREFIX=$WORK/ecl-node
-NODE_SRC=$WORK/ecl-node-src
-DIST=$WORK/dist/node-raw
+
+# WEB=1 produces the browser module: a separate install prefix, source copy
+# and output directory, so the Node build is left untouched.
+if [ "${WEB:-0}" = 1 ]; then
+  NODE_PREFIX=$WORK/ecl-web
+  NODE_SRC=$WORK/ecl-web-src
+  DIST=$WORK/dist/web
+else
+  NODE_PREFIX=$WORK/ecl-node
+  NODE_SRC=$WORK/ecl-node-src
+  DIST=$WORK/dist/node-raw
+fi
 CROSS_CONFIG=$WORK/wasm32.cross_config
 
 # Emscripten settings for the wasm build.
@@ -64,6 +80,30 @@ WFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false \
 -sSUPPORT_LONGJMP=wasm -sNODERAWFS=1 -sALLOW_MEMORY_GROWTH=1 \
 -sMAXIMUM_MEMORY=4GB -sSTACK_SIZE=1610612736 -sINITIAL_MEMORY=2147483648 \
 -sEXIT_RUNTIME=1"
+
+if [ "${WEB:-0}" = 1 ]; then
+  # Browser build.  Differences from the Node build, and why:
+  #
+  #   -sFORCE_FILESYSTEM=1, -sENVIRONMENT=web,worker
+  #       There is no host filesystem in a page, so the module gets an
+  #       in-memory filesystem; a harness has to preload the ACL2 sources,
+  #       the .fasc files and any books into it before main runs.
+  #   -sMODULARIZE=1 -sEXPORT_NAME=createACL2Module -sINVOKE_RUN=0
+  #       Gives the worker a factory it can await, so files can be written to
+  #       MEMFS first and CALLMAIN started afterwards.
+  #   -sSTACK_SIZE / -sINITIAL_MEMORY
+  #       2GB + 1.5GB does not fit a tab comfortably, and wasm32 tops out at
+  #       4GB total.  The stack is the one number to watch: ACL2's boot-strap
+  #       recurses deeply, so raise WEB_STACK_MB if it overflows.
+  WEB_STACK_BYTES=$(( ${WEB_STACK_MB:-512} * 1048576 ))
+  WEB_INITIAL_BYTES=$(( ${WEB_MEMORY_MB:-1024} * 1048576 ))
+  WFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false \
+-sSUPPORT_LONGJMP=wasm -sFORCE_FILESYSTEM=1 -sENVIRONMENT=web,worker \
+-sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4GB \
+-sSTACK_SIZE=$WEB_STACK_BYTES -sINITIAL_MEMORY=$WEB_INITIAL_BYTES \
+-sEXIT_RUNTIME=1 -sMODULARIZE=1 -sEXPORT_NAME=createACL2Module \
+-sINVOKE_RUN=0 -sEXPORTED_RUNTIME_METHODS=FS,callMain"
+fi
 EHFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
 
 log() { printf '\n=== %s ===\n' "$*" >&2; }
@@ -148,8 +188,8 @@ sed -i "s|^(defconfig \*ld-flags\* \"@LDFLAGS@\")|(defconfig *ld-flags* \"@LDFLA
 sed -i "s|^(setf c::\*ld-flags\* \"@LDFLAGS@\")|(setf c::*ld-flags* \"@LDFLAGS@ $WFLAGS\")|" \
   "$NODE_SRC/src/compile.lsp.in"
 
-if ! grep -q NODERAWFS "$NODE_SRC/src/cmp/cmpdefs.lsp" ||
-   ! grep -q NODERAWFS "$NODE_SRC/src/compile.lsp.in"; then
+if ! grep -q 'SUPPORT_LONGJMP=wasm' "$NODE_SRC/src/cmp/cmpdefs.lsp" ||
+   ! grep -q 'SUPPORT_LONGJMP=wasm' "$NODE_SRC/src/compile.lsp.in"; then
   echo "error: failed to patch ECL's linker flags (source layout changed?)" >&2
   exit 1
 fi
@@ -198,4 +238,8 @@ cp "$NODE_SRC/build/bin/ecl.js" "$NODE_SRC/build/bin/ecl.wasm" "$DIST/"
 
 log "Done"
 echo "wasm ECL: $DIST/ecl.js and $DIST/ecl.wasm"
-echo "run ACL2 with: ./wasm/acl2-wasm"
+if [ "${WEB:-0}" = 1 ]; then
+  echo "browser module: see wasm/web/ for the harness"
+else
+  echo "run ACL2 with: ./wasm/acl2-wasm"
+fi
