@@ -548,6 +548,12 @@ not in any book:
   `GC_PRINT_STATS=1` flips it to the other symptom (`cl_class_of` on a bogus
   object).  That is the signature of a collector handing out an object that is
   still referenced, i.e. a root that is not being scanned.
+- The trigger is the *first* collection during `load-acl2`: **any** explicit
+  `GC_INITIAL_HEAP_SIZE` avoids it (100 MB and 2 GB behave the same), which
+  moves that collection later.  `wasm/acl2-wasm` therefore exports
+  `GC_INITIAL_HEAP_SIZE=${GC_INITIAL_HEAP_SIZE:-500000000}` as a documented
+  workaround; with it, the previously 0-for-5 crashing directory started 3
+  times out of 3.  Override the variable to experiment.
 
 Consequences to keep in mind:
 
@@ -558,6 +564,8 @@ Consequences to keep in mind:
    failure mode a theorem prover must not have.  The 1,028 certificates are
    evidence that the pipeline works, not a soundness claim; a fix must be
    followed by a clean re-run before this build certifies anything for use.
+   The `GC_INITIAL_HEAP_SIZE` default above makes the *known* trigger go away
+   but does not make the collector sound.
 3. The likeliest culprits are conservative stack scanning under wasm (the
    module's stack is 1.5 GB and lives in linear memory) and the mark stack
    (`GC_INITIAL_MARK_STACK_SIZE_BYTES`); both are worth trying before believing

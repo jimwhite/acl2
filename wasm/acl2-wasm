@@ -38,5 +38,17 @@ ACL2_SMALL_FIXNUMS=1
 ACL2_SNAPSHOT_INFO=${ACL2_SNAPSHOT_INFO:-NONE}
 export ACL2_SMALL_FIXNUMS ACL2_SNAPSHOT_INFO
 
+# Work around a collector bug: with the default initial heap, the first
+# garbage collection happens while LOAD-ACL2 is loading the compiled ACL2
+# files, and it can miss a root.  Depending on allocation timing this shows up
+# as "Unexpected mark stack overflow" (bdwgc abort) or as ECL's "not a lisp
+# data object" in CL_CLASS_OF; either way about 1% of starts and whole
+# directories die.  Any explicit GC_INITIAL_HEAP_SIZE moves that collection
+# later and the crash goes away, so set a moderate default here; see
+# WASM-PORT-NOTES.md ("First full run (2026-11-05): 1,028 books, and a GC bug").
+# This is a workaround, not a fix: the collector itself is still unsound.
+GC_INITIAL_HEAP_SIZE=${GC_INITIAL_HEAP_SIZE:-500000000}
+export GC_INITIAL_HEAP_SIZE
+
 exec node --stack-size=524288 "$ACL2_WASM_ECL/ecl.js" \
   --load "${ACL2_WASM_DRIVER:-$THISDIR/acl2-wasm.lsp}" -- "$@"
