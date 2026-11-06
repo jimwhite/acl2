@@ -11,6 +11,12 @@
 ;;;;                               different ECL build (the printer qualifies
 ;;;;                               symbols like SI:RADIX that the other build
 ;;;;                               does not export).
+;;;;   wasm/aot-host.lsp           the same job as aot-acl2.lsp, but in the
+;;;;                               *host* ECL from the same source tree as the
+;;;;                               wasm one.  Rebuilds the target-info in memory
+;;;;                               from the delta for the same reason, and is
+;;;;                               preferred: same ABI, and no entry-point
+;;;;                               renaming.  See wasm/aot-book.sh.
 ;;;;
 ;;;; ECL's `compile-file' takes `:target <target-info>', an alist mapping
 ;;;; compiler configuration symbols to values; `compile-with-target-info' in

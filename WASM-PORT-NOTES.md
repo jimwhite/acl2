@@ -861,20 +861,53 @@ below, or the experiment of compiling ACL2's own sources -- `wasm/aot-books.lsp`
 does the same job in the host ECL that build-ecl-wasm.sh installs, using
 `compile-file :target` directly.)
 
-State: `saved_acl2` + `wasm/aot-acl2.lsp` turns
-`books/textbook/chap10/fact@expansion.lsp` into a 5,339-byte module exporting
-`__ecl_init_fas_CODE` in 0.28 s, and the wasm ECL dlopens it -- `include-book`
-reaches the module's initialisation.  It then fails inside that initialisation
-with "Wrong number of arguments passed to function SI:WAITPID", and the
-measured cost of 500 `(fact 500)` calls is unchanged (0.754 s versus 0.747 s
-for the bytecode fasl), i.e. the module is not actually taking effect.  The
-probable cause is that the two ECLs are not the same build: the native ACL2
-here was made with the ECL 26.5.5 *release*, while the wasm ECL comes from the
-patched source tree, so their structures and internal function signatures need
-not agree.  The fix is to make the native ACL2 (or at least its ECL) and the
-wasm ECL come from one source tree, which is also what the `<book>.fasc`
-route needs in order to be trustworthy.
+**Solved: the module has to be built by the same ECL tree as the runtime.**
+`wasm/aot-acl2.lsp` ran inside a native `saved_acl2`, and that saved image was
+built with the ECL 26.5.5 *release* rather than the patched tree the wasm
+runtime comes from.  Two independent things went wrong.  The entry point was
+named `init_fas_CODE` instead of `__ecl_init_fas_CODE`, which the script
+patched up by rewriting the generated C -- cosmetic but a sign of the real
+problem; and the module's calls into libecl used the other build's conventions,
+so the wasm ECL got its module initialised and then died with "Wrong number of
+arguments passed to function SI:WAITPID", with the compiled code never taking
+effect (500 `(fact 500)`: 0.754 s, the same as bytecode).
 
+The fix is to keep ACL2's reader but drop the native ACL2:
+`wasm/aot-host.lsp` runs in `$WORK/ecl-host`, the *same source tree* as the wasm
+runtime, so `(compile-file f :target …)` emits `__ecl_init_fas_CODE` itself and
+links the module with emcc -- no renaming, and the ABI matches by construction.
+All it needs from ACL2 is `load-acl2`, not `initialize-acl2`, so the whole
+driver reaches the first compile in about a second:
+
+* Two things had to be arranged to load ACL2 in the host ECL at all.  (a) The
+  sources here are the wasm ECL's `.fasc` bytecode, while the host ECL asks for
+  its own `*compiled-file-extension*` (`fas`), and the `*.fas` in the tree come
+  from that other build and cannot be dlopened (`undefined symbol:
+  __ecl_init_fas_ACL2_FNS`); so the driver replaces the `"fas"` entry of
+  `ext::*load-hooks*` with one that loads the `.fasc` through
+  `si::load-bytecodes`.  (b) `load-acl2` needs a 1 GB C stack: at ECL's default
+  8 MB it dies in `C-STACK overflow at size 8388608` (`ulimit -s` alone is not
+  enough; the driver also does `ext:set-limit 'ext:c-stack`).
+
+`wasm/aot-book.sh books/textbook/chap10/fact` now does the whole job -- write
+the target files if needed, load ACL2's sources, compile each
+`<book>@expansion.lsp` -- in about 1.1 s per book:
+
+    /workspaces/acl2-ecl/books/textbook/chap10/fact.fasc (4167 bytes, 0.17 s)
+
+and in the dylink wasm ECL the book then loads for real: `include-book` of
+`textbook/chap10/fact` takes 0.03 s with no `Compiled file` warning, and 500
+`(fact 500)` calls take **0.39 s** against 0.747 s for the bytecode fasl.  That
+is only ~1.9x, not the 77x of a standalone microbenchmark, because a bignum
+`fact` call is mostly bignum arithmetic, which is native C in both cases; the
+bytecode part was the `*1*` wrapper.  A function whose work is done in Lisp code
+will show much more.
+
+Two loose ends: `.cert` files do not record which `.fasc` is present, so a book
+whose module was built for a different wasm ECL would be silently mismatched
+(the entry point check catches only the gross case), and nothing yet
+*automatically* AOTs a book after certifying it -- certification happens in the
+wasm ECL, which cannot compile to wasm itself.
 
 ### Options for cutting the ~361 s startup
 
@@ -978,25 +1011,31 @@ The realistic options are:
    per book the only way to make this fast is item 5 -- cut the startup, or
    amortize it over books in a batch driver.
 7. Wasmtime/WASI: blocked on ECL (see above).
-8. **Native wasm code for the prover.** *Working (2026-11-06).*
-   `wasm/mk-wasm32-target.lsp` + `wasm/aot-books.lsp` + `DYLINK=1` builds turn
-   a Lisp file into a wasm module the wasm ECL dlopens; measured 77-124x over
-   the bytecode compiler.  This removes the 12.6x half of the 98x and leaves
-   the ~7.8x wasm factor, so it should be done *with* item 5 rather than
-   instead of it.  What is still missing:
+8. **Native wasm code for the prover.** *Working for books (2026-11-06).*
+   `wasm/mk-wasm32-target.lsp` + `DYLINK=1` builds turn a Lisp file into a wasm
+   module the wasm ECL dlopens; measured 77-124x over the bytecode compiler.
+   This removes the 12.6x half of the 98x and leaves the ~7.8x wasm factor, so
+   it should be done *with* item 5 rather than instead of it.  Books are done:
+   `ACL2_SAVE_EXPANSION=1` certifies with the expansion file kept, and
+   `wasm/aot-book.sh <book>` compiles it into `<book>.fasc`, a wasm module that
+   `include-book` then loads and runs (see "Books: the expansion file").
+   What is still missing:
    - **two phases, not one.** `emcc` only exists on the host, so a book must be
      certified in the wasm ECL (which writes the expansion file) and then
      AOT'd in a separate host pass.  For a browser, either the modules are
      built and shipped ahead of time, or a C compiler is compiled to wasm
      (no JIT in a page: wasm cannot generate wasm without one).
-   - **the pipeline needs a driver.** Certify with `ACL2_SAVE_EXPANSION=1`,
-     then run `aot-books` over the `@expansion.lsp` files; nothing yet
-     automates "certify 1,486 books, then AOT them, then ship".
-   - **extend it to the ACL2 sources themselves.** The same trick applies to
-     `init.lisp`/`acl2.lisp` and the `*1*` counterparts, which is where the
-     352 s start is spent; that needs an `acl2-wasm.lsp` that loads modules
-     instead of `.fasc`, and a check that a module-per-source-file behaves
-     like the single-file `.fasc`.
+   - **the pipeline needs a driver.** Nothing yet automates "certify 1,486
+     books, then AOT them, then ship"; `wasm/aot-book.sh` takes the book names
+     one run at a time (it loads ACL2's sources in ~1 s, so batching many books
+     per invocation is the natural shape).
+   - **staleness.** A `.cert` records the book's source hash, not the compiled
+     file, so nothing notices a `<book>.fasc` built for a different wasm ECL.
+   - **extend it to the ACL2 sources and the `*1*` counterparts**, which is
+     where the 352 s start is spent.  The pieces exist: an `acl2-wasm.lsp` that
+     loads modules instead of `.fasc` (the hook already does this by sniffing
+     `\0asm`), `acl2-exec-aot.lisp` (the `*1*` set, currently built natively by
+     `make exec-aot`), and a host ECL that can compile either for wasm.
 9. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)
    are small and self-contained; the `-O0` override in ECL's configure is

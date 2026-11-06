@@ -1,0 +1,198 @@
+;;;; aot-host.lsp -- cross-compile ACL2 book expansion files into loadable
+;;;; WebAssembly modules, using the host ECL that build-ecl-wasm.sh builds.
+;;;;
+;;;; This is the successor to wasm/aot-acl2.lsp.  That one had to run inside a
+;;;; native `saved_acl2' and do the compile in two steps -- ECL writes C, the
+;;;; script renames the entry point to __ecl_init_fas_CODE, then emcc links --
+;;;; because a native saved ACL2 is built with whatever ECL the user has, and
+;;;; the ECL builds disagree about the name of a compiled file's entry point
+;;;; (see cmp/cmpbackend-cxx/cmpc-init-name.lsp).  They also disagree about
+;;;; internal calling conventions, which is what made the resulting module die
+;;;; in SI:WAITPID when the wasm ECL tried to initialise it.
+;;;;
+;;;; The host ECL from the same source tree as the wasm ECL has neither
+;;;; problem: `(compile-file f :target <wasm target>)' emits
+;;;; __ecl_init_fas_CODE itself and links the module with emcc, and the ABI
+;;;; matches by construction.  So here the compile is one `compile-file'.
+;;;;
+;;;; What it still needs from ACL2 is only the reader.  A book's expansion file
+;;;; (<book>@expansion.lsp) starts with ACL2 `serialize' data as #Z/#Y read
+;;;; macros, which live in *acl2-readtable*, so the compile has to happen in a
+;;;; process that has loaded the ACL2 sources -- but NOT initialized ACL2:
+;;;; load-acl2 is enough, and it is a few seconds instead of the full boot
+;;;; strap.
+;;;;
+;;;; Usage, from a shell (see wasm/aot-book.sh):
+;;;;
+;;;;   ACL2_AOT_FILES="books/x/foo@expansion.lsp ..." \
+;;;;   /opt/eclwasm/ecl-host/bin/ecl -norc -load wasm/aot-host.lsp
+;;;;
+;;;; Each <book>@expansion.lsp becomes <book>.fasc -- the name include-book
+;;;; later loads -- as a wasm side module for a wasm ECL built with DYLINK=1.
+;;;;
+;;;; Prerequisites:
+;;;;   * /tmp/wasm32.delta, from wasm/mk-wasm32-target.lsp (override with
+;;;;     ACL2_AOT_DELTA);
+;;;;   * the ACL2 sources compiled by the *wasm* ECL (*.fasc), because that is
+;;;;     what gets loaded here; the stale *.fas from other ECL builds are not
+;;;;     loadable at all, hence the load hook below.
+
+;;;; ------------------------------------------------------------------
+;;;; 1. Bootstrap: make this ECL load the wasm ECL's bytecode
+;;;; ------------------------------------------------------------------
+
+;; ACL2's C stack needs are not the default 8 MB.  Both limits matter: the
+;; Lisp frame stack for the interpreter, the C stack because the bytecodes
+;; dispatch through C.
+(ext:set-limit 'ext:frame-stack 262144)
+(ignore-errors (ext:set-limit 'ext:c-stack (* 1000 1024 1024)))
+
+(setq *load-verbose* nil)
+
+;; ACL2's sources here were compiled by the wasm ECL, which writes bytecode
+;; with the "fasc" type; this ECL asks for its own *compiled-file-extension*,
+;; "fas", and the *.fas files in the tree came from a different ECL build
+;; (their entry point is init_fas_CODE, which this ECL does not find).  Map
+;; such loads onto the portable bytecode instead.  ECL dispatches on the file
+;; type through EXT::*LOAD-HOOKS*; see c/main.d.
+;; A counter, kept on a keyword's property list rather than in a special
+;; variable: this file's forms are read in CL-USER but the report below is
+;; printed from the ACL2 package, and a global variable is easy to lose track
+;; of across that boundary.
+(defun aot-fasc-count (&optional (new nil new-p))
+  (if new-p
+      (setf (get :acl2-aot-host :fasc-count) new)
+      (or (get :acl2-aot-host :fasc-count) 0)))
+
+(defun aot-host-load-fas (file verbose print external-format)
+  (let ((fasc (make-pathname :type "fasc" :defaults file)))
+    (if (and (fboundp 'si::load-bytecodes) (probe-file fasc))
+        (si::load-bytecodes fasc verbose print external-format)
+        (si::load-binary file verbose print external-format))))
+
+(defun aot-host-counting-fas (file verbose print external-format)
+  (aot-fasc-count (1+ (aot-fasc-count)))
+  (aot-host-load-fas file verbose print external-format))
+
+(let ((hook (assoc "fas" ext::*load-hooks* :test #'equal)))
+  (if hook
+      (setf (cdr hook) 'aot-host-counting-fas)
+      (push (cons "fas" 'aot-host-counting-fas) ext::*load-hooks*)))
+
+;; Into the ACL2 build directory, so that the relative pathnames ACL2 uses
+;; ("init.lisp", "acl2-fns", ...) resolve.
+(ext:chdir (or (ext:getenv "ACL2_AOT_HOME") (ext:getcwd)))
+(load "init.lisp")
+(in-package "ACL2")
+(load-acl2)
+
+(format t "~&;; loaded ACL2 sources (~d compiled file~:p); readtable ~s~%"
+        (cl-user::aot-fasc-count) (type-of *acl2-readtable*))
+
+;;;; ------------------------------------------------------------------
+;;;; 2. The wasm32 target
+;;;; ------------------------------------------------------------------
+
+(require :cmp)
+
+;; The target-info *file* (/tmp/wasm32.target) is data for compile-file :target
+;; and cannot be LOADed; what is needed here is the Lisp library that rebuilds
+;; the same target-info in memory from the delta (this ECL cannot read a
+;; target-info written by another one -- see wasm32-target.lsp).
+(load (merge-pathnames "wasm32-target.lsp"
+                       (or *load-pathname*
+                           #p"/workspaces/acl2-ecl/wasm/aot-host.lsp")))
+
+(defparameter *aot-delta*
+  (wasm-target:read-delta (or (ext:getenv "ACL2_AOT_DELTA") "/tmp/wasm32.delta")))
+
+(defparameter *aot-target-info* nil)
+
+(defun aot-target-info ()
+  (or *aot-target-info*
+      (setf *aot-target-info*
+            (wasm-target:apply-overrides (c::get-target-info) *aot-delta*))))
+
+;;;; ------------------------------------------------------------------
+;;;; 3. Expansion file -> wasm side module
+;;;; ------------------------------------------------------------------
+
+(defun aot-module-name (expansion-file)
+  "…/<book>@expansion.lsp -> …/<book>.fasc"
+  (let* ((p (pathname expansion-file))
+         (name (pathname-name p))
+         (suffix "@expansion")
+         (n (length suffix)))
+    (unless (and (> (length name) n)
+                 (string= suffix name :start2 (- (length name) n)))
+      (error "~a is not a book expansion file" expansion-file))
+    (make-pathname :name (subseq name 0 (- (length name) n))
+                   :type "fasc"
+                   :defaults p)))
+
+(defun aot-file (expansion-file)
+  (let* ((out (aot-module-name expansion-file))
+         (tmp (make-pathname :name (concatenate 'string
+                                                (pathname-name out) "-aot")
+                             :type "fasc" :defaults out))
+         (c (make-pathname :name (pathname-name tmp) :type "c" :defaults tmp))
+         (h (make-pathname :name (pathname-name tmp) :type "eclh" :defaults tmp))
+         (d (make-pathname :name (pathname-name tmp) :type "data" :defaults tmp))
+         (start (get-internal-real-time)))
+    (format t "~&;; AOT ~a -> ~a~%" expansion-file out)
+    (force-output)
+    (unwind-protect
+         (progn
+           ;; Direct C calls are not portable across targets; ACL2's own
+           ;; build makes the same proclamation.  One release of ECL does
+           ;; not know the declaration, so do not let that be fatal.
+           (ignore-errors (proclaim '(ext:use-direct-c-call nil)))
+           (let ((*readtable* *acl2-readtable*))
+             (c::compile-with-target-info
+              (lambda ()
+                ;; The output file *is* the module: with a :target in force,
+                ;; compile-file runs the target's linker (emcc) on the C it
+                ;; just wrote and puts the result here.  Nothing else to do.
+                (compile-file expansion-file
+                              :output-file out
+                              :c-file c :h-file h :data-file d
+                              :load nil))
+              (aot-target-info))))
+      (ignore-errors (proclaim '(ext:use-direct-c-call t))))
+    (format t ";;   ~a (~d bytes, ~,2f s)~%"
+            out
+            (with-open-file (s out :element-type '(unsigned-byte 8))
+              (file-length s))
+            (/ (- (get-internal-real-time) start)
+               internal-time-units-per-second))
+    (dolist (f (list c h d (make-pathname :name (pathname-name tmp)
+                                         :type "o" :defaults tmp)))
+      (when (probe-file f) (delete-file f)))
+    out))
+
+(defun aot-files (files)
+  (let ((ok 0) (bad '()))
+    (dolist (f files)
+      (handler-case (progn (aot-file f) (incf ok))
+        (error (e)
+          (format t "~&;; AOT FAILED ~a: ~a~%" f e)
+          (push f bad))))
+    (format t "~&;; AOT: ~d module~:p written, ~d failed~%" ok (length bad))
+    (values ok bad)))
+
+(defun aot-main ()
+  (let ((files (let ((s (ext:getenv "ACL2_AOT_FILES")))
+                 (when (and s (not (equal s "")))
+                   (loop with start = 0
+                         for pos = (position #\Space s :start start)
+                         for piece = (subseq s start pos)
+                         unless (equal piece "") collect piece
+                         while pos
+                         do (setf start (1+ pos)))))))
+    (format t "~&;; AOT: ~d file~:p to compile~%" (length files))
+    (aot-files files)))
+
+;; Run as a script: nothing to do if no files were named.
+(when (ext:getenv "ACL2_AOT_FILES")
+  (aot-main)
+  (si:quit))
