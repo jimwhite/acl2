@@ -642,13 +642,16 @@ RangeError: Maximum call stack size exceeded
 
 The same module under Node with its *default* JS stack fails identically, and
 `wasm/acl2-wasm` sets `node --stack-size=524288`, so the limit is V8's stack
-for wasm code, not the module's own `-sSTACK_SIZE`.  A page or worker cannot
-raise it (Chrome's is roughly 1 MB and not configurable from script), so
-**the boot-strap cannot be re-run in a browser**: the browser target has to
-start from a prepared base -- the E1 snapshot or the E2 world image -- which is
-precisely the order the delivery plan already has.  The corollary is worth
-measuring later: whatever state we ship must keep recursion shallow enough for
-the browser's stack, so the replay path needs the same check.
+for wasm code, not the module's own `-sSTACK_SIZE`.  Measured thresholds, with
+the wasm stack at 1.5 GB in every case: `--stack-size` default -> overflow,
+8192 KB -> overflow, 65536 KB -> overflow, 524288 KB (the launcher) -> the
+boot-strap completes.  A page or worker cannot raise that limit (Chrome's is
+roughly 1 MB and not configurable from script), so **the boot-strap cannot be
+re-run in a browser**: the browser target has to start from a prepared base --
+the E1 snapshot or the E2 world image -- which is precisely the order the
+delivery plan already has.  The corollary is worth measuring later: whatever
+state we ship must keep recursion shallow enough for the browser's stack, so
+the replay path needs the same check.
 
 Smaller things learned, each of which cost a cycle: `-sEXPORT_NAME` cannot be
 combined with the HTML target ECL's link step emits; a worker must be told
