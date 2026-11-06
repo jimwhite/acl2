@@ -35,6 +35,10 @@
 #                  cover the stack)
 #   EXTRA_WFLAGS   extra Emscripten link flags, e.g. '-sMAIN_MODULE=2' to make
 #                  the module able to dlopen side modules
+#   DYLINK         1 to build a module that can load compiled Lisp modules at
+#                  run time (implies TAG=dylink unless TAG is given).  Adds
+#                  -sMAIN_MODULE=1 and switches on ECL's dlopen code path; see
+#                  the "Dynamic linking" comment below.
 #   TAG            suffix for the output directory, e.g. TAG=dylink gives
 #                  $WORK/dist/node-raw-dylink, so the working module is kept
 #
@@ -46,6 +50,8 @@ EMSDK_DIR=${EMSDK_DIR:-/opt/emsdk}
 JOBS=${JOBS:-$(nproc)}
 REBUILD=${REBUILD:-0}
 EXTRA_WFLAGS=${EXTRA_WFLAGS:-}
+DYLINK=${DYLINK:-0}
+if [ "$DYLINK" = 1 ] && [ -z "${TAG:-}" ]; then TAG=dylink; fi
 TAG=${TAG:-}
 
 HOST_PREFIX=$WORK/ecl-host
@@ -118,6 +124,41 @@ fi
 
 # Anything the caller wants to add (e.g. -sMAIN_MODULE=2 for dynamic linking).
 WFLAGS="$WFLAGS $EXTRA_WFLAGS"
+
+# Dynamic linking (DYLINK=1): a module that can dlopen() compiled Lisp modules
+# at run time instead of only interpreting .fasc bytecode.  Three things differ:
+#
+#   -fPIC everywhere
+#       wasm-ld's --export-dynamic (what MAIN_MODULE=1 asks for) exports every
+#       symbol of a *PIC* object and none of a non-PIC one: with the same
+#       source compiled both ways, the -fPIC build exports `my_func' and
+#       `my_global' and the other exports neither.  Without it the main module
+#       exports libc/GC but no libecl, and loading a module dies with
+#       "undefined symbol 'cl_env_p'."
+#
+#   -sMAIN_MODULE=1
+#       The main module must *export* every symbol a side module may import
+#       (cl_env_p, ecl_aref_unsafe, cl_symbols, ...).  =1 exports everything;
+#       =2 exports only what is listed, which strips precisely those symbols.
+#
+#   -sERROR_ON_UNDEFINED_SYMBOLS=0, -Wl,--allow-multiple-definition
+#       Two ECL build quirks that a static link hides but an export-dynamic
+#       link does not: libeclgmp.a references __gmpz_jacobi / __gmpn_sub_nc /
+#       __gmpn_add_nc without defining them, and ecl-cdb.o is a member of both
+#       libecl-help.a and libecl-cdb.a (it is linked as a dependency).
+#
+#   ENABLE_DLOPEN + HAVE_DLFCN_H in ecl/config.h
+#       configure only defines these with --enable-shared, which a wasm build
+#       cannot use.  Without them ECL compiles out si::load-binary (see
+#       c/load.d and c/ffi/libraries.d) and `load' cannot open a module at all.
+#       Defining them keeps --disable-shared (a static libecl.a is still the
+#       right thing) and adds the dlopen/dlsym loader that Emscripten provides.
+if [ "$DYLINK" = 1 ]; then
+  WFLAGS="$WFLAGS -sMAIN_MODULE=1 -sERROR_ON_UNDEFINED_SYMBOLS=0 -Wl,--allow-multiple-definition"
+  CFLAGS_EXTRA="-fPIC"
+else
+  CFLAGS_EXTRA=""
+fi
 EHFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
 
 log() { printf '\n=== %s ===\n' "$*" >&2; }
@@ -231,7 +272,7 @@ log "Configuring the wasm target"
   # debugger and make would wait forever.
   CC_FOR_BUILD=gcc \
   ECL_TO_RUN="$HOST_PREFIX/bin/ecl" \
-  CFLAGS="$EHFLAGS" \
+  CFLAGS="$EHFLAGS $CFLAGS_EXTRA" \
     emconfigure ./configure \
       --host=wasm32-unknown-emscripten \
       --build="$(uname -m)-unknown-linux-gnu" \
@@ -241,6 +282,15 @@ log "Configuring the wasm target"
       > "$WORK/ecl-node-configure.log" 2>&1
 
   log "Building the wasm target"
+  if [ "$DYLINK" = 1 ]; then
+    log "Enabling ECL's dlopen loader in build/ecl/config.h"
+    cat >> build/ecl/config.h <<'EOF'
+/* Added by wasm/build-ecl-wasm.sh DYLINK=1: let ECL load compiled Lisp
+   modules at run time.  configure ties these to --enable-shared. */
+#define ENABLE_DLOPEN 1
+#define HAVE_DLFCN_H 1
+EOF
+  fi
   emmake make -j"$JOBS" </dev/null > "$WORK/ecl-node-make.log" 2>&1
 
   log "Installing the wasm target to $NODE_PREFIX"
