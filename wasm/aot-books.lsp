@@ -28,7 +28,7 @@
 
 (defpackage #:aot-books
   (:use #:cl)
-  (:export #:main #:aot-books #:module-name-for))
+  (:export #:main #:aot-books #:aot-book #:module-name-for))
 
 (in-package #:aot-books)
 
