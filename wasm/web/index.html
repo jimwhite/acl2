@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ACL2 on WebAssembly</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem;
+         background: #10131a; color: #d6dbe5; }
+  h1 { font-size: 1rem; font-weight: 600; margin: 0 0 .5rem; }
+  #status { font-family: ui-monospace, monospace; font-size: .8rem;
+            color: #7fb2ff; margin-bottom: .75rem; }
+  #log { font-family: ui-monospace, monospace; font-size: .75rem;
+         white-space: pre-wrap; background: #0a0d12; border: 1px solid #222b38;
+         border-radius: 6px; padding: .75rem; height: 70vh; overflow: auto; }
+  .qed { color: #7ee787; }
+  .err { color: #ff8a8a; }
+</style>
+</head>
+<body>
+<h1>ACL2 on WebAssembly (ECL + bytecodes, in a Web Worker)</h1>
+<div id="status">starting…</div>
+<pre id="log"></pre>
+<script>
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const t0 = performance.now();
+
+function append(text, cls) {
+  const span = document.createElement('span');
+  if (cls) span.className = cls;
+  span.textContent = text + '\n';
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+const worker = new Worker('worker.js?v=9');
+worker.onmessage = (ev) => {
+  const m = ev.data;
+  if (m.type === 'log') {
+    const cls = /Q\.E\.D\./.test(m.text) ? 'qed'
+              : /error|Error|abort|stderr:/.test(m.text) ? 'err' : null;
+    append(m.text, cls);
+  } else if (m.type === 'status') {
+    statusEl.textContent = `${m.text} — ${((performance.now() - t0) / 1000).toFixed(0)}s`;
+  } else if (m.type === 'done') {
+    statusEl.textContent = `done in ${m.seconds.toFixed(1)}s`;
+  }
+};
+worker.onerror = (e) => append('[page] worker error: ' + e.message, 'err');
+worker.postMessage({cmd: 'run'});
+</script>
+</body>
+</html>

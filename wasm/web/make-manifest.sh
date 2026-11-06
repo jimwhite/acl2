@@ -1,0 +1,67 @@
+#!/bin/sh
+# Generate wasm/web/files.json, the list of files the browser harness copies
+# into its in-memory filesystem before starting ACL2, plus gzipped copies of
+# them in wasm/web/files/.  40 MB of sources and compiled files is a lot to
+# pull through a dev-container port forward; gzip makes it ~9 MB.
+#
+# Usage:
+#
+#   ./wasm/web/make-manifest.sh                      # ACL2 only + fact book
+#   ./wasm/web/make-manifest.sh textbook/chap10/fact arithmetic/top
+#
+# Each book argument is a path under books/ (no extension); its .lisp, .cert
+# and .fasc are included when present.
+
+set -eu
+
+HERE=$(cd "$(dirname "$0")" && pwd)
+ROOT=$(cd "$HERE/../.." && pwd)
+OUT=${OUT:-$HERE/files.json}
+STAGE=$HERE/files
+
+if [ $# -eq 0 ]; then
+  set -- textbook/chap10/fact
+fi
+
+rm -rf "$STAGE"
+mkdir -p "$STAGE"
+
+first=1
+emit() {
+  if [ "$first" = 1 ]; then first=0; else printf ',\n'; fi
+  printf '  {"src": "%s", "dst": "%s"}' "$1" "$2"
+}
+
+# One packed file per payload file: fetch and decompress are per file, so a
+# retry stays cheap.
+pack() {
+  src=$1
+  dst=$2
+  name=$(printf '%s' "$dst" | sed 's|^/||; s|/|_|g')
+  gzip -9 -c "$src" > "$STAGE/$name.gz"
+  emit "/wasm/web/files/$name.gz" "$dst"
+}
+
+{
+  printf '[\n'
+  # ACL2 itself: initialize-acl2 ld's the sources, so both are needed.
+  for f in "$ROOT"/*.lisp "$ROOT"/*.fasc; do
+    b=${f##*/}
+    pack "$f" "/acl2/$b"
+  done
+  pack "$HERE/acl2-web.lsp" "/acl2/web-acl2.lsp"
+  # Book bundles.
+  for book in "$@"; do
+    for ext in lisp cert fasc; do
+      if [ -f "$ROOT/books/$book.$ext" ]; then
+        pack "$ROOT/books/$book.$ext" "/acl2/books/$book.$ext"
+      elif [ "$ext" != lisp ]; then
+        echo "note: books/$book.$ext not present (not certified?)" >&2
+      fi
+    done
+  done
+  printf '\n]\n'
+} > "$OUT"
+
+packed=$(du -sb "$STAGE" | cut -f1)
+echo "wrote $OUT ($(grep -c 'src' "$OUT") entries, $((packed / 1048576)) MB packed)"

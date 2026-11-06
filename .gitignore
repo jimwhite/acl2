@@ -52,3 +52,8 @@ devel-check.out
 *.certdep
 !universal-dependency.certdep
 gitlog-all.txt
+
+# Browser harness scratch (module copy and generated manifest)
+wasm/web/lib
+wasm/web/files.json
+wasm/web/files

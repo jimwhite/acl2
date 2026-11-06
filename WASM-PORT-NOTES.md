@@ -618,6 +618,44 @@ are seconds of that, the rest is the boot-strap.  So the wasm build certifies
 books *and* loads them interactively from the same certificates, which is the
 behaviour the delivery plan needs before any bundling work.
 
+### Browser, first attempt (2026-11-06): ECL runs, ACL2's boot-strap does not
+
+`wasm/build-ecl-wasm.sh` gained a `WEB=1` mode (MEMFS instead of Node's
+filesystem, a modularized factory, `-sFORCE_FILESYSTEM -sENVIRONMENT=web,worker`,
+same 1.5 GB stack and 2 GB initial memory as the Node build) writing to
+`dist/web`.  `wasm/web/` is the harness: `index.html`, a `worker.js` that
+preloads files into MEMFS and feeds a script on ACL2's stdin, and
+`acl2-web.lsp`, the browser analogue of `wasm/acl2-wasm.lsp`.
+`wasm/web/make-manifest.sh` slices the 25 MB of ACL2 sources plus 21 MB of
+`.fasc` (and a book bundle) into gzipped files, 9 MB in total, because the
+dev-container port forward truncates a noticeable fraction of larger responses.
+
+What works, in a page: **ECL 26.5.5 boots and evaluates Lisp** -- `(+ 1 2)` is 3
+and `(print 42)` prints 42 -- with the payload preloaded in about 11 s.
+
+What does not work yet: ACL2 itself stops during `load-acl2` with
+
+```
+RangeError: Maximum call stack size exceeded
+  at ecl.wasm.variadic_dispatch2 ... at ecl.wasm.ecl_interpret ...
+```
+
+The same module under Node with its *default* JS stack fails identically, and
+`wasm/acl2-wasm` sets `node --stack-size=524288`, so the limit is V8's stack
+for wasm code, not the module's own `-sSTACK_SIZE`.  A page or worker cannot
+raise it (Chrome's is roughly 1 MB and not configurable from script), so
+**the boot-strap cannot be re-run in a browser**: the browser target has to
+start from a prepared base -- the E1 snapshot or the E2 world image -- which is
+precisely the order the delivery plan already has.  The corollary is worth
+measuring later: whatever state we ship must keep recursion shallow enough for
+the browser's stack, so the replay path needs the same check.
+
+Smaller things learned, each of which cost a cycle: `-sEXPORT_NAME` cannot be
+combined with the HTML target ECL's link step emits; a worker must be told
+`locateFile` (or `wasmBinary`, which needs `INCOMING_MODULE_JS_API`); a page has
+no environment, so `ACL2_SMALL_FIXNUMS`/`ACL2_SNAPSHOT_INFO` must be set from
+Lisp with `ext:setenv`; and `(setf (ext:getenv ...))` does not exist in ECL.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not

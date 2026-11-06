@@ -88,9 +88,11 @@ if [ "${WEB:-0}" = 1 ]; then
   #       There is no host filesystem in a page, so the module gets an
   #       in-memory filesystem; a harness has to preload the ACL2 sources,
   #       the .fasc files and any books into it before main runs.
-  #   -sMODULARIZE=1 -sEXPORT_NAME=createACL2Module -sINVOKE_RUN=0
+  #   -sMODULARIZE=1 -sINVOKE_RUN=0
   #       Gives the worker a factory it can await, so files can be written to
-  #       MEMFS first and CALLMAIN started afterwards.
+  #       MEMFS first and CALLMAIN started afterwards.  The factory is the
+  #       module's global `Module` (an EXPORT_NAME would require customizing
+  #       the HTML that ECL's link step also emits).
   #   -sSTACK_SIZE / -sINITIAL_MEMORY
   #       2GB + 1.5GB does not fit a tab comfortably, and wasm32 tops out at
   #       4GB total.  The stack is the one number to watch: ACL2's boot-strap
@@ -101,8 +103,8 @@ if [ "${WEB:-0}" = 1 ]; then
 -sSUPPORT_LONGJMP=wasm -sFORCE_FILESYSTEM=1 -sENVIRONMENT=web,worker \
 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4GB \
 -sSTACK_SIZE=$WEB_STACK_BYTES -sINITIAL_MEMORY=$WEB_INITIAL_BYTES \
--sEXIT_RUNTIME=1 -sMODULARIZE=1 -sEXPORT_NAME=createACL2Module \
--sINVOKE_RUN=0 -sEXPORTED_RUNTIME_METHODS=FS,callMain"
+-sEXIT_RUNTIME=1 -sMODULARIZE=1 -sINVOKE_RUN=0 \
+-sEXPORTED_RUNTIME_METHODS=FS,callMain"
 fi
 EHFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
 
