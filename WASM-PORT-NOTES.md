@@ -571,6 +571,45 @@ Consequences to keep in mind:
    (`GC_INITIAL_MARK_STACK_SIZE_BYTES`); both are worth trying before believing
    the bytecodes compiler is at fault.
 
+### Interactive use, and including certified books across the two builds
+
+Before spending another long run it is worth checking that the two builds can be
+*driven* interactively and that `include-book` works on the certificates we
+produce.  With 1,000+ wasm-produced certificates in the tree:
+
+```lisp
+(thm (equal (append (append x y) z) (append x (append y z))))
+(defun triple (x) (* 3 x))
+(triple 14)                                  ; 42
+(include-book "arithmetic/top" :dir :system)
+(include-book "std/lists/top" :dir :system)
+(thm (equal (len (append a b)) (+ (len a) (len b))))
+(include-book "projects/apply/base" :dir :system)
+(thm (equal (apply$ 'binary-+ (list 1 2)) 3))
+(hons-acons 'a 1 nil)
+```
+
+Under native `./saved_acl2` this whole session takes 17 s and every proof is
+Q.E.D., but each `include-book` gives
+
+```
+ACL2 Warning [Compiled file]: Unable to load compiled file for book
+  .../arithmetic/top.lisp because the compiled file does not exist.
+```
+
+The certificates were made by the wasm build, so they name `top.fasc`, while
+native ACL2 looks for `top.fas`.  The books are still installed -- ACL2 loads
+the certified expansion -- so the result is *correct but interpreted*.  Two
+conclusions for the delivery plan:
+
+1. Certificates and compiled book files belong to the build that made them; a
+   book bundle has to be certified by the runtime that will load it, or the
+   loader must be extended to accept a foreign compiled file (which is exactly
+   the "separately compiled library" step).
+2. The logical half of `include-book` *is* portable between the native and wasm
+   builds, which supports the base-snapshot-plus-bundles architecture: the
+   world extension does not depend on which Lisp compiled the book.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not
