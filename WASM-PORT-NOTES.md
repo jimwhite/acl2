@@ -726,40 +726,155 @@ questions, three answers, all measured:
 3. **Can ECL ask for such a module today?**  No.  The wasm ECL is built
    `--disable-shared`, and its features say so: no `:dlopen`, no `:shared`, no
    `:threads`; the `FFI` package exists but has nothing to load with, and there
-   is no `ext:load-shared-object` symbol.  That is the actual gap.
+   is no `ext:load-shared-object` symbol.
 
-The gap is small, because an ECL-compiled book module has a *fixed* entry
-point: `init_<name>`, a `void(void)` function that registers the compiled
-functions with ECL.  So the missing piece is a wasm branch of
-`load-shared-object` that does `dlopen` + `dlsym("init_<name>")` + call -- no
-libffi, no dynamic-call machinery, roughly a dozen lines of C plus a Lisp
-wrapper in ECL -- and then routing `load` of a compiled book file through it.
+The rest of this section is what filled those three gaps.  It works: a Lisp
+file cross-compiled on the host becomes a wasm module that the wasm ECL
+`dlopen`s, and the compiled functions run 77-124x faster than the bytecode
+compiler's (measurements at the end).
 
-The other piece is producing those modules: ECL's compiler emits C, and the
-cross build already compiles Lisp to wasm objects for ECL's own library
-(`CROSS-COMPILER` runs the host ECL's `compile`, `emcc` compiles the result;
-the ABI lives in `wasm32.cross_config`, and `cmp::*cross-compiling*` is the
-switch).  What is missing is exposing that for arbitrary files -- an
-`ECL_TO_RUN` + cross-config `compile-file` invocation -- which is mechanical
-work rather than research.
+#### The compiler side: `wasm/mk-wasm32-target.lsp`
 
-That last step is now mapped too.  `compile-file` takes `:target
-<target-info>`; it dispatches through `compile-with-target-info`, which binds
-`c::*config-options*` (the compiler program variables `c:*cc*`, `*cc-flags*`,
-`*ld*`, `*nm*`, `*ar*`, `*ranlib*`, `*cmpinclude*`, `*features*` and the ABI
-constants) around the compilation and sets `*cross-compiling*`.  Two snags
-found: the file it wants is a *Lisp alist* written by `c::write-target-info`
-(`read-target-info` chokes on the shell `cross_config` with "CL_FIXNUM_TYPE=INT
-is not of type LIST"), and the wasm ECL cannot write it for itself, because
-`(require :cmp)` there fails with "Don't know how to REQUIRE CMP" -- it ships
-only the bytecodes compiler.  So the missing artefact is a `wasm32.target` file:
-the host's own target info (the host ECL can produce it once `cmp` is loaded)
-with `c:*cc*`/`*ld*` set to `emcc`, the Emscripten flags, `*nm*`/`*ar*`/
-`*ranlib*` set to the LLVM tools, `*cmpinclude*` pointed at the target include
-directory, `*features*` set to the wasm build's features, and the ABI constants
-taken from `wasm32.cross_config`.  With that file the AOT chain is:
-`compile-file ... :system-p t :target wasm32.target` -> C -> `emcc -c` -> object
--> `emcc -sSIDE_MODULE=2` -> `dlopen` + `init_<name>` in the MAIN_MODULE ECL.
+`compile-file` takes `:target <target-info>`; it dispatches through
+`compile-with-target-info`, which binds `c::*config-options*` around the
+compilation and sets `*cross-compiling*`.  The target-info is a *Lisp alist*
+written by `c::write-target-info` -- `read-target-info` rejects the shell
+`wasm32.cross_config` with "CL_FIXNUM_TYPE=INT is not of type LIST", because
+that file is only used by `configure` to fill in `ecl/config.h`.
+
+A native ECL writes its own target-info while it builds its Lisp library, and
+so, it turns out, does the wasm build: `build/compile.lsp` runs inside the
+wasm `ecl_min` under Node, so `$WORK/ecl-node/target-info.lsp` is the genuine
+article -- `*target-identifier*` "wasm32-unknown-emscripten", fixnum 30 bits,
+`long` 32 bits, `*cc*` = emcc, `*features*` = the wasm features (plus a
+`:cross` left over from the build).  There was no need to synthesise one;
+`wasm/mk-wasm32-target.lsp` only has to make it produce *loadable modules*
+instead of programs, and to drop `:cross`.  Reading it does need `cmp` loaded,
+because the machine and host-type structures have to exist.
+
+Two things it sets matter:
+
+- `-fPIC` in `*cc-flags*`.  Without it wasm-ld refuses the module:
+  `relocation R_WASM_MEMORY_ADDR_LEB cannot be used against symbol 'VV';
+  recompile with -fPIC` (`VV` is the constants vector every compiled Lisp file
+  has).  And the failure is quiet: link without the export flag below and you
+  get a 336-byte, symbol-less module instead of an error.
+- `-Wl,--export=__ecl_init_fas_CODE` in `*ld-shared-flags*`.  `-sSIDE_MODULE=2`
+  exports only what is asked for, and `si_load_binary` dlsym's
+  `_ecl_library_default_entry()`, i.e. `INIT_PREFIX "CODE"` with `INIT_PREFIX`
+  `"__ecl_init_fas_"` for a `:fasl` module (`c/ffi/libraries.d`;
+  `compute-init-name` in `cmp/cmpbackend-cxx/cmpc-init-name.lsp` -- the name is
+  only randomised for `:object`, which is what `:system-p t` builds).
+  `-sEXPORTED_FUNCTIONS=___ecl_init_fas_CODE` works too, with one extra
+  underscore, because those names are the JavaScript ones.
+
+With that, one call in the host ECL
+
+    (compile-file "book.lisp" :target "/tmp/wasm32.target")
+
+emits `book.c`, `book.o` and `book.fas` -- the last a 2.9 KB wasm module
+exporting `__ecl_init_fas_CODE`.  It takes 0.13 s for a small file.
+
+#### The loader side: `DYLINK=1` in `wasm/build-ecl-wasm.sh`
+
+Three changes, all of them forced by measurements:
+
+- `ENABLE_DLOPEN` and `HAVE_DLFCN_H` in `ecl/config.h`.  `configure` only
+  defines them with `--enable-shared`, which a wasm build cannot use, and
+  without them `si_load_binary`, `ecl_library_open` and the whole of
+  `c/ffi/libraries.d` are compiled out -- `(fboundp 'si::load-binary)` was NIL.
+  Defining them by hand after `configure` keeps `--disable-shared` (a static
+  `libecl.a` is still right) and gives ECL Emscripten's `dlopen`/`dlsym`.
+- `-fPIC` for *the whole runtime*, not just for book modules.  wasm-ld's
+  `--export-dynamic` (what `-sMAIN_MODULE=1` asks for) exports every symbol of
+  a PIC object and *none* of a non-PIC one.  Measured with one source compiled
+  both ways: the `-fPIC` build exports `my_func` and `my_global`, the other
+  exports neither.  Without it the main module exported 2,368 functions -- all
+  of libc and bdwgc -- and no libecl at all, and loading a module died with
+  `undefined symbol 'cl_env_p'`.  (This is why `-sMAIN_MODULE=2` is not
+  enough either: it exported 18 functions.)
+- `-sERROR_ON_UNDEFINED_SYMBOLS=0` and `-Wl,--allow-multiple-definition`, for
+  two ECL build quirks that a static link hides: `libeclgmp.a` references
+  `__gmpz_jacobi`, `__gmpn_sub_nc` and `__gmpn_add_nc` without defining them,
+  and `ecl-cdb.o` is a member of both `libecl-help.a` and `libecl-cdb.a`.
+
+Result: `dist/node-raw-dylink2` is 6,066,302 bytes of wasm (5,191,190 before),
+4,409 exports, and `cl_env_p`, `cl_symbols`, `ecl_aref_unsafe` and `ecl_times`
+are among them.
+
+#### Measured: compiled wasm running inside the wasm ECL
+
+Compile `bench.lisp` on the host, `(load "/tmp/bench.fas")` in the wasm ECL,
+and time the same functions before and after (Node 24, `node-raw-dylink2`):
+
+| benchmark | bytecode | wasm AOT | speedup |
+| --- | --- | --- | --- |
+| `fib 25` (naive, fixnum decls) | 0.308 s | 0.004 s | 77x |
+| `(dotimes (i 2000000) (setq s (+ s (logand i 7))))` | 2.115 s | 0.017 s | 124x |
+
+Both are larger than the 12.6x that native C beats the bytecode compiler by,
+and the loop is much larger: the bytecodes compiler does no type inference, so
+`(+ s (logand i 7))` goes through generic arithmetic with bignum checks, while
+the C compiler unboxes under `(declare (fixnum ...))`.  Numeric ACL2 code
+should land somewhere between the two ratios.  Even the low end removes the
+12.6x interpreter factor from the 98x slowdown, leaving the ~7.8x wasm factor,
+which is what the rest of this document calls the only large lever left.
+
+#### Books: the expansion file, and what it needs
+
+Nothing in ACL2 has to change.  ACL2 compiles a book's *expansion* file
+(`<book>@expansion.lsp`, see `expansion-filename`), loads it, and deletes it
+unless `save-expansion-file` is set -- which the environment variable
+`ACL2_SAVE_EXPANSION=1` arranges.  `include-book` later loads the compiled file
+by name (`load-compiled` -> `(load ...)`), so if that file is a wasm module
+instead of a fasl of bytecode, the wasm ECL dlopens it.  The certificate does
+not care: `.cert` records the *source* hash (`book-hash` of `expansion-alist`,
+`cert-data` and `ev-lst`), not the compiled file.
+
+Three things surfaced while wiring this up, all measured:
+
+1. **The expansion file is not plain text.**  `fact@expansion.lsp` (1,536 B for
+   a five-event book) begins with serialized `*HCOMP-FN-ALIST*` /
+   `*HCOMP-CONST-ALIST*` / `*HCOMP-MACRO-ALIST*` data as `#Z[...]` / `#Y[...]`,
+   ACL2's `serialize` read macros, which live in `*acl2-readtable*`.  Compiling
+   it therefore has to happen in a process with the ACL2 sources loaded.  The
+   natural one is a *native saved ACL2*: its ECL also has the C compiler.
+2. **The two ECLs disagree about the entry point.**  The ECL inside a native
+   ACL2 build emits `init_fas_CODE`; the ECL that build-ecl-wasm.sh makes
+   emits `__ecl_init_fas_CODE`, and `si_load_binary` dlsym's the latter (see
+   `init-function-name` in each `cmpc-init-name.lsp`).  `wasm/aot-acl2.lsp`
+   therefore does the compile in two steps -- ECL writes the C, the script
+   rewrites the name and runs emcc -- instead of letting `compile-file` link.
+   It also explains the "undefined symbol: `__ecl_init_fas_ACL2_FNS`" from the
+   repository's own native `.fas` files: those were built by the release ECL.
+3. **`.fasc` has a fixed meaning for `load`.**  ECL dispatches on the file type
+   through `ext::*load-hooks*` (`c/main.d`), mapping `"fasc"` to
+   `si::load-bytecodes` because that is what the bytecodes compiler writes.  A
+   module that keeps the `.fasc` name has to be recognised some other way, so
+   `wasm/acl2-wasm.lsp` wraps that hook: sniff `\0asm` and send such files to
+   `si::load-binary` (the dlopen path), everything else to the bytecodes
+   loader.  ACL2's own start-up still loads its `.fasc` files through the
+   wrapper, so this is transparent.
+
+(For plain Lisp that does *not* need ACL2's readtable -- the microbenchmarks
+below, or the experiment of compiling ACL2's own sources -- `wasm/aot-books.lsp`
+does the same job in the host ECL that build-ecl-wasm.sh installs, using
+`compile-file :target` directly.)
+
+State: `saved_acl2` + `wasm/aot-acl2.lsp` turns
+`books/textbook/chap10/fact@expansion.lsp` into a 5,339-byte module exporting
+`__ecl_init_fas_CODE` in 0.28 s, and the wasm ECL dlopens it -- `include-book`
+reaches the module's initialisation.  It then fails inside that initialisation
+with "Wrong number of arguments passed to function SI:WAITPID", and the
+measured cost of 500 `(fact 500)` calls is unchanged (0.754 s versus 0.747 s
+for the bytecode fasl), i.e. the module is not actually taking effect.  The
+probable cause is that the two ECLs are not the same build: the native ACL2
+here was made with the ECL 26.5.5 *release*, while the wasm ECL comes from the
+patched source tree, so their structures and internal function signatures need
+not agree.  The fix is to make the native ACL2 (or at least its ECL) and the
+wasm ECL come from one source tree, which is also what the `<book>.fasc`
+route needs in order to be trustworthy.
+
 
 ### Options for cutting the ~361 s startup
 
@@ -863,7 +978,27 @@ The realistic options are:
    per book the only way to make this fast is item 5 -- cut the startup, or
    amortize it over books in a batch driver.
 7. Wasmtime/WASI: blocked on ECL (see above).
-8. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
+8. **Native wasm code for the prover.** *Working (2026-11-06).*
+   `wasm/mk-wasm32-target.lsp` + `wasm/aot-books.lsp` + `DYLINK=1` builds turn
+   a Lisp file into a wasm module the wasm ECL dlopens; measured 77-124x over
+   the bytecode compiler.  This removes the 12.6x half of the 98x and leaves
+   the ~7.8x wasm factor, so it should be done *with* item 5 rather than
+   instead of it.  What is still missing:
+   - **two phases, not one.** `emcc` only exists on the host, so a book must be
+     certified in the wasm ECL (which writes the expansion file) and then
+     AOT'd in a separate host pass.  For a browser, either the modules are
+     built and shipped ahead of time, or a C compiler is compiled to wasm
+     (no JIT in a page: wasm cannot generate wasm without one).
+   - **the pipeline needs a driver.** Certify with `ACL2_SAVE_EXPANSION=1`,
+     then run `aot-books` over the `@expansion.lsp` files; nothing yet
+     automates "certify 1,486 books, then AOT them, then ship".
+   - **extend it to the ACL2 sources themselves.** The same trick applies to
+     `init.lisp`/`acl2.lisp` and the `*1*` counterparts, which is where the
+     352 s start is spent; that needs an `acl2-wasm.lsp` that loads modules
+     instead of `.fasc`, and a check that a module-per-source-file behaves
+     like the single-file `.fasc`.
+9. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)
    are small and self-contained; the `-O0` override in ECL's configure is
-   worth revisiting upstream.
+   worth revisiting upstream, as is the `MAIN_MODULE=1` + `ENABLE_DLOPEN`
+   combination (ECL has no wasm branch for its loader at all).

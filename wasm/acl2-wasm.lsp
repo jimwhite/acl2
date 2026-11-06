@@ -56,6 +56,36 @@
 
 (ext:install-bytecodes-compiler)
 
+; Let LOAD find compiled books that are wasm modules.  ECL dispatches on the
+; file type through EXT::*LOAD-HOOKS* ((type . handler) ...), and the bytecodes
+; compiler maps ".fasc" to SI::LOAD-BYTECODES because that is what it writes.
+; A book module from wasm/aot-acl2.lsp deliberately keeps the same name -- ACL2
+; asks for "<book>.fasc" -- but is a wasm side module, so sniff the wasm magic
+; (\0asm) and send those to SI::LOAD-BINARY, the dlopen path.  Nothing changes
+; for bytecode files, which this build still uses for ACL2 itself.
+;
+; These are top-level DEFUNs rather than a LABELS: this file is compiled, and a
+; closure over a LABELS-local function ends up calling it as a global.
+(defun acl2-wasm-module-p (file)
+  (handler-case
+      (with-open-file (s file :element-type '(unsigned-byte 8))
+        (and (= (or (read-byte s nil -1) -1) 0)
+             (= (or (read-byte s nil -1) -1) 97)      ; #\a
+             (= (or (read-byte s nil -1) -1) 115)     ; #\s
+             (= (or (read-byte s nil -1) -1) 109)))   ; #\m
+    (error () nil)))
+
+(defun acl2-wasm-load-fasc (file verbose print external-format)
+  (if (acl2-wasm-module-p file)
+      (si::load-binary file verbose print external-format)
+      (si::load-bytecodes file verbose print external-format)))
+
+(when (fboundp 'si::load-binary)
+  (let ((hook (assoc "fasc" ext::*load-hooks* :test #'equal)))
+    (if hook
+        (setf (cdr hook) #'acl2-wasm-load-fasc)
+        (push (cons "fasc" #'acl2-wasm-load-fasc) ext::*load-hooks*))))
+
 (unwind-protect
     (let ((*standard-output* (make-broadcast-stream))
           (*error-output* (make-broadcast-stream))
