@@ -685,6 +685,13 @@ native build tolerates it only because its frames are ~100 bytes, so a native
 run under `gdb` with `ulimit -s 4096` will fault with the recursion cycle on
 the stack, which is a much better starting point than guessing.
 
+ECL's own C-stack limit does fire -- `(ext:set-limit 'ext:c-stack 32MB)` is
+detected as `ecl_cs_overflow` -- but the handler cannot report it: building the
+condition (`cl_make_condition`) itself needs stack and the process aborts, at
+32 MB and at 128 MB alike.  The excursion happens at a *fixed point* in pass 1
+(around 15,000 lines of boot-strap output, the same place for every stack
+size), so it is one deep excursion rather than a per-form leak.
+
 Smaller things learned, each of which cost a cycle: `-sEXPORT_NAME` cannot be
 combined with the HTML target ECL's link step emits; a worker must be told
 `locateFile` (or `wasmBinary`, which needs `INCOMING_MODULE_JS_API`); a page has
