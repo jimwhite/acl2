@@ -23,7 +23,11 @@
 #
 # Environment:
 #
-#   ACL2_AOT_ECL    host ECL to use (default /opt/eclwasm/ecl-host/bin/ecl)
+#   ACL2_AOT_ECL    ECL to compile with (default $WORK/ecl-cross/bin/ecl if it
+#                   exists, else $WORK/ecl-host/bin/ecl).  It must be
+#                   configured like the wasm runtime -- in particular without
+#                   threads -- or the modules it produces will not work: see
+#                   the "Cross-compilation ECL" section of build-ecl-wasm.sh.
 #   ACL2_AOT_HOME   ACL2 source directory (default: the parent of this script)
 #   ACL2_AOT_TARGET target-info file, only used to decide whether to regenerate
 #                   (default /tmp/wasm32.target)
@@ -43,7 +47,14 @@ set -e
 
 THISDIR=$(cd "$(dirname "$0")" && pwd)
 ACL2_AOT_HOME=${ACL2_AOT_HOME:-$(cd "$THISDIR/.." && pwd)}
-ACL2_AOT_ECL=${ACL2_AOT_ECL:-/opt/eclwasm/ecl-host/bin/ecl}
+WORK=${WORK:-/opt/eclwasm}
+if [ -z "${ACL2_AOT_ECL:-}" ]; then
+  if [ -x "$WORK/ecl-cross/bin/ecl" ]; then
+    ACL2_AOT_ECL=$WORK/ecl-cross/bin/ecl
+  else
+    ACL2_AOT_ECL=$WORK/ecl-host/bin/ecl
+  fi
+fi
 ACL2_AOT_TARGET=${ACL2_AOT_TARGET:-/tmp/wasm32.target}
 ACL2_AOT_DELTA=${ACL2_AOT_DELTA:-/tmp/wasm32.delta}
 ACL2_AOT_BYTECODE_DIR=${ACL2_AOT_BYTECODE_DIR:-/opt/eclwasm/bytecode}

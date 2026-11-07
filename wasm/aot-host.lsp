@@ -106,6 +106,21 @@
 (format t "~&;; loaded ACL2 sources (~d compiled file~:p); readtable ~s~%"
         (cl-user::aot-fasc-count) (type-of *acl2-readtable*))
 
+;; The compiled-file extension is a property of the *target*, but ACL2 computes
+;; it at load time from this ECL's own *COMPILED-FILE-EXTENSION* -- "fas" here,
+;; because the host has a C compiler -- and INITIALIZE-STATE-GLOBALS splices it
+;; into the boot strap with `,*compiled-file-extension*', i.e. at
+;; macroexpansion time.  A module compiled here would therefore tell the wasm
+;; ACL2 to look for ".fas" files (it asked for fact.fas instead of the
+;; fact.fasc module it had).  Pin the target's value, which is what the wasm
+;; ECL uses.  Any other host-dependent compile-time constant would need the same
+;; treatment; see WASM-PORT-NOTES.md.
+(setq *compiled-file-extension* "fasc")
+
+(format t ";; compiling for extension ~s (the target's, not this ECL's ~s)~%"
+        *compiled-file-extension*
+        (pathname-type (compile-file-pathname "foo.lisp")))
+
 ;;;; ------------------------------------------------------------------
 ;;;; 2. The wasm32 target
 ;;;; ------------------------------------------------------------------

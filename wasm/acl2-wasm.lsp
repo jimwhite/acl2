@@ -36,6 +36,19 @@
 ; we want, and it is also larger than MOST-POSITIVE-FIXNUM here, so it cannot
 ; be passed through EXT:SET-LIMIT on this (30-bit fixnum) build.
 
+; This build has no package-locks module -- it is written with C-INLINE forms,
+; so ECL's Emscripten configuration leaves it out -- and ACL2 copes by setting
+; SI::*IGNORE-PACKAGE-LOCKS* (see the #+emscripten branch in acl2.lisp).  But
+; ECL's own Lisp-level code, and modules compiled by a host ECL that does have
+; locks, can still call these two functions, and the first prompt dies with
+; "The function EXT:LOCK-PACKAGE is undefined".  Define them as no-ops, which is
+; what the rest of the build already assumes.
+(dolist (name '("LOCK-PACKAGE" "UNLOCK-PACKAGE"))
+  (let ((sym (find-symbol name "EXT")))
+    (when (and sym (not (fboundp sym)))
+      (setf (symbol-function sym)
+            (lambda (&rest args) (declare (ignore args)) nil)))))
+
 ; Let LOAD find compiled files that are wasm modules.  ECL dispatches on the
 ; file type through EXT::*LOAD-HOOKS* ((type . handler) ...), and the bytecodes
 ; compiler maps ".fasc" to SI::LOAD-BYTECODES because that is what it writes.

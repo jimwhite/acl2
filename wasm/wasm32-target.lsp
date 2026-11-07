@@ -94,7 +94,19 @@
                "-shared -sSIDE_MODULE=2 -Wl,--export=__ecl_init_fas_CODE"
                " -fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
                " -sSUPPORT_LONGJMP=wasm -sALLOW_MEMORY_GROWTH=1"
-               " -sERROR_ON_UNDEFINED_SYMBOLS=0"))
+               " -sERROR_ON_UNDEFINED_SYMBOLS=0"
+               ;; bdwgc is conservative: a Lisp object that lives only in a
+               ;; register (a wasm local) is invisible to it, and gets
+               ;; collected under the program's feet.  ECL's wasm build has to
+               ;; use the same binaryen pass as the main module
+               ;; (src/configure: "-sBINARYEN_EXTRA_PASSES=--spill-pointers
+               ;; --strip-debug"), which spills pointers to the shadow stack.
+               ;; Without it a compiled module silently loses live data: a
+               ;; one-line (length (loop repeat 100000 collect 1)) in a module
+               ;; returns 65 instead of 100000, and with GC_DONT_GC it is
+               ;; right.  See WASM-PORT-NOTES.md, "Native wasm code for ACL2's
+               ;; own sources".
+               " -sBINARYEN_EXTRA_PASSES=--spill-pointers"))
 
 ;;; A side module's object code has to be position independent: without -fPIC
 ;;; wasm-ld rejects the module with

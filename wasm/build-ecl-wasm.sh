@@ -208,6 +208,35 @@ fi
 export PATH="$HOST_PREFIX/bin:$PATH"
 
 # ---------------------------------------------------------------------------
+# Cross-compilation ECL (for wasm/aot-book.sh)
+# ---------------------------------------------------------------------------
+#
+# Compiling Lisp *for the wasm target* has to be done by an ECL configured like
+# the target, not like the host.  The difference that bit us: a threaded ECL's
+# DEFSTRUCT expands to (mp::remcas 'accessor) / (mp::define-cas-expander ...)
+# calls, which a module for this runtime cannot make because the runtime has no
+# threading layer, so the first DEFSTRUCT in a compiled file dies with "The
+# function MP:REMCAS is undefined".  Threaded and non-threaded builds also
+# produce .fas files that cannot be loaded into each other (ecl_process_env).
+# So build one more ECL: same tree, target's configure options, C compiler on.
+
+CROSS_PREFIX=$WORK/ecl-cross
+if [ "$REBUILD" = 1 ] || [ ! -x "$CROSS_PREFIX/bin/ecl" ]; then
+  log "Building cross-compilation ECL in $WORK/ecl-cross-src"
+  rm -rf "$WORK/ecl-cross-src"
+  mkdir -p "$WORK/ecl-cross-src"
+  tar -C "$ECL_SRC" -cf - --exclude='./build' --exclude='./.git' . |
+    tar -C "$WORK/ecl-cross-src" -xf -
+  (
+    cd "$WORK/ecl-cross-src"
+    ./configure --prefix="$CROSS_PREFIX" --disable-threads --with-tcp=no \
+      > "$WORK/ecl-cross-configure.log" 2>&1
+    make -j"$JOBS" > "$WORK/ecl-cross-make.log" 2>&1
+    make install > "$WORK/ecl-cross-install.log" 2>&1
+  )
+fi
+
+# ---------------------------------------------------------------------------
 # Target (wasm) ECL
 # ---------------------------------------------------------------------------
 #

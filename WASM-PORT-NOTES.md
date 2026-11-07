@@ -941,13 +941,64 @@ functions are `:program` mode and have no `*1*` counterpart at all.  The
 staleness check compares the *sources* with the compiled file, so any edit to
 an ACL2 source invalidates it: rebuild this file last.
 
-#### Native wasm code for ACL2's own sources (attempted; not finished)
+#### Native wasm code for ACL2's own sources (works: 310.6 s -> 41.1 s)
 
 `wasm/aot-book.sh` compiles plain Lisp files as well as expansion files, so
-ACL2's own sources can be built the same way: 42 modules (`acl2-fns` plus
-`*acl2-files*` without `defpkgs` and `proof-builder-pkg`, which `load-acl2`
-loads from source), 24 MB in total, about 4 minutes.  Two obstacles had to be
-dealt with first, and both are worth knowing about:
+ACL2's own sources can be built the same way: 43 modules (`acl2-fns`, the 41 of
+`*acl2-files*` that `load-acl2` loads compiled, and `acl2-exec-aot` for the
+`*1*` counterparts), about 24 MB in total and about 6 minutes to build.  The
+wasm ACL2 then loads them instead of bytecode -- the sniffing load hook in
+`wasm/acl2-wasm.lsp` already handles the mixture -- and the boot strap, which is
+what the 352 s was spent on, mostly runs compiled code:
+
+| | bytecode | native modules |
+| --- | --- | --- |
+| start to the prompt | 310.6 s | **41.1 s** |
+| `include-book "textbook/chap10/fact"` | 0.03 s | 0.03 s (module, no warning) |
+| 500 x `(fact 500)` | 0.747 s | **0.04 s** |
+
+Two bugs had to be found first, and both are worth knowing because they apply to
+*any* module built for this runtime.
+
+1. **A side module must be linked with `--spill-pointers`.**  bdwgc is a
+   conservative collector: a Lisp object that lives only in a register -- in
+   wasm, a local -- is invisible to it, so it gets collected under the running
+   program.  ECL's own wasm build passes
+   `-sBINARYEN_EXTRA_PASSES='--spill-pointers,--strip-debug'` (src/configure),
+   which spills pointers to the shadow stack, but the side modules built by
+   `compile-file :target` used only `*side-module-flags*`, which did not have
+   it.  The symptom was a wrong *value* rather than a crash, and it depended on
+   allocation: a one-line function in a module,
+
+       (defun p-loop-collect (n) (length (loop repeat n collect 1)))
+
+   returned 65 (and 41 841 with a different allocation history) instead of
+   100000, while the bytecode build returned 100000, `GC_DONT_GC=1` made it
+   correct, and a *bigger* function that had already spilled the list to the
+   stack was fine.  That last point is why a deliberately shallow probe (a live
+   list held across a forced `si::gc` at 40 frames deep) passed and misled us
+   earlier.  It also explains every symptom of item 2 below: ACL2's worlds were
+   silently corrupted, hence "X is not of type CONS" with X varying, hence the
+   dependence on heap size and on how much a driver printed.
+2. **Compile-time constants come from the host, not the target.**
+   `initialize-state-globals` in acl2.lisp sets the ACL2 global
+   `compiled-file-extension` with `,*compiled-file-extension*`, i.e. the value is
+   spliced in at *macroexpansion* time.  A module compiled by the host ECL baked
+   in the host's `"fas"`, so the wasm ACL2 looked for `<book>.fas` and fell back
+   to the expansion file ("Loading expansion file ... in place of compiled file
+   ... fact.fas, because the compiled file is missing").  `wasm/aot-host.lsp`
+   now pins `*compiled-file-extension*` to the target's `"fasc"` before
+   compiling.  Anything else that a macro evaluates at expansion time from host
+   state needs the same care; the target-info binds `cl:*features*` (so
+   conditionals are right) but not variables like this one.
+
+A third, smaller one: the wasm runtime has no package-locks module, and
+`ext:lock-package` / `ext:unlock-package` are called at the first prompt, so
+`wasm/acl2-wasm.lsp` defines them as no-ops -- which is what `acl2.lisp`'s
+`#+emscripten` branch already assumes.
+
+The two obstacles that came before those bugs are still true and still worth
+knowing:
 
 1. **The reader is per file.**  A book's expansion file *needs*
    `*acl2-readtable*`; an ACL2 *source* file must not be read with it -- the
@@ -955,71 +1006,39 @@ dealt with first, and both are worth knowing about:
    tries to read #\x, then x must either be a single character or one of
    Space, Tab, ...  However, Null is neither ...".  Bind the readtable only for
    `@expansion` files.
-2. **The host ECL must be configured like the target.**  `$WORK/ecl-host` is
-   configured with defaults, i.e. with threads; the wasm build is not.  A
+2. **The cross-compiler must be configured like the target.**  `$WORK/ecl-host`
+   is configured with defaults, i.e. with threads; the wasm build is not.  A
    threaded ECL's `DEFSTRUCT` expands to `(mp::remcas 'accessor)` and
    `(mp::define-cas-expander ...)` calls (src/lsp/defstruct.lsp,
-   `#+threads make-atomic-accessors`), and the wasm runtime has no such
-   functions, so the first structure compiled by that host kills the load with
-   "The function MP:REMCAS is undefined".  This is the same lesson as the
-   `SI:WAITPID` failure above, one level down: a cross-compiler has to *be* the
-   target build in everything that affects code generation.  `$WORK/ecl-cross`
-   is now that build -- the patched tree configured
-   `--disable-threads --with-tcp=no`, made by the same `build-ecl-wasm.sh`
-   source tree.  (ACL2's own `#+threads` conditionals are fine either way,
-   because `compile-with-target-info` progv-binds `cl:*features*` from the
-   target-info; only ECL's own macro expansions leak the host's configuration.)
+   `#+threads make-atomic-accessors`), which this runtime cannot make, so the
+   first structure compiled by that host kills the load with "The function
+   MP:REMCAS is undefined"; threaded and non-threaded builds also produce `.fas`
+   files that cannot be loaded into each other (`ecl_process_env`).  So the
+   build script now produces a third ECL, `$WORK/ecl-cross` -- the patched tree
+   configured `--disable-threads --with-tcp=no` -- and `wasm/aot-book.sh`
+   prefers it.
 
-With 42 modules, `load-acl2` works -- all modules dlopen and initialise,
-`*acl2-readtable*` is live, and the mixed bytecode/module tree is handled by
-the sniffing load hook.  `initialize-acl2` then gets all the way to the final
-`ld` of the `verify-termination-boot-strap` forms **in about 20 s instead of
-312 s**, and fails there:
-
-    (VERIFY-TERMINATION-BOOT-STRAP QUOTE-LISTP)  ->  IF is not of type CONS
-
-Not yet diagnosed.  It is not a loading problem: every module initialised, the
-cross-module references resolve (checked separately with two modules that call
-each other), and the error is a raw Lisp type error inside event processing on
-the *first* function verified -- so it is a behaviour difference between some
-C-compiled and bytecode-compiled ACL2 function.  Ruled out so far:
-`ext:use-direct-c-call` (NIL by default in this ECL, and the proclamation
-works), `:threads` (absent from the target features, as it should be), and
-unresolved externals.  Candidates next: something in `defuns`/`defthm`/
-`prove`/`rewrite`/`translate` whose C and bytecode versions differ under
-ACL2's `(declare (optimize (safety 0)))` proclamations, or an Emscripten
-mis-compilation at the `-O2` the target flags ask for.
-
-Two things that would have made this much easier, for next time: reproduce it
-*natively* first (40 s per run rather than 5 minutes), but note that a native
-reproduction cannot just `compile-file` ACL2's sources -- they need the ACL2
-package and the macros from the earlier files, so `defpkgs.lisp` first and then
-the ``make compile'' order, which costs minutes; and when bisecting in wasm,
-AOT one file at a time over bytecode, at ~5 minutes per run.
-
-Bisecting is much cheaper than that once most files are native, because the
-boot strap itself becomes fast: reverting one file to bytecode and re-running
-costs 20-90 s.  Keeping two master directories -- `$WORK/modules` (the native
-modules) and `$WORK/bytecode` (the wasm ECL's bytecode) -- makes each step two
-`cp`s.  With 42 files that found, in six runs, that **`rewrite.lisp` alone**
-reproduces the failure; the errors vary from run to run
-(`IF`, `R-E-P`, `GENEQV-LST`, `FC-ROUND`, `9`, `COMMON-LISP-COMPLIANT-LAMBDAS`
-where a cons is expected), which is the signature of a wrong *value* rather
-than a wrong control flow.
-
-What has been ruled out for that file: `-O0` instead of `-O2` (same failure),
-`(optimize (safety 3))` (same failure, so it is not a violated declaration),
-`ext:use-direct-c-call` (NIL by default here, and the proclamation works), and
-`si::` code or `fixnum`/`inline` declarations in the file (there are none).
-What muddies it: the failure is *allocation-dependent*.  With
-`GC_INITIAL_HEAP_SIZE=2000000000` the same all-native configuration fails
-differently, in the boot strap itself -- `Did not find "float-a" in
-pass-2-alist` -- and a driver that prints the boot strap's (megabyte of) output
-passes where a quiet one dies.  That points at the collector or the address
-layout rather than at `rewrite.lisp`'s code, and it is the same suspicion the
-wasm build already carries: its bdwgc is unsound (see "First full run
-(2026-11-05)").  Worth investigating with `GC_PRINT_STATS`, a fixed heap so
-addresses are reproducible, and ECL's `si::` GC-inspection helpers.
+How that was found, in case it happens again: with the modules loading
+correctly, the boot strap reached the last stage in about 20 s and then failed
+at `(VERIFY-TERMINATION-BOOT-STRAP QUOTE-LISTP)` with "`IF is not of type CONS`"
+-- a different symbol each run (`R-E-P`, `GENEQV-LST`, `FC-ROUND`, `9`,
+`SIGNATURE-RULES-FORM-1`), i.e. a wrong *value* in world bookkeeping rather than
+wrong control flow.  Ruled out along the way: `-O0` versus `-O2`,
+`(optimize (safety 3))`, `ext:use-direct-c-call`, and `si::`/fixnum/inline
+declarations (there are none in `rewrite.lisp`); a native control
+(`compile-acl2` and `initialize-acl2` in `$WORK/ecl-cross`) reported `INIT OK`,
+which is what showed the trouble was Emscripten-specific and not ACL2's Lisp or
+ECL's Lisp-to-C translation.  Bisecting was cheap because native modules make
+the boot strap fast: reverting one file to bytecode and re-running costs
+20-90 s, and with master copies in `$WORK/modules` and `$WORK/bytecode` each
+step is two `cp`s.  Six runs pointed at `rewrite.lisp`, which was a red herring
+-- it was simply the file whose code happened to hold a live pointer in a wasm
+local at the wrong moment.  What broke the case open was a differential test:
+the same one-line function compiled both ways, where bytecode gave 100000 and
+the module gave 65, and `GC_DONT_GC=1` made the module agree.  Lesson: when a
+compiled function returns a plausible-but-wrong value, compare it against the
+bytecode build on the *smallest* expression that still shows the difference, and
+try `GC_DONT_GC` before reading any Lisp.
 
 Bytecode is still needed after modules exist: `wasm/acl2-wasm-compile` copies
 its `.fasc` output to `$WORK/bytecode` (`/opt/eclwasm/bytecode`) and
