@@ -38,7 +38,12 @@ mkdir -p "$DEST/lib" "$DEST/files"
 cp "$HERE/index-gh.html" "$DEST/index.html"
 cp "$HERE/smoke.html" "$DEST/smoke.html"
 cp "$HERE/dylink.html" "$DEST/dylink.html"
+cp "$HERE/repl.html" "$DEST/repl.html"
 cp "$HERE/acl2.html" "$DEST/acl2.html"
+
+# The script the ACL2 page feeds to the boot strap.  It lives next to the pages,
+# so it has to be published next to them or the page 404s.
+cp "$HERE/demo.lsp" "$DEST/demo.lsp"
 
 # One worker, pointed at the dynamic-linking build for every mode, so the site
 # does not have to carry two copies of the ECL module.

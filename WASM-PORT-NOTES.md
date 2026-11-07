@@ -1135,6 +1135,38 @@ The ways out, none of them started:
   feasible if a post-boot-strap linear memory can be made small enough to ship:
   measured at ~720 MB, so not as it stands.
 
+### An interactive REPL in the page (works, no build change)
+
+`wasm/web/repl.html` is a real console, not a canned script: definitions and
+values persist between inputs.  It works because of two facts about ECL:
+
+- **`CL_BOOT` is idempotent.**  It returns 1 immediately when the runtime is
+  already up (`main.d`), so `MAIN` can be re-entered.
+- **`MAIN` is just `cl_boot` + `si_simple_toplevel`**, and the top level reads
+  stdin until EOF.
+
+So the worker picks its stdin text, calls `Module.callMain([])`, lets ECL reach
+EOF, catches the resulting `ExitStatus`, and calls `callMain` again for the next
+input: each input gets a fresh top level with the whole heap -- packages,
+`defun`s, special bindings -- still in place.  With
+`noInitialRun: true, noExitRuntime: true` the runtime survives the exit at EOF.
+Measured in the page: `(defvar *x* 41)` then `(print (+ *x* 1))` prints 42,
+`(defun f (n) (* n n))` then `(f 9)` gives 81, and `(car 1)` prints the condition
+and leaves the session usable.
+
+What this build does *not* allow is calling into Lisp directly: the wasm module
+exports 4,409 functions (`cl_boot`, `si_safe_eval`, `si_string_to_object`,
+`ecl_cstring_to_base_string_or_nil`, `si_write_object`, `malloc`, ... because
+side modules need them), but the JS glue only wires up what is in
+`EXPORTED_FUNCTIONS`/`EXPORTED_RUNTIME_METHODS`, which here is `FS`,
+`callMain` and the stdio hooks -- `Module._malloc` is deliberately
+`makeInvalidEarlyAccess("_malloc")`.  Re-entering `MAIN` needs none of them,
+which is why the REPL works today; a direct eval entry point would mean adding
+those symbols to the glue's export list.
+
+The ACL2 page cannot use this yet, because the boot strap has to *finish* once
+before a prompt exists, and that is the stack wall above.
+
 ### Publishing the browser harness (GitHub Pages)
 
 `wasm/web/publish-gh-pages.sh <dir>` stages the pages, `worker.js` (rewritten to

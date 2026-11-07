@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ECL in the browser — interactive</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem;
+         background: #10131a; color: #d6dbe5; }
+  h1 { font-size: 1rem; font-weight: 600; margin: 0 0 .25rem; }
+  .sub { font-size: .8rem; color: #9aa7ba; margin: 0 0 .75rem; }
+  .sub a { color: #7fb2ff; }
+  #status { font-family: ui-monospace, monospace; font-size: .8rem;
+            color: #7fb2ff; margin-bottom: .5rem; min-height: 1.1rem; }
+  #log { font-family: ui-monospace, monospace; font-size: .85rem;
+         white-space: pre-wrap; word-break: break-word; background: #0a0d12;
+         border: 1px solid #222b38; border-radius: 6px 6px 0 0; padding: .75rem;
+         height: 58vh; overflow: auto; margin: 0; }
+  form { display: flex; margin: 0;
+         border: 1px solid #222b38; border-top: 0;
+         border-radius: 0 0 6px 6px; background: #0a0d12; }
+  #prompt { font-family: ui-monospace, monospace; font-size: .85rem;
+            color: #7fb2ff; padding: .6rem .1rem .6rem .75rem; }
+  #line { flex: 1; font-family: ui-monospace, monospace; font-size: .85rem;
+          background: transparent; border: 0; outline: 0; color: #d6dbe5;
+          padding: .6rem .75rem .6rem .4rem; }
+  #line:disabled { color: #6b7788; }
+  .in { color: #9aa7ba; }
+  .err { color: #f2827f; }
+  .banner { color: #6b7788; }
+  .tools { margin: .5rem 0 0; font-size: .8rem; color: #9aa7ba; }
+  .tools button { font: inherit; background: #161b24; color: #7fb2ff;
+                  border: 1px solid #222b38; border-radius: 4px;
+                  padding: .2rem .5rem; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>ECL in the browser</h1>
+<p class="sub">A real REPL: the module keeps one ECL instance alive between
+inputs, so definitions and values persist. ECL is the Lisp ACL2 is built on;
+the prover itself does not start in a page yet — see
+<a href="acl2.html">ACL2</a> and <a href="index.html">what works</a>.</p>
+<div id="status">starting…</div>
+<pre id="log"></pre>
+<form id="form">
+  <span id="prompt">&gt;</span>
+  <input id="line" autocomplete="off" spellcheck="false" autofocus disabled
+         placeholder="e.g. (defun sq (x) (* x x))">
+</form>
+<p class="tools">
+  <button id="restart" type="button">Restart ECL</button>
+  <button id="clear" type="button">Clear</button>
+  &nbsp;Enter evaluates; ↑/↓ recall earlier inputs.
+</p>
+<script>
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const lineEl = document.getElementById('line');
+const formEl = document.getElementById('form');
+const worker = new Worker('worker.js?v=13');
+
+const history = [];
+let historyPos = 0;
+let busy = true;
+let sawBanner = false;
+
+function append(text, cls) {
+  const span = document.createElement('span');
+  if (cls) span.className = cls;
+  span.textContent = text + '\n';
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+worker.onmessage = (ev) => {
+  const m = ev.data;
+  if (m.type !== 'result') return;
+  const lines = m.lines || [];
+  for (let i = 0; i < lines.length; i++) {
+    const text = lines[i];
+    // The first input also brings ECL's version banner; show it, but dimmed.
+    const banner = !sawBanner && /^ECL \(Embeddable Common-Lisp\)|^Copyright|^ECL is free software|^under certain conditions|^Type :h for Help/.test(text);
+    if (banner) { sawBanner = true; append(text, 'banner'); continue; }
+    if (/^ECL \(Embeddable Common-Lisp\)/.test(text)) sawBanner = true;
+    append(text, /^\[harness\]|^;;; Loading.*rror|^Debugger|^Broken pipe/.test(text) ? 'err' : null);
+  }
+  busy = false;
+  lineEl.disabled = false;
+  statusEl.textContent = 'ready';
+  lineEl.focus();
+};
+
+worker.onerror = (e) => {
+  append('[page] worker error: ' + e.message, 'err');
+  busy = false;
+  lineEl.disabled = false;
+};
+
+formEl.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  if (busy) return;
+  const text = lineEl.value;
+  if (!text.trim()) return;
+  history.push(text);
+  historyPos = history.length;
+  append('> ' + text, 'in');
+  lineEl.value = '';
+  busy = true;
+  lineEl.disabled = true;
+  statusEl.textContent = 'evaluating…';
+  worker.postMessage({cmd: 'eval', text});
+});
+
+lineEl.addEventListener('keydown', (ev) => {
+  if (ev.key === 'ArrowUp' && history.length) {
+    historyPos = Math.max(0, historyPos - 1);
+    lineEl.value = history[historyPos];
+    ev.preventDefault();
+  } else if (ev.key === 'ArrowDown' && history.length) {
+    historyPos = Math.min(history.length, historyPos + 1);
+    lineEl.value = historyPos === history.length ? '' : history[historyPos];
+    ev.preventDefault();
+  }
+});
+
+document.getElementById('restart').addEventListener('click', () => {
+  worker.postMessage({cmd: 'restart'});
+  busy = true;
+  lineEl.disabled = true;
+  statusEl.textContent = 'restarting…';
+  append('; session reset', 'banner');
+  setTimeout(() => { busy = false; lineEl.disabled = false; statusEl.textContent = 'ready'; lineEl.focus(); }, 50);
+});
+
+document.getElementById('clear').addEventListener('click', () => {
+  logEl.textContent = '';
+});
+
+// The first input starts ECL, which takes about a second; do it at load so the
+// console is ready when the user types rather than on their first form.
+// (VALUES) so that the bootstrap does not print a value of its own.
+statusEl.textContent = 'starting ECL…';
+worker.postMessage({cmd: 'eval', text: '(values)'});
+</script>
+</body>
+</html>

@@ -6,9 +6,28 @@
 // Messages to the page:
 //   {type:'log', text}        a line of output (ACL2 or harness)
 //   {type:'status', text}     one-line status for the header
-//   {type:'done', seconds}    finished
+//   {type:'done', seconds}    finished (cmd 'run')
+//   {type:'result', lines}    output of one REPL input (cmd 'eval')
+//
+// Commands:
+//   {cmd:'run', mode}         smoke | dylink | acl2 | acl2dylink, as before
+//   {cmd:'eval', text}        REPL: evaluate TEXT in a persistent ECL
+//   {cmd:'restart'}           REPL: throw the ECL instance away
 
 let mod = null;
+
+// An interactive ECL REPL.  The module exposes only FS, callMain and the
+// stdio hooks to JS (the eval entry points are wasm exports that the glue does
+// not wire up), so a REPL cannot call si_safe_eval.  It does not need to:
+// CL_BOOT is idempotent -- it returns 1 when the runtime is already up -- so
+// re-entering MAIN with a different stdin puts ECL back at its top level with
+// the whole Lisp state live: packages, defuns, global values.  Each input is
+// one such re-entry, and EOF ends it again.  Verified in the page:
+//
+//   (defvar *x* 41)   (print (+ *x* 1))   (defun f (n) (* n n))   (f 9)
+//
+// gives 42 and 81, i.e. the definitions survive between inputs.
+let repl = null;
 
 function log(text) {
   postMessage({type: 'log', text});
@@ -43,8 +62,69 @@ async function fetchGz(url) {
   return await new Response(stream).arrayBuffer();
 }
 
+// Lines the top level prints on every re-entry, which would otherwise repeat
+// once per input.  The prompt is "> " and it lands on its own line here because
+// the print hook is line-oriented.
+const REPL_NOISE = [
+  /^Top level\.$/,
+  /^>+ $/,
+  /^program exited \(with status: 0\)/,
+  /unsupported syscall:/,
+];
+
+async function replEnsure() {
+  if (repl) return repl;
+  const state = {mod: null, lines: [], input: {text: '', pos: 0}};
+  importScripts('lib/ecl-dylink.js');
+  const create = self.Module;
+  state.mod = await create({
+    noInitialRun: true,
+    noExitRuntime: true,      // the runtime must survive the exit at EOF
+    locateFile: (path) => 'lib/ecl-dylink.' + path.split('.').pop(),
+    print: (s) => state.lines.push(s),
+    printErr: (s) => state.lines.push(s),
+    stdin: () => (state.input.pos < state.input.text.length
+                  ? state.input.text.charCodeAt(state.input.pos++) : null),
+  });
+  repl = state;
+  return state;
+}
+
+async function replEval(text) {
+  let lines;
+  try {
+    const state = await replEnsure();
+    state.lines = [];
+    state.input = {text: text + '\n', pos: 0};
+    try {
+      state.mod.callMain([]);
+    } catch (e) {
+      // Each input ends with EOF, so ECL's top level exits and MAIN throws
+      // ExitStatus.  That is the normal path, not an error: the runtime is
+      // kept alive (noExitRuntime) and the next call picks up where this
+      // one's definitions left off.
+      if (!(e && typeof e === 'object' && 'status' in e)) throw e;
+    }
+    lines = state.lines.filter((l) => !REPL_NOISE.some((re) => re.test(l)));
+  } catch (e) {
+    repl = null;               // force a fresh instance next time
+    lines = ['[harness] ' + (e && e.stack ? e.stack : e)];
+  }
+  postMessage({type: 'result', lines});
+}
+
 self.onmessage = async (ev) => {
-  if (!ev.data || ev.data.cmd !== 'run') return;
+  if (!ev.data) return;
+  if (ev.data.cmd === 'eval') {
+    await replEval(String(ev.data.text === undefined ? '' : ev.data.text));
+    return;
+  }
+  if (ev.data.cmd === 'restart') {
+    repl = null;      // a fresh instance on the next input
+    postMessage({type: 'result', lines: []});
+    return;
+  }
+  if (ev.data.cmd !== 'run') return;
   const mode = ev.data.mode || 'acl2';
   const smoke = mode === 'smoke';
   const dylink = mode === 'dylink';
