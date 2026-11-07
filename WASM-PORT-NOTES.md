@@ -1065,14 +1065,93 @@ ECL dispatches on it, and `fas` is the `dlopen` path while `fasc` means
 bytecode, hence the module is written as `/dylink-test.fas`.
 
 What is still missing for ACL2 itself is the boot strap, not the loading: a page
-cannot raise V8's stack, and the interpreted boot strap needs 128-512 MB of it.
-That also settles the snapshot question quantitatively: a full linear-memory
+cannot raise V8's stack, and the boot strap needs 2-4 MB of it.  That also
+settles the snapshot question quantitatively: a full linear-memory
 snapshot of the post-boot-strap state is **not shippable** -- that state was
 measured at ~720 MB -- so of the two snapshot routes only the ACL2-level one
 (serialize the world: 21.7 MB, ~5 MB gzipped) can go to a page, and that is the
 `ecl-world-image` branch's replay, which is not yet sound-equivalent.  The
 cheapest honest route to ACL2 in a page is therefore the source AOT above: it
 removes the boot strap from the page rather than moving it elsewhere.
+
+### The last wall: the boot strap needs more native stack than a page has
+
+Measured on the `node-raw-dylink2` build (all 43 ACL2 files are wasm modules,
+so the boot strap is the only thing running) by varying V8's `--stack-size`:
+
+| `--stack-size` | result |
+| --- | --- |
+| 240 KB | dies during a module's `__ecl_init_fas_CODE`, ~100 nested `cl_stringL` frames |
+| 1200 KB | dies in the boot strap |
+| 2000 KB | dies in the boot strap |
+| 4000 KB | reaches the prompt in 41.1 s |
+
+A page gives V8 about 1 MB and there is no way to raise it (no `--stack-size`
+in a browser), so the boot strap currently cannot run in a page.  What the wall
+is made of, in the order it was established:
+
+- **`ecl_interpret` is ECL's bytecode/AST interpreter**, not an AST-only path:
+  `apply.d:114` sends `bclosure` (interpreted) functions there and `apply.d:117`
+  sends bytecode functions there too.  So a stack trace full of
+  `ecl_interpret` <-> `ecl_apply_from_stack_frame` pairs means *bytecode Lisp
+  functions calling bytecode Lisp functions*, each costing three native frames
+  (`ecl_interpret`, `ecl_apply_from_stack_frame`, and the dispatch).  A trace of
+  native module code looks quite different: repeated `wasm-function[N]` entries
+  with a single `variadic_dispatchK` between them.
+- **It is not source being interpreted.**  The obvious theory is that the boot
+  strap `ld`s `.lisp` files, whose `DEFUN`s then run through the AST
+  interpreter.  It does not: hooking `ext::*load-hooks*` for type `"lisp"` and
+  counting shows **zero** source loads, and hooking `"fas"` shows only modules.
+- **So the deep recursion is ACL2 code that is compiled at run time**, i.e.
+  `(compile ...)` through the bytecodes compiler, which in a page is the only
+  compiler there is.  That is why the source AOT and the `*1*` AOT do not move
+  this number: they make the *loaded* tree native, and the boot strap still
+  compiles some of what it defines.
+
+Instrumentation gotcha worth remembering: ECL compiles calls to `CL:LOAD` and
+`CL:EVAL` into direct C calls, so `(setf (symbol-function 'load) ...)` and
+`(setf (symbol-function 'eval) ...)` are invisible to compiled callers, and an
+experiment that "shows" `EVAL` is never called during the boot strap concludes
+nothing.  What does work: the `ext::*load-hooks*` table (looked up
+at run time), and `TRACE`, whose depth indentation is the cheapest way to read
+recursion depth in a build where no debugger exists.
+
+The ways out, none of them started:
+
+- **Fewer frames per Lisp call for bytecode code**: shrink `ecl_interpret`'s
+  frame (it is one switch with a large union of locals) or give it its own
+  wasm stack via a coroutine.  This is an ECL-side change but it is the only
+  option that helps all bytecode at once.
+- **Native code for what the boot strap compiles**: there is no C compiler in a
+  page, so this means pre-compiling it, which is the `*1*` AOT idea extended to
+  whatever `defun-fn` compiles during `initialize-acl2`.
+- **Tail calls**: `-mtail-call` in the side-module and main-module link flags
+  turns sibling calls into `return_call`, which is free stack for every
+  tail-recursive ACL2 helper (`TAILS-AC` is one: `apply-prim.lisp:184`).  It
+  cannot help interpreted or bytecode code, so it depends on the answer above.
+- **Move the boot strap out of the page** -- a Wizer-style memory snapshot at
+  build time, or the ACL2 world-image replay.  The snapshot is the only one
+  that is fast *and* sound (the state is the real thing), and it is only
+  feasible if a post-boot-strap linear memory can be made small enough to ship:
+  measured at ~720 MB, so not as it stands.
+
+### Publishing the browser harness (GitHub Pages)
+
+`wasm/web/publish-gh-pages.sh <dir>` stages the pages, `worker.js` (rewritten to
+point at the `DYLINK=1` build), `lib/ecl-dylink.{js,wasm}`, and the preloaded
+files as `files.json` + `files/*.gz` (115 files, 22 MB), plus `.nojekyll`.
+
+This repository already has a `gh-pages` branch -- it is the generated ACL2
+documentation site (`f3dd85ffba`, "Generate index.html for each dir") -- so the
+harness is published **under `wasm/`** on that branch rather than replacing it:
+
+    git worktree add --detach /tmp/ghpages origin/gh-pages
+    sh wasm/web/publish-gh-pages.sh /tmp/ghpages/wasm
+    cd /tmp/ghpages && git add wasm && git commit && git push origin HEAD:gh-pages
+
+The landing page (`wasm/web/index-gh.html`) says plainly what works in a page
+(ECL, module loading, `include-book` of an AOT'd book) and what does not (ACL2
+does not finish starting, for the stack reason above).
 
 ### Options for cutting the ~361 s startup
 
@@ -1206,11 +1285,11 @@ The realistic options are:
    - **the `*1*` counterparts are done** (see "The `*1*` counterparts as a
      wasm module"): they load as a module and are worth 5 s of start-up plus
      native code for every `EV-FNCALL` afterwards.
-   - **ACL2's own sources are started, not finished.**  42 modules load and run
-     and cut the visible boot-strap work from 312 s to ~20 s, but initialization
-     then fails on the first `verify-termination-boot-strap` form with "IF is
-     not of type CONS"; see "Native wasm code for ACL2's own sources" for what
-     is ruled out and what the next steps are.
+   - **ACL2's own sources are done in Node, not in a page.**  43 modules load
+     and run and cut the start from 310.6 s to 41.1 s, but the boot strap needs
+     2-4 MB of native stack and a page has ~1 MB; see "The last wall: the boot
+     strap needs more native stack than a page has" for what the wall is made
+     of and the four ways out.
 9. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)
    are small and self-contained; the `-O0` override in ECL's configure is
