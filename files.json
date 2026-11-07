@@ -1,106 +1,418 @@
 [
-  {"src": "/wasm/web/files/acl2_acl2-check.lisp.gz", "dst": "/acl2/acl2-check.lisp"},
-  {"src": "/wasm/web/files/acl2_acl2-exec-aot.lisp.gz", "dst": "/acl2/acl2-exec-aot.lisp"},
-  {"src": "/wasm/web/files/acl2_acl2-fns.lisp.gz", "dst": "/acl2/acl2-fns.lisp"},
-  {"src": "/wasm/web/files/acl2_acl2-init.lisp.gz", "dst": "/acl2/acl2-init.lisp"},
-  {"src": "/wasm/web/files/acl2_acl2-proclaims.lisp.gz", "dst": "/acl2/acl2-proclaims.lisp"},
-  {"src": "/wasm/web/files/acl2_acl2.lisp.gz", "dst": "/acl2/acl2.lisp"},
-  {"src": "/wasm/web/files/acl2_akcl-acl2-trace.lisp.gz", "dst": "/acl2/akcl-acl2-trace.lisp"},
-  {"src": "/wasm/web/files/acl2_allegro-acl2-trace.lisp.gz", "dst": "/acl2/allegro-acl2-trace.lisp"},
-  {"src": "/wasm/web/files/acl2_apply-constraints.lisp.gz", "dst": "/acl2/apply-constraints.lisp"},
-  {"src": "/wasm/web/files/acl2_apply-prim.lisp.gz", "dst": "/acl2/apply-prim.lisp"},
-  {"src": "/wasm/web/files/acl2_apply-raw.lisp.gz", "dst": "/acl2/apply-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_apply.lisp.gz", "dst": "/acl2/apply.lisp"},
-  {"src": "/wasm/web/files/acl2_axioms.lisp.gz", "dst": "/acl2/axioms.lisp"},
-  {"src": "/wasm/web/files/acl2_basis-a.lisp.gz", "dst": "/acl2/basis-a.lisp"},
-  {"src": "/wasm/web/files/acl2_basis-b.lisp.gz", "dst": "/acl2/basis-b.lisp"},
-  {"src": "/wasm/web/files/acl2_bdd.lisp.gz", "dst": "/acl2/bdd.lisp"},
-  {"src": "/wasm/web/files/acl2_boot-strap-pass-2-a.lisp.gz", "dst": "/acl2/boot-strap-pass-2-a.lisp"},
-  {"src": "/wasm/web/files/acl2_boot-strap-pass-2-b.lisp.gz", "dst": "/acl2/boot-strap-pass-2-b.lisp"},
-  {"src": "/wasm/web/files/acl2_defpkgs.lisp.gz", "dst": "/acl2/defpkgs.lisp"},
-  {"src": "/wasm/web/files/acl2_defthm.lisp.gz", "dst": "/acl2/defthm.lisp"},
-  {"src": "/wasm/web/files/acl2_defuns.lisp.gz", "dst": "/acl2/defuns.lisp"},
-  {"src": "/wasm/web/files/acl2_doc.lisp.gz", "dst": "/acl2/doc.lisp"},
-  {"src": "/wasm/web/files/acl2_float-a.lisp.gz", "dst": "/acl2/float-a.lisp"},
-  {"src": "/wasm/web/files/acl2_float-b.lisp.gz", "dst": "/acl2/float-b.lisp"},
-  {"src": "/wasm/web/files/acl2_float-raw.lisp.gz", "dst": "/acl2/float-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_futures-raw.lisp.gz", "dst": "/acl2/futures-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_history-management.lisp.gz", "dst": "/acl2/history-management.lisp"},
-  {"src": "/wasm/web/files/acl2_hons-raw.lisp.gz", "dst": "/acl2/hons-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_hons.lisp.gz", "dst": "/acl2/hons.lisp"},
-  {"src": "/wasm/web/files/acl2_induct.lisp.gz", "dst": "/acl2/induct.lisp"},
-  {"src": "/wasm/web/files/acl2_init.lisp.gz", "dst": "/acl2/init.lisp"},
-  {"src": "/wasm/web/files/acl2_interface-raw.lisp.gz", "dst": "/acl2/interface-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_ld.lisp.gz", "dst": "/acl2/ld.lisp"},
-  {"src": "/wasm/web/files/acl2_linear-a.lisp.gz", "dst": "/acl2/linear-a.lisp"},
-  {"src": "/wasm/web/files/acl2_linear-b.lisp.gz", "dst": "/acl2/linear-b.lisp"},
-  {"src": "/wasm/web/files/acl2_mcl-acl2-startup.lisp.gz", "dst": "/acl2/mcl-acl2-startup.lisp"},
-  {"src": "/wasm/web/files/acl2_memoize-raw.lisp.gz", "dst": "/acl2/memoize-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_memoize.lisp.gz", "dst": "/acl2/memoize.lisp"},
-  {"src": "/wasm/web/files/acl2_multi-threading-raw.lisp.gz", "dst": "/acl2/multi-threading-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_non-linear.lisp.gz", "dst": "/acl2/non-linear.lisp"},
-  {"src": "/wasm/web/files/acl2_openmcl-acl2-trace.lisp.gz", "dst": "/acl2/openmcl-acl2-trace.lisp"},
-  {"src": "/wasm/web/files/acl2_other-events.lisp.gz", "dst": "/acl2/other-events.lisp"},
-  {"src": "/wasm/web/files/acl2_other-processes.lisp.gz", "dst": "/acl2/other-processes.lisp"},
-  {"src": "/wasm/web/files/acl2_parallel-raw.lisp.gz", "dst": "/acl2/parallel-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_parallel.lisp.gz", "dst": "/acl2/parallel.lisp"},
-  {"src": "/wasm/web/files/acl2_proof-builder-a.lisp.gz", "dst": "/acl2/proof-builder-a.lisp"},
-  {"src": "/wasm/web/files/acl2_proof-builder-b.lisp.gz", "dst": "/acl2/proof-builder-b.lisp"},
-  {"src": "/wasm/web/files/acl2_proof-builder-pkg.lisp.gz", "dst": "/acl2/proof-builder-pkg.lisp"},
-  {"src": "/wasm/web/files/acl2_prove.lisp.gz", "dst": "/acl2/prove.lisp"},
-  {"src": "/wasm/web/files/acl2_rewrite.lisp.gz", "dst": "/acl2/rewrite.lisp"},
-  {"src": "/wasm/web/files/acl2_serialize-raw.lisp.gz", "dst": "/acl2/serialize-raw.lisp"},
-  {"src": "/wasm/web/files/acl2_serialize.lisp.gz", "dst": "/acl2/serialize.lisp"},
-  {"src": "/wasm/web/files/acl2_simplify.lisp.gz", "dst": "/acl2/simplify.lisp"},
-  {"src": "/wasm/web/files/acl2_tau.lisp.gz", "dst": "/acl2/tau.lisp"},
-  {"src": "/wasm/web/files/acl2_translate.lisp.gz", "dst": "/acl2/translate.lisp"},
-  {"src": "/wasm/web/files/acl2_type-set-a.lisp.gz", "dst": "/acl2/type-set-a.lisp"},
-  {"src": "/wasm/web/files/acl2_type-set-b.lisp.gz", "dst": "/acl2/type-set-b.lisp"},
-  {"src": "/wasm/web/files/acl2_acl2-exec-aot.fasc.gz", "dst": "/acl2/acl2-exec-aot.fasc"},
-  {"src": "/wasm/web/files/acl2_acl2-fns.fasc.gz", "dst": "/acl2/acl2-fns.fasc"},
-  {"src": "/wasm/web/files/acl2_apply-constraints.fasc.gz", "dst": "/acl2/apply-constraints.fasc"},
-  {"src": "/wasm/web/files/acl2_apply-prim.fasc.gz", "dst": "/acl2/apply-prim.fasc"},
-  {"src": "/wasm/web/files/acl2_apply-raw.fasc.gz", "dst": "/acl2/apply-raw.fasc"},
-  {"src": "/wasm/web/files/acl2_apply.fasc.gz", "dst": "/acl2/apply.fasc"},
-  {"src": "/wasm/web/files/acl2_axioms.fasc.gz", "dst": "/acl2/axioms.fasc"},
-  {"src": "/wasm/web/files/acl2_basis-a.fasc.gz", "dst": "/acl2/basis-a.fasc"},
-  {"src": "/wasm/web/files/acl2_basis-b.fasc.gz", "dst": "/acl2/basis-b.fasc"},
-  {"src": "/wasm/web/files/acl2_bdd.fasc.gz", "dst": "/acl2/bdd.fasc"},
-  {"src": "/wasm/web/files/acl2_boot-strap-pass-2-a.fasc.gz", "dst": "/acl2/boot-strap-pass-2-a.fasc"},
-  {"src": "/wasm/web/files/acl2_boot-strap-pass-2-b.fasc.gz", "dst": "/acl2/boot-strap-pass-2-b.fasc"},
-  {"src": "/wasm/web/files/acl2_defthm.fasc.gz", "dst": "/acl2/defthm.fasc"},
-  {"src": "/wasm/web/files/acl2_defuns.fasc.gz", "dst": "/acl2/defuns.fasc"},
-  {"src": "/wasm/web/files/acl2_doc.fasc.gz", "dst": "/acl2/doc.fasc"},
-  {"src": "/wasm/web/files/acl2_float-a.fasc.gz", "dst": "/acl2/float-a.fasc"},
-  {"src": "/wasm/web/files/acl2_float-b.fasc.gz", "dst": "/acl2/float-b.fasc"},
-  {"src": "/wasm/web/files/acl2_float-raw.fasc.gz", "dst": "/acl2/float-raw.fasc"},
-  {"src": "/wasm/web/files/acl2_history-management.fasc.gz", "dst": "/acl2/history-management.fasc"},
-  {"src": "/wasm/web/files/acl2_hons-raw.fasc.gz", "dst": "/acl2/hons-raw.fasc"},
-  {"src": "/wasm/web/files/acl2_hons.fasc.gz", "dst": "/acl2/hons.fasc"},
-  {"src": "/wasm/web/files/acl2_induct.fasc.gz", "dst": "/acl2/induct.fasc"},
-  {"src": "/wasm/web/files/acl2_interface-raw.fasc.gz", "dst": "/acl2/interface-raw.fasc"},
-  {"src": "/wasm/web/files/acl2_ld.fasc.gz", "dst": "/acl2/ld.fasc"},
-  {"src": "/wasm/web/files/acl2_linear-a.fasc.gz", "dst": "/acl2/linear-a.fasc"},
-  {"src": "/wasm/web/files/acl2_linear-b.fasc.gz", "dst": "/acl2/linear-b.fasc"},
-  {"src": "/wasm/web/files/acl2_memoize-raw.fasc.gz", "dst": "/acl2/memoize-raw.fasc"},
-  {"src": "/wasm/web/files/acl2_memoize.fasc.gz", "dst": "/acl2/memoize.fasc"},
-  {"src": "/wasm/web/files/acl2_non-linear.fasc.gz", "dst": "/acl2/non-linear.fasc"},
-  {"src": "/wasm/web/files/acl2_other-events.fasc.gz", "dst": "/acl2/other-events.fasc"},
-  {"src": "/wasm/web/files/acl2_other-processes.fasc.gz", "dst": "/acl2/other-processes.fasc"},
-  {"src": "/wasm/web/files/acl2_parallel.fasc.gz", "dst": "/acl2/parallel.fasc"},
-  {"src": "/wasm/web/files/acl2_proof-builder-a.fasc.gz", "dst": "/acl2/proof-builder-a.fasc"},
-  {"src": "/wasm/web/files/acl2_proof-builder-b.fasc.gz", "dst": "/acl2/proof-builder-b.fasc"},
-  {"src": "/wasm/web/files/acl2_prove.fasc.gz", "dst": "/acl2/prove.fasc"},
-  {"src": "/wasm/web/files/acl2_rewrite.fasc.gz", "dst": "/acl2/rewrite.fasc"},
-  {"src": "/wasm/web/files/acl2_serialize-raw.fasc.gz", "dst": "/acl2/serialize-raw.fasc"},
-  {"src": "/wasm/web/files/acl2_serialize.fasc.gz", "dst": "/acl2/serialize.fasc"},
-  {"src": "/wasm/web/files/acl2_simplify.fasc.gz", "dst": "/acl2/simplify.fasc"},
-  {"src": "/wasm/web/files/acl2_tau.fasc.gz", "dst": "/acl2/tau.fasc"},
-  {"src": "/wasm/web/files/acl2_translate.fasc.gz", "dst": "/acl2/translate.fasc"},
-  {"src": "/wasm/web/files/acl2_type-set-a.fasc.gz", "dst": "/acl2/type-set-a.fasc"},
-  {"src": "/wasm/web/files/acl2_type-set-b.fasc.gz", "dst": "/acl2/type-set-b.fasc"},
-  {"src": "/wasm/web/files/acl2_web-acl2.lsp.gz", "dst": "/acl2/web-acl2.lsp"},
-  {"src": "/wasm/web/files/acl2_books_textbook_chap10_fact.lisp.gz", "dst": "/acl2/books/textbook/chap10/fact.lisp"},
-  {"src": "/wasm/web/files/acl2_books_textbook_chap10_fact.cert.gz", "dst": "/acl2/books/textbook/chap10/fact.cert"},
-  {"src": "/wasm/web/files/acl2_books_textbook_chap10_fact.fasc.gz", "dst": "/acl2/books/textbook/chap10/fact.fasc"}
+  {
+    "src": "files/acl2_acl2-check.lisp.gz",
+    "dst": "/acl2/acl2-check.lisp"
+  },
+  {
+    "src": "files/acl2_acl2-exec-aot.lisp.gz",
+    "dst": "/acl2/acl2-exec-aot.lisp"
+  },
+  {
+    "src": "files/acl2_acl2-fns.lisp.gz",
+    "dst": "/acl2/acl2-fns.lisp"
+  },
+  {
+    "src": "files/acl2_acl2-init.lisp.gz",
+    "dst": "/acl2/acl2-init.lisp"
+  },
+  {
+    "src": "files/acl2_acl2-proclaims.lisp.gz",
+    "dst": "/acl2/acl2-proclaims.lisp"
+  },
+  {
+    "src": "files/acl2_acl2.lisp.gz",
+    "dst": "/acl2/acl2.lisp"
+  },
+  {
+    "src": "files/acl2_akcl-acl2-trace.lisp.gz",
+    "dst": "/acl2/akcl-acl2-trace.lisp"
+  },
+  {
+    "src": "files/acl2_allegro-acl2-trace.lisp.gz",
+    "dst": "/acl2/allegro-acl2-trace.lisp"
+  },
+  {
+    "src": "files/acl2_apply-constraints.lisp.gz",
+    "dst": "/acl2/apply-constraints.lisp"
+  },
+  {
+    "src": "files/acl2_apply-prim.lisp.gz",
+    "dst": "/acl2/apply-prim.lisp"
+  },
+  {
+    "src": "files/acl2_apply-raw.lisp.gz",
+    "dst": "/acl2/apply-raw.lisp"
+  },
+  {
+    "src": "files/acl2_apply.lisp.gz",
+    "dst": "/acl2/apply.lisp"
+  },
+  {
+    "src": "files/acl2_axioms.lisp.gz",
+    "dst": "/acl2/axioms.lisp"
+  },
+  {
+    "src": "files/acl2_basis-a.lisp.gz",
+    "dst": "/acl2/basis-a.lisp"
+  },
+  {
+    "src": "files/acl2_basis-b.lisp.gz",
+    "dst": "/acl2/basis-b.lisp"
+  },
+  {
+    "src": "files/acl2_bdd.lisp.gz",
+    "dst": "/acl2/bdd.lisp"
+  },
+  {
+    "src": "files/acl2_boot-strap-pass-2-a.lisp.gz",
+    "dst": "/acl2/boot-strap-pass-2-a.lisp"
+  },
+  {
+    "src": "files/acl2_boot-strap-pass-2-b.lisp.gz",
+    "dst": "/acl2/boot-strap-pass-2-b.lisp"
+  },
+  {
+    "src": "files/acl2_defpkgs.lisp.gz",
+    "dst": "/acl2/defpkgs.lisp"
+  },
+  {
+    "src": "files/acl2_defthm.lisp.gz",
+    "dst": "/acl2/defthm.lisp"
+  },
+  {
+    "src": "files/acl2_defuns.lisp.gz",
+    "dst": "/acl2/defuns.lisp"
+  },
+  {
+    "src": "files/acl2_doc.lisp.gz",
+    "dst": "/acl2/doc.lisp"
+  },
+  {
+    "src": "files/acl2_float-a.lisp.gz",
+    "dst": "/acl2/float-a.lisp"
+  },
+  {
+    "src": "files/acl2_float-b.lisp.gz",
+    "dst": "/acl2/float-b.lisp"
+  },
+  {
+    "src": "files/acl2_float-raw.lisp.gz",
+    "dst": "/acl2/float-raw.lisp"
+  },
+  {
+    "src": "files/acl2_futures-raw.lisp.gz",
+    "dst": "/acl2/futures-raw.lisp"
+  },
+  {
+    "src": "files/acl2_history-management.lisp.gz",
+    "dst": "/acl2/history-management.lisp"
+  },
+  {
+    "src": "files/acl2_hons-raw.lisp.gz",
+    "dst": "/acl2/hons-raw.lisp"
+  },
+  {
+    "src": "files/acl2_hons.lisp.gz",
+    "dst": "/acl2/hons.lisp"
+  },
+  {
+    "src": "files/acl2_induct.lisp.gz",
+    "dst": "/acl2/induct.lisp"
+  },
+  {
+    "src": "files/acl2_init.lisp.gz",
+    "dst": "/acl2/init.lisp"
+  },
+  {
+    "src": "files/acl2_interface-raw.lisp.gz",
+    "dst": "/acl2/interface-raw.lisp"
+  },
+  {
+    "src": "files/acl2_ld.lisp.gz",
+    "dst": "/acl2/ld.lisp"
+  },
+  {
+    "src": "files/acl2_linear-a.lisp.gz",
+    "dst": "/acl2/linear-a.lisp"
+  },
+  {
+    "src": "files/acl2_linear-b.lisp.gz",
+    "dst": "/acl2/linear-b.lisp"
+  },
+  {
+    "src": "files/acl2_mcl-acl2-startup.lisp.gz",
+    "dst": "/acl2/mcl-acl2-startup.lisp"
+  },
+  {
+    "src": "files/acl2_memoize-raw.lisp.gz",
+    "dst": "/acl2/memoize-raw.lisp"
+  },
+  {
+    "src": "files/acl2_memoize.lisp.gz",
+    "dst": "/acl2/memoize.lisp"
+  },
+  {
+    "src": "files/acl2_multi-threading-raw.lisp.gz",
+    "dst": "/acl2/multi-threading-raw.lisp"
+  },
+  {
+    "src": "files/acl2_non-linear.lisp.gz",
+    "dst": "/acl2/non-linear.lisp"
+  },
+  {
+    "src": "files/acl2_openmcl-acl2-trace.lisp.gz",
+    "dst": "/acl2/openmcl-acl2-trace.lisp"
+  },
+  {
+    "src": "files/acl2_other-events.lisp.gz",
+    "dst": "/acl2/other-events.lisp"
+  },
+  {
+    "src": "files/acl2_other-processes.lisp.gz",
+    "dst": "/acl2/other-processes.lisp"
+  },
+  {
+    "src": "files/acl2_parallel-raw.lisp.gz",
+    "dst": "/acl2/parallel-raw.lisp"
+  },
+  {
+    "src": "files/acl2_parallel.lisp.gz",
+    "dst": "/acl2/parallel.lisp"
+  },
+  {
+    "src": "files/acl2_proof-builder-a.lisp.gz",
+    "dst": "/acl2/proof-builder-a.lisp"
+  },
+  {
+    "src": "files/acl2_proof-builder-b.lisp.gz",
+    "dst": "/acl2/proof-builder-b.lisp"
+  },
+  {
+    "src": "files/acl2_proof-builder-pkg.lisp.gz",
+    "dst": "/acl2/proof-builder-pkg.lisp"
+  },
+  {
+    "src": "files/acl2_prove.lisp.gz",
+    "dst": "/acl2/prove.lisp"
+  },
+  {
+    "src": "files/acl2_rewrite.lisp.gz",
+    "dst": "/acl2/rewrite.lisp"
+  },
+  {
+    "src": "files/acl2_serialize-raw.lisp.gz",
+    "dst": "/acl2/serialize-raw.lisp"
+  },
+  {
+    "src": "files/acl2_serialize.lisp.gz",
+    "dst": "/acl2/serialize.lisp"
+  },
+  {
+    "src": "files/acl2_simplify.lisp.gz",
+    "dst": "/acl2/simplify.lisp"
+  },
+  {
+    "src": "files/acl2_tau.lisp.gz",
+    "dst": "/acl2/tau.lisp"
+  },
+  {
+    "src": "files/acl2_translate.lisp.gz",
+    "dst": "/acl2/translate.lisp"
+  },
+  {
+    "src": "files/acl2_type-set-a.lisp.gz",
+    "dst": "/acl2/type-set-a.lisp"
+  },
+  {
+    "src": "files/acl2_type-set-b.lisp.gz",
+    "dst": "/acl2/type-set-b.lisp"
+  },
+  {
+    "src": "files/acl2_acl2-exec-aot.fasc.gz",
+    "dst": "/acl2/acl2-exec-aot.fasc"
+  },
+  {
+    "src": "files/acl2_acl2-fns.fasc.gz",
+    "dst": "/acl2/acl2-fns.fasc"
+  },
+  {
+    "src": "files/acl2_apply-constraints.fasc.gz",
+    "dst": "/acl2/apply-constraints.fasc"
+  },
+  {
+    "src": "files/acl2_apply-prim.fasc.gz",
+    "dst": "/acl2/apply-prim.fasc"
+  },
+  {
+    "src": "files/acl2_apply-raw.fasc.gz",
+    "dst": "/acl2/apply-raw.fasc"
+  },
+  {
+    "src": "files/acl2_apply.fasc.gz",
+    "dst": "/acl2/apply.fasc"
+  },
+  {
+    "src": "files/acl2_axioms.fasc.gz",
+    "dst": "/acl2/axioms.fasc"
+  },
+  {
+    "src": "files/acl2_basis-a.fasc.gz",
+    "dst": "/acl2/basis-a.fasc"
+  },
+  {
+    "src": "files/acl2_basis-b.fasc.gz",
+    "dst": "/acl2/basis-b.fasc"
+  },
+  {
+    "src": "files/acl2_bdd.fasc.gz",
+    "dst": "/acl2/bdd.fasc"
+  },
+  {
+    "src": "files/acl2_boot-strap-pass-2-a.fasc.gz",
+    "dst": "/acl2/boot-strap-pass-2-a.fasc"
+  },
+  {
+    "src": "files/acl2_boot-strap-pass-2-b.fasc.gz",
+    "dst": "/acl2/boot-strap-pass-2-b.fasc"
+  },
+  {
+    "src": "files/acl2_defthm.fasc.gz",
+    "dst": "/acl2/defthm.fasc"
+  },
+  {
+    "src": "files/acl2_defuns.fasc.gz",
+    "dst": "/acl2/defuns.fasc"
+  },
+  {
+    "src": "files/acl2_doc.fasc.gz",
+    "dst": "/acl2/doc.fasc"
+  },
+  {
+    "src": "files/acl2_float-a.fasc.gz",
+    "dst": "/acl2/float-a.fasc"
+  },
+  {
+    "src": "files/acl2_float-b.fasc.gz",
+    "dst": "/acl2/float-b.fasc"
+  },
+  {
+    "src": "files/acl2_float-raw.fasc.gz",
+    "dst": "/acl2/float-raw.fasc"
+  },
+  {
+    "src": "files/acl2_history-management.fasc.gz",
+    "dst": "/acl2/history-management.fasc"
+  },
+  {
+    "src": "files/acl2_hons-raw.fasc.gz",
+    "dst": "/acl2/hons-raw.fasc"
+  },
+  {
+    "src": "files/acl2_hons.fasc.gz",
+    "dst": "/acl2/hons.fasc"
+  },
+  {
+    "src": "files/acl2_induct.fasc.gz",
+    "dst": "/acl2/induct.fasc"
+  },
+  {
+    "src": "files/acl2_interface-raw.fasc.gz",
+    "dst": "/acl2/interface-raw.fasc"
+  },
+  {
+    "src": "files/acl2_ld.fasc.gz",
+    "dst": "/acl2/ld.fasc"
+  },
+  {
+    "src": "files/acl2_linear-a.fasc.gz",
+    "dst": "/acl2/linear-a.fasc"
+  },
+  {
+    "src": "files/acl2_linear-b.fasc.gz",
+    "dst": "/acl2/linear-b.fasc"
+  },
+  {
+    "src": "files/acl2_memoize-raw.fasc.gz",
+    "dst": "/acl2/memoize-raw.fasc"
+  },
+  {
+    "src": "files/acl2_memoize.fasc.gz",
+    "dst": "/acl2/memoize.fasc"
+  },
+  {
+    "src": "files/acl2_non-linear.fasc.gz",
+    "dst": "/acl2/non-linear.fasc"
+  },
+  {
+    "src": "files/acl2_other-events.fasc.gz",
+    "dst": "/acl2/other-events.fasc"
+  },
+  {
+    "src": "files/acl2_other-processes.fasc.gz",
+    "dst": "/acl2/other-processes.fasc"
+  },
+  {
+    "src": "files/acl2_parallel.fasc.gz",
+    "dst": "/acl2/parallel.fasc"
+  },
+  {
+    "src": "files/acl2_proof-builder-a.fasc.gz",
+    "dst": "/acl2/proof-builder-a.fasc"
+  },
+  {
+    "src": "files/acl2_proof-builder-b.fasc.gz",
+    "dst": "/acl2/proof-builder-b.fasc"
+  },
+  {
+    "src": "files/acl2_prove.fasc.gz",
+    "dst": "/acl2/prove.fasc"
+  },
+  {
+    "src": "files/acl2_rewrite.fasc.gz",
+    "dst": "/acl2/rewrite.fasc"
+  },
+  {
+    "src": "files/acl2_serialize-raw.fasc.gz",
+    "dst": "/acl2/serialize-raw.fasc"
+  },
+  {
+    "src": "files/acl2_serialize.fasc.gz",
+    "dst": "/acl2/serialize.fasc"
+  },
+  {
+    "src": "files/acl2_simplify.fasc.gz",
+    "dst": "/acl2/simplify.fasc"
+  },
+  {
+    "src": "files/acl2_tau.fasc.gz",
+    "dst": "/acl2/tau.fasc"
+  },
+  {
+    "src": "files/acl2_translate.fasc.gz",
+    "dst": "/acl2/translate.fasc"
+  },
+  {
+    "src": "files/acl2_type-set-a.fasc.gz",
+    "dst": "/acl2/type-set-a.fasc"
+  },
+  {
+    "src": "files/acl2_type-set-b.fasc.gz",
+    "dst": "/acl2/type-set-b.fasc"
+  },
+  {
+    "src": "files/acl2_web-acl2.lsp.gz",
+    "dst": "/acl2/web-acl2.lsp"
+  },
+  {
+    "src": "files/acl2_books_textbook_chap10_fact.lisp.gz",
+    "dst": "/acl2/books/textbook/chap10/fact.lisp"
+  },
+  {
+    "src": "files/acl2_books_textbook_chap10_fact.cert.gz",
+    "dst": "/acl2/books/textbook/chap10/fact.cert"
+  },
+  {
+    "src": "files/acl2_books_textbook_chap10_fact.fasc.gz",
+    "dst": "/acl2/books/textbook/chap10/fact.fasc"
+  }
 ]
