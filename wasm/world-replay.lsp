@@ -102,21 +102,81 @@
                          (length cl-user::*saved-world*))
                  t0))
 
-(enter-boot-strap-mode nil (get-os))
+; Diagnostic: what does the image say about a constant the raw side needs?
+(when (let ((s (ext:getenv "ACL2_REPLAY_DEBUG"))) (and s (plusp (length s))))
+  (dolist (name '(*system-verify-guards-alist-1* *system-verify-guards-alist-2*))
+    (let ((trips (remove-if-not (lambda (x)
+                                  (and (consp x) (eq (car x) name)))
+                                cl-user::*saved-world*)))
+      (format t "~&;; debug: ~a has ~s triples: ~s~%"
+              name (length trips)
+              (mapcar (lambda (x) (list (car x) (cadr x)
+                                        (if (consp (cddr x))
+                                            (length (cddr x))
+                                            (type-of (cddr x)))))
+                      (subseq trips 0 (min 3 (length trips)))))))
+  (force-output))
+
+(defun unquote-value (x)
+  (if (and (consp x) (eq (car x) 'quote) (consp (cdr x)) (null (cddr x)))
+      (cadr x)
+    x))
+
+(defun rebind-constants (wrld)
+  (let ((n 0)
+        (cl (find-package "COMMON-LISP")))
+    (dolist (trip wrld)
+      (when (and (consp trip)
+                 (eq (cadr trip) 'const)
+                 (symbolp (car trip))
+                 (not (keywordp (car trip)))
+                 (not (eq (car trip) t))
+                 (not (eq (car trip) nil))
+                 (not (and cl (eq (symbol-package (car trip)) cl)))
+                 ;; Only the ones the loaded sources did *not* bind: those are
+                 ;; the boot-strap-created constants (WHEN-PASS-2 MAKE-EVENT
+                 ;; output such as *SYSTEM-VERIFY-GUARDS-ALIST-1*).  Leaving
+                 ;; the rest alone also avoids importing the image's
+                 ;; representation of constants that the build already has.
+                 (not (boundp (car trip))))
+        (handler-case
+            (progn (setf (symbol-value (car trip))
+                         (unquote-value (cddr trip)))
+                   (incf n))
+          (error () nil))))
+    n))
+
+
+; Constants have to be bound before the world is installed: add-trip consults
+; them while extending, and *SYSTEM-VERIFY-GUARDS-ALIST-1* (a WHEN-PASS-2
+; MAKE-EVENT output in apply-prim.lisp) is one the boot strap would have bound
+; by evaluating that event.  The world records every constant as
+; (NAME CONST . VALUE), which is where the value came from anyway.
+(let ((t0 (get-internal-real-time)))
+  (format t "~&;; replay: rebound ~s constants from the image~%"
+          (rebind-constants cl-user::*saved-world*))
+  (cl-user::replay-step "rebound the constants" t0))
+
+
+
+(format t "~&;; replay: entering boot-strap mode ...~%") (force-output)
+(handler-bind
+    ((error (lambda (c)
+              (format t "~&LISP-ERROR ~a~%" c) (force-output)
+              (ignore-errors (si::tpl-backtrace))
+              (ext:exit 1))))
+  (enter-boot-strap-mode nil (get-os)))
 (push nil *acl2-unwind-protect-stack*)
-
-(let ((t0 (get-internal-real-time))
-      (*world-image-replay* t))
-  (set-w 'extension cl-user::*saved-world* *the-live-state*)
-  (setq cl-user::*saved-world* nil)
-  (cl-user::replay-step "installed the world's properties" t0))
-
-; Normally done when the boot strap processes its memoize events.
-(memoize-init)
 
 ; The *1* counterparts that the ahead-of-time file does not cover, oldest event
 ; first and evaluated as generated, because ONEIFY-CLTL-CODE itself needs some
 ; of them (LET-MBE-GUARD-FORM, DEFUN-FN, ...).  Same order the boot strap uses.
+;
+; This runs BEFORE the world is installed, and scans the image's world rather
+; than the live one: add-trip consults these as it extends, and the first one it
+; wants is ACL2_*1*_ACL2::BADGE-USERFN -- a counterpart of one of the 248
+; definitions the boot strap creates by evaluating WHEN-PASS-2 events.  The
+; module built with ACL2_AOT_WHEN_PASS_2=1 supplies the functions themselves.
 (defun gen-missing-*1* (wrld)
   (let ((n 0))
     (dolist (trip (reverse wrld))
@@ -141,8 +201,26 @@
 
 (let ((t0 (get-internal-real-time)))
   (format t "~&;; replay: generated ~s missing *1* counterparts~%"
-          (gen-missing-*1* (w *the-live-state*)))
+          (gen-missing-*1* cl-user::*saved-world*))
   (cl-user::replay-step "generated the missing *1* counterparts" t0))
+
+; ACL2's own reader is needed here: add-trip reads forms (the cltl-command
+; blocks and the oneified code), and under the standard readtable a dispatch
+; character like #' is read differently, which shows up far away as
+; "In function CHAR-CODE, the value of the only argument is QUOTE".
+(format t "~&;; replay: installing the world ...~%") (force-output)
+(let ((t0 (get-internal-real-time))
+      (*world-image-replay* t)
+      (*readtable* *acl2-readtable*))
+  (set-w 'extension cl-user::*saved-world* *the-live-state*)
+  (setq cl-user::*saved-world* nil)
+  (cl-user::replay-step "installed the world's properties" t0))
+
+
+; Normally done when the boot strap processes its memoize events.
+(memoize-init)
+
+
 
 (exit-boot-strap-mode)
 (set-initial-cbd)
