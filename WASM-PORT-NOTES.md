@@ -997,6 +997,30 @@ package and the macros from the earlier files, so `defpkgs.lisp` first and then
 the ``make compile'' order, which costs minutes; and when bisecting in wasm,
 AOT one file at a time over bytecode, at ~5 minutes per run.
 
+Bisecting is much cheaper than that once most files are native, because the
+boot strap itself becomes fast: reverting one file to bytecode and re-running
+costs 20-90 s.  Keeping two master directories -- `$WORK/modules` (the native
+modules) and `$WORK/bytecode` (the wasm ECL's bytecode) -- makes each step two
+`cp`s.  With 42 files that found, in six runs, that **`rewrite.lisp` alone**
+reproduces the failure; the errors vary from run to run
+(`IF`, `R-E-P`, `GENEQV-LST`, `FC-ROUND`, `9`, `COMMON-LISP-COMPLIANT-LAMBDAS`
+where a cons is expected), which is the signature of a wrong *value* rather
+than a wrong control flow.
+
+What has been ruled out for that file: `-O0` instead of `-O2` (same failure),
+`(optimize (safety 3))` (same failure, so it is not a violated declaration),
+`ext:use-direct-c-call` (NIL by default here, and the proclamation works), and
+`si::` code or `fixnum`/`inline` declarations in the file (there are none).
+What muddies it: the failure is *allocation-dependent*.  With
+`GC_INITIAL_HEAP_SIZE=2000000000` the same all-native configuration fails
+differently, in the boot strap itself -- `Did not find "float-a" in
+pass-2-alist` -- and a driver that prints the boot strap's (megabyte of) output
+passes where a quiet one dies.  That points at the collector or the address
+layout rather than at `rewrite.lisp`'s code, and it is the same suspicion the
+wasm build already carries: its bdwgc is unsound (see "First full run
+(2026-11-05)").  Worth investigating with `GC_PRINT_STATS`, a fixed heap so
+addresses are reproducible, and ECL's `si::` GC-inspection helpers.
+
 Bytecode is still needed after modules exist: `wasm/acl2-wasm-compile` copies
 its `.fasc` output to `$WORK/bytecode` (`/opt/eclwasm/bytecode`) and
 `wasm/aot-book.sh` runs the host ECL with `ACL2_AOT_BYTECODE_DIR` pointing
