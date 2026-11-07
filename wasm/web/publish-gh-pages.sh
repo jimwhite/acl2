@@ -55,7 +55,17 @@ cp /opt/eclwasm/dist/web-dylink/ecl.js "$DEST/lib/ecl-dylink.js"
 cp /opt/eclwasm/dist/web-dylink/ecl.wasm "$DEST/lib/ecl-dylink.wasm"
 
 # The preloaded ACL2 tree (already gzipped, see make-manifest.sh) and its list.
-cp "$HERE/files.json" "$DEST/files.json"
+# make-manifest.sh writes SRC paths that are absolute, because it generates the
+# manifest for serving the repository root (where the pages live under
+# wasm/web/ and the payload under wasm/web/files/).  The site serves the payload
+# from files/, next to the pages, so rewrite the paths on the way out.
+python3 - "$HERE/files.json" "$DEST/files.json" <<'PY'
+import json, os, sys
+entries = json.load(open(sys.argv[1]))
+for e in entries:
+    e['src'] = 'files/' + os.path.basename(e['src'])
+json.dump(entries, open(sys.argv[2], 'w'), indent=2)
+PY
 cp "$HERE/files"/*.gz "$DEST/files/"
 
 # The module the dynamic-linking page loads, if it is present.
