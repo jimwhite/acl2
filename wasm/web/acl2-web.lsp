@@ -29,12 +29,56 @@
 ; large quoted constant and by proof-builder work.
 (ext:set-limit 'ext:frame-stack 262144)
 
+; This build has no package-locks module; acl2.lisp's #+emscripten branch
+; assumes locks are a no-op, but ECL's own Lisp code still calls these at the
+; first prompt.  See wasm/acl2-wasm.lsp.
+(dolist (name '("LOCK-PACKAGE" "UNLOCK-PACKAGE"))
+  (let ((sym (find-symbol name "EXT")))
+    (when (and sym (not (fboundp sym)))
+      (setf (symbol-function sym)
+            (lambda (&rest args) (declare (ignore args)) nil)))))
+
+; Let LOAD find compiled files that are wasm modules.  ECL maps ".fasc" to the
+; bytecodes loader, so sniff the wasm magic and send modules to SI::LOAD-BINARY
+; (the dlopen path, which needs the DYLINK=1 build).  Must be installed before
+; INIT.LISP, because ACL2.LISP loads ACL2-FNS itself.  See wasm/acl2-wasm.lsp.
+(defun acl2-web-module-p (file)
+  (handler-case
+      (with-open-file (s file :element-type '(unsigned-byte 8))
+        (and (= (or (read-byte s nil -1) -1) 0)
+             (= (or (read-byte s nil -1) -1) 97)      ; #\a
+             (= (or (read-byte s nil -1) -1) 115)     ; #\s
+             (= (or (read-byte s nil -1) -1) 109)))   ; #\m
+    (error () nil)))
+
+(defun acl2-web-load-fasc (file verbose print external-format)
+  (if (acl2-web-module-p file)
+      (si::load-binary file verbose print external-format)
+      (si::load-bytecodes file verbose print external-format)))
+
+(when (fboundp 'si::load-binary)
+  (let ((hook (assoc "fasc" ext::*load-hooks* :test #'equal)))
+    (if hook
+        (setf (cdr hook) #'acl2-web-load-fasc)
+        (push (cons "fasc" #'acl2-web-load-fasc) ext::*load-hooks*))))
+
 (format t "~&[acl2] loading init.lisp and the compiled sources~%")
 (finish-output)
 
 (load "init.lisp")
 (in-package "ACL2")
 (load-acl2)
+
+; The bundle ships ACL2-EXEC-AOT.FASC, a module holding the executable
+; counterparts, built from the same sources (wasm/aot-book.sh).  ACL2's own
+; staleness check compares file dates, which mean nothing in a filesystem the
+; page just filled, so take the file as shipped and let the bundle manifest be
+; the thing that guarantees the pairing.
+(when (and (probe-file "acl2-exec-aot.fasc")
+           (fboundp 'acl2-*1*-aot-file))
+  (setq *acl2-*1*-aot-file* "acl2-exec-aot")
+  (format t "~&[acl2] using the shipped *1* module~%")
+  (finish-output))
 
 (format t "~&[acl2] compiled sources loaded; suppressing boot-strap output~%")
 (finish-output)

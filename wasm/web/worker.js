@@ -48,6 +48,9 @@ self.onmessage = async (ev) => {
   const mode = ev.data.mode || 'acl2';
   const smoke = mode === 'smoke';
   const dylink = mode === 'dylink';
+  // ACL2 with module loading: the same preloaded tree, but a build that can
+  // dlopen the compiled files, since the .fasc files are wasm modules.
+  const acl2dylink = mode === 'acl2dylink';
   const t0 = performance.now();
   const secs = () => ((performance.now() - t0) / 1000).toFixed(1);
 
@@ -55,7 +58,7 @@ self.onmessage = async (ev) => {
     status('fetching module');
     // The dynamic-linking build is a different binary (built with DYLINK=1), so
     // it has its own copy of the glue next to the plain one.
-    importScripts(dylink ? 'lib/ecl-dylink.js' : 'lib/ecl-1536.js');
+    importScripts((dylink || acl2dylink) ? 'lib/ecl-dylink.js' : 'lib/ecl-1536.js');
     const createACL2Module = self.Module;
 
     const script = smoke ? '(+ 1 2)\n(print 42)\n(quit)\n'
@@ -73,12 +76,11 @@ self.onmessage = async (ev) => {
     const manifest = (smoke || dylink) ? []
                            : JSON.parse(new TextDecoder().decode(
                                  await fetchBuf('files.json')));
-
     let pos = 0;
     status('instantiating module');
     // Inside a worker Emscripten cannot tell where the module came from, so
     // its default locateFile points at the page; keep the binary next to it.
-    const libbase = dylink ? 'lib/ecl-dylink.' : 'lib/ecl-1536.';
+    const libbase = (dylink || acl2dylink) ? 'lib/ecl-dylink.' : 'lib/ecl-1536.';
     mod = await createACL2Module({
       noInitialRun: true,
       locateFile: (path) => libbase + path.split('.').pop(),
@@ -99,8 +101,7 @@ self.onmessage = async (ev) => {
       log(`[web] wrote /dylink-test.fas (${buf.byteLength} bytes)`);
     }
     if (!smoke && !dylink) {
-      status('preloading ' + manifest.length + ' files');
-      let bytes = 0, done = 0;
+      status('preloading ' + manifest.length + ' files');      let bytes = 0, done = 0;
       for (const f of manifest) {
         const buf = await fetchGz(f.src);
         bytes += buf.byteLength;
