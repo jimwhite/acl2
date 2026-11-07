@@ -121,6 +121,34 @@
         *compiled-file-extension*
         (pathname-type (compile-file-pathname "foo.lisp")))
 
+;; WHEN-PASS-2 expands to NIL in raw Lisp (axioms.lisp:30527), because those
+; events are meant to be evaluated by the boot strap rather than compiled into
+; the file -- which is why a census after a completed start finds 248 ACL2
+; functions (#<bytecompiled-function>: the APPLY$ family and friends) that no
+; AOT of the sources can cover.  With ACL2_AOT_WHEN_PASS_2=1 the raw Lisp
+; expansion splices the body instead, so those definitions do land in the
+; module; the run-time boot strap still evaluates its own event, and the point
+; of the experiment is whether ACL2's redundancy check then leaves the native
+; definition alone, the way it already does for the other 7316.
+(when (let ((s (ext:getenv "ACL2_AOT_WHEN_PASS_2")))
+        (and s (plusp (length s)) (not (equal (string-upcase s) "NIL"))))
+  (format t ";; ACL2_AOT_WHEN_PASS_2: compiling WHEN-PASS-2 bodies~%")
+  (setf (macro-function 'when-pass-2)
+        (lambda (form env)
+          (declare (ignore env))
+          ;; Only the definitions.  The blocks also contain events that must be
+          ;; evaluated by ACL2 rather than compiled: splicing a (MAKE-EVENT ...)
+          ;; into raw Lisp makes the module fail at load time with "An error
+          ;; occurred during initialization ... offending form (MAKE-EVENT
+          ;; `(DEFCONST *FIRST-ORDER-LIKE-TERMS-AND-OUT-ARITIES* ...))".
+          (cons 'progn
+                (remove-if-not (lambda (x)
+                                 (and (consp x)
+                                      (member (car x)
+                                              '(defun defmacro defconst
+                                                defparameter))))
+                               (cddr form))))))
+
 ;;;; ------------------------------------------------------------------
 ;;;; 2. The wasm32 target
 ;;;; ------------------------------------------------------------------

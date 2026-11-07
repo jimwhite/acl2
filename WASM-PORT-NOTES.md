@@ -1234,6 +1234,86 @@ and then the crash inside the boot strap, in bytecode (`ecl_interpret` <->
 module's initialization, and not the loading, but ACL2's boot strap running code
 that was compiled at run time.
 
+### Which functions the boot strap leaves as bytecode
+
+A census of the `ACL2` package after a complete start (4000 KB stack, counting
+`#<bytecompiled-function ...>` against `#<compiled-function NAME ...>`, which is
+the only reliable discriminator -- `compiled-function-p` is true for both):
+
+    7316 native      248 bytecode
+
+The 248 are almost entirely the `APPLY$` family: `APPLY$`, `APPLY$-PRIMP`,
+`APPLY$-USERFN`, `ALWAYS$`, `APPEND$`, `COLLECT$` and their `$+` / `-AC` /
+`-WITNESS` / `-WARRANT` variants, plus `ANCESTORS-CHECK`, `ACCUMULATE-ILK`,
+`ACL2-DEFAULT-RESTART`, `ACL2-SNAPSHOT-INFO`, `ACL2-VERSION+` and
+`ACL2X-EXPANSION-ALIST`.  Those are the functions ACL2 *creates* during the
+boot strap (`make-event` output), which is exactly the set no source AOT can
+cover -- so the boot strap still runs part of itself through the interpreter,
+at ~2.5 KB of native stack per call, and that is the wall.
+
+It also explains why the source AOT was worth 310.6 s -> 41.1 s while leaving
+this problem: `initialize-acl2` (`interface-raw.lisp:9579`, the loop at 9743,
+via `ld-fn`) does read every file in `*acl2-files*` from source, but the
+functions defined there are already installed by the loaded modules, so 97% of
+them survive as native code and only the run-time-generated definitions become
+bytecode.
+
+That makes the next AOT step concrete:
+
+1. Capture those definitions.  `FUNCTION-LAMBDA-EXPRESSION` returns the source
+   form of a bytecode function, so a completed boot strap can dump the 248
+   `defun`s to a `.lisp` file.
+2. Cross-compile that file into a module with `wasm/aot-book.sh`, exactly like
+   `acl2-exec-aot.lisp`.
+3. Load it, and leave an identical definition alone when it is already native --
+   the same definition installed twice, once as wasm and once as bytecode, is
+   the bug; the interesting question is whether ACL2's redundant-defun check
+   already gives us that for free once the definition is installed *before*
+   the event is evaluated.
+
+If (3) turns out to need a hook, the one to look at is ECL's `SI::FSET`:
+`DEFUN` expands to `(si::fset 'name #'(ext::lambda-block name args (declare
+(si::c-global)) ...))` (`src/lsp/evalmacros.lsp:98`), so every definition the
+boot strap makes passes through it, and `*bytecodes-compiler*` is what turns it
+into bytecode.
+
+### AOT of those 248: tried, and it does not work (and why)
+
+The obvious next move is to compile those definitions too.  It cannot be done
+from the sources, and the reason is structural: `WHEN-PASS-2` expands to
+**`NIL` in raw Lisp** (`axioms.lisp:30527`, `#-acl2-loop-only`), precisely so
+that those events are *evaluated by the boot strap* instead of compiled into the
+file.  So no compile of ACL2's sources ever contains them.
+
+Forcing it anyway was worth one experiment, because ACL2's redundancy check is
+what keeps the other 7316 definitions native: if the definition is already
+installed when the event is processed, the event does not re-evaluate it.
+`ACL2_AOT_WHEN_PASS_2=1` in `wasm/aot-host.lsp` makes the raw-Lisp expansion
+splice the definitions out of those blocks (definitions only -- splicing the
+sibling `MAKE-EVENT` forms makes the module die at load time with "offending
+form `(MAKE-EVENT `(DEFCONST *FIRST-ORDER-LIKE-TERMS-AND-OUT-ARITIES* ...))`"),
+and all eight affected files were rebuilt with it.
+
+Result: **the census is unchanged, 248 bytecode / 7316 native**, and the 2000 KB
+start still overflows the stack in `ecl_interpret`.  Pass 2 re-evaluates those
+events and replaces the native definitions regardless of what the module
+contains, so a build-time AOT of the sources cannot remove them.
+
+That closes the "AOT more of ACL2" line of attack.  What is left is:
+
+1. **An ECL-side hook**: `DEFUN` is `(si::fset 'name #'(ext::lambda-block ...))`
+   (`src/lsp/evalmacros.lsp:98`), but during pass 2 the definition comes from
+   ACL2's evaluator calling into `ecl_fset` from C, so a Lisp-level
+   `(setf (symbol-function 'si::fset) ...)` never sees it -- measured: a hook
+   that records definitions replacing native code recorded **zero** calls over a
+   complete start.  A C-level hook in `ecl_fset` would see them, and could keep
+   the precompiled native definition when the incoming source form is identical.
+2. **Shrink the interpreter frame** (see above), which needs no ACL2 changes and
+   helps everything at once.
+
+Both are ECL-side work; the measurement above says no amount of ACL2-side AOT
+reaches this particular set.
+
 ### Publishing the browser harness (GitHub Pages)
 
 `wasm/web/publish-gh-pages.sh <dir>` stages the pages, `worker.js` (rewritten to
