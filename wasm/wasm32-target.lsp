@@ -106,7 +106,17 @@
                ;; returns 65 instead of 100000, and with GC_DONT_GC it is
                ;; right.  See WASM-PORT-NOTES.md, "Native wasm code for ACL2's
                ;; own sources".
-               " -sBINARYEN_EXTRA_PASSES=--spill-pointers"))
+               " -sBINARYEN_EXTRA_PASSES=--spill-pointers"
+               ;; ACL2_AOT_WFLAGS appends extra *link* flags.  The one that
+               ;; matters for diagnosis is --profiling-funcs: without it a side
+               ;; module carries no name section, so V8 prints
+               ;; "wasm-function[303]" instead of the Lisp function's name in a
+               ;; stack trace.  (-g3 in ACL2_AOT_CC_FLAGS is not enough: that
+               ;; is DWARF, which the trace does not use.)
+               (let ((extra (ext:getenv "ACL2_AOT_WFLAGS")))
+                 (if (and extra (plusp (length extra)))
+                     (concatenate 'string " " extra)
+                     ""))))
 
 ;;; A side module's object code has to be position independent: without -fPIC
 ;;; wasm-ld rejects the module with

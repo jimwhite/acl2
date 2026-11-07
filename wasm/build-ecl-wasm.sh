@@ -280,11 +280,15 @@ fi
 
 # ECL's configure hard-codes -O0 for wasm32-unknown-emscripten, with a note
 # that non-zero optimization levels are slower together with the binaryen
-# spill-pointers pass.  Measurements here disagree in the direction that
-# matters most: at -O0 the interpreter needs roughly 5-10 KB of C stack per
-# interpreted frame in wasm, so ACL2's bootstrap exhausts any practical stack.
-# -O2 shrinks the frames substantially (and runs faster).
-sed -i 's|-DECL_C_COMPATIBLE_VARIADIC_DISPATCH -O0|-DECL_C_COMPATIBLE_VARIADIC_DISPATCH -O2|' \
+# spill-pointers pass.  -O2 shrinks the frames substantially (and runs faster),
+# and it is what the shipped builds use.  ECL_WASM_OPT exists because the trade
+# is worth re-measuring: at -O0 the interpreter's locals go into the linear
+# stack (1.5 GB here) instead of wasm locals (which live in V8's ~1 MB native
+# stack), so -O0 may buy depth at the cost of speed.  See WASM-PORT-NOTES.md,
+# "What the native stack actually costs, measured".
+ECL_WASM_OPT=${ECL_WASM_OPT:--O2}
+log "Optimisation for the wasm target: $ECL_WASM_OPT"
+sed -i "s|-DECL_C_COMPATIBLE_VARIADIC_DISPATCH -O0|-DECL_C_COMPATIBLE_VARIADIC_DISPATCH $ECL_WASM_OPT|" \
   "$NODE_SRC/src/configure"
 
 log "Configuring the wasm target"

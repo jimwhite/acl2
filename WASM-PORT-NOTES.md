@@ -1314,6 +1314,67 @@ That closes the "AOT more of ACL2" line of attack.  What is left is:
 Both are ECL-side work; the measurement above says no amount of ACL2-side AOT
 reaches this particular set.
 
+### The last wall, named: ACL2's own non-tail recursion over a big term
+
+With `-O0` for the wasm module (see below) the interpreter stopped being the
+limit, and the trace finally has names in it, because side modules can be built
+with a name section (`ACL2_AOT_WFLAGS=--profiling-funcs`; `-g3` in
+`ACL2_AOT_CC_FLAGS` is not enough -- that is DWARF, which stack traces ignore):
+
+    at ecl.wasm.variadic_dispatch3
+    at translate.fasc.remove_guard_holders1_lst_va
+    at ecl.wasm.variadic_dispatch2
+    at translate.fasc.remove_guard_holders1_va
+    ... repeated
+
+That is `remove-guard-holders1-lst` / `remove-guard-holders1`
+(`translate.lisp:5539` and `5739`) -- and it is **`:logic` mode**, with
+`:measure (acl2-count lst)`, recursing non-tail:
+
+    (mv-let (changedp1 a) (remove-guard-holders1 nil (car lst) lamp)
+      (mv-let (changedp2 b) (remove-guard-holders1-lst (cdr lst) lamp)
+        ... (mv t (cons a b))))
+
+So its depth is the size of the term being translated, one frame per node /
+list element, and during the boot strap that term is a huge quoted constant
+(the `*first-order-like-terms-and-out-arities*` `defconst`, which is computed
+from the world and then translated).  A native build has 8 MB of stack for
+that; a page has ~1 MB, and no AOT shrinks a `:logic` function's recursion
+without changing the logic.
+
+Everything measured along the way, in the order the walls fell:
+
+| build | stack needed | what died |
+| --- | --- | --- |
+| `-O2` wasm ECL | 240 KB | a module's `__ecl_init_fas_CODE` init |
+| `-O2` wasm ECL | 1200-2000 KB | `ecl_interpret` <-> `ecl_apply_from_stack_frame` pairs |
+| `-O2` wasm ECL | 4000 KB | works (41.1 s) |
+| `-O0` wasm ECL | 1000 KB | `remove_guard_holders1_lst` (no interpreter frames at all) |
+| `-O0` wasm ECL | 2000-3000 KB | same, plus `GC_clear_stack_inner` |
+
+Two real findings worth keeping from that:
+
+- **`-O0` fixes the interpreter.**  The old note in `wasm/build-ecl-wasm.sh`
+  that claimed `-O0` is worse was measuring the linear stack, and it is right
+  about that (locals move into it) but wrong about the consequence: 1.5 GB of
+  linear stack at a few KB per frame is ~150,000 frames, and measured
+  interpreted recursion at 1 MB of *native* stack goes from ~400 (`-O2`) to
+  1000-5000 (`-O0`).  The build script now takes `ECL_WASM_OPT` so this can be
+  re-measured (`TAG=o0 ECL_WASM_OPT=-O0`).
+- **The 1.5 GB linear stack costs us in GC.**  `GC_clear_stack_inner` recurses
+  to scan the C stack, so a collection taken deep in the stack can overflow
+  V8's stack by itself.  With `GC_DONT_GC=1` the trace goes back to
+  `remove-guard-holders1` only.  A smaller `-sSTACK_SIZE` is therefore not
+  just a memory decision.
+
+So the page cannot run the boot strap, and it is not for want of AOT: the work
+that remains is to arrange for the page not to do it -- the ACL2-level world
+image (21.7 MB, ~5 MB gzipped) whose acceptance gate is already written down
+under "Next steps", or a wasm memory snapshot (measured ~720 MB, not
+shippable).  That is the `ecl-world-image` branch's problem, and its gate is
+`make devel-check` plus `make -k -j 16 basic` with the replay launcher compared
+against `saved_acl2`.
+
 ### Publishing the browser harness (GitHub Pages)
 
 `wasm/web/publish-gh-pages.sh <dir>` stages the pages, `worker.js` (rewritten to
