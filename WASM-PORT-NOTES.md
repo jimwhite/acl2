@@ -1375,6 +1375,45 @@ shippable).  That is the `ecl-world-image` branch's problem, and its gate is
 `make devel-check` plus `make -k -j 16 basic` with the replay launcher compared
 against `saved_acl2`.
 
+### The world image and the 248 are the same defect (2026-11-07)
+
+The two dead ends above are one problem seen from two sides, and that makes the
+world-image route cheap to finish:
+
+- A **live boot strap** creates 248 ACL2 functions by *evaluating* `WHEN-PASS-2`
+  blocks (`apply.lisp`, `apply-prim.lisp`, `translate.lisp`, ...), which expand
+  to NIL in raw Lisp, so no AOT of the sources contains them.
+- A **world-image replay** skips exactly that evaluation, so those 248 do not
+  exist at all -- which is the recorded `include-book "projects/apply/base"`
+  failure, "ACL2 cannot ev the call of non-executable function
+  `:BADGE-USERFN-STRUCTURE`": `BADGE-TABLE-GUARD`, `BADGE-TABLE-GUARD1` and
+  `BADGE-USERFN` are all in that 248.
+
+So the missing piece for the replay is the piece the live boot strap cannot use:
+a module built with `ACL2_AOT_WHEN_PASS_2=1` (`wasm/aot-book.sh`; eight files:
+`apply`, `apply-prim`, `apply-constraints`, `axioms`, `boot-strap-pass-2-b`,
+`interface-raw`, `other-events`, `translate`).  In a live start the boot strap
+re-evaluates those events and overwrites the native definitions with bytecode,
+which is why the census did not move; in a replay nothing overwrites them, so
+they stay native and the functions exist.
+
+The rest of the image is raw-Lisp state, probed on a normal start of the wasm
+build (world length 138,373, matching the recorded image):
+
+| global | value after a normal start | needed by a replay |
+| --- | --- | --- |
+| `*memoize-info-ht*` | 17 entries | yes -- with `update-memo-entries-for-attachments` |
+| `*non-executable-user-stobj-lst*` | NIL | no |
+| `*defattach-fns*` | **unbound** | no (the earlier guess that it would be the badge culprit was wrong) |
+
+So the image should be `(world . raw-state)`: the world, plus the handful of
+raw globals the boot strap leaves behind, restored during the replay along with
+the run of `update-memo-entries-for-attachments` (`interface-raw.lisp:7781`)
+that the skipped events would have done.  With that, the browser never runs
+`initialize-acl2`, so `remove-guard-holders1`'s deep recursion (above) never
+happens in the page, and the soundness gate stays what it already is:
+`make devel-check` plus `make -k -j 16 basic` against `saved_acl2`.
+
 ### Publishing the browser harness (GitHub Pages)
 
 `wasm/web/publish-gh-pages.sh <dir>` stages the pages, `worker.js` (rewritten to
