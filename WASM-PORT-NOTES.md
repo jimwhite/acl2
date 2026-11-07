@@ -1142,12 +1142,22 @@ point at the `DYLINK=1` build), `lib/ecl-dylink.{js,wasm}`, and the preloaded
 files as `files.json` + `files/*.gz` (115 files, 22 MB), plus `.nojekyll`.
 
 This repository already has a `gh-pages` branch -- it is the generated ACL2
-documentation site (`f3dd85ffba`, "Generate index.html for each dir") -- so the
-harness is published **under `wasm/`** on that branch rather than replacing it:
+documentation site (`f3dd85ffba`, "Generate index.html for each dir") -- and a
+repository has only one Pages site, whose root must be `/` or `/docs` on the
+chosen branch.  So a subdirectory of the documentation branch cannot be the
+site root (the harness was published there first, in `ff3c9452d5`, and that was
+reverted in `f49a63e182`).  The harness gets **its own branch**, rooted at the
+branch root:
 
     git worktree add --detach /tmp/ghpages origin/gh-pages
-    sh wasm/web/publish-gh-pages.sh /tmp/ghpages/wasm
-    cd /tmp/ghpages && git add wasm && git commit && git push origin HEAD:gh-pages
+    git -C /tmp/ghpages checkout --orphan gh-pages-wasm
+    sh wasm/web/publish-gh-pages.sh /tmp/ghpages
+    git -C /tmp/ghpages add -A && git -C /tmp/ghpages commit -m ...
+    git -C /tmp/ghpages push origin HEAD:gh-pages-wasm
+
+Then Pages is served from branch `gh-pages-wasm`, folder `/`; serving it also
+unpublishes the documentation site, since only one of the two can be the site
+for this repository.
 
 The landing page (`wasm/web/index-gh.html`) says plainly what works in a page
 (ECL, module loading, `include-book` of an AOT'd book) and what does not (ACL2

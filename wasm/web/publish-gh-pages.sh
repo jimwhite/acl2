@@ -1,9 +1,12 @@
 #!/bin/sh
 # Stage the browser harness into a directory that can be published as a static
-# site (the gh-pages branch).  Everything is copied flat: the site root is the
-# branch root, so the pages, worker.js, lib/ and files/ are siblings.
+# site.  Everything is copied flat: the site root is the branch root, so the
+# pages, worker.js, lib/ and files/ are siblings.  GitHub Pages can only serve
+# a site root of / or /docs on the selected branch, which is why the harness
+# gets its own branch (`gh-pages-wasm`, site root /) rather than a subdirectory
+# of the documentation branch -- a repository has only one Pages site.
 #
-#   ./wasm/web/publish-gh-pages.sh /path/to/gh-pages-worktree
+#   ./wasm/web/publish-gh-pages.sh /path/to/orphan-branch-worktree
 #
 # Prerequisites, all of which the build already produces:
 #
