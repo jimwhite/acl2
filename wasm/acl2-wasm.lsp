@@ -149,4 +149,19 @@
   (format t "~&;; ACL2_SAVE_EXPANSION: certify-book keeps <book>@expansion.lsp~%")
   (force-output))
 
+; ACL2_WRITE_WORLD_IMAGE=<file> turns this into a world-image build: run the
+; boot strap once, serialize the world, and quit.  This is the artifact that
+; wasm/world-replay.lsp installs instead of re-running initialize-acl2, which is
+; both ~2 s instead of ~41 s and out of reach of the native stack limit
+; (WASM-PORT-NOTES.md, "The world image and the 248 are the same defect").
+(when (let ((s (ext:getenv "ACL2_WRITE_WORLD_IMAGE")))
+        (and s (plusp (length s))))
+  (let ((path (ext:getenv "ACL2_WRITE_WORLD_IMAGE")))
+    (with-open-file (s path :direction :output :if-exists :supersede)
+      (ser-encode-to-stream (w *the-live-state*) s))
+    (format t "~&IMAGE-WRITTEN ~a triples ~s~%" path
+            (length (w *the-live-state*)))
+    (force-output))
+  (si:quit))
+
 (acl2-default-restart)
