@@ -5,6 +5,11 @@
 # files into the ACL2 source directory.  Run this after editing ACL2 sources,
 # before ./wasm/acl2-wasm.
 #
+# The bytecode is also copied to $ACL2_WASM_BYTECODE_DIR (default
+# $WORK/bytecode), because those .fasc files can be replaced by wasm modules
+# (see wasm/aot-book.sh) and only the *bytecode* is loadable from a native
+# ECL, which is what wasm/aot-host.lsp runs in.
+#
 # Takes the same environment variables as ./wasm/acl2-wasm.
 
 set -e
@@ -12,6 +17,7 @@ set -e
 THISDIR=$(cd "$(dirname "$0")" && pwd)
 ACL2_WASM_DIR=${ACL2_WASM_DIR:-$(cd "$THISDIR/.." && pwd)}
 ACL2_WASM_ECL=${ACL2_WASM_ECL:-/opt/eclwasm/dist/node-raw}
+ACL2_WASM_BYTECODE_DIR=${ACL2_WASM_BYTECODE_DIR:-/opt/eclwasm/bytecode}
 export ACL2_WASM_DIR
 
 if [ ! -f "$ACL2_WASM_ECL/ecl.js" ]; then
@@ -25,5 +31,14 @@ ACL2_SMALL_FIXNUMS=1
 ACL2_SNAPSHOT_INFO=${ACL2_SNAPSHOT_INFO:-NONE}
 export ACL2_SMALL_FIXNUMS ACL2_SNAPSHOT_INFO
 
-exec node --stack-size=524288 "$ACL2_WASM_ECL/ecl.js" \
+node --stack-size=524288 "$ACL2_WASM_ECL/ecl.js" \
   --load "$THISDIR/acl2-wasm-compile.lsp"
+
+# Keep the bytecode where the host-side driver can find it.  Copy rather than
+# link, so that building modules over the .fasc files cannot disturb it.
+mkdir -p "$ACL2_WASM_BYTECODE_DIR"
+for f in "$ACL2_WASM_DIR"/*.fasc; do
+  [ -e "$f" ] || continue
+  cp -p "$f" "$ACL2_WASM_BYTECODE_DIR/"
+done
+echo "acl2-wasm-compile: bytecode copies in $ACL2_WASM_BYTECODE_DIR"

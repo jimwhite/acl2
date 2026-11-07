@@ -55,6 +55,20 @@
 ;; (their entry point is init_fas_CODE, which this ECL does not find).  Map
 ;; such loads onto the portable bytecode instead.  ECL dispatches on the file
 ;; type through EXT::*LOAD-HOOKS*; see c/main.d.
+;;
+;; The bytecode is taken from ACL2_AOT_BYTECODE_DIR when that is set, because
+;; the .fasc files in the ACL2 directory may since have been replaced by wasm
+;; modules (wasm/aot-book.sh), and this is a *native* ECL: it cannot load a
+;; module.  wasm/acl2-wasm-compile copies them there.
+(defparameter *aot-bytecode-dir*
+  (let ((s (ext:getenv "ACL2_AOT_BYTECODE_DIR")))
+    (and s (not (equal s "")) s)))
+
+(defun aot-bytecode-copy (file)
+  (and *aot-bytecode-dir*
+       (merge-pathnames (make-pathname :name (pathname-name file) :type "fasc")
+                        (concatenate 'string *aot-bytecode-dir* "/"))))
+
 ;; A counter, kept on a keyword's property list rather than in a special
 ;; variable: this file's forms are read in CL-USER but the report below is
 ;; printed from the ACL2 package, and a global variable is easy to lose track
@@ -65,10 +79,13 @@
       (or (get :acl2-aot-host :fasc-count) 0)))
 
 (defun aot-host-load-fas (file verbose print external-format)
-  (let ((fasc (make-pathname :type "fasc" :defaults file)))
-    (if (and (fboundp 'si::load-bytecodes) (probe-file fasc))
-        (si::load-bytecodes fasc verbose print external-format)
-        (si::load-binary file verbose print external-format))))
+  (let* ((fasc (make-pathname :type "fasc" :defaults file))
+         (copy (aot-bytecode-copy fasc)))
+    (cond ((and copy (probe-file copy))
+           (si::load-bytecodes copy verbose print external-format))
+          ((and (fboundp 'si::load-bytecodes) (probe-file fasc))
+           (si::load-bytecodes fasc verbose print external-format))
+          (t (si::load-binary file verbose print external-format)))))
 
 (defun aot-host-counting-fas (file verbose print external-format)
   (aot-fasc-count (1+ (aot-fasc-count)))
@@ -117,18 +134,25 @@
 ;;;; 3. Expansion file -> wasm side module
 ;;;; ------------------------------------------------------------------
 
-(defun aot-module-name (expansion-file)
-  "…/<book>@expansion.lsp -> …/<book>.fasc"
-  (let* ((p (pathname expansion-file))
-         (name (pathname-name p))
-         (suffix "@expansion")
+(defun aot-expansion-name-p (name)
+  (let* ((suffix "@expansion")
          (n (length suffix)))
-    (unless (and (> (length name) n)
-                 (string= suffix name :start2 (- (length name) n)))
-      (error "~a is not a book expansion file" expansion-file))
-    (make-pathname :name (subseq name 0 (- (length name) n))
-                   :type "fasc"
-                   :defaults p)))
+    (and (> (length name) n)
+         (string= suffix name :start2 (- (length name) n)))))
+
+(defun aot-module-name (file)
+  "…/<book>@expansion.lsp -> …/<book>.fasc;  …/foo.lisp -> …/foo.fasc
+;; Both are needed: a book's expansion file is the thing ACL2 compiles, and a
+;; plain file such as ACL2-EXEC-AOT.LISP (the *1* counterparts) is compiled the
+;; same way.  Either way the result keeps the name LOAD-COMPILED will ask for."
+  (let* ((p (pathname file))
+         (name (pathname-name p)))
+    (if (aot-expansion-name-p name)
+        (make-pathname :name (subseq name 0 (- (length name)
+                                               (length "@expansion")))
+                       :type "fasc"
+                       :defaults p)
+        (make-pathname :type "fasc" :defaults p))))
 
 (defun aot-file (expansion-file)
   (let* ((out (aot-module-name expansion-file))
@@ -147,7 +171,10 @@
            ;; build makes the same proclamation.  One release of ECL does
            ;; not know the declaration, so do not let that be fatal.
            (ignore-errors (proclaim '(ext:use-direct-c-call nil)))
-           (let ((*readtable* *acl2-readtable*))
+           (let ((*readtable* (if (aot-expansion-name-p
+                                  (pathname-name (pathname expansion-file)))
+                                 *acl2-readtable*
+                                 *readtable*)))
              (c::compile-with-target-info
               (lambda ()
                 ;; The output file *is* the module: with a :target in force,

@@ -36,33 +36,17 @@
 ; we want, and it is also larger than MOST-POSITIVE-FIXNUM here, so it cannot
 ; be passed through EXT:SET-LIMIT on this (30-bit fixnum) build.
 
-(load "init.lisp")
-(in-package "ACL2")
-(load-acl2)
-
-; ACL2's initialization prints over a megabyte.  Redirect its standard
-; character output channel and ECL's standard streams while it runs.  The
-; channel indirection is ECL-specific: ACL2 writes through the stream stored
-; in the ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0 entry of
-; *OPEN-OUTPUT-CHANNEL-KEY*.
-
-(defparameter cl-user::*acl2-wasm-real-standard-co*
-  (common-lisp:get 'acl2-output-channel::standard-character-output-0
-                   *open-output-channel-key*))
-
-(setf (common-lisp:get 'acl2-output-channel::standard-character-output-0
-                       *open-output-channel-key*)
-      (make-broadcast-stream))
-
-(ext:install-bytecodes-compiler)
-
-; Let LOAD find compiled books that are wasm modules.  ECL dispatches on the
+; Let LOAD find compiled files that are wasm modules.  ECL dispatches on the
 ; file type through EXT::*LOAD-HOOKS* ((type . handler) ...), and the bytecodes
 ; compiler maps ".fasc" to SI::LOAD-BYTECODES because that is what it writes.
-; A book module from wasm/aot-acl2.lsp deliberately keeps the same name -- ACL2
-; asks for "<book>.fasc" -- but is a wasm side module, so sniff the wasm magic
-; (\0asm) and send those to SI::LOAD-BINARY, the dlopen path.  Nothing changes
-; for bytecode files, which this build still uses for ACL2 itself.
+; A module deliberately keeps the ".fasc" name -- ACL2 asks for "<file>.fasc" --
+; but is a wasm side module, so sniff the wasm magic (\0asm) and send those to
+; SI::LOAD-BINARY, the dlopen path.  Bytecode files still go to the bytecodes
+; loader, so a tree with a mixture of the two works.
+;
+; This has to happen *before* INIT.LISP, not after: ACL2.LISP loads ACL2-FNS
+; on its own, and with wasm/aot-book.sh ACL2's own files are modules too (see
+; WASM-PORT-NOTES.md, "Native wasm code for ACL2's own sources").
 ;
 ; These are top-level DEFUNs rather than a LABELS: this file is compiled, and a
 ; closure over a LABELS-local function ends up calling it as a global.
@@ -85,6 +69,47 @@
     (if hook
         (setf (cdr hook) #'acl2-wasm-load-fasc)
         (push (cons "fasc" #'acl2-wasm-load-fasc) ext::*load-hooks*))))
+
+(load "init.lisp")
+(in-package "ACL2")
+(load-acl2)
+
+; Use the ahead-of-time executable counterparts when they are up to date.  The
+; boot-strap then loads ACL2-EXEC-AOT.FASC -- a wasm module, built from
+; ACL2-EXEC-AOT.LISP by wasm/aot-book.sh -- instead of regenerating and
+; compiling the 1,622 *1* definitions of TMP1.lisp, and every *1* function
+; EV-FNCALL runs afterwards is native wasm code rather than bytecode
+; (WASM-PORT-NOTES.md, "Options for cutting the ~361 s startup").  The check
+; for staleness is ACL2's own: ACL2-*1*-AOT-FILE compares the stamp with
+; (LISP-IMPLEMENTATION-VERSION) and the sources with the compiled file.
+;
+; ACL2_WASM_NO_EXEC_AOT=1 turns it off, which is how the two runs in the notes
+; were measured against each other.
+(when (let ((s (ext:getenv "ACL2_WASM_NO_EXEC_AOT")))
+        (not (and s
+                  (not (equal s ""))
+                  (not (equal (string-upcase s) "NIL")))))
+  (setq *acl2-*1*-aot-file*
+        (and (fboundp 'acl2-*1*-aot-file) (acl2-*1*-aot-file)))
+  (format t "~&;; *1* ahead-of-time file: ~s~%"
+          (if *acl2-*1*-aot-file* "acl2-exec-aot (used)" "none (regenerating)"))
+  (force-output))
+
+; ACL2's initialization prints over a megabyte.  Redirect its standard
+; character output channel and ECL's standard streams while it runs.  The
+; channel indirection is ECL-specific: ACL2 writes through the stream stored
+; in the ACL2-OUTPUT-CHANNEL::STANDARD-CHARACTER-OUTPUT-0 entry of
+; *OPEN-OUTPUT-CHANNEL-KEY*.
+
+(defparameter cl-user::*acl2-wasm-real-standard-co*
+  (common-lisp:get 'acl2-output-channel::standard-character-output-0
+                   *open-output-channel-key*))
+
+(setf (common-lisp:get 'acl2-output-channel::standard-character-output-0
+                       *open-output-channel-key*)
+      (make-broadcast-stream))
+
+(ext:install-bytecodes-compiler)
 
 (unwind-protect
     (let ((*standard-output* (make-broadcast-stream))

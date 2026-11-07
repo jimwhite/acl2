@@ -1,18 +1,25 @@
 #!/bin/sh
-# AOT certified books into WebAssembly modules.
+# AOT Lisp files -- certified books, and ACL2's own ahead-of-time files -- into
+# WebAssembly modules.
 #
 #   wasm/aot-book.sh books/textbook/chap10/fact ...
+#   wasm/aot-book.sh acl2-exec-aot.lisp
 #
-# Each argument is a book (with or without ".lisp") that was certified with
-# save-expansion-file on, i.e. that has a "<book>@expansion.lsp" next to it.
-# The expansion file is compiled into a wasm side module named "<book>.fasc",
-# which is the file include-book loads, so the book then runs compiled instead
-# of interpreted (measured 77-124x on small functions; see WASM-PORT-NOTES.md).
+# An argument that names a book (with or without ".lisp") is compiled through
+# the book's "<book>@expansion.lsp", which is left behind by certifying with
+# save-expansion-file on (ACL2_SAVE_EXPANSION=1).  The module is named
+# "<book>.fasc", which is the file include-book loads, so the book then runs
+# compiled instead of interpreted (measured 77-124x on small functions; see
+# WASM-PORT-NOTES.md).
 #
-# Why not compile the book's own .lisp: the expansion file is the book's events
-# with the macros already expanded and the prover's serialized data attached,
-# which is what ACL2 itself compiles; and it is what the bookmark machinery
-# already knows how to load.
+# An argument that is already a Lisp file with no expansion file next to it --
+# ACL2-EXEC-AOT.LISP, say, the executable counterparts the boot-strap uses --
+# is compiled as it is, keeping its name.
+#
+# Why a book is compiled from its expansion file rather than from its own
+# .lisp: the expansion file is the book's events with the macros already
+# expanded and the prover's serialized data attached, which is what ACL2 itself
+# compiles; and it is what the bookmark machinery already knows how to load.
 #
 # Environment:
 #
@@ -21,6 +28,12 @@
 #   ACL2_AOT_TARGET target-info file, only used to decide whether to regenerate
 #                   (default /tmp/wasm32.target)
 #   ACL2_AOT_DELTA  delta file (default /tmp/wasm32.delta)
+#   ACL2_AOT_BYTECODE_DIR
+#                   where wasm/acl2-wasm-compile keeps bytecode copies of
+#                   ACL2's compiled files (default /opt/eclwasm/bytecode).
+#                   The driver loads ACL2 from there: the .fasc files in the
+#                   ACL2 directory may already be wasm modules, which a native
+#                   ECL cannot load.
 #
 # The target files come from wasm/mk-wasm32-target.lsp, which needs the wasm
 # build's own target-info.lsp ($WORK/ecl-node/target-info.lsp); this script
@@ -33,6 +46,7 @@ ACL2_AOT_HOME=${ACL2_AOT_HOME:-$(cd "$THISDIR/.." && pwd)}
 ACL2_AOT_ECL=${ACL2_AOT_ECL:-/opt/eclwasm/ecl-host/bin/ecl}
 ACL2_AOT_TARGET=${ACL2_AOT_TARGET:-/tmp/wasm32.target}
 ACL2_AOT_DELTA=${ACL2_AOT_DELTA:-/tmp/wasm32.delta}
+ACL2_AOT_BYTECODE_DIR=${ACL2_AOT_BYTECODE_DIR:-/opt/eclwasm/bytecode}
 
 if [ $# -eq 0 ]; then
   echo "usage: $0 <book> [<book> ...]" >&2
@@ -55,6 +69,9 @@ fi
 FILES=
 MISSING=
 for book in "$@"; do
+  # A book compiles through its expansion file, which the certificate leaves
+  # behind when certified with ACL2_SAVE_EXPANSION=1.  Anything else that is
+  # already a Lisp file (ACL2-EXEC-AOT.LISP, for instance) is compiled as it is.
   case $book in
     *@expansion.lsp) expansion=$book ;;
     *.lisp)          expansion="${book%@expansion.lisp}@expansion.lsp" ;;
@@ -66,20 +83,29 @@ for book in "$@"; do
     /*) ;;
     *)  expansion="$ACL2_AOT_HOME/$expansion" ;;
   esac
+  case $book in
+    /*) plain=$book ;;
+    *)  plain="$ACL2_AOT_HOME/$book" ;;
+  esac
   if [ -f "$expansion" ]; then
-    if [ -z "$FILES" ]; then
-      FILES=$expansion
-    else
-      FILES="$FILES $expansion"
-    fi
+    source=$expansion
+  elif [ -f "$plain" ]; then
+    source=$plain
   else
     MISSING="$MISSING $expansion"
+    continue
+  fi
+  if [ -z "$FILES" ]; then
+    FILES=$source
+  else
+    FILES="$FILES $source"
   fi
 done
 
 if [ -n "$MISSING" ]; then
-  echo "aot-book: no expansion file for:$MISSING" >&2
-  echo "aot-book: certify with ACL2_SAVE_EXPANSION=1 so that it is kept" >&2
+  echo "aot-book: no source for:$MISSING" >&2
+  echo "aot-book: for books, certify with ACL2_SAVE_EXPANSION=1 so that the" >&2
+  echo "aot-book: expansion file is kept" >&2
   exit 1
 fi
 
@@ -89,5 +115,6 @@ ulimit -s 1048576 2>/dev/null || true
 
 ACL2_AOT_HOME=$ACL2_AOT_HOME \
 ACL2_AOT_DELTA=$ACL2_AOT_DELTA \
+ACL2_AOT_BYTECODE_DIR=$ACL2_AOT_BYTECODE_DIR \
 ACL2_AOT_FILES="$FILES" \
   exec "$ACL2_AOT_ECL" -norc -load "$THISDIR/aot-host.lsp" </dev/null

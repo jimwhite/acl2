@@ -909,6 +909,100 @@ whose module was built for a different wasm ECL would be silently mismatched
 *automatically* AOTs a book after certifying it -- certification happens in the
 wasm ECL, which cannot compile to wasm itself.
 
+#### The `*1*` counterparts as a wasm module (works; worth ~5 s of start-up)
+
+ACL2's boot strap ends by regenerating and compiling the executable
+counterparts of every `:logic`-mode function (`TMP1.lisp`);
+`*acl2-*1*-aot-file*` lets a prebuilt file take that step's place, and
+`make exec-aot` produces it for native ECL.  The same file, compiled to wasm,
+does the same job here, and has a second effect worth more than the first: from
+then on every `*1*` function that `EV-FNCALL` runs is native code.
+
+Three things were needed:
+
+1. `acl2-*1*-aot-file` hard-coded the `"fas"` extension; it now uses
+   `*compiled-file-extension*`, and `compile-uncompiled-*1*-defuns` passes the
+   extension to `load-compiled` explicitly.  Without the latter the load picks
+   a stale native `ACL2-EXEC-AOT.FAS` -- with a type-less name ECL takes the
+   first type in `EXT::*LOAD-HOOKS*` whose file exists -- and dies with "need
+   to see wasm magic number".
+2. `./wasm/aot-book.sh acl2-exec-aot.lisp` builds `acl2-exec-aot.fasc`
+   (3.1 MB, 16 s from the 1.5 MB, 1,622-definition source).  It loads in
+   0.06 s and the names come out as `COMPILED-FUNCTION`.
+3. `wasm/acl2-wasm.lsp` sets `*acl2-*1*-aot-file*` from the staleness check
+   unless `ACL2_WASM_NO_EXEC_AOT=1`, which is how the two runs below were
+   compared.
+
+Measured start, back to back and identical apart from
+`ACL2_WASM_NO_EXEC_AOT=1` (each run reaches the prompt and then proves
+`(thm (equal (append x y) (append x y)))`): **331.8 s -> 310.6 s**
+(5 m 31.8 s -> 5 m 10.6 s).  Small -- 6% -- because the expensive boot-strap
+functions are `:program` mode and have no `*1*` counterpart at all.  The
+staleness check compares the *sources* with the compiled file, so any edit to
+an ACL2 source invalidates it: rebuild this file last.
+
+#### Native wasm code for ACL2's own sources (attempted; not finished)
+
+`wasm/aot-book.sh` compiles plain Lisp files as well as expansion files, so
+ACL2's own sources can be built the same way: 42 modules (`acl2-fns` plus
+`*acl2-files*` without `defpkgs` and `proof-builder-pkg`, which `load-acl2`
+loads from source), 24 MB in total, about 4 minutes.  Two obstacles had to be
+dealt with first, and both are worth knowing about:
+
+1. **The reader is per file.**  A book's expansion file *needs*
+   `*acl2-readtable*`; an ACL2 *source* file must not be read with it -- the
+   driver chokes on the first `#\x`-style character with "When the ACL2 reader
+   tries to read #\x, then x must either be a single character or one of
+   Space, Tab, ...  However, Null is neither ...".  Bind the readtable only for
+   `@expansion` files.
+2. **The host ECL must be configured like the target.**  `$WORK/ecl-host` is
+   configured with defaults, i.e. with threads; the wasm build is not.  A
+   threaded ECL's `DEFSTRUCT` expands to `(mp::remcas 'accessor)` and
+   `(mp::define-cas-expander ...)` calls (src/lsp/defstruct.lsp,
+   `#+threads make-atomic-accessors`), and the wasm runtime has no such
+   functions, so the first structure compiled by that host kills the load with
+   "The function MP:REMCAS is undefined".  This is the same lesson as the
+   `SI:WAITPID` failure above, one level down: a cross-compiler has to *be* the
+   target build in everything that affects code generation.  `$WORK/ecl-cross`
+   is now that build -- the patched tree configured
+   `--disable-threads --with-tcp=no`, made by the same `build-ecl-wasm.sh`
+   source tree.  (ACL2's own `#+threads` conditionals are fine either way,
+   because `compile-with-target-info` progv-binds `cl:*features*` from the
+   target-info; only ECL's own macro expansions leak the host's configuration.)
+
+With 42 modules, `load-acl2` works -- all modules dlopen and initialise,
+`*acl2-readtable*` is live, and the mixed bytecode/module tree is handled by
+the sniffing load hook.  `initialize-acl2` then gets all the way to the final
+`ld` of the `verify-termination-boot-strap` forms **in about 20 s instead of
+312 s**, and fails there:
+
+    (VERIFY-TERMINATION-BOOT-STRAP QUOTE-LISTP)  ->  IF is not of type CONS
+
+Not yet diagnosed.  It is not a loading problem: every module initialised, the
+cross-module references resolve (checked separately with two modules that call
+each other), and the error is a raw Lisp type error inside event processing on
+the *first* function verified -- so it is a behaviour difference between some
+C-compiled and bytecode-compiled ACL2 function.  Ruled out so far:
+`ext:use-direct-c-call` (NIL by default in this ECL, and the proclamation
+works), `:threads` (absent from the target features, as it should be), and
+unresolved externals.  Candidates next: something in `defuns`/`defthm`/
+`prove`/`rewrite`/`translate` whose C and bytecode versions differ under
+ACL2's `(declare (optimize (safety 0)))` proclamations, or an Emscripten
+mis-compilation at the `-O2` the target flags ask for.
+
+Two things that would have made this much easier, for next time: reproduce it
+*natively* first (40 s per run rather than 5 minutes), but note that a native
+reproduction cannot just `compile-file` ACL2's sources -- they need the ACL2
+package and the macros from the earlier files, so `defpkgs.lisp` first and then
+the ``make compile'' order, which costs minutes; and when bisecting in wasm,
+AOT one file at a time over bytecode, at ~5 minutes per run.
+
+Bytecode is still needed after modules exist: `wasm/acl2-wasm-compile` copies
+its `.fasc` output to `$WORK/bytecode` (`/opt/eclwasm/bytecode`) and
+`wasm/aot-book.sh` runs the host ECL with `ACL2_AOT_BYTECODE_DIR` pointing
+there, because a native ECL cannot load a module and the `.fasc` files in the
+ACL2 directory are modules by then.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not
@@ -918,9 +1012,16 @@ resulting `.fasc` files costs ~10 s.  The 352 s is `initialize-acl2`'s two
 The realistic options are:
 
 - **AOT of the `*1*` counterparts** (`make exec-aot`) already exists for
-  native ECL; porting it to wasm would replace the `(comp-fn :exec ...)`
-  step, which is 15.5 s of the wasm 352 s (~4%).  Worth doing eventually,
-  but it does not change the order of magnitude.
+  native ECL, and is now ported (see below).  Measured: it saves 5 s of the
+  317 s start, because the prover's *expensive* boot-strap functions are
+  `:program`-mode raw functions and so have no `*1*` counterpart at all.
+  Worth keeping -- it makes every value-producing function native for the
+  proofs that come later -- but it is not a startup lever on its own.
+- **AOT of ACL2's own source files.**  This is the lever that *should* work:
+  the 352 s is spent running `defun-fn`, `chk-acceptable-defuns1` and friends,
+  which come from ACL2's source files and are bytecode.  Attempted, and it
+  works as far as loading and running but not yet through the boot strap; see
+  "Native wasm code for ACL2's own sources" below.
 - **Wasm memory snapshot (Wizer-style).**  Run `initialize-acl2` at module
   build time, return to the top level, snapshot linear memory, and ship a
   module that starts initialized.  Largest payoff (seconds instead of
@@ -1031,11 +1132,14 @@ The realistic options are:
      per invocation is the natural shape).
    - **staleness.** A `.cert` records the book's source hash, not the compiled
      file, so nothing notices a `<book>.fasc` built for a different wasm ECL.
-   - **extend it to the ACL2 sources and the `*1*` counterparts**, which is
-     where the 352 s start is spent.  The pieces exist: an `acl2-wasm.lsp` that
-     loads modules instead of `.fasc` (the hook already does this by sniffing
-     `\0asm`), `acl2-exec-aot.lisp` (the `*1*` set, currently built natively by
-     `make exec-aot`), and a host ECL that can compile either for wasm.
+   - **the `*1*` counterparts are done** (see "The `*1*` counterparts as a
+     wasm module"): they load as a module and are worth 5 s of start-up plus
+     native code for every `EV-FNCALL` afterwards.
+   - **ACL2's own sources are started, not finished.**  42 modules load and run
+     and cut the visible boot-strap work from 312 s to ~20 s, but initialization
+     then fails on the first `verify-termination-boot-strap` form with "IF is
+     not of type CONS"; see "Native wasm code for ACL2's own sources" for what
+     is ruled out and what the next steps are.
 9. Upstream: the two ECL patches, the ACL2 `:emscripten` branches, and the
    boot-strap skip of the irrelevant-formals check (which helps every host)
    are small and self-contained; the `-O0` override in ECL's configure is

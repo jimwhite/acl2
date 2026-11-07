@@ -11350,8 +11350,16 @@ such that feature :acl2-loop-only is true."))
 ; by a different host Lisp.  ACL2-EXEC-AOT.STAMP, written by
 ; ecl-tools/make-exec-aot.lsp just before compiling, records the host Lisp and
 ; must itself be no newer than the compiled file.
+;
+; The extension is *COMPILED-FILE-EXTENSION* because that is what LOAD-COMPILED
+; will ask for: "fas" in a native ECL, but ECL's bytecodes compiler writes
+; "fasc", and the WebAssembly build uses a .fasc that is a dynamically loadable
+; module rather than bytecode (see WASM-PORT-NOTES.md, "Books: the expansion
+; file, and what it needs").
 
-  (let* ((fas "acl2-exec-aot.fas")
+  (let* ((fas (concatenate 'string
+                           "acl2-exec-aot."
+                           *compiled-file-extension*))
          (stamp "acl2-exec-aot.stamp")
          (fas-date (and (probe-file fas) (file-write-date fas)))
          (stamp-date (and (probe-file stamp) (file-write-date stamp))))
@@ -11406,7 +11414,16 @@ such that feature :acl2-loop-only is true."))
 ; (which regenerates every definition with ONEIFY-CLTL-CODE and prints it) and
 ; the compile-file and load that follow it.
 
-    (load-compiled *acl2-*1*-aot-file* t)
+; Give LOAD the extension rather than letting ECL choose one: with a type-less
+; name, ECL takes the first type in EXT::*LOAD-HOOKS* whose file exists, which
+; can be a stale file of another type (ACL2-EXEC-AOT.FAS left over from a
+; native build, say).  See WASM-PORT-NOTES.md, "Books: the expansion file".
+
+    (load-compiled (concatenate 'string
+                                *acl2-*1*-aot-file*
+                                "."
+                                *compiled-file-extension*)
+                   t)
     (return-from compile-uncompiled-*1*-defuns (value nil)))
   (let ((os-file (pathname-unix-to-os file state)))
     (state-global-let*
