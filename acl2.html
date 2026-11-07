@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ACL2 on WebAssembly</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 1rem;
+         background: #10131a; color: #d6dbe5; }
+  h1 { font-size: 1rem; font-weight: 600; margin: 0 0 .5rem; }
+  #status { font-family: ui-monospace, monospace; font-size: .8rem;
+            color: #7fb2ff; margin-bottom: .75rem; }
+  #log { font-family: ui-monospace, monospace; font-size: .8rem;
+         white-space: pre-wrap; background: #0a0d12; border: 1px solid #222b38;
+         border-radius: 6px; padding: .75rem; height: 60vh; overflow: auto; }
+</style>
+</head>
+<body>
+<h1>ACL2 on WebAssembly — preloaded tree, compiled files as wasm modules</h1>
+<div id="status">starting…</div>
+<pre id="log"></pre>
+<script>
+// The ACL2 side of the browser work: the whole ACL2 tree is preloaded into the
+// in-memory filesystem (see wasm/web/make-manifest.sh) and, because the build
+// can dlopen modules, the .fasc files in it are wasm modules compiled by
+// wasm/aot-book.sh rather than bytecode.  The driver is wasm/web/acl2-web.lsp.
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const t0 = performance.now();
+function append(t) {
+  logEl.textContent += t + '\n';
+  logEl.scrollTop = logEl.scrollHeight;
+}
+const worker = new Worker('worker.js?v=12');
+worker.onmessage = (ev) => {
+  const m = ev.data;
+  if (m.type === 'log') append(m.text);
+  else if (m.type === 'status')
+    statusEl.textContent = `${m.text} — ${((performance.now() - t0) / 1000).toFixed(0)}s`;
+  else if (m.type === 'done') statusEl.textContent = `done in ${m.seconds.toFixed(1)}s`;
+};
+worker.onerror = (e) => append('[page] worker error: ' + e.message);
+worker.postMessage({cmd: 'run', mode: 'acl2dylink'});
+</script>
+</body>
+</html>
