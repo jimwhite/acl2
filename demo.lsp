@@ -1,0 +1,7 @@
+(thm (equal (append (append x y) z) (append x (append y z))))
+(defun triple (x) (* 3 x))
+(triple 14)
+(include-book "textbook/chap10/fact" :dir :system)
+(thm (equal (fact 5) 120))
+(hons-acons 'a 1 nil)
+(value :BROWSER-DEMO-DONE)
