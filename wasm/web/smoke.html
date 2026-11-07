@@ -15,15 +15,21 @@
 </style>
 </head>
 <body>
-<h1>ECL on WebAssembly — smoke test (MEMFS build, no ACL2 preload)</h1>
+<h1 id="title">ECL on WebAssembly — smoke test (MEMFS build, no ACL2 preload)</h1>
 <div id="status">starting…</div>
 <pre id="log"></pre>
 <script>
+const params = new URLSearchParams(location.search);
+const mode = params.get('mode') || 'smoke';   // 'smoke' or 'dylink'
+if (mode === 'dylink') {
+  document.getElementById('title').textContent =
+    'ECL on WebAssembly — dynamic linking test (loads a compiled Lisp module)';
+}
 const logEl = document.getElementById('log');
 const statusEl = document.getElementById('status');
 const t0 = performance.now();
 function append(t) { logEl.textContent += t + '\n'; }
-const worker = new Worker('worker.js?v=9');
+const worker = new Worker('worker.js?v=11');
 worker.onmessage = (ev) => {
   const m = ev.data;
   if (m.type === 'log') append(m.text);
@@ -32,7 +38,7 @@ worker.onmessage = (ev) => {
   else if (m.type === 'done') statusEl.textContent = `done in ${m.seconds.toFixed(1)}s`;
 };
 worker.onerror = (e) => append('[page] worker error: ' + e.message);
-worker.postMessage({cmd: 'run', mode: 'smoke'});
+worker.postMessage({cmd: 'run', mode});
 </script>
 </body>
 </html>

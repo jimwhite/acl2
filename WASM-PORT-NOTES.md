@@ -1003,6 +1003,34 @@ its `.fasc` output to `$WORK/bytecode` (`/opt/eclwasm/bytecode`) and
 there, because a native ECL cannot load a module and the `.fasc` files in the
 ACL2 directory are modules by then.
 
+### Browser: dynamic linking works; the boot strap is what does not
+
+`wasm/web/dylink.html` loads the `WEB=1 DYLINK=1` build of wasm ECL, writes a
+compiled Lisp module into the in-memory filesystem, `(load "/dylink-test.fas")`
+and calls its functions -- in the page, in 0.4 s:
+
+    ;;; Loading #P"/dylink-test.fas"
+    ; dylink-test module initialised
+    ; dylink-double(21) = 42
+    ; dylink-fib(20)   = 6765
+    ; dylink-vec-sum   = 10
+
+That is the same mechanism a certified book uses (`wasm/aot-book.sh` produces
+the module, `load` reaches `si::load-binary`, ECL `dlopen`s it), so the browser
+half of "certify a book, AOT it, include it" is proven.  Note the file type:
+ECL dispatches on it, and `fas` is the `dlopen` path while `fasc` means
+bytecode, hence the module is written as `/dylink-test.fas`.
+
+What is still missing for ACL2 itself is the boot strap, not the loading: a page
+cannot raise V8's stack, and the interpreted boot strap needs 128-512 MB of it.
+That also settles the snapshot question quantitatively: a full linear-memory
+snapshot of the post-boot-strap state is **not shippable** -- that state was
+measured at ~720 MB -- so of the two snapshot routes only the ACL2-level one
+(serialize the world: 21.7 MB, ~5 MB gzipped) can go to a page, and that is the
+`ecl-world-image` branch's replay, which is not yet sound-equivalent.  The
+cheapest honest route to ACL2 in a page is therefore the source AOT above: it
+removes the boot strap from the page rather than moving it elsewhere.
+
 ### Options for cutting the ~361 s startup
 
 `compile-acl2` -- the ahead-of-time step the build already performs -- is not

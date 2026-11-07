@@ -171,6 +171,14 @@
            ;; build makes the same proclamation.  One release of ECL does
            ;; not know the declaration, so do not let that be fatal.
            (ignore-errors (proclaim '(ext:use-direct-c-call nil)))
+           ;; ACL2_AOT_PROCLAIM: an extra proclaim before the compile, e.g.
+           ;; "(optimize (safety 3))" to turn silent type violations (which the
+           ;; C compiler can produce where the bytecodes compiler cannot) into
+           ;; precise runtime errors.  Used while diagnosing the boot-strap
+           ;; failure described in WASM-PORT-NOTES.md.
+           (let ((extra (ext:getenv "ACL2_AOT_PROCLAIM")))
+             (when (and extra (not (equal extra "")))
+               (proclaim (read-from-string extra))))
            (let ((*readtable* (if (aot-expansion-name-p
                                   (pathname-name (pathname expansion-file)))
                                  *acl2-readtable*

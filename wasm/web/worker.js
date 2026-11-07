@@ -45,19 +45,32 @@ async function fetchGz(url) {
 
 self.onmessage = async (ev) => {
   if (!ev.data || ev.data.cmd !== 'run') return;
-  const smoke = ev.data.mode === 'smoke';
+  const mode = ev.data.mode || 'acl2';
+  const smoke = mode === 'smoke';
+  const dylink = mode === 'dylink';
   const t0 = performance.now();
   const secs = () => ((performance.now() - t0) / 1000).toFixed(1);
 
   try {
     status('fetching module');
-    importScripts('lib/ecl-1536.js');      // defines the factory as `Module`
+    // The dynamic-linking build is a different binary (built with DYLINK=1), so
+    // it has its own copy of the glue next to the plain one.
+    importScripts(dylink ? 'lib/ecl-dylink.js' : 'lib/ecl-1536.js');
     const createACL2Module = self.Module;
 
     const script = smoke ? '(+ 1 2)\n(print 42)\n(quit)\n'
-                         : new TextDecoder().decode(
-                               await fetchBuf('demo.lsp'));
-    const manifest = smoke ? []
+                 : dylink ? [
+                     '(progn',
+                     '(load "/dylink-test.fas")',
+                     '(format t "; dylink-double(21) = ~s~%" (dylink-double 21))',
+                     '(format t "; dylink-fib(20)   = ~s~%" (dylink-fib 20))',
+                     '(format t "; dylink-vec-sum   = ~s~%" (dylink-vec-sum #(1 2 3 4)))',
+
+                     '(si:quit))',
+                   ].join(' ') + '\n'
+                 : new TextDecoder().decode(
+                       await fetchBuf('demo.lsp'));
+    const manifest = (smoke || dylink) ? []
                            : JSON.parse(new TextDecoder().decode(
                                  await fetchBuf('files.json')));
 
@@ -65,9 +78,10 @@ self.onmessage = async (ev) => {
     status('instantiating module');
     // Inside a worker Emscripten cannot tell where the module came from, so
     // its default locateFile points at the page; keep the binary next to it.
+    const libbase = dylink ? 'lib/ecl-dylink.' : 'lib/ecl-1536.';
     mod = await createACL2Module({
       noInitialRun: true,
-      locateFile: (path) => 'lib/ecl-1536.' + path.split('.').pop(),
+      locateFile: (path) => libbase + path.split('.').pop(),
       print: (s) => log(s),
       printErr: (s) => log('stderr: ' + s),
       // ACL2 reads its commands from stdin; feed it the script text.
@@ -75,7 +89,16 @@ self.onmessage = async (ev) => {
     });
 
     const FS = mod.FS;
-    if (!smoke) {
+    if (dylink) {
+      // The module ECL will dlopen: compiled by wasm/aot-book.sh for the same
+      // wasm target, so it exports __ecl_init_fas_CODE and imports libecl from
+      // the running module.
+      status('fetching side module');
+      const buf = await fetchBuf('files/dylink-test.fas');
+      FS.writeFile('/dylink-test.fas', new Uint8Array(buf));
+      log(`[web] wrote /dylink-test.fas (${buf.byteLength} bytes)`);
+    }
+    if (!smoke && !dylink) {
       status('preloading ' + manifest.length + ' files');
       let bytes = 0, done = 0;
       for (const f of manifest) {
@@ -100,7 +123,7 @@ self.onmessage = async (ev) => {
 
     const started = performance.now();
     try {
-      mod.callMain(smoke ? [] : ['--load', '/acl2/web-acl2.lsp', '--']);
+      mod.callMain((smoke || dylink) ? [] : ['--load', '/acl2/web-acl2.lsp', '--']);
     } catch (e) {
       // EXIT_RUNTIME=1 makes (quit) throw ExitStatus; anything else is a crash.
       if (e && typeof e === 'object' && 'status' in e) {
