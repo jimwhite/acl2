@@ -238,12 +238,23 @@ caller supplied one (DIRECTORY-NAMESTRING alone turns \"/opt/emsdk\" into
           :nm (concatenate 'string emsdk "upstream/bin/llvm-nm")
           ;; The flags the wasm ECL itself was compiled with: a side module
           ;; has to agree with the main module on exception handling.
+          ;;
+          ;; ACL2_AOT_CC_FLAGS appends to these, which is how a diagnostic build
+          ;; gets names into a module: V8 prints "wasm-function[477]" for a
+          ;; module compiled without a name section and the Lisp function name
+          ;; for one compiled with -g3, which is the difference between
+          ;; guessing and knowing when a module blows the stack.
           :cc-flags (concatenate
                      'string
                      "-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false"
                      " -DECL_C_COMPATIBLE_VARIADIC_DISPATCH -Demscripten"
-                     (if side-module *side-module-cc-flags* ""))
-          :cc-optimize "-O2"
+                     (if side-module *side-module-cc-flags* "")
+                     (let ((extra (ext:getenv "ACL2_AOT_CC_FLAGS")))
+                       (if (and extra (plusp (length extra)))
+                           (concatenate 'string " " extra)
+                           "")))
+          :cc-optimize (let ((opt (ext:getenv "ACL2_AOT_OPT")))
+                         (if (and opt (plusp (length opt))) opt "-O2"))
           :cmpinclude "<ecl/ecl-cmp.h>"
           ;; `ecl-include-directory' wants a directory that contains
           ;; ecl/config.h, and the wasm build installs its headers flat, i.e.

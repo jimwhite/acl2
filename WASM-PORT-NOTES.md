@@ -1167,6 +1167,73 @@ those symbols to the glue's export list.
 The ACL2 page cannot use this yet, because the boot strap has to *finish* once
 before a prompt exists, and that is the stack wall above.
 
+### What the native stack actually costs, measured
+
+Three stacks are in play and they are easy to confuse:
+
+| stack | where it lives | size here | who is limited by it |
+| --- | --- | --- | --- |
+| Emscripten C stack | linear memory (`-sSTACK_SIZE`) | **1.5 GB** | C locals, `alloca`, ECL's `frame` objects |
+| ECL's frame stack | linear memory (`ext:frame-stack`) | 262144 frames (raised in the driver) | the interpreter's own frame list |
+| V8 native stack | the machine stack | **~1 MB in a page, `--stack-size` in Node** | *every* wasm call: one frame per C call, however small |
+
+So the Lisp data stack really is in dynamic memory -- that was done, and it is why
+the ACL2 start in Node can pile up 262144 ECL frames.  What a page cannot give is
+the third one: V8's native stack, which every genuinely nested call consumes no
+matter where the data lives.  One Lisp call is 2-3 native frames (`ecl_interpret`
++ `ecl_apply_from_stack_frame` for interpreted/bytecode code; a module function
++ `variadic_dispatchK` for native code).
+
+Measured with one function `(defun sd (n) (if (<= n 0) 0 (1+ (sd (1- n)))))`,
+looking for the deepest `n` that still answers, in
+`wasm/acl2-wasm`-free runs driven by `/tmp/moddrv.lsp`:
+
+| backend | stack | deepest that fits | cost per Lisp call |
+| --- | --- | --- | --- |
+| interpreted (source) | 2 MB | ~800 | ~2.5 KB |
+| bytecode (bytecodes compiler) | 2 MB | ~800 | ~2.5 KB |
+| native module, `-O2` | 1 MB | ~1000-2000 | ~0.8 KB |
+| native module, `-O0` | 1 MB | ~1000-2000 | no better |
+| native module, **tail** call | 1 MB | **1,000,000+** | **0** |
+
+Three conclusions, in order of usefulness:
+
+1. **Tail calls are free, but only in native modules.**  `-O2` already turns
+   ECL's `return f(...)` into a loop; a million-deep tail recursion costs
+   nothing.  The interpreter does *not*: a 100,000-deep tail recursion dies at
+   1 MB.  So every tail-recursive ACL2 helper (`TAILS-AC` and friends) is free
+   in a module and fatal in bytecode.
+2. **`-O0` is not the lever it looks like.**  It does not shrink the wasm frame
+   (measured above), which agrees with the note in `wasm/build-ecl-wasm.sh`
+   about ECL's configure having been built both ways.
+3. **Per-frame cost is the wall.**  A page gives ~1 MB, i.e. ~400 interpreted
+   frames or ~1200 module frames.  The boot strap needs 2-4 MB, so it wants
+   roughly a thousand native frames' worth of depth *at interpreter prices*.
+
+Which is why the two things worth doing are (a) get the boot strap's work into
+modules rather than bytecode, and (b) stop paying 2.5 KB for interpreter frames.
+For (b) the concrete question is what makes `ecl_interpret`'s wasm frame 2.5 KB:
+it is one huge switch, so its frame is the union of every opcode's locals plus
+whatever `-O2` keeps in wasm locals (each wasm local lives in V8's frame, not in
+the 1.5 GB linear stack).  Splitting the interpreter into per-opcode helpers, or
+forcing its big locals into linear memory, is an ECL-side change that would buy
+one to two orders of magnitude and needs no ACL2 changes.
+
+Diagnostics added in this round, both in `wasm/wasm32-target.lsp`:
+
+- `ACL2_AOT_CC_FLAGS` appends to the module compile flags; `ACL2_AOT_CC_FLAGS=-g3`
+  puts a name section in the module, which is the difference between
+  `wasm-function[477]` and the Lisp function's name in a V8 stack trace.
+- `ACL2_AOT_OPT` overrides the `-O2` used for module code, for exactly the
+  comparison above.
+
+Also worth knowing when chasing this: the failure in a page happens *after* all
+43 modules load.  Logging each module as the `"fasc"` hook sees it shows 42 loads
+and then the crash inside the boot strap, in bytecode (`ecl_interpret` <->
+`ecl_apply_from_stack_frame` pairs) with a module frame underneath -- i.e. not a
+module's initialization, and not the loading, but ACL2's boot strap running code
+that was compiled at run time.
+
 ### Publishing the browser harness (GitHub Pages)
 
 `wasm/web/publish-gh-pages.sh <dir>` stages the pages, `worker.js` (rewritten to
