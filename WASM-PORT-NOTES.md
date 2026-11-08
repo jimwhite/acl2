@@ -1825,6 +1825,61 @@ properties`, `updated the world's derived structures`, and ACL2's own
   #13043 above) and not a Chrome one (~1 MB).  The page now says so plainly
   instead of dying silently.
 
+  Measured (2026-11-08) by driving the browser module the way the page does and
+  binary-searching V8's `--stack-size`: `(include-book "projects/apply/top"
+  :dir :system)` needs **1079 kB**, and a Chrome page gives about 1000 kB.  A
+  *compiled*, self-recursive Lisp function reaches depth **~1640** in 984 kB,
+  i.e. ~600 B per compiled call -- 2 frames, one of them the shim.
+
+### Why the shim cannot just be turned off (2026-11-08)
+
+ECL's configure turns on `-DECL_C_COMPATIBLE_VARIADIC_DISPATCH` for
+wasm32-unknown-emscripten without saying why, and it is the source of both the
+extra frame and its width: with it, a compiled Lisp function has the signature
+`(cl_narg, x0 ... x63)`, so `ecl_function_dispatch` hands the caller
+`variadic_dispatchN`, which copies the arguments into a 65-element local array
+and passes all 64 of them on.  `ECL_COMPAT_DISPATCH=0` in
+`wasm/build-ecl-wasm.sh` removes the `-D`, the `confdefs.h` define and the
+`:c-compatible-variadic-dispatch` feature together (all three must move
+together, or a cross-compiled module gets 64-argument signatures for a variadic
+runtime).  The result **builds and boots**, runs compiled code correctly
+(`mapcar`, `sort`, `reduce`, `funcall` of a lambda, 10,000-deep interpreted
+recursion), and then dies during `init_lib_LSP`:
+
+```
+RuntimeError: null function or function signature mismatch
+    at ecl.wasm.ecl_dispatch_reader_fun
+    at ecl.wasm.fixed_dispatch2
+    at ecl.wasm.ecl_read_object_with_delimiter
+```
+
+`fixed_dispatch2` calls `fun->cfunfixed.entry_fixed` and finds a function of a
+different signature: wasm's `call_indirect` type-checks, and ECL's dispatch
+tables are built on the compat ABI's uniform shape.  So this is ECL's design,
+not a flag to flip; the knob is left in place (default 1) so the experiment can
+be repeated, and this paragraph is the result of it.
+
+### Which books fit in a Chrome-sized page (2026-11-08)
+
+At 1000 kB (a Chrome page), including these succeeds and these do not, in the
+payload the page ships today (which is the dependency set of
+`projects/apply/top`):
+
+| succeed | fail |
+| --- | --- |
+| `textbook/chap10/fact`, `std/portcullis`, `system/apply/apply-prim-support`, `projects/apply/apply`, `projects/apply/definductor` | `centaur/bitops/portcullis`, `cowles/portcullis`, `system/apply/apply-prim`, `system/apply/apply-constraints`, `projects/apply/base`, `projects/apply/loop-lemmas`, `projects/apply/relink-fancy-scion`, `projects/apply/loop`, `projects/apply/top` |
+
+The failures are all in `si::load-binary` (ECL's `si_load_binary` calls the
+module's `__ecl_init_fas_CODE` and ECL's debugger reports `Broken at LOAD-FASC`),
+and they track module size, which points at the module *initialisation* rather
+than at the book's own events.  One thing to try next is building the book
+modules from `<book>@expansion.lsp` rather than from the book's `.lisp` (as
+`wasm/aot-book.sh` already prefers): the apply books have no expansion file, so
+they were compiled from the raw source, which makes the module initialise the
+book's macros and events instead of ACL2's expanded forms.  Certifying with
+`ACL2_SAVE_EXPANSION=1` first may well shrink what those modules do at load
+time.
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed

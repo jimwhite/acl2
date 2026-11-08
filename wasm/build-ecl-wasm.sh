@@ -299,10 +299,59 @@ fi
 # stack (1.5 GB here) instead of wasm locals (which live in V8's ~1 MB native
 # stack), so -O0 may buy depth at the cost of speed.  See WASM-PORT-NOTES.md,
 # "What the native stack actually costs, measured".
+#
+# ECL_COMPAT_DISPATCH=0 drops -DECL_C_COMPATIBLE_VARIADIC_DISPATCH, which the
+# same configure line turns on for wasm without saying why.  With it, every
+# compiled Lisp function has the signature (cl_narg, x0 ... x63) -- 64 fixed
+# arguments -- so a call through the function's value passes 64 words and goes
+# through variadic_dispatchN, which marshals them in a 65-element local array
+# first.  Without it, cl_objectfn is the plain variadic (cl_narg, ...) and the
+# dispatch table is gone; on wasm that would be 2 C frames per compiled Lisp
+# call instead of 1, and much narrower frames, which matters against the ~1 MB
+# a page has (a compiled self-recursive function reaches depth ~1640 at 984 kB
+# with the shim).
+#
+# It does not work, and the flag is on for a reason: the build and the Lisp
+# library are consistent (the define, the -D and the
+# :c-compatible-variadic-dispatch feature all move together here), ECL boots
+# and runs compiled code, but the reader dies during init_lib_LSP with
+# "null function or function signature mismatch" -- fixed_dispatch2 calling
+# ecl_dispatch_reader_fun.  wasm's call_indirect checks signatures, and ECL's
+# dispatch tables rely on the compat ABI's uniform shape.  Left as a knob so
+# the measurement is reproducible; default 1.
 ECL_WASM_OPT=${ECL_WASM_OPT:--O2}
-log "Optimisation for the wasm target: $ECL_WASM_OPT"
-sed -i "s|-DECL_C_COMPATIBLE_VARIADIC_DISPATCH -O0|-DECL_C_COMPATIBLE_VARIADIC_DISPATCH $ECL_WASM_OPT|" \
+if [ "${ECL_COMPAT_DISPATCH:-1}" = 1 ]; then
+  DISPATCH_CFLAG=-DECL_C_COMPATIBLE_VARIADIC_DISPATCH
+else
+  DISPATCH_CFLAG=
+fi
+log "Optimisation for the wasm target: $ECL_WASM_OPT; C-compatible variadic dispatch: ${ECL_COMPAT_DISPATCH:-1}"
+sed -i "s|-DECL_C_COMPATIBLE_VARIADIC_DISPATCH -O0|$DISPATCH_CFLAG $ECL_WASM_OPT|" \
   "$NODE_SRC/src/configure"
+if [ "${ECL_COMPAT_DISPATCH:-1}" = 0 ]; then
+  # The wasm32 case also appends the define to confdefs.h (which becomes
+  # ecl/config.h) and adds :c-compatible-variadic-dispatch to the Lisp feature
+  # list.  The feature is what the compiler branches on
+  # (cmpbackend-cxx/cmpc-util.lsp), and it travels into the target-info that a
+  # cross compilation uses, so both halves have to go or a module would be
+  # compiled with 64-argument signatures for a variadic runtime.  Only the
+  # wasm32 case: the same printf appears in the Apple arm64 case, inside an
+  # `if', where deleting it leaves a dangling `fi'.
+  awk -v cfg="$NODE_SRC/src/configure" '
+    /wasm32-unknown-emscripten/ { wasm = 1 }
+    wasm && /#define ECL_C_COMPATIBLE_VARIADIC_DISPATCH/ { next }
+    wasm && /^LSP_FEATURES="\$\{LSP_FEATURES\} :c-compatible-variadic-dispatch"$/ { next }
+    { print }
+  ' "$NODE_SRC/src/configure" > "$NODE_SRC/src/configure.new"
+  mv "$NODE_SRC/src/configure.new" "$NODE_SRC/src/configure"
+  chmod +x "$NODE_SRC/src/configure"
+  if awk '/wasm32-unknown-emscripten/ { wasm = 1 }
+          wasm && /c-compatible-variadic-dispatch/ { found = 1 }
+          END { exit found ? 0 : 1 }' "$NODE_SRC/src/configure"; then
+    echo "error: could not turn off ECL_C_COMPATIBLE_VARIADIC_DISPATCH in configure" >&2
+    exit 1
+  fi
+fi
 
 log "Configuring the wasm target"
 (
