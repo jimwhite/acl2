@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JS/Wasm stack depth probe</title>
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem; max-width: 46rem; }
+  pre { background: #f4f4f4; padding: 1rem; border-radius: 6px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>How deep can this page recurse?</h1>
+<p>
+  The boot strap of ACL2 needs several megabytes of <em>native</em> stack. A
+  WebAssembly engine runs wasm frames on the JavaScript stack, so the number
+  below is the ceiling that matters. It is measured on the main thread and in a
+  worker, because Blink does not necessarily size them the same.
+</p>
+<pre id="out">measuring ...</pre>
+<script>
+"use strict";
+
+// Not a tail call: the result is used, so the frame cannot be recycled.
+function depthMain() {
+  let n = 0;
+  function f() { n++; const x = f(); return x + 1; }
+  try { f(); } catch (e) { return { depth: n, error: e.constructor.name }; }
+  return { depth: n, error: null };
+}
+
+const out = document.getElementById("out");
+const log = (s) => { out.textContent += "\n" + s; };
+
+const t0 = performance.now();
+const m = depthMain();
+log("main thread : depth " + m.depth + " (" + (m.error || "no error") + "), " +
+    Math.round(performance.now() - t0) + " ms");
+
+// Same measurement inside a worker, built from a Blob so the page stays a
+// single file.
+const src = `
+  function depth() {
+    let n = 0;
+    function f() { n++; const x = f(); return x + 1; }
+    try { f(); } catch (e) { return n; }
+    return n;
+  }
+  onmessage = function () { postMessage(depth()); };
+`;
+const url = URL.createObjectURL(new Blob([src], { type: "text/javascript" }));
+const w = new Worker(url);
+const tw = performance.now();
+w.onmessage = (e) => {
+  log("web worker : depth " + e.data + ", " + Math.round(performance.now() - tw) + " ms");
+  log("");
+  log("Node, for comparison: --stack-size=984 (V8's default) and the ACL2 start");
+  log("needed --stack-size=4000 in Node, so this page's number is the thing to watch.");
+  w.terminate();
+  URL.revokeObjectURL(url);
+};
+w.onerror = (e) => { log("worker failed: " + e.message); };
+w.postMessage(1);
+</script>
+</body>
+</html>

@@ -1485,6 +1485,104 @@ The realistic options are:
   factor; the larger ~7x that comes from having the prover in bytecode at
   all is only removed by a native backend for wasm.
 
+## World-image replay: ACL2 reaches a prompt, and what a page can give it (2026-11-07)
+
+`wasm/world-replay.lsp` installs a serialized post-boot-strap world instead of
+running the boot strap.  In Node it now reaches the ACL2 prompt in **30 s** (the
+boot strap takes 41 s with all 43 modules, and 310.6 s in plain bytecode), and
+it is functionally correct on the checks that matter:
+
+| check | result |
+| --- | --- |
+| `(check-acl2-initialization)` | passes (it reports failure by erroring; the body returns `nil`) |
+| `(thm (equal (append (append x y) z) (append x (append y z))))` | Q.E.D. |
+| `(defun my-fact ...)` / `(my-fact 20)` | admitted / `2432902008176640000` |
+| `(include-book "projects/apply/base" :dir :system)` | loads, 4.5 s (4.4 s from a normal start) |
+| `(apply$ 'binary-+ '(20 22))` | `42`, same as a normal start |
+
+The four things that were actually wrong, in the order they surfaced:
+
+1. **The `*1*` symbols need value cells, not definitions.**  `ATTACHMENT-SYMBOL`
+   *is* `*1*-SYMBOL` (`axioms.lisp:10614`), so `THROW-OR-ATTACH`
+   (`axioms.lisp:5334`) opens with `(let ((g ,at-fn)) ...)` — a *variable* read
+   of the `*1*` symbol.  The boot strap creates those cells by evaluating
+   `THROW-OR-ATTACH-CALL`, whose `(eval '(defvar ,at-fn nil))` runs at **compile**
+   time, and its own comment says that eval "would no longer be around" when a
+   compiled file is merely loaded — which is exactly what a replay does.  The
+   first non-executable function installed therefore reported
+   `The variable ACL2_*1*_ACL2::BADGE-USERFN is unbound.`  Binding 6,460 of them
+   to `nil` costs 0.06 s, and this is the step whose absence made the earlier
+   prototype look unsound.
+2. **`UPDATE-WRLD-STRUCTURES` has to be called by hand.**  `EXTEND-WORLD1` runs
+   it only when the world being installed is named `'CURRENT-ACL2-WORLD`
+   (`interface-raw.lisp:7881`), and `SET-W 'EXTENSION` skips it.  Without it the
+   enabled structure is stale and the first `defun` reports `Fast alist
+   discipline violated in HONS-GET` and then proves termination with `Rules: NIL`.
+3. **`MEMOIZE-INIT` must run before the install**, not after it, because
+   installing a memoized function calls `MEMOIZE-FN`, which refuses to work until
+   the init has run (`Memoize-fn: *MEMOIZE-INIT-DONE* is still nil`).
+4. **`APPLY$-PRIM`'s dispatch table is a hash table**, filled by
+   `(make-apply$-prim-body-fn-raw *badge-prim-falist* *apply$-prim-ht*)` inside
+   `(when-pass-2 ...)` (`apply-prim.lisp:1207-1211`).  `WHEN-PASS-2` expands to
+   `NIL` in raw Lisp, so a compiled module never runs it, the table stays empty,
+   and `APPLY$-PRIM` returned `NIL` for every primitive — while `(badge 'car)`
+   was still correct, which is what made this one hard to see.  It is the **only**
+   `(set-raw-mode t)` side effect in the whole source tree, so it is the only one
+   a replay has to perform by hand.
+
+Constants the loaded modules leave unbound are taken from the image's
+`(NAME CONST . VALUE)` triples (4 of them; `*SYSTEM-VERIFY-GUARDS-ALIST-1*` is
+needed by `add-trip` itself).  About 370 `Fast alist discipline` warnings remain
+because the image stores big constant alists such as `*BADGE-PRIM-FALIST*` as
+ordinary lists — a hash table is not part of a serialized value.  They are
+correct-but-linear scans and cost 0.06 s on the book above; large constant alists
+are re-fastened with `FAST-ALIST-FORK`, but most of the warnings come from
+alists inside the world, which is left alone.
+
+### What the stack-switching ideas do and do not buy
+
+V8 has `--experimental-wasm-stack-switching`, `--stress-wasm-stack-switching`
+(run wasm on a secondary stack) and `--experimental-wasm-growable-stacks`, so it
+was worth asking whether a page could get ACL2 the stack the boot strap wants.
+Measured on this tree, the answer is no:
+
+| configuration | result |
+| --- | --- |
+| `--stack-size=2000`, `world-replay.lsp` | `RangeError` |
+| `--stack-size=2000` + `--stress-wasm-stack-switching --wasm-stack-switching-stack-size=16000` | `RangeError`, same |
+| `--trace-wasm-stack-switching` on the same run | **zero** trace lines |
+
+So the flag never engages for a module that was not compiled for stack switching,
+and a browser could not set it anyway.  Memory64 is not useful here either: the
+binding limit is the JS stack, not the 4 GB linear memory (the C stack is already
+1.5 GB of linear memory).
+
+### The measured ceiling of a page
+
+`wasm/web/_stackprobe.html` recurses until V8 throws, on the main thread and in a
+worker:
+
+| context | depth before `RangeError` |
+| --- | --- |
+| main thread | 10,339 frames |
+| web worker | 5,551 frames |
+
+Node's default `--stack-size=984` behaves like the first row, so **a worker has
+about half of the stack a page already had**, and moving ACL2 out of the worker
+into the main thread doubles the budget — the opposite of the usual advice, and
+worth doing for ACL2 specifically.
+
+That measurement is also the honest limit of this route.  The replay removes the
+*boot strap's* stack requirement (which is what made startup impossible), but it
+does not make ACL2's own recursion shallow: `include-book "projects/apply/base"`
+needed `--stack-size=8000` in Node and still fails at 3200 — **and a normal start
+shows exactly the same thing**, so the replay is no worse than a normal start.
+With ~0.8 KB per native wasm frame, 1 MB buys ~1,250 frames and the book's
+translation needs an order of magnitude more.  Anything that closes that gap has
+to reduce frames or frame size (a native backend that keeps fewer values live per
+frame, or turning ACL2's deep non-tail recursions into iteration); it cannot come
+from the engine.
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed
