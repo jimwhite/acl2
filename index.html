@@ -35,13 +35,17 @@ loads at run time.</p>
   <li><a href="acl2-main.html"><strong>ACL2 in the browser</strong></a>
       <span>The theorem prover itself, at a prompt in about 9 seconds. It
       installs a serialized world image instead of running the boot strap, and
-      passes ACL2's own <code>check-acl2-initialization</code> on the way. Try
-      <code>(+ 1 2)</code>, a <code>thm</code>, or a <code>defun</code>.
-      Certified books are shipped too, so
-      <code>(include-book "textbook/chap10/fact" :dir :system)</code> works --
-      but a book whose translation needs several megabytes of stack (such as
-      <code>projects/apply/top</code>) exceeds what a page has, and the page
-      says so rather than hanging.</span></li>
+      passes ACL2's own <code>check-acl2-initialization</code> on the way. One
+      session stays alive between submissions -- type a <code>defun</code>,
+      then a <code>defthm</code> that uses it, then
+      <code>(include-book "textbook/chap10/fact" :dir :system)</code>, then
+      <code>(fact 10)</code>. Books are shipped compiled to wasm modules, but
+      loading one is the deepest recursion a page sees, and a page gets about
+      1 MB of engine stack: small and mid-sized books load, and a book that
+      needs more than that (most of the community books, e.g.
+      <code>projects/apply/top</code>, at 1.08 MB) is refused with a message
+      rather than hanging. Firefox gives a page about three times the stack, so
+      more books fit there.</span></li>
   <li><a href="repl.html">Interactive ECL console</a>
       <span>A real REPL: one ECL instance stays alive between inputs, so
       definitions and values persist. Enter evaluates; arrow keys recall
@@ -68,16 +72,23 @@ loads at run time.</p>
   <tr><td>500 × <code>(fact 500)</code></td><td class="num">0.747 s</td>
       <td class="num">0.04 s</td></tr>
 </table>
-<p>Loading a compiled module in a page works (see <em>Dynamic linking</em>), and
-the ACL2 page preloads the whole AOT tree and starts the boot strap.</p>
+<p>The page preloads the whole AOT tree, installs the serialized world image,
+passes ACL2's own <code>check-acl2-initialization</code>, and then takes one
+form at a time: ECL is entered through <code>ecl_page_start</code>,
+<code>ecl_page_load</code> and <code>ecl_page_eval</code> instead of
+<code>main</code>, so no read-eval-print loop runs and nothing exits between
+forms. Start to the prompt in a page: 8.9 s.</p>
 
 <h2>The remaining gap</h2>
-<p><span class="gap">ACL2 does not finish starting in a page.</span> The boot
-strap needs 2–4 MB of the engine's <em>native</em> stack, and a web page gets
-about 1 MB; the depth comes from ECL's interpreter running ACL2's boot-strap
-event forms. Nothing in the page can raise that limit. The same build starts
-normally under Node, which can be given a larger stack
-(<code>node --stack-size=524288</code>).</p>
+<p><span class="gap">Loading a big compiled module needs more stack than a
+page has.</span> The depth is inside <code>si::load-binary</code> -- the
+engine's processing of a wasm module's constants, not the book's own events --
+and it grows with the module. A Chrome page gives about 1 MB of engine stack:
+<code>textbook/chap10/fact</code>, <code>std/portcullis</code> and
+<code>projects/apply/apply</code> load; <code>projects/apply/top</code> needs
+1.08 MB and does not. Nothing in a page can raise that limit, although
+Firefox's page stack is roughly three times Chrome's. A book that does not fit
+is refused with a message, and the session can be reloaded.</p>
 <p>So the work ahead is to reduce that recursion — or to ship a base that does
 not boot-strap in the page at all. Details, measurements and the two bugs that
 made the AOT path work are in
