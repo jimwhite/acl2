@@ -404,6 +404,18 @@
     "dst": "/acl2/web-acl2.lsp"
   },
   {
+    "src": "files/acl2_web-replay.lsp.gz",
+    "dst": "/acl2/web-replay.lsp"
+  },
+  {
+    "src": "files/acl2_wasm_world-replay.lsp.gz",
+    "dst": "/acl2/wasm/world-replay.lsp"
+  },
+  {
+    "src": "files/acl2_world-image.ser.gz",
+    "dst": "/acl2/world-image.ser"
+  },
+  {
     "src": "files/acl2_books_textbook_chap10_fact.lisp.gz",
     "dst": "/acl2/books/textbook/chap10/fact.lisp"
   },

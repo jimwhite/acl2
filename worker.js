@@ -70,16 +70,27 @@ const REPL_NOISE = [
   /^>+ $/,
   /^program exited \(with status: 0\)/,
   /unsupported syscall:/,
+  // Re-entry noise, as in acl2-main.html: every input re-enters MAIN, which
+  // re-loads the driver and restarts ACL2's loop.
+  /^;;; Loading #P"\/acl2\/web-replay\.lsp"/,
+  /^Project-dir-alist:$/, /^\(\(:SYSTEM \. /,
+  /^Type :help for help\.$/,
+  /^Type \(quit\) to quit completely out of ACL2\.$/,
+  /^ACL2 !>Bye\.$/,
 ];
 
-async function replEnsure() {
+async function replEnsure(mode) {
   if (repl) return repl;
-  const state = {mod: null, lines: [], input: {text: '', pos: 0}};
+  const state = {mod: null, lines: [], input: {text: '', pos: 0},
+                 acl2: mode === 'acl2'};
   importScripts('lib/ecl-dylink.js');
   const create = self.Module;
   state.mod = await create({
     noInitialRun: true,
     noExitRuntime: true,      // the runtime must survive the exit at EOF
+    // See the note in acl2-main.html: this bdwgc is not fully sound, and
+    // wasm/acl2-wasm sets the same workaround for Node.
+    ENV: { GC_INITIAL_HEAP_SIZE: '500000000' },
     locateFile: (path) => 'lib/ecl-dylink.' + path.split('.').pop(),
     print: (s) => state.lines.push(s),
     printErr: (s) => state.lines.push(s),
@@ -87,15 +98,60 @@ async function replEnsure() {
                   ? state.input.text.charCodeAt(state.input.pos++) : null),
   });
   repl = state;
+  if (state.acl2) await bootWorldReplay(state);
   return state;
 }
 
-async function replEval(text) {
+// ACL2 through the world-image replay: preload the tree, install the image once
+// (about 30 s in Node), and leave the session live.  ACL2 is then re-entered
+// per input; see the comment on REPL_PREFIX below.
+async function bootWorldReplay(state) {
+  const FS = state.mod.FS;
+  const manifest = JSON.parse(
+    new TextDecoder().decode(await fetchBuf('files.json')));
+  let bytes = 0, done = 0;
+  status('preloading ' + manifest.length + ' files');
+  for (const f of manifest) {
+    const buf = await fetchGz(f.src);
+    bytes += buf.byteLength;
+    FS.mkdirTree(f.dst.replace(/\/[^\/]*$/, ''));
+    FS.writeFile(f.dst, new Uint8Array(buf));
+    if (++done % 10 === 0) {
+      status(`preloading ${done}/${manifest.length} ` +
+             `(${(bytes / 1048576).toFixed(1)} MB)`);
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  log(`[web] preloaded ${manifest.length} files, ` +
+      `${(bytes / 1048576).toFixed(1)} MB`);
+  // LOAD-ACL2 and its callers read this to decide what state the sources are
+  // in.  :INITIALIZED is what a working start has (the repo's own
+  // acl2-status.txt says exactly this), because the image *is* an initialized
+  // world; :COMPILED makes ACL2 think initialization still has to happen and
+  // the install then fails in EXTEND-WORLD1.
+  FS.writeFile('/acl2/acl2-status.txt', ':INITIALIZED');
+  status('installing the world image');
+  // Empty stdin: the replay runs, reaches ACL2's loop, and hits EOF at once.
+  state.input = {text: '', pos: 0};
+  try {
+    state.mod.callMain(['--load', '/acl2/web-replay.lsp', '--']);
+  } catch (e) {
+    if (!(e && typeof e === 'object' && 'status' in e)) throw e;
+  }
+  status('ACL2 ready');
+}
+
+async function replEval(text, mode) {
   let lines;
   try {
-    const state = await replEnsure();
+    const state = await replEnsure(mode);
     state.lines = [];
-    state.input = {text: text + '\n', pos: 0};
+    // Re-entering MAIN re-loads the driver (ECL caches its command line), and
+    // the driver returns to ACL2's prompt when the world is already installed.
+    state.input = {
+      text: text + '\n',
+      pos: 0,
+    };
     try {
       state.mod.callMain([]);
     } catch (e) {
@@ -116,7 +172,8 @@ async function replEval(text) {
 self.onmessage = async (ev) => {
   if (!ev.data) return;
   if (ev.data.cmd === 'eval') {
-    await replEval(String(ev.data.text === undefined ? '' : ev.data.text));
+    await replEval(String(ev.data.text === undefined ? '' : ev.data.text),
+                   ev.data.mode);
     return;
   }
   if (ev.data.cmd === 'restart') {
