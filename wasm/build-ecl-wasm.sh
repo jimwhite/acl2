@@ -41,6 +41,12 @@
 #                  the "Dynamic linking" comment below.
 #   TAG            suffix for the output directory, e.g. TAG=dylink gives
 #                  $WORK/dist/node-raw-dylink, so the working module is kept
+#   ECL_SERIALIZE  1 to configure ECL with --enable-serialization, which stores
+#                  a compiled file's constants as a serialized byte vector and
+#                  rebuilds them with SI::DESERIALIZE instead of reading them
+#                  with the Lisp reader; see the comment on SERIALIZE_OPT below.
+#                  Every .fasc built for the runtime has to match, so modules
+#                  built before the switch must be rebuilt.
 #
 set -euo pipefail
 
@@ -51,6 +57,7 @@ JOBS=${JOBS:-$(nproc)}
 REBUILD=${REBUILD:-0}
 EXTRA_WFLAGS=${EXTRA_WFLAGS:-}
 DYLINK=${DYLINK:-0}
+ECL_SERIALIZE=${ECL_SERIALIZE:-0}
 if [ "$DYLINK" = 1 ] && [ -z "${TAG:-}" ]; then TAG=dylink; fi
 TAG=${TAG:-}
 
@@ -365,6 +372,30 @@ log "Configuring the wasm target"
   #
   # </dev/null: on error the ECL build script drops into an interactive
   # debugger and make would wait forever.
+  #
+  # SERIALIZE_OPT (--enable-serialization, off by default in ECL and marked
+  # EXPERIMENTAL there) changes how a compiled file's constants are stored and
+  # rebuilt, which is where a page's stack was going:
+  #
+  #   off  cmpbackend-cxx/cmppass2-data.lsp writes the constants as a Lisp
+  #        *text* string (prin1-to-string), and ecl_init_module (read.d:1004)
+  #        reads them back with ECL_READ_OBJECT -- the recursive reader.  Nested
+  #        lists cost 4 C frames per level
+  #        (ecl_read_object_with_delimiter -> left_parenthesis_reader ->
+  #        fixed_dispatch2 -> ecl_read_delimited_list), about 1 kB of V8 stack
+  #        each: measured, the reader survives 1000 levels at Node's default
+  #        984 kB and dies at 2000.  A book module whose constants nest deeper
+  #        than ~1000 therefore cannot be loaded in a browser page, and that is
+  #        the wall "Broken at LOAD-FASC" was.
+  #   on   the constants are written as a byte vector (si::serialize) and
+  #        rebuilt by si_deserialize -> ecl_deserialize, which is three linear
+  #        passes over the vector with no recursion at all (serialize.d:678).
+  #
+  # The choice is made by the *compiler* (#+externalizable in cmppass2-data),
+  # so the cross compiler must see :externalizable in the target features; that
+  # comes from this build's LSP_FEATURES, i.e. from this flag.  Every .fasc then
+  # has to be rebuilt, since the two formats are not interchangeable.
+  if [ "$ECL_SERIALIZE" = 1 ]; then SERIALIZE_OPT=--enable-serialization; else SERIALIZE_OPT=; fi
   CC_FOR_BUILD=gcc \
   ECL_TO_RUN="$HOST_PREFIX/bin/ecl" \
   CFLAGS="$EHFLAGS $CFLAGS_EXTRA" \
@@ -373,6 +404,7 @@ log "Configuring the wasm target"
       --build="$(uname -m)-unknown-linux-gnu" \
       --with-cross-config="$CROSS_CONFIG" \
       --prefix="$NODE_PREFIX" \
+      $SERIALIZE_OPT \
       --disable-shared --with-tcp=no --with-cmp=no \
       > "$WORK/ecl-node-configure.log" 2>&1
 

@@ -1880,6 +1880,70 @@ book's macros and events instead of ACL2's expanded forms.  Certifying with
 `ACL2_SAVE_EXPANSION=1` first may well shrink what those modules do at load
 time.
 
+### What `si::load_binary` costs, and what can be done about it (2026-11-08)
+
+`si_load_binary` (`src/c/load.d:21`) is thin -- `cl_truename`,
+`ecl_library_open` (dlopen and relocations), `ecl_library_symbol` for
+`__ecl_init_fas_CODE`, then `ecl_init_module` (`src/c/read.d:936`) -- and there
+is no recursion in it.  `ecl_init_module` does three things, and only the first
+and the third can cost stack:
+
+1. **Constants.** With `ECL_EXTERNALIZABLE` undefined -- ECL's default;
+   `--enable-serialization` is off and marked EXPERIMENTAL -- the compiler
+   writes a compiled file's constants as a Lisp *text* string
+   (`cmpbackend-cxx/cmppass2-data.lsp`), and `ecl_init_module` reads them with
+   `ECL_READ_OBJECT`, the full reader.  A nested list costs four C frames per
+   level (`ecl_read_object_with_delimiter` -> `fixed_dispatch2` ->
+   `left_parenthesis_reader` -> `ecl_read_delimited_list`), about 1 kB of V8
+   stack each.  Measured: the reader handles 1000 levels of nesting at Node's
+   default 984 kB and dies at 2000; a module whose constant nests 3000 deep
+   cannot be loaded in a page at all (reproduced with a two-line module built
+   from a literal produced by `read-from-string`).
+2. cfun registration -- linear.
+3. **`(*entry_point)(OBJNULL)`** -- runs the compiled file's top-level code.
+
+The constants are *not* where `projects/apply/top`'s 1079 kB goes:
+
+| build | reader depth at 984 kB | `include-book projects/apply/top` |
+| --- | --- | --- |
+| as shipped | 1000 levels | 1079 kB |
+| with a fast path for the standard `(` reader (2 frames per level) | 2000 levels | 1081 kB |
+
+So for these books the depth is in step 3, the module's own top-level code, and
+nothing inside `si_load_binary` will move it.  (The fast path itself was
+implemented, and validated with the 34-case interpreter test and the ACL2
+regression, and then reverted: it is a real doubling of reader depth -- worth
+keeping in mind for a book whose *constants* nest deeply -- but it bought
+nothing for the case at hand, and a core-reader change should not ride in
+without a reason.)  One trap found on the way, for whoever tries it:
+`left_parenthesis_reader`'s `@(return ...)` sets `nvalues` *after*
+`read_delimited_list` returns, because reading the closing `)` leaves it at 0,
+and `si_load_source` evaluates a form only when `nvalues` is nonzero -- set it
+before the call and `(load "file.lsp")` silently reads every form and evaluates
+none.
+
+Two things do follow from point 1:
+
+* **`--enable-serialization` is the structural fix for constants.** The
+  compiler then writes a byte vector (`si::serialize`) and the runtime rebuilds
+  it with `si_deserialize` -> `ecl_deserialize`, which is three linear passes
+  over the vector and no recursion at all.  It does not build today: with
+  `--disable-threads`, `ecl_reconstruct_serialized_hashtable` (`hash.d`, inside
+  `#ifdef ECL_EXTERNALIZABLE`) refers to `t_lock`, `t_rwlock` and
+  `_ecl_{get,set,rem}hash_sync`, which a threaded build defines and this one
+  does not; `serialize.d` also needs `ecl/bytecodes.h` for `cl_opcode` and a
+  `size_t` for the count `mpz_export` writes.  All three are small, after which
+  every `.fasc` has to be rebuilt (the two formats are not interchangeable).
+  `wasm/build-ecl-wasm.sh` takes `ECL_SERIALIZE=1` for that attempt.
+* **Books must be AOT'd from `<book>@expansion.lsp`**, not from the book's
+  `.lisp`.  This only becomes visible once the reader is no longer the limit,
+  and then it is unmistakable: loading a module built from raw source dies with
+  ACL2's "It is illegal to execute make-event in raw Lisp (including raw mode)
+  ... consider loading a corresponding file *@expansion.lsp instead".  The
+  apply books have no expansion file, so building those is the next step, and
+  it is also the prerequisite for a tutorial book set (certify with
+  `ACL2_SAVE_EXPANSION=1`, then `wasm/aot-book.sh`).
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed
