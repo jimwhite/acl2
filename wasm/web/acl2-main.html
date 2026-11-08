@@ -169,9 +169,11 @@ formEl.addEventListener('submit', async (ev) => {
   status('running…');
   await new Promise((r) => setTimeout(r, 0));
 
-  // Re-entering MAIN lands in ECL's top level, not in ACL2's loop, so ask for
-  // the loop and quit it again with :q to return cleanly at the end.
-  inputText = '(acl2::lp)\n' + text + '\n:q\n';
+  // Re-entering MAIN re-loads the driver (ECL caches its command line), and the
+  // driver returns to ACL2's prompt when the world is already installed, so the
+  // input is just the form: no (acl2::lp) prefix, which ACL2 would read as a
+  // command of its own.
+  inputText = text + '\n';
   inputPos = 0;
   try { mod.callMain([]); }
   catch (e) { if (!(e && typeof e === 'object' && 'status' in e)) append(String(e), 'err'); }

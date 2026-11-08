@@ -139,11 +139,10 @@ async function replEval(text, mode) {
   try {
     const state = await replEnsure(mode);
     state.lines = [];
-    // Re-entering MAIN lands in ECL's top level, not in ACL2's loop, so an ACL2
-    // session asks for the loop again and hands it the input.  ACL2 keeps its
-    // whole state across this, because the runtime is never torn down.
+    // Re-entering MAIN re-loads the driver (ECL caches its command line), and
+    // the driver returns to ACL2's prompt when the world is already installed.
     state.input = {
-      text: (state.acl2 ? '(acl2::lp)\n' + text : text) + '\n',
+      text: text + '\n',
       pos: 0,
     };
     try {
