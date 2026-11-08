@@ -1572,6 +1572,25 @@ about half of the stack a page already had**, and moving ACL2 out of the worker
 into the main thread doubles the budget — the opposite of the usual advice, and
 worth doing for ACL2 specifically.
 
+The same limit hit Pyodide first, and emscripten issue #13043 ("Preventing stack
+overflows / increasing effective stack size") is the canonical discussion:
+`TOTAL_STACK`/`-sSTACK_SIZE` cannot help because the `RangeError` is a *wasm VM*
+limit; kripken's advice was that there is little to be done about VM stack usage;
+and hoodmane's measurements match ours closely — **Chrome ~10,000 zero-argument JS
+calls** (we measure 10,339 frames in this container's Chromium) and **Firefox
+~30,000**, i.e. **Firefox gives about three times the budget of Chrome**.  The V8
+bug filed from that issue (11269) was closed without raising the limit, so this is
+not a thing that changed since 2020.
+
+So: a browser with a big enough stack does exist — Firefox, at roughly 3 MB
+equivalent against Chrome's 1 MB — and that is worth having.  It is not enough on
+its own for the heaviest books (`projects/apply/top` needs 5-6 MB), but it should
+move the boundary substantially, and it is free.  The portable fix, which also
+covers a Chrome-only audience and a JupyterLite worker (where the budget is
+halved again), is still the interpreter trampoline: at the point of overflow in
+that benchmark, ~97% of the frames were `ecl_interpret` →
+`ecl_apply_from_stack_frame`, 681 deep at 1.5 MB and 1,192 at 3 MB.
+
 That measurement is also the honest limit of this route.  The replay removes the
 *boot strap's* stack requirement (which is what made startup impossible), but it
 does not make ACL2's own recursion shallow: `include-book "projects/apply/base"`
