@@ -1658,6 +1658,41 @@ Two limits remain, and they are the next work:
   and a normal start needs the same, so this is ACL2's own recursion, not the
   replay's.  Reducing frames or frame size is the only lever.
 
+### Certified books in a page
+
+The payload now ships 14 books, so `include-book` is not simply "does not exist".
+Which books is not a guess: `wasm/web/books.txt` is the list ACL2 reports in
+`include-book-alist` after `(include-book "projects/apply/top" :dir :system)`,
+which is 13 books (plus `textbook/chap10/fact`).  A hand-written reader of
+`include-book` forms is *not* good enough -- it produced 502 books and paths like
+`../../../meru1/cowles/...` -- so the list comes from ACL2; regenerate it with
+`/tmp/dump-includes.lsp` (include, `:q`, then write out the cars of
+`(global-val 'include-book-alist (w *the-live-state*))`, whose elements are
+`(SYSTEM . path)` pairs).
+
+Two traps, both measured, both of which make a shipped book *Uncertified*:
+
+- **`book-hash` includes the write date**: `((:BOOK-LENGTH . n)
+  (:BOOK-WRITE-DATE . t))`.  A book unpacked into MEMFS with today's date fails
+  with `book-hash-mismatch` and every `include-book` of it errors.  `files.json`
+  now carries each file's `mtime` and the harness restores it.
+- **`FS.utime` takes milliseconds.**  Passing the manifest's seconds put the file
+  in January 1970 -- `book-write-date` came out `2210782575` instead of
+  `4002764043`, which is exactly `unix + 2208988800`, so the arithmetic looks
+  right until you notice the file is 20 days after the epoch.  Also: this build
+  exposes `FS.utime`, not `FS.utimes`.
+
+Measured in a page: `(include-book "textbook/chap10/fact" :dir :system)` takes
+0.04 s from its AOT module and `(fact 10)` is 3628800.
+`(include-book "projects/apply/top" :dir :system)` needs **5-6 MB** of stack
+(it succeeds in Node at `--stack-size=6000` and fails at 4000), so it is out of
+reach in a page; the page now reports that plainly and says to reload, instead of
+leaving the console looking hung.
+
+`acl2-main.html` had no `keydown` handler at all, so Enter depended on the
+implicit submission of a form whose buttons are all `type="button"`; it now
+submits explicitly with `requestSubmit`.
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed

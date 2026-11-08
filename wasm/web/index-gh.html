@@ -36,7 +36,12 @@ loads at run time.</p>
       <span>The theorem prover itself, at a prompt in about 9 seconds. It
       installs a serialized world image instead of running the boot strap, and
       passes ACL2's own <code>check-acl2-initialization</code> on the way. Try
-      <code>(+ 1 2)</code>, a <code>thm</code>, or a <code>defun</code>.</span></li>
+      <code>(+ 1 2)</code>, a <code>thm</code>, or a <code>defun</code>.
+      Certified books are shipped too, so
+      <code>(include-book "textbook/chap10/fact" :dir :system)</code> works --
+      but a book whose translation needs several megabytes of stack (such as
+      <code>projects/apply/top</code>) exceeds what a page has, and the page
+      says so rather than hanging.</span></li>
   <li><a href="repl.html">Interactive ECL console</a>
       <span>A real REPL: one ECL instance stays alive between inputs, so
       definitions and values persist. Enter evaluates; arrow keys recall
