@@ -326,11 +326,27 @@
 ; blocks and the oneified code), and under the standard readtable a dispatch
 ; character like #' is read differently, which shows up far away as
 ; "In function CHAR-CODE, the value of the only argument is QUOTE".
-(format t "~&;; replay: installing the world ...") (force-output)
+;
+; SET-W!, not SET-W 'EXTENSION.  SET-W always passes 'CURRENT-ACL2-WORLD to
+; EXTEND-WORLD1, which requires this image's world to *contain the live world as
+; a tail*; that holds only if ENTER-BOOT-STRAP-MODE built exactly the initial
+; world the image was built from.  It does in the Node build, and it did not in
+; the browser build, which failed with
+;
+;   HARD ACL2 ERROR in EXTEND-WORLD1: ... is not an extension of the current
+;   CURRENT-ACL2-WORLD
+;
+; SET-W! retracts to the longest common prefix and then extends, so it installs
+; any world at all (history-management.lisp:4046).  That is the operation a
+; replay actually wants, and it does not depend on two builds agreeing about a
+; world neither of them is installing.
+(format t "~&;; replay: installing the world (live world has ~s triples) ..."
+        (length (w *the-live-state*)))
+(force-output)
 (let ((t0 (get-internal-real-time))
       (*world-image-replay* t)
       (*readtable* *acl2-readtable*))
-  (set-w 'extension cl-user::*saved-world* *the-live-state*)
+  (set-w! cl-user::*saved-world* *the-live-state*)
   (setq cl-user::*saved-world* nil)
   (cl-user::replay-step "installed the world's properties" t0))
 
