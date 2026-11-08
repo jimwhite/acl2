@@ -70,6 +70,13 @@ const REPL_NOISE = [
   /^>+ $/,
   /^program exited \(with status: 0\)/,
   /unsupported syscall:/,
+  // Re-entry noise, as in acl2-main.html: every input re-enters MAIN, which
+  // re-loads the driver and restarts ACL2's loop.
+  /^;;; Loading #P"\/acl2\/web-replay\.lsp"/,
+  /^Project-dir-alist:$/, /^\(\(:SYSTEM \. /,
+  /^Type :help for help\.$/,
+  /^Type \(quit\) to quit completely out of ACL2\.$/,
+  /^ACL2 !>Bye\.$/,
 ];
 
 async function replEnsure(mode) {

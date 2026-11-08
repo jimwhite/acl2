@@ -73,6 +73,14 @@ const NOISE = [
   /^ECL is free software/, /^under certain conditions/,
   /^Type :h for Help\./, /^Top level\.$/, /^>+ $/,
   /^program exited \(with status: 0\)/, /unsupported syscall:/,
+  // Re-entry noise.  Every input re-enters MAIN, which re-loads the driver and
+  // restarts ACL2's loop, so these repeat once per form; none of them says
+  // anything about the form.  See the comment in replay-web.lsp.
+  /^;;; Loading #P"\/acl2\/web-replay\.lsp"/,
+  /^Project-dir-alist:$/, /^\(\(:SYSTEM \. /,
+  /^Type :help for help\.$/,
+  /^Type \(quit\) to quit completely out of ACL2\.$/,
+  /^ACL2 !>Bye\.$/,
 ];
 
 async function fetchBuf(url, attempts = 10) {

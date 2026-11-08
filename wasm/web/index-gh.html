@@ -32,6 +32,11 @@ loads at run time.</p>
 
 <h2>Pages</h2>
 <ul class="pages">
+  <li><a href="acl2-main.html"><strong>ACL2 in the browser</strong></a>
+      <span>The theorem prover itself, at a prompt in about 9 seconds. It
+      installs a serialized world image instead of running the boot strap, and
+      passes ACL2's own <code>check-acl2-initialization</code> on the way. Try
+      <code>(+ 1 2)</code>, a <code>thm</code>, or a <code>defun</code>.</span></li>
   <li><a href="repl.html">Interactive ECL console</a>
       <span>A real REPL: one ECL instance stays alive between inputs, so
       definitions and values persist. Enter evaluates; arrow keys recall
@@ -41,9 +46,11 @@ loads at run time.</p>
   <li><a href="dylink.html">Dynamic linking</a>
       <span>Loads a compiled Lisp module into the running ECL in the page and
       calls its functions. ~0.4 s.</span></li>
-  <li><a href="acl2.html">ACL2</a>
-      <span>Preloads ACL2 and starts it. Reaches the boot strap and then stops:
-      see the note below.</span></li>
+  <li><a href="acl2.html">ACL2 by boot strap</a>
+      <span>The other route: loads ACL2 and lets <code>initialize-acl2</code>
+      run. It gets through the first pass and then stops, because the boot
+      strap needs several megabytes of native stack and a page has about one.
+      <code>acl2-main.html</code> is the one that works.</span></li>
 </ul>
 
 <h2>What works</h2>

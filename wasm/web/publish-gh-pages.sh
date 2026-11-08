@@ -40,6 +40,11 @@ cp "$HERE/smoke.html" "$DEST/smoke.html"
 cp "$HERE/dylink.html" "$DEST/dylink.html"
 cp "$HERE/repl.html" "$DEST/repl.html"
 cp "$HERE/acl2.html" "$DEST/acl2.html"
+# ACL2 itself, from the serialized world image.  This is the one that works: it
+# needs only a page's worth of stack (see WASM-PORT-NOTES.md, "ACL2 runs in a
+# page").  It runs on the main thread, not in a worker, so it does not use
+# worker.js.
+cp "$HERE/acl2-main.html" "$DEST/acl2-main.html"
 
 # The script the ACL2 page feeds to the boot strap.  It lives next to the pages,
 # so it has to be published next to them or the page 404s.
