@@ -287,72 +287,72 @@
   {
     "src": "files/acl2_acl2-exec-aot.fasc.gz",
     "dst": "/acl2/acl2-exec-aot.fasc",
-    "mtime": 1794028889
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_acl2-fns.fasc.gz",
     "dst": "/acl2/acl2-fns.fasc",
-    "mtime": 1794028809
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_apply-constraints.fasc.gz",
     "dst": "/acl2/apply-constraints.fasc",
-    "mtime": 1794061824
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_apply-prim.fasc.gz",
     "dst": "/acl2/apply-prim.fasc",
-    "mtime": 1794061825
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_apply-raw.fasc.gz",
     "dst": "/acl2/apply-raw.fasc",
-    "mtime": 1794028872
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_apply.fasc.gz",
     "dst": "/acl2/apply.fasc",
-    "mtime": 1794061825
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_axioms.fasc.gz",
     "dst": "/acl2/axioms.fasc",
-    "mtime": 1794061832
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_basis-a.fasc.gz",
     "dst": "/acl2/basis-a.fasc",
-    "mtime": 1794028819
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_basis-b.fasc.gz",
     "dst": "/acl2/basis-b.fasc",
-    "mtime": 1794028820
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_bdd.fasc.gz",
     "dst": "/acl2/bdd.fasc",
-    "mtime": 1794028838
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_boot-strap-pass-2-a.fasc.gz",
     "dst": "/acl2/boot-strap-pass-2-a.fasc",
-    "mtime": 1794061832
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_boot-strap-pass-2-b.fasc.gz",
     "dst": "/acl2/boot-strap-pass-2-b.fasc",
-    "mtime": 1794061832
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_defthm.fasc.gz",
     "dst": "/acl2/defthm.fasc",
-    "mtime": 1794028854
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_defuns.fasc.gz",
     "dst": "/acl2/defuns.fasc",
-    "mtime": 1794028850
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_doc.fasc.gz",
@@ -362,142 +362,142 @@
   {
     "src": "files/acl2_float-a.fasc.gz",
     "dst": "/acl2/float-a.fasc",
-    "mtime": 1794028821
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_float-b.fasc.gz",
     "dst": "/acl2/float-b.fasc",
-    "mtime": 1794028868
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_float-raw.fasc.gz",
     "dst": "/acl2/float-raw.fasc",
-    "mtime": 1794028874
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_history-management.fasc.gz",
     "dst": "/acl2/history-management.fasc",
-    "mtime": 1794028846
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_hons-raw.fasc.gz",
     "dst": "/acl2/hons-raw.fasc",
-    "mtime": 1794028816
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_hons.fasc.gz",
     "dst": "/acl2/hons.fasc",
-    "mtime": 1794028816
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_induct.fasc.gz",
     "dst": "/acl2/induct.fasc",
-    "mtime": 1794028840
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_interface-raw.fasc.gz",
     "dst": "/acl2/interface-raw.fasc",
-    "mtime": 1794061834
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_ld.fasc.gz",
     "dst": "/acl2/ld.fasc",
-    "mtime": 1794028870
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_linear-a.fasc.gz",
     "dst": "/acl2/linear-a.fasc",
-    "mtime": 1794028827
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_linear-b.fasc.gz",
     "dst": "/acl2/linear-b.fasc",
-    "mtime": 1794028829
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_memoize-raw.fasc.gz",
     "dst": "/acl2/memoize-raw.fasc",
-    "mtime": 1794028821
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_memoize.fasc.gz",
     "dst": "/acl2/memoize.fasc",
-    "mtime": 1794028819
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_non-linear.fasc.gz",
     "dst": "/acl2/non-linear.fasc",
-    "mtime": 1794028830
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_other-events.fasc.gz",
     "dst": "/acl2/other-events.fasc",
-    "mtime": 1794061848
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_other-processes.fasc.gz",
     "dst": "/acl2/other-processes.fasc",
-    "mtime": 1794028839
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_parallel.fasc.gz",
     "dst": "/acl2/parallel.fasc",
-    "mtime": 1794028820
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_proof-builder-a.fasc.gz",
     "dst": "/acl2/proof-builder-a.fasc",
-    "mtime": 1794028851
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_proof-builder-b.fasc.gz",
     "dst": "/acl2/proof-builder-b.fasc",
-    "mtime": 1794028872
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_prove.fasc.gz",
     "dst": "/acl2/prove.fasc",
-    "mtime": 1794028848
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_rewrite.fasc.gz",
     "dst": "/acl2/rewrite.fasc",
-    "mtime": 1794028836
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_serialize-raw.fasc.gz",
     "dst": "/acl2/serialize-raw.fasc",
-    "mtime": 1794028809
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_serialize.fasc.gz",
     "dst": "/acl2/serialize.fasc",
-    "mtime": 1794028819
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_simplify.fasc.gz",
     "dst": "/acl2/simplify.fasc",
-    "mtime": 1794028837
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_tau.fasc.gz",
     "dst": "/acl2/tau.fasc",
-    "mtime": 1794028831
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_translate.fasc.gz",
     "dst": "/acl2/translate.fasc",
-    "mtime": 1794061852
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_type-set-a.fasc.gz",
     "dst": "/acl2/type-set-a.fasc",
-    "mtime": 1794028826
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_type-set-b.fasc.gz",
     "dst": "/acl2/type-set-b.fasc",
-    "mtime": 1794028829
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_web-acl2.lsp.gz",
@@ -507,12 +507,12 @@
   {
     "src": "files/acl2_web-replay.lsp.gz",
     "dst": "/acl2/web-replay.lsp",
-    "mtime": 1794164351
+    "mtime": 1794170422
   },
   {
     "src": "files/acl2_wasm_world-replay.lsp.gz",
     "dst": "/acl2/wasm/world-replay.lsp",
-    "mtime": 1794164590
+    "mtime": 1794174628
   },
   {
     "src": "files/acl2_world-image.ser.gz",
@@ -532,7 +532,7 @@
   {
     "src": "files/acl2_books_projects_apply_top.fasc.gz",
     "dst": "/acl2/books/projects/apply/top.fasc",
-    "mtime": 1793907271
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_projects_apply_loop.lisp.gz",
@@ -547,7 +547,7 @@
   {
     "src": "files/acl2_books_projects_apply_loop.fasc.gz",
     "dst": "/acl2/books/projects/apply/loop.fasc",
-    "mtime": 1793906744
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_projects_apply_relink-fancy-scion.lisp.gz",
@@ -562,7 +562,7 @@
   {
     "src": "files/acl2_books_projects_apply_relink-fancy-scion.fasc.gz",
     "dst": "/acl2/books/projects/apply/relink-fancy-scion.fasc",
-    "mtime": 1793906222
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_projects_apply_definductor.lisp.gz",
@@ -577,7 +577,7 @@
   {
     "src": "files/acl2_books_projects_apply_definductor.fasc.gz",
     "dst": "/acl2/books/projects/apply/definductor.fasc",
-    "mtime": 1793871476
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_projects_apply_loop-lemmas.lisp.gz",
@@ -592,7 +592,7 @@
   {
     "src": "files/acl2_books_projects_apply_loop-lemmas.fasc.gz",
     "dst": "/acl2/books/projects/apply/loop-lemmas.fasc",
-    "mtime": 1793905490
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_projects_apply_apply.lisp.gz",
@@ -607,7 +607,7 @@
   {
     "src": "files/acl2_books_projects_apply_apply.fasc.gz",
     "dst": "/acl2/books/projects/apply/apply.fasc",
-    "mtime": 1793905291
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_projects_apply_base.lisp.gz",
@@ -622,7 +622,7 @@
   {
     "src": "files/acl2_books_projects_apply_base.fasc.gz",
     "dst": "/acl2/books/projects/apply/base.fasc",
-    "mtime": 1793904761
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_centaur_bitops_portcullis.lisp.gz",
@@ -637,7 +637,7 @@
   {
     "src": "files/acl2_books_centaur_bitops_portcullis.fasc.gz",
     "dst": "/acl2/books/centaur/bitops/portcullis.fasc",
-    "mtime": 1793867584
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_system_apply_apply-constraints.lisp.gz",
@@ -652,7 +652,7 @@
   {
     "src": "files/acl2_books_system_apply_apply-constraints.fasc.gz",
     "dst": "/acl2/books/system/apply/apply-constraints.fasc",
-    "mtime": 1793893478
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_system_apply_apply-prim.lisp.gz",
@@ -667,7 +667,7 @@
   {
     "src": "files/acl2_books_system_apply_apply-prim.fasc.gz",
     "dst": "/acl2/books/system/apply/apply-prim.fasc",
-    "mtime": 1793892328
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_system_apply_apply-prim-support.lisp.gz",
@@ -682,7 +682,7 @@
   {
     "src": "files/acl2_books_system_apply_apply-prim-support.fasc.gz",
     "dst": "/acl2/books/system/apply/apply-prim-support.fasc",
-    "mtime": 1793871459
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_cowles_portcullis.lisp.gz",
@@ -697,7 +697,7 @@
   {
     "src": "files/acl2_books_cowles_portcullis.fasc.gz",
     "dst": "/acl2/books/cowles/portcullis.fasc",
-    "mtime": 1793871744
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_std_portcullis.lisp.gz",
@@ -712,7 +712,7 @@
   {
     "src": "files/acl2_books_std_portcullis.fasc.gz",
     "dst": "/acl2/books/std/portcullis.fasc",
-    "mtime": 1793867102
+    "mtime": 1794173449
   },
   {
     "src": "files/acl2_books_textbook_chap10_fact.lisp.gz",
@@ -727,6 +727,66 @@
   {
     "src": "files/acl2_books_textbook_chap10_fact.fasc.gz",
     "dst": "/acl2/books/textbook/chap10/fact.fasc",
-    "mtime": 1794028897
+    "mtime": 1794173449
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_perm.lisp.gz",
+    "dst": "/acl2/books/textbook/chap11/perm.lisp",
+    "mtime": 1793775243
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_perm.cert.gz",
+    "dst": "/acl2/books/textbook/chap11/perm.cert",
+    "mtime": 1794175384
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_perm.fasc.gz",
+    "dst": "/acl2/books/textbook/chap11/perm.fasc",
+    "mtime": 1794175524
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_perm-append.lisp.gz",
+    "dst": "/acl2/books/textbook/chap11/perm-append.lisp",
+    "mtime": 1793775243
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_perm-append.cert.gz",
+    "dst": "/acl2/books/textbook/chap11/perm-append.cert",
+    "mtime": 1794175433
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_perm-append.fasc.gz",
+    "dst": "/acl2/books/textbook/chap11/perm-append.fasc",
+    "mtime": 1794175524
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_qsort.lisp.gz",
+    "dst": "/acl2/books/textbook/chap11/qsort.lisp",
+    "mtime": 1793775243
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_qsort.cert.gz",
+    "dst": "/acl2/books/textbook/chap11/qsort.cert",
+    "mtime": 1794175475
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_qsort.fasc.gz",
+    "dst": "/acl2/books/textbook/chap11/qsort.fasc",
+    "mtime": 1794175524
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_mergesort.lisp.gz",
+    "dst": "/acl2/books/textbook/chap11/mergesort.lisp",
+    "mtime": 1793775243
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_mergesort.cert.gz",
+    "dst": "/acl2/books/textbook/chap11/mergesort.cert",
+    "mtime": 1794175518
+  },
+  {
+    "src": "files/acl2_books_textbook_chap11_mergesort.fasc.gz",
+    "dst": "/acl2/books/textbook/chap11/mergesort.fasc",
+    "mtime": 1794175525
   }
 ]
