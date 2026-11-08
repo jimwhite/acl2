@@ -1,0 +1,519 @@
+diff --git a/src/c/alloc_2.d b/src/c/alloc_2.d
+index 4fa5e228..202c287b 100644
+--- a/src/c/alloc_2.d
++++ b/src/c/alloc_2.d
+@@ -1166,6 +1166,19 @@ ecl_mark_env(struct cl_env_struct *env)
+     GC_push_all((void *)env->frs_stack.org, (void *)(env->frs_stack.top+1));
+   if (env->bds_stack.org)
+     GC_push_all((void *)env->bds_stack.org, (void *)(env->bds_stack.top+1));
++  if (env->tramp_chunks) {
++    /* Interpreter activation records.  They are also allocated without GC,
++       so they have to be offered to the collector as roots; a record holds
++       the arguments, the function, the environments and the registers of an
++       interpreted activation. */
++    cl_index i, n = env->tramp_top / ECL_TRAMP_CHUNK_SIZE;
++    if (env->tramp_top % ECL_TRAMP_CHUNK_SIZE) n++;
++    if (n > env->tramp_nchunks) n = env->tramp_nchunks;
++    for (i = 0; i < n; i++) {
++      struct ecl_interp_chunk *chunk = env->tramp_chunks[i];
++      if (chunk) GC_push_all((void *)chunk, (void *)(chunk+1));
++    }
++  }
+ #ifdef ECL_THREADS
+   if (env->bds_stack.tl_bindings)
+     GC_push_all((void *)env->bds_stack.tl_bindings,
+diff --git a/src/c/interpreter.d b/src/c/interpreter.d
+index aa8a72b2..84b0c1b4 100644
+--- a/src/c/interpreter.d
++++ b/src/c/interpreter.d
+@@ -328,7 +328,123 @@ call_stepper(cl_env_ptr the_env, cl_object form, cl_object delta)
+   return _ecl_funcall3(the_env->stepper, form, delta);
+ }
+ 
+-#define SETUP_ENV(the_env) { ihs.lex_env = closure; }
++#define SETUP_ENV(the_env) { ihs->lex_env = lex_env; }
++
++/* ---------------------------------------------------------------------------
++ * ACTIVATION RECORDS
++ *
++ * Calling an interpreted function from interpreted code used to recurse through
++ * ecl_apply_from_stack_frame, which costs a C stack frame -- and, under a
++ * WebAssembly VM, a VM stack frame -- for every Lisp call.  There is room for
++ * tens of thousands of Lisp frames in the Lisp stacks but only for about a
++ * thousand VM frames, so we now keep the state of each activation in a record
++ * (struct ecl_interp_state, see stacks.h): calling an interpreted function
++ * starts a new record and restarts the dispatch loop on the callee, and OP_EXIT
++ * pops back to the caller.  Compiled functions are still called through
++ * ecl_apply_from_stack_frame and may re-enter ecl_interpret below us.
++ *
++ * Records are allocated in chunks which never move, because the frame objects,
++ * the invocation history frames and the frame stack all keep pointers into
++ * them.  The chunks are malloc'ed, so ecl_mark_env offers them to the collector;
++ * otherwise the objects a record refers to would be invisible to it.
++ *
++ * env->tramp_top counts the live records.  _ecl_frs_push saves it in each frame
++ * and ecl_unwind restores it, so that a THROW, RETURN-FROM, GO or an error,
++ * which longjmp out of arbitrarily many activations, leaves it consistent.
++ * ------------------------------------------------------------------------- */
++
++#define TRAMP_STATE(env,idx) \
++        (&(env)->tramp_chunks[(idx) / ECL_TRAMP_CHUNK_SIZE] \
++                          ->recs[(idx) % ECL_TRAMP_CHUNK_SIZE])
++
++/* Allocate the record for a new activation.  The caller fills it in. */
++static struct ecl_interp_state *
++tramp_push(cl_env_ptr the_env)
++{
++  cl_index idx = the_env->tramp_top;
++  cl_index c = idx / ECL_TRAMP_CHUNK_SIZE;
++  struct ecl_interp_chunk *chunk;
++
++  if (ecl_unlikely(c >= the_env->tramp_nchunks)) {
++    cl_index i, nsize = c + 8;
++    struct ecl_interp_chunk **chunks;
++    ecl_disable_interrupts_env(the_env);
++    chunks = (struct ecl_interp_chunk **)ecl_malloc(nsize * sizeof(*chunks));
++    for (i = 0; i < nsize; i++)
++      chunks[i] = (i < the_env->tramp_nchunks)? the_env->tramp_chunks[i] : NULL;
++    if (the_env->tramp_chunks) ecl_free(the_env->tramp_chunks);
++    the_env->tramp_chunks = chunks;
++    the_env->tramp_nchunks = nsize;
++    ecl_enable_interrupts_env(the_env);
++  }
++  chunk = the_env->tramp_chunks[c];
++  if (chunk == NULL) {
++    chunk = (struct ecl_interp_chunk *)ecl_malloc(sizeof(*chunk));
++    chunk->next = NULL;
++    the_env->tramp_chunks[c] = chunk;
++  }
++  the_env->tramp_top = idx + 1;
++  return &chunk->recs[idx % ECL_TRAMP_CHUNK_SIZE];
++}
++
++/* Initialise the frame a function uses to pass arguments to the functions it
++   calls.  ecl_stack_frame_open does the same for the frame it uses to keep its
++   own local variables. */
++static struct ecl_stack_frame *
++tramp_init_frame(struct ecl_stack_frame *f, cl_env_ptr the_env)
++{
++  f->t = t_frame;
++  f->opened = 0;
++  f->base = 0;
++  f->size = 0;
++  f->sp = 0;
++  f->env = the_env;
++  return f;
++}
++
++#define TRAMP_SAVE(sp) do {                     \
++    (sp)->frame = frame;                        \
++    (sp)->bytecodes = bytecodes;                \
++    (sp)->lex_env = lex_env;                    \
++    (sp)->lcl_env = lcl_env;                    \
++    (sp)->aux_env = aux_env;                    \
++    (sp)->dat_env = dat_env;                    \
++    (sp)->data = data;                          \
++    (sp)->reg0 = reg0;                          \
++    (sp)->reg1 = reg1;                          \
++    (sp)->pc = (void*)vector;                   \
++    (sp)->frame_index = frame_index;            \
++    (sp)->narg = narg;                          \
++    (sp)->nlcl = nlcl;                          \
++  } while (0)
++
++#define TRAMP_LOAD(sp) do {                     \
++    frame = (sp)->frame;                        \
++    bytecodes = (sp)->bytecodes;                \
++    lex_env = (sp)->lex_env;                    \
++    lcl_env = (sp)->lcl_env;                    \
++    aux_env = (sp)->aux_env;                    \
++    dat_env = (sp)->dat_env;                    \
++    data = (sp)->data;                          \
++    reg0 = (sp)->reg0;                          \
++    reg1 = (sp)->reg1;                          \
++    vector = (cl_opcode*)(sp)->pc;              \
++    frame_index = (sp)->frame_index;            \
++    narg = (sp)->narg;                          \
++    nlcl = (sp)->nlcl;                          \
++    ihs = &(sp)->ihs;                           \
++  } while (0)
++
++/* The record to work on after a longjmp.  ecl_unwind has just restored
++   env->tramp_top to the depth of the activation that owns the frame we jumped
++   to, so it addresses the record of that activation.  Note that the interpreter
++   keeps no state in C variables across a jump: TRAMP_LOAD brings it back from
++   the record, which is why this works even though all the activations have been
++   sharing one C stack frame. */
++#define TRAMP_RESUME(sp) do {                           \
++    sp = TRAMP_STATE(the_env, the_env->tramp_top - 1);   \
++    TRAMP_LOAD(sp);                                     \
++  } while (0)
+ 
+ /*
+  * INTERPRET-FUNCALL is one of the few ways to "exit" the interpreted
+@@ -336,18 +452,64 @@ call_stepper(cl_env_ptr the_env, cl_object form, cl_object delta)
+  * from the interpreter is kept in local variables, and frame stacks,
+  * binding stacks, etc, are already handled by the C core, only the
+  * lexical environment needs to be saved.
++ *
++ * When the function is interpreted we do not leave the loop at all: the
++ * current state is written to its record, a record is started for the callee
++ * and the dispatch loop restarts on the callee's first instruction.  C_TRAMP
++ * is false for the call made by OP_STEPCALL, which has to return to the
++ * instruction that follows it so that the stepper sees the call return.
+  */
+ 
+-#define INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, fun) {      \
+-    cl_index __n = narg;                                            \
+-    cl_index __b = ECL_STACK_INDEX(the_env) - __n;                  \
+-    SETUP_ENV(the_env);                                             \
+-    aux_env->frame.opened = 1;                                      \
+-    aux_env->frame.base = __b;                                      \
+-    aux_env->frame.size = __n;                                      \
+-    aux_env->frame.sp = __b;                                        \
+-    reg0 = ecl_apply_from_stack_frame(aux_env, fun);                \
+-    ecl_stack_frame_close(aux_env); }
++#define INTERPRET_FUNCALL(c_reg0, c_env, c_aux, c_narg, c_fun, c_tramp) { \
++    cl_index __n = c_narg;                                              \
++    cl_index __b = ECL_STACK_INDEX(c_env) - __n;                        \
++    cl_object __fun = c_fun, __code = ECL_NIL;                          \
++    SETUP_ENV(c_env);                                                   \
++    c_aux->frame.opened = 1;                                            \
++    c_aux->frame.base = __b;                                            \
++    c_aux->frame.size = __n;                                            \
++    c_aux->frame.sp = __b;                                              \
++    while (ecl_t_of(__fun) == t_symbol) {                               \
++      if (ecl_unlikely(!ECL_FBOUNDP(__fun)))                            \
++        VEundefined_function(__fun);                                    \
++      __fun = ECL_SYM_FUN(__fun);                                       \
++    }                                                                   \
++    if (ecl_t_of(__fun) == t_bclosure) {                                \
++      __code = __fun->bclosure.code;                                    \
++    } else {                                                            \
++      __code = __fun;                                                   \
++    }                                                                   \
++    if (ecl_likely(c_tramp && ecl_t_of(__code) == t_bytecodes)) {        \
++      cl_object __lex = (ecl_t_of(__fun) == t_bclosure)                 \
++        ? __fun->bclosure.lex : ECL_NIL;                                \
++      TRAMP_SAVE(sp);                                                   \
++      sp = tramp_push(c_env);                                           \
++      sp->frame = c_aux;                                                \
++      sp->bytecodes = __code;                                           \
++      sp->lex_env = __lex;                                              \
++      sp->lcl_env = ecl_cast_ptr(cl_object, &sp->lcl);                  \
++      sp->aux_env = ecl_cast_ptr(cl_object, &sp->aux);                  \
++      sp->dat_env = __code->bytecodes.data;                             \
++      sp->data = Null(sp->dat_env) ? NULL : sp->dat_env->vector.self.t;  \
++      sp->reg0 = ECL_NIL;                                               \
++      sp->reg1 = ECL_NIL;                                               \
++      sp->pc = __code->bytecodes.code;                                  \
++      sp->frame_index = 0;                                              \
++      sp->narg = 0;                                                     \
++      sp->nlcl = ecl_fixnum(__code->bytecodes.nlcl);                    \
++      sp->outermost = 0;                                                \
++      tramp_init_frame(&sp->aux, c_env);                                \
++      TRAMP_LOAD(sp);                                                   \
++      c_env->function = __fun;                                          \
++      c_env->stack_frame = c_aux;                                       \
++      ecl_ihs_push(c_env, ihs, bytecodes, lex_env, lcl_env);            \
++      ecl_stack_frame_open(c_env, lcl_env, nlcl);                       \
++      THREAD_NEXT;                                                      \
++    } else {                                                            \
++      c_reg0 = ecl_apply_from_stack_frame(c_aux, c_fun);                \
++      ecl_stack_frame_close(c_aux);                                     \
++    }                                                                   \
++  }
+ 
+ /* -------------------- THE INTERPRETER -------------------- */
+ 
+@@ -355,31 +517,36 @@ cl_object
+ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+ {
+   ECL_OFFSET_TABLE;
+-  const cl_env_ptr the_env = frame->frame.env;
+-  volatile cl_index frame_index = 0;
+-  cl_opcode *vector = (cl_opcode*)bytecodes->bytecodes.code;
+-  cl_object lex_env = closure, lcl_env = ECL_NIL, aux_env = ECL_NIL;
+-  cl_object dat_env = bytecodes->bytecodes.data;
+-  cl_object *data = Null(dat_env) ? NULL : dat_env->vector.self.t;
+-  cl_object reg0 = ECL_NIL, reg1 = ECL_NIL;
+-  cl_index narg = 0;
+-  cl_index nlcl = ecl_fixnum(bytecodes->bytecodes.nlcl);
+-  ecl_object frame_aux;
+-  ecl_object frame_lcl;
+-  volatile struct ecl_ihs_frame ihs;
++  cl_env_ptr the_env = frame->frame.env;
++  struct ecl_interp_state *sp;
++  struct ecl_ihs_frame *ihs;
++  volatile cl_index frame_index;
++  cl_opcode *vector;
++  cl_object lex_env, lcl_env, aux_env, dat_env, reg0, reg1;
++  cl_object *data;
++  cl_index narg, nlcl;
+ 
+   /* INV: bytecodes is of type t_bytecodes */
+-  aux_env = ecl_cast_ptr(cl_object, &frame_aux);
+-  lcl_env = ecl_cast_ptr(cl_object, &frame_lcl);
+-  ecl_cs_check(the_env, ihs);
+-  ecl_ihs_push(the_env, &ihs, bytecodes, closure, lcl_env);
++  sp = tramp_push(the_env);
++  sp->frame = frame;
++  sp->bytecodes = bytecodes;
++  sp->lex_env = closure;
++  sp->lcl_env = ecl_cast_ptr(cl_object, &sp->lcl);
++  sp->aux_env = ecl_cast_ptr(cl_object, &sp->aux);
++  sp->dat_env = bytecodes->bytecodes.data;
++  sp->data = Null(sp->dat_env) ? NULL : sp->dat_env->vector.self.t;
++  sp->reg0 = ECL_NIL;
++  sp->reg1 = ECL_NIL;
++  sp->pc = bytecodes->bytecodes.code;
++  sp->frame_index = 0;
++  sp->narg = 0;
++  sp->nlcl = ecl_fixnum(bytecodes->bytecodes.nlcl);
++  sp->outermost = 1;
++  tramp_init_frame(&sp->aux, the_env);
++  TRAMP_LOAD(sp);
++  ecl_cs_check(the_env, reg0);
++  ecl_ihs_push(the_env, ihs, bytecodes, lex_env, lcl_env);
+   ecl_stack_frame_open(the_env, lcl_env, nlcl);
+-  aux_env->frame.t = t_frame;
+-  aux_env->frame.opened = 0;
+-  aux_env->frame.base = 0;
+-  aux_env->frame.size = 0;
+-  aux_env->frame.sp = 0;
+-  aux_env->frame.env = the_env;
+   BEGIN_SWITCH {
+     CASE(OP_NOP); {
+       reg0 = ECL_NIL;
+@@ -553,7 +720,7 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+     */
+     CASE(OP_CALL); {
+       GET_OPARG(narg, vector);
+-      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0);
++      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0, 1);
+       THREAD_NEXT;
+     }
+ 
+@@ -565,7 +732,7 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+     CASE(OP_CALLG); {
+       GET_OPARG(narg, vector);
+       GET_DATA(reg0, vector, data);
+-      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0);
++      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0, 1);
+       THREAD_NEXT;
+     }
+ 
+@@ -577,7 +744,7 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+     CASE(OP_FCALL); {
+       GET_OPARG(narg, vector);
+       reg0 = ECL_STACK_REF(the_env,-narg-1);
+-      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0);
++      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0, 1);
+       THREAD_NEXT;
+     }
+ 
+@@ -588,7 +755,7 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+     CASE(OP_MCALL); {
+       narg = ecl_fixnum(ECL_STACK_POP_UNSAFE(the_env));
+       reg0 = ECL_STACK_REF(the_env,-narg-1);
+-      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0);
++      INTERPRET_FUNCALL(reg0, the_env, aux_env, narg, reg0, 1);
+       THREAD_NEXT;
+     }
+ 
+@@ -711,6 +878,19 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+     CASE(OP_EXIT); {
+       ecl_ihs_pop(the_env);
+       ecl_stack_frame_close(lcl_env);
++      if (ecl_unlikely(!sp->outermost)) {
++        /* Returning from a function we called by trampoline: resume the
++           caller where INTERPRET_FUNCALL left it.  Reg0 is indeterminate
++           after TRAMP_LOAD, hence the copy. */
++        cl_object __result = reg0;
++        the_env->tramp_top--;
++        TRAMP_RESUME(sp);
++        the_env->stack_frame = NULL;
++        ecl_stack_frame_close(aux_env);
++        reg0 = __result;
++        THREAD_NEXT;
++      }
++      the_env->tramp_top--;
+       return reg0;
+     }
+     /* OP_FLET      nfun{arg}, fun1{object}
+@@ -1115,6 +1295,7 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+       ECL_STACK_PUSH(the_env, (cl_object)exit);
+       ecl_frs_push(the_env,reg1);
+       if (__ecl_frs_push_result != 0) {
++        TRAMP_RESUME(sp);
+         reg0 = the_env->values[0];
+         vector = (cl_opcode *)ECL_STACK_REF(the_env,-1); /* FIXME! */
+         /* Unbind locals including the frame, we are leaving the frame. */
+@@ -1148,7 +1329,9 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+         /* Wait here for gotos. Each goto sets VALUES(0) to an integer which
+            ranges from 0 to ntags-1, depending on the tag. These numbers are
+            indices into the jump table and are computed at compile time. */
+-        cl_opcode *table = (cl_opcode *)ECL_STACK_REF(the_env,-1);
++        cl_opcode *table;
++        TRAMP_RESUME(sp);
++        table = (cl_opcode *)ECL_STACK_REF(the_env,-1);
+         /* Unbind locals but leave the frame, we are still inside the frame. */
+         unwind_lcl(lcl_env, ECL_STACK_REF(the_env,-2));
+         table = table + ecl_fixnum(the_env->values[0]) * OPARG_SIZE;
+@@ -1271,6 +1454,7 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+       ecl_frs_push(the_env,ECL_PROTECT_TAG);
+       if (__ecl_frs_push_result != 0) {
+         ecl_frs_pop(the_env);
++        TRAMP_RESUME(sp);
+         vector = (cl_opcode *)ECL_STACK_POP_UNSAFE(the_env);
+         unwind_lcl(lcl_env, ECL_STACK_POP_UNSAFE(the_env));
+         reg0 = the_env->values[0];
+@@ -1343,7 +1527,8 @@ ecl_interpret(cl_object frame, cl_object closure, cl_object bytecodes)
+       GET_OPARG(n, vector);
+       SETUP_ENV(the_env);
+       reg0 = call_stepper(the_env, reg0, ecl_make_fixnum(0));
+-      INTERPRET_FUNCALL(reg0, the_env, aux_env, n, reg0);
++      INTERPRET_FUNCALL(reg0, the_env, aux_env, n, reg0, 0);
++      THREAD_NEXT;
+     }
+     CASE(OP_STEPOUT); {
+       cl_index n;
+diff --git a/src/c/stacks.d b/src/c/stacks.d
+index 5be972db..db964ed5 100644
+--- a/src/c/stacks.d
++++ b/src/c/stacks.d
+@@ -699,6 +699,7 @@ _ecl_frs_push(cl_env_ptr env)
+   output->frs_bds_ndx = env->bds_stack.top - env->bds_stack.org;
+   output->frs_run_ndx = ECL_STACK_INDEX(env);
+   output->frs_ihs = env->ihs_stack.top;
++  output->frs_tramp_ndx = env->tramp_top;
+   return output;
+ }
+ 
+@@ -732,6 +733,9 @@ init_stacks(cl_env_ptr the_env)
+   bds_init(the_env);
+   run_init(the_env);
+   ihs_init(the_env);
++  the_env->tramp_chunks = NULL;
++  the_env->tramp_top = 0;
++  the_env->tramp_nchunks = 0;
+   /* FIXME ecl_cs_init must be called from the thread entry point at the
+      beginning to correctly determine the stack base. */
+ #if 0
+@@ -750,6 +754,15 @@ free_stacks(cl_env_ptr the_env)
+   ecl_free(the_env->run_stack.org);
+   ecl_free(the_env->bds_stack.org);
+   ecl_free(the_env->frs_stack.org);
++  if (the_env->tramp_chunks) {
++    cl_index i;
++    for (i = 0; i < the_env->tramp_nchunks; i++)
++      if (the_env->tramp_chunks[i]) ecl_free(the_env->tramp_chunks[i]);
++    ecl_free(the_env->tramp_chunks);
++    the_env->tramp_chunks = NULL;
++  }
++  the_env->tramp_top = 0;
++  the_env->tramp_nchunks = 0;
+   return ECL_NIL;
+ }
+ 
+@@ -765,6 +778,7 @@ ecl_unwind(cl_env_ptr env, ecl_frame_ptr fr)
+     --top;
+   }
+   env->ihs_stack.top = top->frs_ihs;
++  env->tramp_top = top->frs_tramp_ndx;
+   ecl_bds_unwind(env, top->frs_bds_ndx);
+   ECL_STACK_UNWIND(env, top->frs_run_ndx);
+   env->frs_stack.top = top;
+diff --git a/src/h/external.h b/src/h/external.h
+index 2fcfe5b6..b9011208 100755
+--- a/src/h/external.h
++++ b/src/h/external.h
+@@ -49,6 +49,9 @@ struct ecl_history_stack {
+         struct ecl_ihs_frame *top;
+ };
+ 
++/* Defined in stacks.h; see the comment there. */
++struct ecl_interp_chunk;
++
+ struct ecl_c_stack {
+         cl_index size;          /* current size */
+         cl_index limit_size;    /* maximum size minus safety area */
+@@ -100,6 +103,14 @@ struct cl_env_struct {
+         cl_object stepper;      /* Hook invoked by ByteVM */
+         cl_object stack_frame;  /* Current stack frame */
+ 
++        /* -- Interpreter activation records -------------------------------- */
++        /* The records themselves are defined in stacks.h.  We keep chunks of
++         * them, because the interpreter stores pointers to the records and
++         * hence they cannot be moved. */
++        struct ecl_interp_chunk **tramp_chunks;
++        cl_index tramp_top;     /* Number of live records */
++        cl_index tramp_nchunks;
++
+         /* -- System Processes (native threads) ------------------------------ */
+         cl_object own_process; /* Backpointer to the host process. */
+ #ifdef ECL_THREADS
+diff --git a/src/h/stacks.h b/src/h/stacks.h
+index 94f568f6..904c31fa 100755
+--- a/src/h/stacks.h
++++ b/src/h/stacks.h
+@@ -285,6 +285,10 @@ typedef struct ecl_frame {
+         ecl_ihs_ptr     frs_ihs;
+         cl_index        frs_bds_ndx;
+         cl_index        frs_run_ndx;
++        /* Number of live interpreter activation records when this frame was
++         * pushed.  ecl_unwind restores it, so that a longjmp does not leave
++         * env->tramp_top pointing at records of abandoned activations. */
++        cl_index        frs_tramp_ndx;
+ } *ecl_frame_ptr;
+ 
+ extern ECL_API ecl_frame_ptr _ecl_frs_push(cl_env_ptr);
+@@ -547,6 +551,48 @@ ecl_data_stack_set_index(cl_env_ptr env, cl_index ndx)
+ #endif
+ 
+ 
++/*******************
++ * INTERPRETER ACTIVATION RECORDS
++ *******************
++ * The bytecode interpreter (interpreter.d) keeps the state of each activation
++ * in one of these records instead of C local variables, so that calling an
++ * interpreted function from interpreted code does not consume C stack.  This
++ * matters where the C stack is small and fixed, as in a WebAssembly VM.
++ *
++ * Records are handed out from chunks which are never moved, because the
++ * interpreter's frame objects (struct ecl_stack_frame), its invocation history
++ * frames and the frame stack itself all hold pointers into them.  The chunks
++ * are scanned conservatively by the garbage collector (see alloc_2.d), which is
++ * what keeps the objects the records refer to alive.
++ */
++
++#define ECL_TRAMP_CHUNK_SIZE 512
++
++struct ecl_interp_state {
++        cl_object frame;        /* Frame with the incoming arguments */
++        cl_object bytecodes;    /* Function being executed */
++        cl_object lex_env;      /* Environment of its closure */
++        cl_object lcl_env;      /* Local frame; points at .lcl */
++        cl_object aux_env;      /* Frame for callees; points at .aux */
++        cl_object dat_env;      /* Vector of constants */
++        cl_object reg0;
++        cl_object reg1;
++        void *pc;               /* Next instruction */
++        cl_object *data;        /* dat_env->vector.self.t */
++        cl_index frame_index;   /* Next argument to pop */
++        cl_index narg;
++        cl_index nlcl;
++        int outermost;          /* Owns the C activation of ecl_interpret */
++        struct ecl_stack_frame aux;
++        struct ecl_stack_frame lcl;
++        struct ecl_ihs_frame ihs;
++};
++
++struct ecl_interp_chunk {
++        struct ecl_interp_chunk *next;
++        struct ecl_interp_state recs[ECL_TRAMP_CHUNK_SIZE];
++};
++
+ #ifdef __cplusplus
+ }
+ #endif

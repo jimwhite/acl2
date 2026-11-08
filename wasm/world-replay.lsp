@@ -112,7 +112,13 @@
 ; One file per chunk rather than a container format: the browser manifest is a
 ; list of files already, and a vector of chunks is rejected by ACL2's serializer.
 ; A single-file image still reads correctly; it just needs the bigger stack.
-(defparameter cl-user::*image-chunk-size* 2000)
+(defparameter cl-user::*image-chunk-size*
+  ; A smaller chunk encodes and decodes with less stack, which is what a worker
+  ; needs; ACL2_IMAGE_CHUNK_SIZE overrides it for the splitter below.
+  (let ((s (ext:getenv "ACL2_IMAGE_CHUNK_SIZE")))
+    (if (and s (plusp (length s)))
+        (parse-integer s)
+        2000)))
 
 (defun cl-user::chunk-path (path i)
   (format nil "~a.~d" path i))
