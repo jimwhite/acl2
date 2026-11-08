@@ -1,29 +1,47 @@
 diff --git a/src/c/alloc_2.d b/src/c/alloc_2.d
-index 4fa5e228..202c287b 100644
+index 4fa5e228..d19b4ac4 100644
 --- a/src/c/alloc_2.d
 +++ b/src/c/alloc_2.d
-@@ -1166,6 +1166,19 @@ ecl_mark_env(struct cl_env_struct *env)
+@@ -78,6 +78,23 @@ no_warnings(char *msg, GC_word arg)
+ {
+ }
+ 
++static void *out_of_memory(size_t requested_bytes);
++
++/* Allocate memory that the collector scans, and that it does not reclaim while
++   it is reachable.  The bytecode interpreter keeps its activation records in
++   blocks allocated with this, so that whatever a record refers to is marked as
++   part of the heap.  The memory ecl_malloc returns is outside the collected
++   heap, so its contents would have to be pushed as roots by hand. */
++void *
++ecl_alloc_scanned(cl_index n)
++{
++  void *ptr;
++  if (n == 0) n = 1;
++  ptr = GC_MALLOC(n);
++  if (ptr == NULL) out_of_memory(n);
++  return ptr;
++}
++
+ static void *
+ out_of_memory(size_t requested_bytes)
+ {
+@@ -1166,6 +1183,13 @@ ecl_mark_env(struct cl_env_struct *env)
      GC_push_all((void *)env->frs_stack.org, (void *)(env->frs_stack.top+1));
    if (env->bds_stack.org)
      GC_push_all((void *)env->bds_stack.org, (void *)(env->bds_stack.top+1));
-+  if (env->tramp_chunks) {
-+    /* Interpreter activation records.  They are also allocated without GC,
-+       so they have to be offered to the collector as roots; a record holds
-+       the arguments, the function, the environments and the registers of an
-+       interpreted activation. */
-+    cl_index i, n = env->tramp_top / ECL_TRAMP_CHUNK_SIZE;
-+    if (env->tramp_top % ECL_TRAMP_CHUNK_SIZE) n++;
-+    if (n > env->tramp_nchunks) n = env->tramp_nchunks;
-+    for (i = 0; i < n; i++) {
-+      struct ecl_interp_chunk *chunk = env->tramp_chunks[i];
-+      if (chunk) GC_push_all((void *)chunk, (void *)(chunk+1));
-+    }
-+  }
++  /* The table of interpreter activation record chunks lives in memory the
++     collector knows nothing about, so it is a root: pushing it keeps the
++     chunks alive (they are collected) and, through them, everything that a
++     record refers to.  Only the chunks in use need be visible. */
++  if (env->tramp_chunks)
++    GC_push_all((void *)env->tramp_chunks,
++                (void *)(env->tramp_chunks + env->tramp_nchunks));
  #ifdef ECL_THREADS
    if (env->bds_stack.tl_bindings)
      GC_push_all((void *)env->bds_stack.tl_bindings,
 diff --git a/src/c/interpreter.d b/src/c/interpreter.d
-index aa8a72b2..84b0c1b4 100644
+index aa8a72b2..1ba1a8fd 100644
 --- a/src/c/interpreter.d
 +++ b/src/c/interpreter.d
 @@ -328,7 +328,123 @@ call_stepper(cl_env_ptr the_env, cl_object form, cl_object delta)
@@ -82,7 +100,7 @@ index aa8a72b2..84b0c1b4 100644
 +  }
 +  chunk = the_env->tramp_chunks[c];
 +  if (chunk == NULL) {
-+    chunk = (struct ecl_interp_chunk *)ecl_malloc(sizeof(*chunk));
++    chunk = (struct ecl_interp_chunk *)ecl_alloc_scanned(sizeof(*chunk));
 +    chunk->next = NULL;
 +    the_env->tramp_chunks[c] = chunk;
 +  }
@@ -378,11 +396,80 @@ index aa8a72b2..84b0c1b4 100644
      }
      CASE(OP_STEPOUT); {
        cl_index n;
+diff --git a/src/c/main.d b/src/c/main.d
+index 70af22d7..000257fb 100644
+--- a/src/c/main.d
++++ b/src/c/main.d
+@@ -88,8 +88,13 @@ ecl_boot(void)
+   i = ecl_option_values[ECL_OPT_BOOTED];
+   if (i) {
+     if (i < 0) {
+-      /* We have called cl_shutdown and want to use ECL again. */
++      /* We have called cl_shutdown and want to use ECL again.  Whatever the
++         stacks still hold belongs to the session that ended: the invocation
++         history and the interpreter's activation records in particular, since
++         the records are reused. */
+       ecl_set_option(ECL_OPT_BOOTED, 1);
++      if (ecl_core.first_env)
++        ecl_reset_stacks(ecl_core.first_env);
+     }
+     return 1;
+   }
 diff --git a/src/c/stacks.d b/src/c/stacks.d
-index 5be972db..db964ed5 100644
+index 5be972db..a6ef4483 100644
 --- a/src/c/stacks.d
 +++ b/src/c/stacks.d
-@@ -699,6 +699,7 @@ _ecl_frs_push(cl_env_ptr env)
+@@ -12,6 +12,7 @@
+  *
+  */
+ 
++#include <stdio.h>
+ #include <ecl/ecl.h>
+ #include <ecl/ecl-inl.h>
+ #include <signal.h>
+@@ -610,16 +611,40 @@ ecl_bds_set_limit(cl_env_ptr env, cl_index new_lim_size)
+ }
+ 
+ /* -- Invocation stack ------------------------------------------------------- */
++/* The bottom of the invocation history stack, shared by all environments. */
++static struct ecl_ihs_frame ihs_org = { NULL, NULL, NULL, 0 };
++
+ static void
+ ihs_init(cl_env_ptr env)
+ {
+-  static struct ecl_ihs_frame ihs_org = { NULL, NULL, NULL, 0};
+   env->ihs_stack.top = &ihs_org;
+   ihs_org.function = ECL_NIL;
+   ihs_org.lex_env = ECL_NIL;
+   ihs_org.index = 0;
+ }
+ 
++/* Reset the per-session state of the stacks without reallocating them.  ECL can
++   be used again after cl_shutdown() (ecl_boot: "we want to use ECL again"), and
++   then the invocation history and the interpreter's activation records belong
++   to a session that is over: in particular the records get reused, so a history
++   entry that still points into one would be overwritten by the next activation. */
++void
++ecl_reset_stacks(cl_env_ptr env)
++{
++  ihs_init(env);
++  env->run_stack.top = env->run_stack.org;
++  *(env->run_stack.top++) = ecl_make_fixnum(0);
++  env->frs_stack.top = env->frs_stack.org - 1;
++  env->bds_stack.top = env->bds_stack.org - 1;
++  if (env->tramp_chunks) {
++    /* The chunks are collected; see ecl_alloc_scanned. */
++    ecl_free(env->tramp_chunks);
++    env->tramp_chunks = NULL;
++  }
++  env->tramp_top = 0;
++  env->tramp_nchunks = 0;
++}
++
+ /* -- Frame stack ------------------------------------------------------------ */
+ 
+ static void
+@@ -699,6 +724,7 @@ _ecl_frs_push(cl_env_ptr env)
    output->frs_bds_ndx = env->bds_stack.top - env->bds_stack.org;
    output->frs_run_ndx = ECL_STACK_INDEX(env);
    output->frs_ihs = env->ihs_stack.top;
@@ -390,7 +477,7 @@ index 5be972db..db964ed5 100644
    return output;
  }
  
-@@ -732,6 +733,9 @@ init_stacks(cl_env_ptr the_env)
+@@ -732,6 +758,9 @@ init_stacks(cl_env_ptr the_env)
    bds_init(the_env);
    run_init(the_env);
    ihs_init(the_env);
@@ -400,14 +487,12 @@ index 5be972db..db964ed5 100644
    /* FIXME ecl_cs_init must be called from the thread entry point at the
       beginning to correctly determine the stack base. */
  #if 0
-@@ -750,6 +754,15 @@ free_stacks(cl_env_ptr the_env)
+@@ -750,6 +779,13 @@ free_stacks(cl_env_ptr the_env)
    ecl_free(the_env->run_stack.org);
    ecl_free(the_env->bds_stack.org);
    ecl_free(the_env->frs_stack.org);
 +  if (the_env->tramp_chunks) {
-+    cl_index i;
-+    for (i = 0; i < the_env->tramp_nchunks; i++)
-+      if (the_env->tramp_chunks[i]) ecl_free(the_env->tramp_chunks[i]);
++    /* The chunks themselves are collected; see ecl_alloc_scanned. */
 +    ecl_free(the_env->tramp_chunks);
 +    the_env->tramp_chunks = NULL;
 +  }
@@ -416,16 +501,54 @@ index 5be972db..db964ed5 100644
    return ECL_NIL;
  }
  
-@@ -765,6 +778,7 @@ ecl_unwind(cl_env_ptr env, ecl_frame_ptr fr)
+@@ -760,11 +796,45 @@ ecl_unwind(cl_env_ptr env, ecl_frame_ptr fr)
+ {
+   env->frs_stack.nlj_fr = fr;
+   ecl_frame_ptr top = env->frs_stack.top;
++  if (ecl_unlikely(top < env->frs_stack.org
++                   || top > env->frs_stack.org + env->frs_stack.size)) {
++    fprintf(stderr,
++            "[ecl_unwind] frs top out of range: org=%p top=%p size=%lu limit=%p fr=%p\n",
++            (void *)env->frs_stack.org, (void *)top,
++            (unsigned long)env->frs_stack.size,
++            (void *)env->frs_stack.limit, (void *)fr);
++    fflush(stderr);
++    top = env->frs_stack.org;
++  }
+   while (top != fr && top->frs_val != ECL_PROTECT_TAG){
+     top->frs_val = ECL_DUMMY_TAG;
      --top;
    }
++  if (ecl_unlikely(top < env->frs_stack.org)) {
++    fprintf(stderr, "[ecl_unwind] target %p below org %p (top was %p)\n",
++            (void *)fr, (void *)env->frs_stack.org,
++            (void *)env->frs_stack.top);
++    fflush(stderr);
++    top = env->frs_stack.org;
++  }
++  {
++    cl_index nbds = env->bds_stack.top - env->bds_stack.org;
++    cl_index nrun = env->run_stack.top - env->run_stack.org;
++    if (ecl_unlikely(top->frs_bds_ndx > nbds || top->frs_run_ndx > nrun
++                     || top->frs_bds_ndx > 10000000)) {
++      fprintf(stderr,
++              "[ecl_unwind] bad frame: idx=%ld val=%p bds=%lu/%lu run=%lu/%lu tramp=%lu\n",
++              (long)(top - env->frs_stack.org), (void *)top->frs_val,
++              (unsigned long)top->frs_bds_ndx, (unsigned long)nbds,
++              (unsigned long)top->frs_run_ndx, (unsigned long)nrun,
++              (unsigned long)top->frs_tramp_ndx);
++      fflush(stderr);
++      top->frs_bds_ndx = nbds;
++      top->frs_run_ndx = nrun;
++    }
++  }
    env->ihs_stack.top = top->frs_ihs;
 +  env->tramp_top = top->frs_tramp_ndx;
    ecl_bds_unwind(env, top->frs_bds_ndx);
    ECL_STACK_UNWIND(env, top->frs_run_ndx);
    env->frs_stack.top = top;
 diff --git a/src/h/external.h b/src/h/external.h
-index 2fcfe5b6..b9011208 100755
+index 2fcfe5b6..321760ac 100755
 --- a/src/h/external.h
 +++ b/src/h/external.h
 @@ -49,6 +49,9 @@ struct ecl_history_stack {
@@ -453,6 +576,27 @@ index 2fcfe5b6..b9011208 100755
          /* -- System Processes (native threads) ------------------------------ */
          cl_object own_process; /* Backpointer to the host process. */
  #ifdef ECL_THREADS
+@@ -243,6 +254,8 @@ extern ECL_API struct cl_core_struct cl_core;
+ 
+ /* memory.c */
+ extern ECL_API void *ecl_malloc(cl_index n);
++/* Allocates memory the garbage collector scans and reclaims. */
++extern ECL_API void *ecl_alloc_scanned(cl_index n);
+ extern ECL_API void *ecl_realloc(void *ptr, cl_index o, cl_index n);
+ extern ECL_API void ecl_free(void *ptr);
+ extern ECL_API void ecl_copy(void *dst, void *src, cl_index ndx);
+diff --git a/src/h/internal.h b/src/h/internal.h
+index aa35d201..fed61635 100755
+--- a/src/h/internal.h
++++ b/src/h/internal.h
+@@ -39,6 +39,7 @@ extern void init_read(void);
+ 
+ extern cl_object init_stacks(cl_env_ptr);
+ extern cl_object free_stacks(cl_env_ptr);
++extern void ecl_reset_stacks(cl_env_ptr);
+ 
+ extern void init_unixint(int pass);
+ extern void init_unixtime(void);
 diff --git a/src/h/stacks.h b/src/h/stacks.h
 index 94f568f6..904c31fa 100755
 --- a/src/h/stacks.h

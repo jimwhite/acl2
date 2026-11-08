@@ -1712,6 +1712,93 @@ leaving the console looking hung.
 implicit submission of a form whose buttons are all `type="button"`; it now
 submits explicitly with `requestSubmit`.
 
+## Giving the interpreter activation records (2026-11-08)
+
+`projects/apply/top` needed 5-6 MB of VM stack, and nearly all of it was
+`ecl_interpret`'s own recursion: `INTERPRET_FUNCALL` called
+`ecl_apply_from_stack_frame`, which called `ecl_interpret` again, so every Lisp
+call in interpreted code cost a C frame -- about 2.5 kB of VM stack once
+Emscripten and V8 are done with it.  At the point of overflow, 681 of the ~1400
+frames were that pair, and 97% of the frames overall belonged to the
+interpreter.
+
+`wasm/ecl-patches/0003-interpreter-activation-records.patch` gives every
+activation a record on the heap (`struct ecl_interp_state`: function,
+environments, program counter, registers, frame objects, invocation-history
+frame) and makes `INTERPRET_FUNCALL` start a new record and restart the dispatch
+loop instead of recursing; `OP_EXIT` pops back to the caller.  Compiled
+functions still go through `ecl_apply_from_stack_frame` and may re-enter
+`ecl_interpret` below us.  `OP_STEPCALL` is excluded so the stepper still sees
+the call return.
+
+Since `THROW`, `RETURN-FROM`, `GO` and errors longjmp out of arbitrarily many
+activations, `_ecl_frs_push` saves `env->tramp_top` in the frame it pushes and
+`ecl_unwind` restores it; after such a jump the interpreter re-derives its whole
+state from the record that `TRAMP_RESUME` names, which is what makes it safe for
+many activations to share one C stack frame.  The records live in chunks that
+never move, because the frame objects, the invocation-history frames and the
+frame stack all keep pointers into them; `env->tramp_chunks` is a root for the
+collector.
+
+Measured in the Node build with its default 984 kB stack (the same budget a
+browser page has):
+
+|                                     | before        | after        |
+| ----------------------------------- | ------------- | ------------ |
+| nested interpreted calls            | 400           | > 100,000    |
+| replay of the world image           | needed > 984 kB | boots at 984 kB |
+| `include-book "projects/apply/top"` | 5-6 MB        | 1.1 MB       |
+
+The page now boots in **8.7 s with the whole install** (`installed the world's
+properties`, `updated the world's derived structures`, and ACL2's own
+`check-acl2-initialization`), where before it failed in `EXTEND-WORLD1`.
+
+### Two bugs found on the way, and what they cost
+
+1. **`GC_push_all` of malloc'ed records from the roots callback is not enough.**
+   The first version allocated the records with `ecl_malloc` (memory outside the
+   collected heap) and marked them from `ecl_mark_env`.  It worked in the Node
+   build and failed in the browser build, and the symptom was *not* a crash: a
+   structure went missing, or a form lost its first element, or a lexical
+   environment turned up where a function was expected -- different garbage on
+   different runs, at the same place in the boot.  The discriminator was
+   `GC_DONT_GC=1`: set through `Module.ENV` (the process environment does *not*
+   reach a `MODULARIZE`d module, which cost one false negative) the boot
+   succeeded, with the collector on it failed.  The fix is to allocate the
+   records with `GC_MALLOC` -- inside the heap, where ordinary marking applies --
+   and push only the *table* of chunks as a root.  The page's note that the
+   bdwgc in this build "is not fully sound: a root can be missed" is the same
+   family of problem.
+2. **ECL after `cl_shutdown`.**  `ecl_boot` documents re-use after a shutdown
+   (`if (i < 0) /* we have called cl_shutdown and want to use ECL again */`), and
+   the page relies on it: ACL2's `ld` calls `(good-bye)` when it reads EOF from
+   `*standard-oi*`, ECL shuts down, and the next `callMain` re-enters.  The
+   stacks keep their old contents, so the invocation history can still point
+   into a record that the next activation reuses.  `ecl_reset_stacks` resets the
+   per-session state of the stacks in that path.
+
+### What is still in the way
+
+* **Re-entry in the wasm build.**  A single pass through the browser build works
+  end to end (`(+ 1 2)` = 3, `(include-book "textbook/chap10/fact")`,
+  `(fact 10)` = 3628800, and `certify-book` on a small book in the Node build),
+  but the *second* `callMain` -- the one that feeds a form after ACL2 exited at
+  EOF -- dies with `RuntimeError: memory access out of bounds` inside a module
+  that imports `ecl_unwind`.  Guards on the frame stack (`top` inside
+  `[org, org+size]`, `frs_bds_ndx <= bds index`, `frs_run_ndx <= run index`) do
+  not fire, so the bad access is not one of those reads.  The same sequence with
+  the *unpatched* module works, so this is the one thing the patch has not yet
+  been proven not to break.  Until it is fixed, the published page keeps the
+  unpatched module: a page that cannot take a second form is worse than a page
+  whose books are limited by the stack.
+* **What remains of the 1.1 MB is compiled code**, not the interpreter: the
+  trace is `wasm-function[N]` in an ACL2 `.fasc` module alternating with
+  `variadic_dispatch3` in `ecl.wasm`, i.e. two VM frames per compiled Lisp call.
+  Halving that (a direct call rather than a call through the function value's
+  variadic entry) would put `projects/apply/top` inside a Chrome page; as it is,
+  it needs 1.1 MB, so it fits a Firefox page (~3 MB, see the note on emscripten
+  #13043 above) and not a Chrome one (~1 MB).
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed
