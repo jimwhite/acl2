@@ -20,7 +20,9 @@ OUT=${OUT:-$HERE/files.json}
 STAGE=$HERE/files
 
 if [ $# -eq 0 ]; then
-  set -- textbook/chap10/fact
+  # Default: the books ACL2 itself reports for (include-book "projects/apply/top"
+  # :dir :system) -- see books.txt, which says where the list comes from.
+  set -- $(grep -v '^#' "$HERE/books.txt" | grep -v '^$')
 fi
 
 rm -rf "$STAGE"
@@ -31,6 +33,10 @@ emit() {
   if [ "$first" = 1 ]; then first=0; else printf ',\n'; fi
   printf '  {"src": "%s", "dst": "%s"}' "$1" "$2"
 }
+emit_mtime() {
+  if [ "$first" = 1 ]; then first=0; else printf ',\n'; fi
+  printf '  {"src": "%s", "dst": "%s", "mtime": %s}' "$1" "$2" "$3"
+}
 
 # One packed file per payload file: fetch and decompress are per file, so a
 # retry stays cheap.
@@ -39,7 +45,12 @@ pack() {
   dst=$2
   name=$(printf '%s' "$dst" | sed 's|^/||; s|/|_|g')
   gzip -9 -c "$src" > "$STAGE/$name.gz"
-  emit "/wasm/web/files/$name.gz" "$dst"
+  # The mtime travels with the file.  include-book's book-hash is
+  # ((:BOOK-LENGTH . n) (:BOOK-WRITE-DATE . t)), so a book unpacked into MEMFS
+  # with today's date is 'Uncertified' and every include-book of it fails.  The
+  # harness puts this back with FS.utimes.
+  mtime=$(stat -c %Y "$src" 2>/dev/null || stat -f %m "$src")
+  emit_mtime "/wasm/web/files/$name.gz" "$dst" "$mtime"
 }
 
 {

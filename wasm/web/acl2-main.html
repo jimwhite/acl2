@@ -135,6 +135,12 @@ let mod = null;
       bytes += buf.byteLength;
       FS.mkdirTree(f.dst.replace(/\/[^\/]*$/, ''));
       FS.writeFile(f.dst, new Uint8Array(buf));
+      // include-book's book-hash includes the write date, so a book unpacked
+      // with today's date is 'Uncertified'.  Put the original back.  FS.utime is
+      // the name in this build, and it takes MILLISECONDS: passing the seconds
+      // from the manifest lands the file in January 1970.
+      const utime = FS.utime || FS.utimes;
+      if (f.mtime && utime) utime.call(FS, f.dst, f.mtime * 1000, f.mtime * 1000);
       if (++done % 5 === 0) {
         status(`preloading ${done}/${manifest.length} ` +
                `(${(bytes / 1048576).toFixed(0)} MB)`);
@@ -184,11 +190,36 @@ formEl.addEventListener('submit', async (ev) => {
   inputText = text + '\n';
   inputPos = 0;
   try { mod.callMain([]); }
-  catch (e) { if (!(e && typeof e === 'object' && 'status' in e)) append(String(e), 'err'); }
+  catch (e) {
+    if (e && typeof e === 'object' && 'status' in e) {
+      // Normal: ACL2's loop exits at EOF and CALLMAIN reports the status.
+    } else if (e instanceof RangeError) {
+      // A page has about 1 MB of stack and ACL2's own recursion can exceed it:
+      // including projects/apply/top needs 5-6 MB.  Say so, and do not pretend
+      // the session still works -- after this the instance is unusable.
+      append('[page] That form needed more stack than a page has.', 'err');
+      append('[page] The session cannot continue; press Reload to start over.', 'err');
+      statusEl.textContent = 'out of stack — reload';
+      return;
+    } else {
+      append(String(e), 'err');
+    }
+  }
   busy = false;
   lineEl.disabled = false;
   lineEl.focus();
   status('ACL2 ready');
+});
+
+// Enter submits.  The form has no type="submit" button, and relying on implicit
+// submission was unreliable: the form's submit event sometimes did not fire, and
+// the field already holds the text so it looks like nothing happened.
+lineEl.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') {
+    ev.preventDefault();
+    if (typeof formEl.requestSubmit === 'function') formEl.requestSubmit();
+    else formEl.dispatchEvent(new Event('submit', {cancelable: true}));
+  }
 });
 
 document.getElementById('clear').addEventListener('click', () => {

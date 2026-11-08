@@ -1,0 +1,28 @@
+# Books the browser payload ships, as <path under books/> without extension.
+#
+# This is not a guess: it is exactly what ACL2 reports in
+# `include-book-alist` after
+#
+#   (include-book "projects/apply/top" :dir :system)
+#
+# measured on this tree with wasm/world-replay.lsp.  A hand-written reader of
+# include-book forms is not good enough -- it produced 502 books and bogus paths
+# like ../../../meru1/... -- so the list comes from ACL2.
+#
+# Regenerate with /tmp/dump-includes.lsp (see WASM-PORT-NOTES.md); anything
+# include-book'able in the page has to be listed here, because the manifest ships
+# only what is listed.
+projects/apply/top
+projects/apply/loop
+projects/apply/relink-fancy-scion
+projects/apply/definductor
+projects/apply/loop-lemmas
+projects/apply/apply
+projects/apply/base
+centaur/bitops/portcullis
+system/apply/apply-constraints
+system/apply/apply-prim
+system/apply/apply-prim-support
+cowles/portcullis
+std/portcullis
+textbook/chap10/fact
