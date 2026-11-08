@@ -107,6 +107,14 @@ if [ "${WEB:-0}" = 1 ]; then
   #       the Node build do not behave identically (see WASM-PORT-NOTES.md,
   #       "Where the browser version stands"), and a two-minute page reload per
   #       hypothesis is not a debugging loop.
+  #   -sEXPORTED_FUNCTIONS=_main,_ecl_page_...
+  #       The harness does not use MAIN: it boots ECL through ECL_PAGE_START,
+  #       loads the ACL2 driver through ECL_PAGE_LOAD, and then hands ECL one
+  #       form at a time through ECL_PAGE_EVAL (src/c/main.d), so that no
+  #       read-eval-print loop runs and nothing exits between forms.  _main is
+  #       still exported so that a Node bisection run can use CALLMAIN.  Note
+  #       the comma-separated form: the flags travel inside a Lisp string, and
+  #       the brackets-and-quotes form emcc documents would end that string.
   #   -sMODULARIZE=1 -sINVOKE_RUN=0
   #       Gives the worker a factory it can await, so files can be written to
   #       MEMFS first and CALLMAIN started afterwards.  The factory is the
@@ -123,7 +131,8 @@ if [ "${WEB:-0}" = 1 ]; then
 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4GB \
 -sSTACK_SIZE=$WEB_STACK_BYTES -sINITIAL_MEMORY=$WEB_INITIAL_BYTES \
 -sEXIT_RUNTIME=1 -sMODULARIZE=1 -sINVOKE_RUN=0 \
--sEXPORTED_RUNTIME_METHODS=FS,callMain"
+-sEXPORTED_FUNCTIONS=_main,_ecl_page_start,_ecl_page_load,_ecl_page_eval \
+-sEXPORTED_RUNTIME_METHODS=FS,callMain,ccall"
 fi
 
 # Anything the caller wants to add (e.g. -sMAIN_MODULE=2 for dynamic linking).

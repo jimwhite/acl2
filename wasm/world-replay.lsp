@@ -506,9 +506,18 @@
 ; not break.  A page sets ACL2_SLOW_ALIST_ACTION=off instead: ten warnings per
 ; DEFUN is not something a browser user can act on, and the cause is the image
 ; (see above), not their session.
+;
+; :LD-PROMPT NIL is not cosmetic.  LD that runs off the end of its input asks
+; (LD-PROMPT STATE), and when that is true it prints "Bye." and calls
+; (GOOD-BYE) if *STANDARD-OI* is the standard input -- good-bye runs CL_SHUTDOWN,
+; so the session is over.  A page keeps the session for the next form, so every
+; LD a driver runs has to be quiet about its end of input.  (This one was the
+; re-entry trap: the "Bye." in the log came from here.)
 (let ((s (ext:getenv "ACL2_SLOW_ALIST_ACTION")))
   (ld `((set-slow-alist-action
-         ,(if (and s (string= s "off")) nil :warning)))))
+         ,(if (and s (string= s "off")) nil :warning)))
+      :ld-prompt nil
+      :ld-verbose nil))
 
 (format t "~&;; replay: at the loop in ~,2f s~%" (cl-user::replay-elapsed))
 
@@ -519,5 +528,38 @@
 (setq cl-user::*replay-installed* t)
 (force-output)
 
+; Evaluate one page input.  TEXT comes from the harness through an exported entry
+; point (src/c/main.d, ECL_PAGE_EVAL); the forms are read with ACL2's readtable
+; and package, and run through LD.  LD's input being a *list* of forms is what
+; keeps ECL alive: the list runs out and LD returns, where reading standard input
+; at end of file makes LD call GOOD-BY, and GOOD-BYE exits ECL -- which the
+; harness cannot afford, because it keeps using the same session for the next
+; form.
+(defun cl-user::page-eval-string (text)
+  (let ((forms '())
+        ; Loading the sources leaves *PACKAGE* wherever the last file put it
+        ; (SI), and a form read there finds SI::INCLUDE-BOOK instead of
+        ; ACL2::INCLUDE-BOOK.  ACL2's own loop reads in the ACL2 package.
+        (*package* (or (find-package "ACL2") *package*)))
+    (let ((*readtable* *acl2-readtable*))
+      (with-input-from-string (s text)
+        (loop (let ((form (read s nil :eof)))
+                (when (eq form :eof) (return))
+                (push form forms)))))
+    (setq forms (nreverse forms))
+    (when forms
+      (ld forms
+          :ld-pre-eval-print nil
+          :ld-prompt nil
+          :ld-verbose nil
+          :ld-error-action :return))
+    (force-output)
+    (length forms)))
+
 (ext:chdir (or (ext:getenv "ACL2_WASM_INVOCATION_DIR") cl-user::*acl2-dir*))
-(acl2-default-restart)
+
+; The page drives ECL through the entry points in src/c/main.d, which never
+; enter SI:TOP-LEVEL, so there is no loop to enter here; a Node run does want it.
+(if (ext:getenv "ACL2_NO_LP")
+    (format t "~&;; replay: not entering ACL2's loop (ACL2_NO_LP)~%")
+    (acl2-default-restart))

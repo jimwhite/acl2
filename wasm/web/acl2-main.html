@@ -48,8 +48,8 @@ const lineEl = document.getElementById('line');
 const formEl = document.getElementById('f');
 const statusEl = document.getElementById('status');
 
-let inputText = '';
-let inputPos = 0;
+// No stdin plumbing: the module has no read-eval-print loop to feed.  Forms
+// travel as strings to ECL_PAGE_EVAL instead.
 let busy = true;
 
 function append(text, cls) {
@@ -106,11 +106,6 @@ async function fetchGz(url) {
 }
 
 let mod = null;
-// Set when the driver prints that it reached ACL2's loop.  The module stops at
-// the end of its input, and ECL reports that by throwing a raw
-// WebAssembly.Exception rather than an ExitStatus, so this is what tells the
-// difference between "the replay finished" and "the boot failed".
-let sawLoop = false;
 
 // Module is Emscripten's MODULARIZE factory from lib/ecl-dylink.js above.
 (async () => {
@@ -124,12 +119,8 @@ let sawLoop = false;
     // one of the shapes that bug takes.
     ENV: { GC_INITIAL_HEAP_SIZE: '500000000' },
     locateFile: (p) => 'lib/ecl-dylink.' + p.split('.').pop(),
-    print: (s) => { if (/replay: at the loop/.test(s)) sawLoop = true;
-                    if (!NOISE.some((re) => re.test(s))) append(s); },
-    printErr: (s) => { if (/replay: at the loop/.test(s)) sawLoop = true;
-                       if (!NOISE.some((re) => re.test(s))) append(s, 'err'); },
-    stdin: () => (inputPos < inputText.length
-                  ? inputText.charCodeAt(inputPos++) : null),
+    print: (s) => { if (!NOISE.some((re) => re.test(s))) append(s); },
+    printErr: (s) => { if (!NOISE.some((re) => re.test(s))) append(s, 'err'); },
   });
 
   const FS = mod.FS;
@@ -165,14 +156,15 @@ let sawLoop = false;
 
     status('installing the world image (page will be unresponsive for ~1 min)');
     await new Promise((r) => setTimeout(r, 50));
-    inputText = '';
-    inputPos = 0;
-    try { mod.callMain(['--load', '/acl2/web-replay.lsp', '--']); }
-    catch (e) {
-      // ACL2's loop stops at the end of its input, and ECL reports that here as
-      // a raw wasm exception; if the replay got to the loop, the session is up.
-      if (!sawLoop && !(e && typeof e === 'object' && 'status' in e)) throw e;
-    }
+    // MAIN is not used.  It ends in ECL's read-eval-print loop, which calls EXIT
+    // at end of input, and EXIT runs cl_shutdown: the next form would then run
+    // in a shut-down runtime.  ECL_PAGE_START boots ECL, ECL_PAGE_LOAD loads the
+    // ACL2 driver, and ECL_PAGE_EVAL runs the forms in a string, printing
+    // through ACL2's own LD, so nothing exits between forms.  See src/c/main.d
+    // and the note in replay-web.lsp.
+    mod.ccall('ecl_page_start', 'number', [], []);
+    mod.ccall('ecl_page_load', 'number', ['string'],
+              ['/acl2/web-replay.lsp']);
     status('ACL2 ready');
     lineEl.disabled = false;
     lineEl.focus();
@@ -194,26 +186,26 @@ formEl.addEventListener('submit', async (ev) => {
   status('running…');
   await new Promise((r) => setTimeout(r, 0));
 
-  // Re-entering MAIN re-loads the driver (ECL caches its command line), and the
-  // driver returns to ACL2's prompt when the world is already installed, so the
-  // input is just the form: no (acl2::lp) prefix, which ACL2 would read as a
+  // The form goes to the same entry point as the boot did, and ACL2's LD reads,
+  // evaluates and prints it: no (acl2::lp) prefix, which ACL2 would read as a
   // command of its own.
-  inputText = text + '\n';
-  inputPos = 0;
-  try { mod.callMain([]); }
+  try { mod.ccall('ecl_page_eval', 'number', ['string'], [text + '\n']); }
   catch (e) {
-    if (e && typeof e === 'object' && 'status' in e) {
-      // Normal: ACL2's loop exits at EOF and CALLMAIN reports the status.
-    } else if (typeof WebAssembly !== 'undefined'
-               && e instanceof WebAssembly.Exception) {
-      // End of input: normal, and not worth a line in the transcript.
-    } else if (e instanceof RangeError) {
+    if (e instanceof RangeError) {
       // A page has about 1 MB of stack and ACL2's own recursion can exceed it:
-      // including projects/apply/top needs 5-6 MB.  Say so, and do not pretend
-      // the session still works -- after this the instance is unusable.
+      // (include-book "projects/apply/top" :dir :system) needs about 1.1 MB,
+      // down from 5-6 MB before the interpreter's activation records
+      // (WASM-PORT-NOTES.md).  Say so, and do not pretend the session still
+      // works: the interpreter's state is left mid-call.
       append('[page] That form needed more stack than a page has.', 'err');
       append('[page] The session cannot continue; press Reload to start over.', 'err');
       statusEl.textContent = 'out of stack — reload';
+      return;
+    } else if (e && typeof e === 'object' && 'status' in e) {
+      // (good-bye) or :q: ACL2 exited, and the module is done.
+      append('[page] That form ended the session; press Reload to start over.',
+             'err');
+      statusEl.textContent = 'session ended — reload';
       return;
     } else {
       append(String(e), 'err');

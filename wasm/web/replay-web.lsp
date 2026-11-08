@@ -6,24 +6,14 @@
 ; then runs the same file the Node runs use.  Keeping one copy of the replay
 ; logic matters: the steps it performs are the ones a replay has to perform.
 ;
-; The harness calls:  callMain(['--load', '/acl2/web-replay.lsp', '--'])
+; The harness calls ECL_PAGE_START once and then ECL_PAGE_LOAD on this file
+; (src/c/main.d).  It never calls MAIN, so there is no top level to reach and
+; no SECOND entry into a shut-down ECL: forms arrive later through
+; ECL_PAGE_EVAL, which runs them with CL-USER::PAGE-EVAL-STRING below.
 
 (in-package "CL-USER")
 
 (setq *load-verbose* nil)
-
-; ECL caches its command line, so every CALLMAIN re-loads *this* file with the
-; arguments of the first call -- a different --load on a later call is ignored.
-; That is why the driver has to be idempotent: the second and later calls are
-; the harness asking the already-installed session for its prompt again, with
-; the next form waiting on stdin.  See the note in world-replay.lsp where the
-; flag is set.
-(when (and (boundp 'cl-user::*replay-installed*)
-           cl-user::*replay-installed*)
-  ; FIND-SYMBOL, not ACL2::LP: the ACL2 package does not exist yet when this
-  ; file is first READ, and the reader would fail on the package prefix.
-  (funcall (find-symbol "LP" "ACL2"))
-  (ext:exit 0))
 
 ; The wasm build has 30-bit fixnums, which ACL2 accepts only if
 ; ACL2_SMALL_FIXNUMS is set; ACL2_SNAPSHOT_INFO=NONE keeps ACL2 from running git
@@ -35,6 +25,9 @@
   (ext:setenv "ACL2_SLOW_ALIST_ACTION" "off"))
 (ext:setenv "ACL2_WASM_DIR" "/acl2")
 (ext:setenv "ACL2_WASM_INVOCATION_DIR" "/acl2")
+; No ACL2 read-eval-print loop: the page calls ECL_PAGE_EVAL for each form
+; instead, and the loop would exit ECL at end of input.  See src/c/main.d.
+(ext:setenv "ACL2_NO_LP" "1")
 (unless (ext:getenv "ACL2_WORLD_IMAGE")
   (ext:setenv "ACL2_WORLD_IMAGE" "/acl2/world-image.ser"))
 

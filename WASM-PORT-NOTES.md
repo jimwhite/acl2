@@ -1771,56 +1771,59 @@ properties`, `updated the world's derived structures`, and ACL2's own
    family of problem.
 2. **ECL after `cl_shutdown`.**  `ecl_boot` documents re-use after a shutdown
    (`if (i < 0) /* we have called cl_shutdown and want to use ECL again */`), and
-   the page relies on it: ACL2's `ld` calls `(good-bye)` when it reads EOF from
-   `*standard-oi*`, ECL shuts down, and the next `callMain` re-enters.  The
-   stacks keep their old contents, so the invocation history can still point
-   into a record that the next activation reuses.  `ecl_reset_stacks` resets the
-   per-session state of the stacks in that path.
+   the harness did rely on it: the page's first design re-entered the module for
+   every form, so ACL2's `ld` called `(good-bye)` at EOF, ECL shut down, and the
+   next `callMain` re-entered it.  The stacks keep their old contents, so the
+   invocation history could still point into a record that the next activation
+   reused.  `ecl_reset_stacks` resets the per-session state of the stacks in that
+   path.  The harness no longer re-enters ECL (it calls the entry points
+   instead), but a user can still end the session with `(good-bye)` or `:q`, and
+   the reset makes what happens next well defined rather than stale.
 
 ### What is still in the way
 
-* **Re-entry in the wasm build.**  A single pass through the browser build works
-  end to end (`(+ 1 2)` = 3, `(include-book "textbook/chap10/fact")`,
-  `(fact 10)` = 3628800, and `certify-book` on a small book in the Node build),
-  but the *second* `callMain` -- the one that feeds a form after ACL2 exited at
-  EOF -- dies with `RuntimeError: memory access out of bounds` inside a module
-  that imports `ecl_unwind`.  Guards on the frame stack (`top` inside
-  `[org, org+size]`, `frs_bds_ndx <= bds index`, `frs_run_ndx <= run index`) do
-  not fire, so the bad access is not one of those reads.  The same sequence with
-  the *unpatched* module works, so this is the one thing the patch has not yet
-  been proven not to break.  Until it is fixed, the published page keeps the
-  unpatched module: a page that cannot take a second form is worse than a page
-  whose books are limited by the stack.
+* **Re-entry in the wasm build: solved, two ways at once (2026-11-08).**  A
+  single pass through the browser build worked end to end, but the *second*
+  `callMain` -- the one that fed a form after ACL2 exited at EOF -- died with
+  `RuntimeError: memory access out of bounds` inside a module that imports
+  `ecl_unwind`.  It is now fixed, and it took two independent changes:
 
-  Where that stands, so the next session starts from it: the trap follows
-  ACL2's `good-bye`.  `ld` calls it when its input reaches end of file *and* the
-  state's `standard-oi` is the same object as `*standard-oi*` (ld.lisp, the
-  `eofp` branch) -- and `lp` makes those equal, so a page cannot avoid it by
-  binding the prompt or the stream.  `good-bye` runs `cl_shutdown` and `exit`,
-  and the next `callMain` is then re-entering a shut-down ECL (`ecl_boot`'s
-  "we want to use ECL again" path), which the unpatched module survives and the
-  patched one does not.  Two ways out, both unfinished:
+  1. **The harness never calls `main`.**  `main` ends in `si::top-level`, whose
+     read-eval-print loop calls `exit` when its input runs out, and `exit` runs
+     `cl_shutdown`: the next entry then ran Lisp in a shut-down ECL.  ECL now
+     exports three embedding entry points, `ecl_page_start` (boot once),
+     `ecl_page_load` (load the driver) and `ecl_page_eval` (run the forms in a
+     string), and the page calls them instead.  Where they live matters: they
+     are in `src/c/main.d`, which is part of `libecl.a`, *not* in
+     `src/c/cinit.d`, whose `cinit.o` is only linked into the bootstrap
+     `ecl_min` -- putting them there builds cleanly and then fails at the link
+     with "undefined exported symbol".  (And the export list has to be the
+     comma form `-sEXPORTED_FUNCTIONS=_main,_ecl_page_start,...`: the flags
+     travel inside a Lisp string, so emcc's documented brackets-and-quotes form
+     ends the string and ECL's own link step then reads the rest as Lisp
+     symbols.)
+  2. **A stray `good-bye` in the driver.**  `(ld '((set-slow-alist-action ...)))`
+     in `wasm/world-replay.lsp` ran off the end of its one-element list, and
+     `ld`'s `eofp` branch prints "Bye." and calls `(good-bye)` when
+     `(ld-prompt state)` is true and `*standard-oi*` is the state's standard-oi
+     -- which is exactly what a booted image has.  So *every* wasm replay had
+     been calling `good-bye` mid-flight (the "Bye." in the log), which shuts ECL
+     down and re-enters it a moment later.  `ld` there now passes `:ld-prompt
+     nil :ld-verbose nil`, as `page-eval-string` already did.  Any future `ld` a
+     driver runs needs the same treatment.
 
-  * *Do not let ECL be shut down.*  The driver can run the whole session without
-    ACL2's loop: set `ACL2_NO_LP`, have the harness leave each form in a file and
-    hand its forms to `ld` as a **list** (a list runs out and `ld` returns,
-    where standard input at EOF quits).  That gets as far as the driver
-    returning, but `main` then enters `si::top-level`, whose read-eval-print loop
-    quits at EOF -- throwing `si::*quit-tag*` to leave it fails with "The catch
-    (NIL) is undefined", because the `--load` is processed outside that catch.
-    Making ECL's `main` return without `exit` is the missing piece.
-  * *Make the shut-down path work.*  A frame-stack walk in `ecl_unwind` runs off
-    the bottom of the frame stack after the re-entry (`target` and `org` print
-    equal, yet the walk passes the target), and the follow-on `longjmp` then
-    corrupts the C stack ("Stack cookie has been overwritten").  Bounding the
-    walk at `org` changes the crash, it does not fix the state that leads there.
+  With both, the page takes form after form in Chromium: `(+ 1 2)` = 3,
+  `(include-book "textbook/chap10/fact" :dir :system)` (certified, no
+  book-hash warning), `(defthm fact-type ...)` = Q.E.D., a form that errors
+  (session survives), and the boot is 9.1 s.
 * **What remains of the 1.1 MB is compiled code**, not the interpreter: the
   trace is `wasm-function[N]` in an ACL2 `.fasc` module alternating with
   `variadic_dispatch3` in `ecl.wasm`, i.e. two VM frames per compiled Lisp call.
   Halving that (a direct call rather than a call through the function value's
   variadic entry) would put `projects/apply/top` inside a Chrome page; as it is,
   it needs 1.1 MB, so it fits a Firefox page (~3 MB, see the note on emscripten
-  #13043 above) and not a Chrome one (~1 MB).
+  #13043 above) and not a Chrome one (~1 MB).  The page now says so plainly
+  instead of dying silently.
 
 ## Next steps
 

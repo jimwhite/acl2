@@ -397,7 +397,7 @@ index aa8a72b2..1ba1a8fd 100644
      CASE(OP_STEPOUT); {
        cl_index n;
 diff --git a/src/c/main.d b/src/c/main.d
-index 70af22d7..000257fb 100644
+index 70af22d7..80b515f8 100644
 --- a/src/c/main.d
 +++ b/src/c/main.d
 @@ -88,8 +88,13 @@ ecl_boot(void)
@@ -415,6 +415,75 @@ index 70af22d7..000257fb 100644
      }
      return 1;
    }
+@@ -836,6 +841,68 @@ si_pointer(cl_object x)
+   ecl_return1(the_env, ecl_make_unsigned_integer((cl_index)x));
+ }
+ 
++#ifdef __EMSCRIPTEN__
++
++/* -- Embedding entry points -----------------------------------------------
++ *
++ * A page cannot use MAIN.  MAIN ends in SI:TOP-LEVEL (si_simple_toplevel in
++ * cinit.d), whose read-eval-print loop calls EXIT when its input reaches end
++ * of file, and EXIT runs cl_shutdown and leaves the runtime unusable: the
++ * browser harness has to re-enter the module for every form it reads, and the
++ * second entry then runs Lisp in a shut-down ECL.  So the harness boots ECL
++ * through ECL_PAGE_START and hands it one form at a time through
++ * ECL_PAGE_EVAL, with no top level and no exit in between.
++ *
++ * ECL_PAGE_EVAL evaluates the text with CL-USER::PAGE-EVAL-STRING, which the
++ * ACL2 driver defines (wasm/world-replay.lsp): it reads the forms with ACL2's
++ * readtable and runs them through LD, whose end of input is the end of a
++ * *list* and therefore returns instead of quitting.
++ *
++ * They live here rather than in cinit.d because cinit.o is only linked into
++ * the bootstrap ecl_min; this file is part of the library that the final
++ * executable (or page module) is built from.
++ */
++
++int
++ecl_page_start(void)
++{
++  static int booted = 0;
++  static char *argv[] = { "acl2", NULL };
++  if (!booted) {
++    booted = 1;
++    cl_boot(1, argv);
++    si_trap_fpe(ECL_T, ECL_NIL);
++    ECL_SET(@'*package*', cl_core.system_package);
++  }
++  return 0;
++}
++
++int
++ecl_page_eval(const char *text)
++{
++  cl_object fun = _ecl_intern("PAGE-EVAL-STRING", cl_core.user_package);
++  cl_object s;
++  if (!ECL_FBOUNDP(fun))
++    ecl_internal_error("the ACL2 page harness has not been loaded");
++  /* The text lives in JavaScript's memory, so it is copied into the heap. */
++  s = si_copy_to_simple_base_string(ecl_make_constant_base_string(text, -1));
++  cl_funcall(2, fun, s);
++  return 0;
++}
++
++int
++ecl_page_load(const char *path)
++{
++  /* Used once, to load the ACL2 driver (wasm/web/replay-web.lsp), which is
++     what defines CL-USER::PAGE-EVAL-STRING.  After that the harness only has
++     to evaluate strings. */
++  cl_load(1, si_copy_to_simple_base_string
++          (ecl_make_constant_base_string(path, -1)));
++  return 0;
++}
++
++#endif /* __EMSCRIPTEN__ */
++
+ #if defined(ECL_MS_WINDOWS_HOST)
+ void
+ ecl_get_commandline_args(int* argc, char*** argv) {
 diff --git a/src/c/stacks.d b/src/c/stacks.d
 index 5be972db..a6ef4483 100644
 --- a/src/c/stacks.d
