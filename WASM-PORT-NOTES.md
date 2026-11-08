@@ -1859,6 +1859,64 @@ tables are built on the compat ABI's uniform shape.  So this is ECL's design,
 not a flag to flip; the knob is left in place (default 1) so the experiment can
 be repeated, and this paragraph is the result of it.
 
+### A tutorial book set that loads in a page (2026-11-08)
+
+The books that fail above were compiled from their *source*, and that is why
+they cannot load: a module built from a book's `.lisp` re-runs the book's macros
+and events when the module initialises (once the reader is out of the way, ACL2
+says so itself: "It is illegal to execute make-event in raw Lisp ... consider
+loading a corresponding file *@expansion.lsp instead").  Built from
+`<book>@expansion.lsp` -- the events ACL2 itself compiles -- they load in a
+page-sized stack.  Four tutorial books now go through the whole pipeline and
+are shipped in the browser payload:
+
+| book | `.cert` | `@expansion.lsp` | module | `include-book` in a page |
+| --- | --- | --- | --- | --- |
+| `textbook/chap11/perm` | 1,638 B | 2,662 B | 7,560 B | 0.1 s |
+| `textbook/chap11/perm-append` | 1,386 B | kept | 1,353 B | 0.1 s |
+| `textbook/chap11/qsort` | 4,443 B | kept | 16,317 B | 0.1 s |
+| `textbook/chap11/mergesort` | 2,887 B | kept | 11,859 B | 0.29 s |
+
+In the page (Node's default 984 kB stack, the same budget a Chrome page has):
+`(include-book "textbook/chap11/qsort" :dir :system)` succeeds with no
+`Uncertified` warning, `(qsort (list 3 1 2))` is `(1 2 3)`, and
+`(thm (perm (qsort (list 2 1 3)) (list 1 2 3)))` is proved by the
+`:executable-counterparts` of `perm` and `qsort`.  `mergesort` and `qsort`
+define `ORDEREDP` incompatibly, so only one of them can be included in a
+session -- and when the second is attempted the session survives the error and
+keeps taking forms.
+
+Two things had to be fixed to get there, both about the *connected book
+directory*:
+
+1. **ACL2 takes the cbd from `*default-pathname-defaults*`, not from the
+   process's working directory.**  `our-pwd` is `(truename "")`
+   (`acl2-fns.lisp`), so `set-initial-cbd` (`interface-raw.lisp`) stores
+   whatever `*default-pathname-defaults*` says, and loading the sources leaves
+   that pointing at the source tree.  Both drivers now set it from the
+   directory the process was started in, then call `(set-initial-cbd)`.  For the
+   page that is `/acl2`, i.e. no change; for a `make` certifying books it is the
+   book's directory, which is what makes `(certify-book "perm" ...)` look for
+   `perm.lisp` there instead of `/acl2/perm.lisp`.
+2. **`cert.pl`'s own route does not work here.**  Its script starts with
+   `(acl2::value :q)`, `(acl2::in-package "ACL2")`, `(acl2::lp)`, and in this
+   build the certification then dies with a raw-Lisp error ("The Live State
+   Itself is not of type SEQUENCE").  `wasm/certify-books.sh` therefore drives
+   ACL2 directly, one process per book started in the book's directory, with
+
+       (certify-book "<book>" ? t)
+
+   -- the *third* argument of `certify-book` is `compile-flg` (the second is the
+   expected make-event world), and with `compile-flg` nil ACL2 never compiles
+   the expansion file, so nothing is left to AOT.  `ACL2_SAVE_EXPANSION=1` (set
+   by the script) keeps the expansion file, and each book costs its own proof
+   time plus about 45 s of ACL2 start-up.
+
+The same thing should work for the community books: certify with
+`ACL2_SAVE_EXPANSION=1`, then `wasm/aot-book.sh <book>`, then add it to
+`wasm/web/books.txt`.  What that does not fix is start-up time (45 s per book)
+or the size of the payload.
+
 ### Which books fit in a Chrome-sized page (2026-11-08)
 
 At 1000 kB (a Chrome page), including these succeeds and these do not, in the

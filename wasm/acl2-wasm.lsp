@@ -164,4 +164,22 @@
     (force-output))
   (si:quit))
 
+; The connected book directory is the directory ACL2 was *started* in, the way
+; a fresh ACL2 has it, not the directory whose sources we just loaded.  Two
+; steps are needed: ACL2 computes the cbd with OUR-PWD, which is
+; (TRUENAME "") -- i.e. *DEFAULT-PATHNAME-DEFAULTS*, which loading the sources
+; left pointing at the source tree -- and then SET-INITIAL-CBD stores it
+; (interface-raw.lisp: SET-INITIAL-CBD, *initial-cbd*).
+;
+; It matters for anything that resolves a book name relative to the cbd rather
+; than through :dir :system: `make` certifying books in books/textbook/chap11,
+; for instance, runs (certify-book "perm" ...) from that directory, and with
+; the source tree as cbd ACL2 looks for /acl2/perm.lisp.  It costs nothing when
+; they are the same directory, which is how the page and wasm/acl2-wasm run.
+(setq *default-pathname-defaults*
+      (pathname (concatenate 'string
+                             (namestring
+                              (pathname cl-user::*acl2-wasm-invocation-dir*))
+                             "/")))
+(set-initial-cbd)
 (acl2-default-restart)

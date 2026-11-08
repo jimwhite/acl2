@@ -34,6 +34,13 @@
 
 (defparameter cl-user::*start* (get-internal-real-time))
 
+; Where the process was started, before the CHDIR below.  It is where the
+; sources are *not*, so it is what the connected book directory should be: the
+; page's /acl2, or the directory a `make` certifying books is running in.  The
+; chdir at the end of this file goes back here unless ACL2_WASM_INVOCATION_DIR
+; names somewhere else.
+(defparameter cl-user::*invocation-dir* (ext:getcwd))
+
 (defun cl-user::replay-elapsed ()
   (/ (- (get-internal-real-time) cl-user::*start*)
      internal-time-units-per-second))
@@ -556,10 +563,21 @@
     (force-output)
     (length forms)))
 
-(ext:chdir (or (ext:getenv "ACL2_WASM_INVOCATION_DIR") cl-user::*acl2-dir*))
+(ext:chdir (or (ext:getenv "ACL2_WASM_INVOCATION_DIR")
+               (namestring (pathname cl-user::*invocation-dir*))))
 
 ; The page drives ECL through the entry points in src/c/main.d, which never
 ; enter SI:TOP-LEVEL, so there is no loop to enter here; a Node run does want it.
+;
+; SET-INITIAL-CBD again, after pointing *DEFAULT-PATHNAME-DEFAULTS* at the
+; directory the process was started in: ACL2's cbd is OUR-PWD, i.e.
+; (TRUENAME ""), and loading the sources left it pointing at the source tree.
+; The line just above has chdir'd back to the invocation directory -- the page's
+; /acl2, or a book directory for a `make` that certifies books -- and that is
+; the cbd a fresh ACL2 would have.  See the same note in wasm/acl2-wasm.lsp.
+(setq *default-pathname-defaults*
+      (pathname (concatenate 'string (namestring (pathname (ext:getcwd))) "/")))
+(set-initial-cbd)
 (if (ext:getenv "ACL2_NO_LP")
     (format t "~&;; replay: not entering ACL2's loop (ACL2_NO_LP)~%")
     (acl2-default-restart))

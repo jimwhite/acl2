@@ -26,3 +26,7 @@ system/apply/apply-prim-support
 cowles/portcullis
 std/portcullis
 textbook/chap10/fact
+textbook/chap11/perm
+textbook/chap11/perm-append
+textbook/chap11/qsort
+textbook/chap11/mergesort
