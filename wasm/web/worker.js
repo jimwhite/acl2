@@ -72,9 +72,10 @@ const REPL_NOISE = [
   /unsupported syscall:/,
 ];
 
-async function replEnsure() {
+async function replEnsure(mode) {
   if (repl) return repl;
-  const state = {mod: null, lines: [], input: {text: '', pos: 0}};
+  const state = {mod: null, lines: [], input: {text: '', pos: 0},
+                 acl2: mode === 'acl2'};
   importScripts('lib/ecl-dylink.js');
   const create = self.Module;
   state.mod = await create({
@@ -87,15 +88,55 @@ async function replEnsure() {
                   ? state.input.text.charCodeAt(state.input.pos++) : null),
   });
   repl = state;
+  if (state.acl2) await bootWorldReplay(state);
   return state;
 }
 
-async function replEval(text) {
+// ACL2 through the world-image replay: preload the tree, install the image once
+// (about 30 s in Node), and leave the session live.  ACL2 is then re-entered
+// per input; see the comment on REPL_PREFIX below.
+async function bootWorldReplay(state) {
+  const FS = state.mod.FS;
+  const manifest = JSON.parse(
+    new TextDecoder().decode(await fetchBuf('files.json')));
+  let bytes = 0, done = 0;
+  status('preloading ' + manifest.length + ' files');
+  for (const f of manifest) {
+    const buf = await fetchGz(f.src);
+    bytes += buf.byteLength;
+    FS.mkdirTree(f.dst.replace(/\/[^\/]*$/, ''));
+    FS.writeFile(f.dst, new Uint8Array(buf));
+    if (++done % 10 === 0) {
+      status(`preloading ${done}/${manifest.length} ` +
+             `(${(bytes / 1048576).toFixed(1)} MB)`);
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  log(`[web] preloaded ${manifest.length} files, ` +
+      `${(bytes / 1048576).toFixed(1)} MB`);
+  status('installing the world image');
+  // Empty stdin: the replay runs, reaches ACL2's loop, and hits EOF at once.
+  state.input = {text: '', pos: 0};
+  try {
+    state.mod.callMain(['--load', '/acl2/web-replay.lsp', '--']);
+  } catch (e) {
+    if (!(e && typeof e === 'object' && 'status' in e)) throw e;
+  }
+  status('ACL2 ready');
+}
+
+async function replEval(text, mode) {
   let lines;
   try {
-    const state = await replEnsure();
+    const state = await replEnsure(mode);
     state.lines = [];
-    state.input = {text: text + '\n', pos: 0};
+    // Re-entering MAIN lands in ECL's top level, not in ACL2's loop, so an ACL2
+    // session asks for the loop again and hands it the input.  ACL2 keeps its
+    // whole state across this, because the runtime is never torn down.
+    state.input = {
+      text: (state.acl2 ? '(acl2::lp)\n' + text : text) + '\n',
+      pos: 0,
+    };
     try {
       state.mod.callMain([]);
     } catch (e) {
@@ -116,7 +157,8 @@ async function replEval(text) {
 self.onmessage = async (ev) => {
   if (!ev.data) return;
   if (ev.data.cmd === 'eval') {
-    await replEval(String(ev.data.text === undefined ? '' : ev.data.text));
+    await replEval(String(ev.data.text === undefined ? '' : ev.data.text),
+                   ev.data.mode);
     return;
   }
   if (ev.data.cmd === 'restart') {

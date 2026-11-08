@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ACL2 in the browser</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; display: flex;
+         flex-direction: column; height: 100vh; }
+  header { padding: .6rem 1rem; border-bottom: 1px solid #8884;
+           display: flex; gap: 1rem; align-items: baseline; }
+  header h1 { font-size: 1rem; margin: 0; }
+  #status { font-size: .85rem; opacity: .75; }
+  #log { flex: 1; overflow: auto; margin: 0; padding: 1rem;
+         font: 13px/1.45 ui-monospace, ui-monospace, Menlo, Consolas, monospace;
+         white-space: pre-wrap; }
+  #log .in { color: #0a7; font-weight: 600; }
+  #log .err { color: #c33; }
+  #log .banner { opacity: .55; }
+  form { display: flex; gap: .5rem; padding: .6rem 1rem;
+         border-top: 1px solid #8884; }
+  form span { font: 13px ui-monospace, monospace; opacity: .7; }
+  input { flex: 1; font: 13px ui-monospace, monospace; padding: .35rem .5rem; }
+  button { font: inherit; padding: .35rem .7rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ACL2 in the browser</h1>
+  <span id="status">starting…</span>
+  <span style="margin-left:auto"><a href="index.html">back</a></span>
+</header>
+<pre id="log"></pre>
+<form id="f"><span>ACL2 !&gt;</span><input id="line" autocomplete="off"
+  autocapitalize="off" spellcheck="false" placeholder="(+ 1 2)" disabled>
+  <button id="restart" type="button">Restart</button>
+  <button id="clear" type="button">Clear</button></form>
+<script>
+"use strict";
+// ACL2 is installed from a serialized world image rather than by running the
+// boot strap, because the boot strap needs several megabytes of native stack
+// and a page has about one.  See WASM-PORT-NOTES.md, "World-image replay".
+const worker = new Worker('worker.js');
+const logEl = document.getElementById('log');
+const lineEl = document.getElementById('line');
+const formEl = document.getElementById('f');
+const statusEl = document.getElementById('status');
+
+let busy = true;
+const history = [];
+let historyPos = 0;
+
+function append(text, cls) {
+  const span = document.createElement('span');
+  if (cls) span.className = cls;
+  span.textContent = text + '\n';
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+worker.onmessage = (ev) => {
+  const m = ev.data;
+  if (m.type === 'status') { statusEl.textContent = m.text; return; }
+  if (m.type === 'log') { append(m.text, 'banner'); return; }
+  if (m.type !== 'result') return;
+  for (const text of m.lines || []) {
+    // ACL2 reprints its banner every time the loop is re-entered per input.
+    const banner = /^ACL2 Version|^Copyright|^ACL2 comes with|^There is no warranty|^This is free software|^ +\+|ACL2 !>$|^ *$/.test(text);
+    append(text, banner ? 'banner' : (/^(ACL2 Error|HARD ACL2|Error|Debugger)/.test(text) ? 'err' : null));
+  }
+  busy = false;
+  lineEl.disabled = false;
+  lineEl.focus();
+};
+
+worker.onerror = (e) => {
+  append('[page] worker error: ' + e.message, 'err');
+  busy = false;
+  lineEl.disabled = false;
+};
+
+formEl.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  if (busy || !lineEl.value.trim()) return;
+  const text = lineEl.value;
+  history.push(text);
+  historyPos = history.length;
+  append('ACL2 !>' + text, 'in');
+  lineEl.value = '';
+  busy = true;
+  lineEl.disabled = true;
+  worker.postMessage({cmd: 'eval', text, mode: 'acl2'});
+});
+
+lineEl.addEventListener('keydown', (ev) => {
+  if (ev.key === 'ArrowUp' && history.length) {
+    historyPos = Math.max(0, historyPos - 1);
+    lineEl.value = history[historyPos];
+    ev.preventDefault();
+  } else if (ev.key === 'ArrowDown' && history.length) {
+    historyPos = Math.min(history.length, historyPos + 1);
+    lineEl.value = historyPos === history.length ? '' : history[historyPos];
+    ev.preventDefault();
+  }
+});
+
+document.getElementById('restart').addEventListener('click', () => {
+  worker.postMessage({cmd: 'restart'});
+  location.reload();
+});
+
+document.getElementById('clear').addEventListener('click', () => {
+  logEl.textContent = '';
+});
+
+// Install the image at load so the prompt is usable when the user arrives.
+worker.postMessage({cmd: 'eval', text: '(value-triple :ready)', mode: 'acl2'});
+</script>
+</body>
+</html>

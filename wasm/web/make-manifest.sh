@@ -50,6 +50,16 @@ pack() {
     pack "$f" "/acl2/$b"
   done
   pack "$HERE/acl2-web.lsp" "/acl2/web-acl2.lsp"
+  # The world-image replay: the web wrapper, the shared driver, and the image
+  # the driver installs.  The image is built by ACL2_WRITE_WORLD_IMAGE in
+  # wasm/acl2-wasm.lsp; WORLD_IMAGE overrides where it is read from.
+  pack "$HERE/replay-web.lsp" "/acl2/web-replay.lsp"
+  pack "$ROOT/wasm/world-replay.lsp" "/acl2/wasm/world-replay.lsp"
+  if [ -f "${WORLD_IMAGE:-/tmp/world2.ser}" ]; then
+    pack "${WORLD_IMAGE:-/tmp/world2.ser}" "/acl2/world-image.ser"
+  else
+    echo "warning: no world image at ${WORLD_IMAGE:-/tmp/world2.ser}" >&2
+  fi
   # Book bundles.
   for book in "$@"; do
     for ext in lisp cert fasc; do
