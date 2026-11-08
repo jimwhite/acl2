@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ACL2 in the browser (main thread)</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; display: flex;
+         flex-direction: column; height: 100vh; }
+  header { padding: .6rem 1rem; border-bottom: 1px solid #8884;
+           display: flex; gap: 1rem; align-items: baseline; }
+  header h1 { font-size: 1rem; margin: 0; }
+  #status { font-size: .85rem; opacity: .75; }
+  #log { flex: 1; overflow: auto; margin: 0; padding: 1rem;
+         font: 13px/1.45 ui-monospace, Menlo, Consolas, monospace;
+         white-space: pre-wrap; }
+  #log .in { color: #0a7; font-weight: 600; }
+  #log .err { color: #c33; }
+  #log .dim { opacity: .5; }
+  form { display: flex; gap: .5rem; padding: .6rem 1rem;
+         border-top: 1px solid #8884; }
+  form span { font: 13px ui-monospace, monospace; opacity: .7; }
+  input { flex: 1; font: 13px ui-monospace, monospace; padding: .35rem .5rem; }
+  button { font: inherit; padding: .35rem .7rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ACL2 in the browser</h1>
+  <span id="status">starting…</span>
+  <span style="margin-left:auto"><a href="index.html">back</a></span>
+</header>
+<pre id="log"></pre>
+<form id="f"><span>ACL2 !&gt;</span><input id="line" autocomplete="off"
+  autocapitalize="off" spellcheck="false" placeholder="(+ 1 2)" disabled>
+  <button id="clear" type="button">Clear</button></form>
+
+<!-- The dynamic-linking build.  It must be on the main thread: a web worker
+     gets 5,551 frames of stack and a page gets 10,339 (wasm/web/_stackprobe.html),
+     and installing the world image needs more than the worker's half.  The cost
+     is that the page is unresponsive while the image is installed. -->
+<script src="lib/ecl-dylink.js"></script>
+<script>
+"use strict";
+
+const logEl = document.getElementById('log');
+const lineEl = document.getElementById('line');
+const formEl = document.getElementById('f');
+const statusEl = document.getElementById('status');
+
+let inputText = '';
+let inputPos = 0;
+let busy = true;
+
+function append(text, cls) {
+  const span = document.createElement('span');
+  if (cls) span.className = cls;
+  span.textContent = text + '\n';
+  logEl.appendChild(span);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+const status = (t) => { statusEl.textContent = t; };
+
+// Lines that would otherwise repeat on every re-entry of the loop.
+const NOISE = [
+  /^ACL2 Version .*$/,
+  /^Copyright \(C\)/,
+  /^ACL2 comes with ABSOLUTELY NO WARRANTY/,
+  /^This is free software and you are welcome/,
+  /^ \+/, /^ *$/, /^ACL2 !>$/,
+  /^Exiting the ACL2 read-eval-print loop\./,
+  /^ECL \(Embeddable Common-Lisp\)/, /^Copyright \(C\) 19/,
+  /^ECL is free software/, /^under certain conditions/,
+  /^Type :h for Help\./, /^Top level\.$/, /^>+ $/,
+  /^program exited \(with status: 0\)/, /unsupported syscall:/,
+];
+
+async function fetchBuf(url, attempts = 10) {
+  let last;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, {cache: 'no-store'});
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.arrayBuffer();
+    } catch (e) {
+      last = e;
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  }
+  throw new Error(`fetch ${url}: ${last && last.message}`);
+}
+
+async function fetchGz(url) {
+  const packed = await fetchBuf(url);
+  return await new Response(
+    new Response(packed).body.pipeThrough(new DecompressionStream('gzip'))
+  ).arrayBuffer();
+}
+
+let mod = null;
+
+// Module is Emscripten's MODULARIZE factory from lib/ecl-dylink.js above.
+(async () => {
+  mod = await Module({
+    noInitialRun: true,
+    noExitRuntime: true,
+    locateFile: (p) => 'lib/ecl-dylink.' + p.split('.').pop(),
+    print: (s) => { if (!NOISE.some((re) => re.test(s))) append(s); },
+    printErr: (s) => { if (!NOISE.some((re) => re.test(s))) append(s, 'err'); },
+    stdin: () => (inputPos < inputText.length
+                  ? inputText.charCodeAt(inputPos++) : null),
+  });
+
+  const FS = mod.FS;
+  try {
+    const manifest = JSON.parse(
+      new TextDecoder().decode(await fetchBuf('files.json')));
+    let bytes = 0, done = 0;
+    for (const f of manifest) {
+      const buf = await fetchGz(f.src);
+      bytes += buf.byteLength;
+      FS.mkdirTree(f.dst.replace(/\/[^\/]*$/, ''));
+      FS.writeFile(f.dst, new Uint8Array(buf));
+      if (++done % 5 === 0) {
+        status(`preloading ${done}/${manifest.length} ` +
+               `(${(bytes / 1048576).toFixed(0)} MB)`);
+        await new Promise((r) => setTimeout(r, 0));
+      }
+    }
+    // LOAD-ACL2 uses this to decide the sources are already compiled.
+    FS.writeFile('/acl2/acl2-status.txt', ':COMPILED');
+    append(`[page] preloaded ${manifest.length} files, ` +
+           `${(bytes / 1048576).toFixed(1)} MB`, 'dim');
+
+    status('installing the world image (page will be unresponsive for ~1 min)');
+    await new Promise((r) => setTimeout(r, 50));
+    inputText = '';
+    inputPos = 0;
+    try { mod.callMain(['--load', '/acl2/web-replay.lsp', '--']); }
+    catch (e) { if (!(e && typeof e === 'object' && 'status' in e)) throw e; }
+    status('ACL2 ready');
+    lineEl.disabled = false;
+    lineEl.focus();
+    busy = false;
+  } catch (e) {
+    append('[page] failed: ' + (e && e.stack ? e.stack : e), 'err');
+    status('failed');
+  }
+})();
+
+formEl.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  if (busy || !lineEl.value.trim()) return;
+  const text = lineEl.value;
+  append('ACL2 !>' + text, 'in');
+  lineEl.value = '';
+  busy = true;
+  lineEl.disabled = true;
+  status('running…');
+  await new Promise((r) => setTimeout(r, 0));
+
+  // Re-entering MAIN lands in ECL's top level, not in ACL2's loop, so ask for
+  // the loop and quit it again with :q to return cleanly at the end.
+  inputText = '(acl2::lp)\n' + text + '\n:q\n';
+  inputPos = 0;
+  try { mod.callMain([]); }
+  catch (e) { if (!(e && typeof e === 'object' && 'status' in e)) append(String(e), 'err'); }
+  busy = false;
+  lineEl.disabled = false;
+  lineEl.focus();
+  status('ACL2 ready');
+});
+
+document.getElementById('clear').addEventListener('click', () => {
+  logEl.textContent = '';
+});
+</script>
+</body>
+</html>
