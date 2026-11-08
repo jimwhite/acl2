@@ -1610,7 +1610,7 @@ A worker is the only place `WebAssembly.Compile` is allowed for a module over
 diagnostic, not the destination.
 
 - `acl2-main.html` (main thread) preloads 107 files (80.5 MB) and runs the replay
-  through `load-acl2` (1.8 s), the `*1*` AOT file, the image (2.0 s), the four
+  through `load-acl2` (1.9 s), the `*1*` AOT file, the image (2.1 s), the four
   constants, the 6,460 attachment variables and `memoize-init`, and then stops
   during the world install with
 
@@ -1620,42 +1620,42 @@ diagnostic, not the destination.
   value.  Initialize this symbol in PRIMORDIAL-WORLD-GLOBALS.
   ```
 
-  Two things are established by that.  First, the earlier
-
-  ```
-  HARD ACL2 ERROR in EXTEND-WORLD1: ... is not an extension of the current
-  CURRENT-ACL2-WORLD
-  ```
-
-  was a *bad call* on the replay's part, not a build difference: `SET-W` always
-  passes `'CURRENT-ACL2-WORLD` to `EXTEND-WORLD1`, which requires the image to
-  contain the live world as a tail, and only `SET-W!` installs an arbitrary
-  world.  The replay now uses `SET-W!`.  Second, the remaining failure is that
-  the **live world** (the 686 triples `ENTER-BOOT-STRAP-MODE` builds) is missing
-  a global it has in Node, so the two builds still disagree about boot-strap
-  state.  `SET-W!` needs it because it retracts to the longest common prefix
-  first, which consults world globals.
-- **This does not reproduce in Node**, and everything cheap has been ruled out,
-  each measured: the build-status token (`:COMPILED` and `:INITIALIZED` behave
-  the same; the repo's own `acl2-status.txt` says `:INITIALIZED`), the bytecode
-  `doc.fasc` substitution (Node runs the replay unchanged with it in place), the
-  `(load ...)` path (a wrapper that `setenv`s and then `(load
-  "wasm/world-replay.lsp")` exactly as the page does also succeeds in Node), and
-  `--strip-debug` on side modules (saves 82 bytes -- `doc.fasc` is 8.03 MB of
-  doc-string *data*, not debug information, so the bytecode build of that one
-  file stays the way under the 8 MB limit).  What is left is the *web* build
-  binary (`dist/web-dylink`, which the page loads) versus the node build
-  (`dist/node-raw-dylink2`, which every measurement above uses), and the web
-  build does not run under Node, so it cannot be reproduced locally as things
-  stand.
-- **Next, in order:** (1) rebuild the web module with `-sENVIRONMENT=web,worker,node`
-  so the two builds can be diffed in a 30 s loop instead of a two-minute page
-  reload -- print `(get-os)`, the live world length, and whether
-  `CURRENT-THEORY-AUGMENTED` is in it, on both; (2) *then* the worker, which
-  needs the chunked image (below).  Note also that `world-replay.lsp` is shipped
-  *inside* the manifest, so editing it requires re-running
-  `wasm/web/make-manifest.sh` before reloading the page -- an earlier round of
-  browser tests was silently running a stale copy.
+  The earlier `HARD ACL2 ERROR in EXTEND-WORLD1: ... is not an extension of the
+  current CURRENT-ACL2-WORLD` was a *bad call* on the replay's part, not a build
+  difference: `SET-W` always passes `'CURRENT-ACL2-WORLD` to `EXTEND-WORLD1`,
+  which requires the image to contain the live world as a tail, and only `SET-W!`
+  installs an arbitrary world.  The replay now uses `SET-W!`; `SET-W!` fails
+  differently only because it retracts to the longest common prefix first, and
+  that consults globals.
+- **The two builds agree on everything comparable from Lisp.**  Printed on both
+  sides by the driver: `os=:UNIX`, the live world is 686 triples, it has
+  `CURRENT-THEORY-AUGMENTED`, its first trips are `(COMMAND-LANDMARK
+  EVENT-LANDMARK SYMBOLP SYMBOLP SYMBOL-PACKAGE-NAME SYMBOL-PACKAGE-NAME)` and
+  its last are `(HALF-LENGTH-BUILT-IN-CLAUSES BUILT-IN-CLAUSES
+  WELL-FOUNDED-RELATION-ALIST KNOWN-PACKAGE-ALIST COMMAND-LANDMARK
+  EVENT-LANDMARK)` -- identical in the page and in Node -- and the decoded
+  image's trip name is `EQ` to the live symbol and lives in the `"ACL2"` package
+  in both.  The image is the same file.  So the divergence is not in ACL2, not in
+  the image and not in the boot-strap state: it is in the **compiled runtime**,
+  `dist/web-dylink` (page) versus `dist/node-raw-dylink2` (every Node
+  measurement).
+- Ruled out along the way, each measured: the build-status token (`:COMPILED` and
+  `:INITIALIZED` behave the same; the repo's own `acl2-status.txt` says
+  `:INITIALIZED`), the bytecode `doc.fasc` substitution (Node runs the replay
+  unchanged with it in place), the `(load ...)` path (a wrapper that `setenv`s and
+  then `(load "wasm/world-replay.lsp")` exactly as the page does also succeeds in
+  Node), `--strip-debug` on side modules (82 bytes -- `doc.fasc` is 8.03 MB of
+  doc-string *data*, not debug information), the GC-unsoundness workaround
+  (`GC_INITIAL_HEAP_SIZE=500000000`, now set in the page too, changes nothing
+  here), and installing the bytecodes compiler before `init.lisp` (now done, since
+  the page loads `doc.fasc` as bytecode).
+- **Next:** rebuild the web module with `-sENVIRONMENT=web,worker,node` (it is
+  currently `web,worker`, which is why it refuses to run under Node and why this
+  costs a two-minute page reload per hypothesis) and then bisect the two runtimes
+  on this exact input.  Note also that `world-replay.lsp` is shipped *inside* the
+  manifest, so editing it requires re-running `wasm/web/make-manifest.sh` before
+  reloading -- an earlier round of browser tests was silently running a stale
+  copy, which cost several cycles.
 - The chunked image is implemented on the *read* side (`<image>.0`, `<image>.1`,
   ...; the flat single-file form still reads) and `ACL2_REWRITE_IMAGE` writes the
   chunk files, but the **encoder segfaults in wasm** on the large early chunks,
