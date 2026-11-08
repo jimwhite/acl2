@@ -1791,6 +1791,29 @@ properties`, `updated the world's derived structures`, and ACL2's own
   been proven not to break.  Until it is fixed, the published page keeps the
   unpatched module: a page that cannot take a second form is worse than a page
   whose books are limited by the stack.
+
+  Where that stands, so the next session starts from it: the trap follows
+  ACL2's `good-bye`.  `ld` calls it when its input reaches end of file *and* the
+  state's `standard-oi` is the same object as `*standard-oi*` (ld.lisp, the
+  `eofp` branch) -- and `lp` makes those equal, so a page cannot avoid it by
+  binding the prompt or the stream.  `good-bye` runs `cl_shutdown` and `exit`,
+  and the next `callMain` is then re-entering a shut-down ECL (`ecl_boot`'s
+  "we want to use ECL again" path), which the unpatched module survives and the
+  patched one does not.  Two ways out, both unfinished:
+
+  * *Do not let ECL be shut down.*  The driver can run the whole session without
+    ACL2's loop: set `ACL2_NO_LP`, have the harness leave each form in a file and
+    hand its forms to `ld` as a **list** (a list runs out and `ld` returns,
+    where standard input at EOF quits).  That gets as far as the driver
+    returning, but `main` then enters `si::top-level`, whose read-eval-print loop
+    quits at EOF -- throwing `si::*quit-tag*` to leave it fails with "The catch
+    (NIL) is undefined", because the `--load` is processed outside that catch.
+    Making ECL's `main` return without `exit` is the missing piece.
+  * *Make the shut-down path work.*  A frame-stack walk in `ecl_unwind` runs off
+    the bottom of the frame stack after the re-entry (`target` and `org` print
+    equal, yet the walk passes the target), and the follow-on `longjmp` then
+    corrupts the C stack ("Stack cookie has been overwritten").  Bounding the
+    walk at `org` changes the crash, it does not fix the state that leads there.
 * **What remains of the 1.1 MB is compiled code**, not the interpreter: the
   trace is `wasm-function[N]` in an ACL2 `.fasc` module alternating with
   `variadic_dispatch3` in `ecl.wasm`, i.e. two VM frames per compiled Lisp call.
