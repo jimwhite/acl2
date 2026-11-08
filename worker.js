@@ -116,6 +116,10 @@ async function bootWorldReplay(state) {
     bytes += buf.byteLength;
     FS.mkdirTree(f.dst.replace(/\/[^\/]*$/, ''));
     FS.writeFile(f.dst, new Uint8Array(buf));
+    // See the note in acl2-main.html: book-hash includes the write date, and
+    // FS.utime wants milliseconds.
+    const utime = FS.utime || FS.utimes;
+    if (f.mtime && utime) utime.call(FS, f.dst, f.mtime * 1000, f.mtime * 1000);
     if (++done % 10 === 0) {
       status(`preloading ${done}/${manifest.length} ` +
              `(${(bytes / 1048576).toFixed(1)} MB)`);
