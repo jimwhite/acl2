@@ -31,6 +31,8 @@
 (ext:setenv "ACL2_SMALL_FIXNUMS" "1")
 (ext:setenv "ACL2_SNAPSHOT_INFO" "NONE")
 
+(unless (ext:getenv "ACL2_SLOW_ALIST_ACTION")
+  (ext:setenv "ACL2_SLOW_ALIST_ACTION" "off"))
 (ext:setenv "ACL2_WASM_DIR" "/acl2")
 (ext:setenv "ACL2_WASM_INVOCATION_DIR" "/acl2")
 (unless (ext:getenv "ACL2_WORLD_IMAGE")

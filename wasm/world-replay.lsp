@@ -497,8 +497,12 @@
 ; value.  Interactive ACL2 survives that -- the user answers the debugger -- but
 ; a page does not: the first DEFUN reaches HONS-GET on one of those alists and
 ; the session hangs in ECL's debugger.  :warning keeps the information and does
-; not break.
-(ld '((set-slow-alist-action :warning)))
+; not break.  A page sets ACL2_SLOW_ALIST_ACTION=off instead: ten warnings per
+; DEFUN is not something a browser user can act on, and the cause is the image
+; (see above), not their session.
+(let ((s (ext:getenv "ACL2_SLOW_ALIST_ACTION")))
+  (ld `((set-slow-alist-action
+         ,(if (and s (string= s "off")) nil :warning)))))
 
 (format t "~&;; replay: at the loop in ~,2f s~%" (cl-user::replay-elapsed))
 

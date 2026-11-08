@@ -1603,67 +1603,60 @@ The real fixes are to make the deserialiser iterative (see "chunked, shallowly
 recursive image format" above) or to build that one module with `--strip-debug`,
 both of which would let the whole thing live in a worker again.
 
-### Where the browser version stands (2026-11-08)
+### ACL2 runs in a page (2026-11-08)
 
-A worker is the only place `WebAssembly.Compile` is allowed for a module over
-8 MB, so the worker is where this has to end up; the main-thread page is a
-diagnostic, not the destination.
+`wasm/web/acl2-main.html` reaches the ACL2 prompt in **8.8 s** and is
+interactive: `(+ 1 2)` is 3, a `thm` is Q.E.D. (435 prover steps, 0.04 s), a
+`defun` is admitted and `(my-fact 20)` is 2432902008176640000, with ACL2's own
+`check-acl2-initialization` passing on the way.  Four things had to be right:
 
-- `acl2-main.html` (main thread) preloads 107 files (80.5 MB) and runs the replay
-  through `load-acl2` (1.9 s), the `*1*` AOT file, the image (2.1 s), the four
-  constants, the 6,460 attachment variables and `memoize-init`, and then stops
-  during the world install with
+1. **The image carried its builder's paths.**  A world image records globals
+   that describe where it was built, and installing a world requires the image
+   to contain the live world as a tail (`EXTEND-WORLD1` compares with `EQUAL`).
+   Built in `/workspaces/acl2-ecl`, run with cwd `/acl2`, the two worlds
+   disagreed on exactly one trip:
 
-  ```
-  HARD ACL2 ERROR in GETPROP: No property was found under symbol
-  CURRENT-THEORY-AUGMENTED for key GLOBAL-VALUE.  GLOBAL-VAL didn't find a
-  value.  Initialize this symbol in PRIMORDIAL-WORLD-GLOBALS.
-  ```
+   ```
+   (PROJECT-DIR-ALIST GLOBAL-VALUE ((:SYSTEM . "/workspaces/acl2-ecl/books/")))
+   (PROJECT-DIR-ALIST GLOBAL-VALUE ((:SYSTEM . "/acl2/books/")))
+   ```
 
-  The earlier `HARD ACL2 ERROR in EXTEND-WORLD1: ... is not an extension of the
-  current CURRENT-ACL2-WORLD` was a *bad call* on the replay's part, not a build
-  difference: `SET-W` always passes `'CURRENT-ACL2-WORLD` to `EXTEND-WORLD1`,
-  which requires the image to contain the live world as a tail, and only `SET-W!`
-  installs an arbitrary world.  The replay now uses `SET-W!`; `SET-W!` fails
-  differently only because it retracts to the longest common prefix first, and
-  that consults globals.
-- **The two builds agree on everything comparable from Lisp.**  Printed on both
-  sides by the driver: `os=:UNIX`, the live world is 686 triples, it has
-  `CURRENT-THEORY-AUGMENTED`, its first trips are `(COMMAND-LANDMARK
-  EVENT-LANDMARK SYMBOLP SYMBOLP SYMBOL-PACKAGE-NAME SYMBOL-PACKAGE-NAME)` and
-  its last are `(HALF-LENGTH-BUILT-IN-CLAUSES BUILT-IN-CLAUSES
-  WELL-FOUNDED-RELATION-ALIST KNOWN-PACKAGE-ALIST COMMAND-LANDMARK
-  EVENT-LANDMARK)` -- identical in the page and in Node -- and the decoded
-  image's trip name is `EQ` to the live symbol and lives in the `"ACL2"` package
-  in both.  The image is the same file.  So the divergence is not in ACL2, not in
-  the image and not in the boot-strap state: it is in the **compiled runtime**,
-  `dist/web-dylink` (page) versus `dist/node-raw-dylink2` (every Node
-  measurement).
-- Ruled out along the way, each measured: the build-status token (`:COMPILED` and
-  `:INITIALIZED` behave the same; the repo's own `acl2-status.txt` says
-  `:INITIALIZED`), the bytecode `doc.fasc` substitution (Node runs the replay
-  unchanged with it in place), the `(load ...)` path (a wrapper that `setenv`s and
-  then `(load "wasm/world-replay.lsp")` exactly as the page does also succeeds in
-  Node), `--strip-debug` on side modules (82 bytes -- `doc.fasc` is 8.03 MB of
-  doc-string *data*, not debug information), the GC-unsoundness workaround
-  (`GC_INITIAL_HEAP_SIZE=500000000`, now set in the page too, changes nothing
-  here), and installing the bytecodes compiler before `init.lisp` (now done, since
-  the page loads `doc.fasc` as bytecode).
-- **Next:** rebuild the web module with `-sENVIRONMENT=web,worker,node` (it is
-  currently `web,worker`, which is why it refuses to run under Node and why this
-  costs a two-minute page reload per hypothesis) and then bisect the two runtimes
-  on this exact input.  Note also that `world-replay.lsp` is shipped *inside* the
-  manifest, so editing it requires re-running `wasm/web/make-manifest.sh` before
-  reloading -- an earlier round of browser tests was silently running a stale
-  copy, which cost several cycles.
-- The chunked image is implemented on the *read* side (`<image>.0`, `<image>.1`,
-  ...; the flat single-file form still reads) and `ACL2_REWRITE_IMAGE` writes the
-  chunk files, but the **encoder segfaults in wasm** on the large early chunks,
-  the same wall the writer always had, so the chunk files have to be produced
-  natively -- and `nsaved_acl2` currently cannot run because the native `.fas`
-  files are gone.  Neither the vector-of-chunks idea (ACL2's `COERCE` rejects
-  `VECTOR`, and its serializer then fails on the vector) nor a container format
-  is needed if the native converter is fixed.
+   That moved the last common point of the two worlds back to the beginning, so
+   the retraction landed on a world with no primordial globals and the install
+   died with "No property was found under symbol CURRENT-THEORY-AUGMENTED ...
+   Initialize this symbol in PRIMORDIAL-WORLD-GLOBALS".  The driver now rebases
+   `*HOST-DEPENDENT-GLOBALS*` onto the live session before installing, and
+   reports every trip that differs rather than just the first.  (World trips are
+   dotted, `(NAME KEY . VALUE)`, so the value slot is `CDDR`.)
+2. **The re-entry.**  ECL caches its command line, so every `callMain` re-loads
+   the driver with the *first* call's arguments and a different `--load` is
+   ignored -- the page's second call re-ran the whole replay and died on
+   `defpkg ACL2-USER`.  The driver is now idempotent: when the world is already
+   installed it just calls ACL2's `LP` and reads the form from stdin.
+3. **The slow-alist action.**  Its default is `:break` (`hons.lisp:150`) and the
+   image's big alists are slow, because a hash table is not part of a serialized
+   value.  At a terminal you answer the debugger; in a page the first `defun`
+   hangs.  The driver sets `:warning`, and a page sets
+   `ACL2_SLOW_ALIST_ACTION=off` because ten warnings per `defun` are not
+   something a browser user can act on.
+4. **`doc.fasc` is 8,418,742 bytes**, 30 KB over what Chrome will compile
+   synchronously on a main thread, so the manifest ships the *bytecode* build of
+   that one file; the load hook dispatches on the file's magic, so a tree of wasm
+   modules may contain one bytecoded file.  `--strip-debug` does not help (82
+   bytes: it is doc-string data).
+
+Two limits remain, and they are the next work:
+
+- **The main thread is required.**  A worker has 5,551 frames of stack against a
+  page's 10,339 and the deserialiser recurses once per cons, so the page is
+  unresponsive while the image is installed.  Chunked image files (`<image>.0`,
+  `<image>.1`, ...) are implemented on the read side and would fit the worker,
+  but the encoder segfaults in wasm on the large early chunks and `nsaved_acl2`
+  cannot currently produce them because this tree's native `.fas` files are gone.
+- **Heavy books still exceed a page's stack.**  `include-book
+  "projects/apply/base"` needs about 8 MB in Node and a page has about 1 MB --
+  and a normal start needs the same, so this is ACL2's own recursion, not the
+  replay's.  Reducing frames or frame size is the only lever.
 
 ## Next steps
 
