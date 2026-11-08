@@ -104,6 +104,12 @@ let mod = null;
   mod = await Module({
     noInitialRun: true,
     noExitRuntime: true,
+    // The bdwgc in this wasm build is not fully sound: a root can be missed, and
+    // the symptom is a structure that silently goes missing rather than a
+    // crash.  wasm/acl2-wasm sets this for Node for exactly that reason, and a
+    // page inherits no environment, so set it here too -- a lost world global is
+    // one of the shapes that bug takes.
+    ENV: { GC_INITIAL_HEAP_SIZE: '500000000' },
     locateFile: (p) => 'lib/ecl-dylink.' + p.split('.').pop(),
     print: (s) => { if (!NOISE.some((re) => re.test(s))) append(s); },
     printErr: (s) => { if (!NOISE.some((re) => re.test(s))) append(s, 'err'); },

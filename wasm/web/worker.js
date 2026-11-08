@@ -81,6 +81,9 @@ async function replEnsure(mode) {
   state.mod = await create({
     noInitialRun: true,
     noExitRuntime: true,      // the runtime must survive the exit at EOF
+    // See the note in acl2-main.html: this bdwgc is not fully sound, and
+    // wasm/acl2-wasm sets the same workaround for Node.
+    ENV: { GC_INITIAL_HEAP_SIZE: '500000000' },
     locateFile: (path) => 'lib/ecl-dylink.' + path.split('.').pop(),
     print: (s) => state.lines.push(s),
     printErr: (s) => state.lines.push(s),
