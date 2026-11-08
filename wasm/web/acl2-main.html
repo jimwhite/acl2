@@ -127,8 +127,12 @@ let mod = null;
         await new Promise((r) => setTimeout(r, 0));
       }
     }
-    // LOAD-ACL2 uses this to decide the sources are already compiled.
-    FS.writeFile('/acl2/acl2-status.txt', ':COMPILED');
+    // LOAD-ACL2 and its callers read this to decide what state the sources are
+    // in.  :INITIALIZED is what a working start has (the repo's own
+    // acl2-status.txt says exactly this), because the image *is* an initialized
+    // world; :COMPILED makes ACL2 think initialization still has to happen and
+    // the install then fails in EXTEND-WORLD1.
+    FS.writeFile('/acl2/acl2-status.txt', ':INITIALIZED');
     append(`[page] preloaded ${manifest.length} files, ` +
            `${(bytes / 1048576).toFixed(1)} MB`, 'dim');
 

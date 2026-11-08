@@ -1603,6 +1603,44 @@ The real fixes are to make the deserialiser iterative (see "chunked, shallowly
 recursive image format" above) or to build that one module with `--strip-debug`,
 both of which would let the whole thing live in a worker again.
 
+### Where the browser version stands (2026-11-08)
+
+A worker is the only place `WebAssembly.Compile` is allowed for a module over
+8 MB, so the worker is where this has to end up; the main-thread page is a
+diagnostic, not the destination.
+
+- `acl2-main.html` (main thread) preloads 107 files (80.5 MB) and runs the reuse
+  through `load-acl2` (1.7 s), the `*1*` AOT file, the image (1.9 s), the four
+  constants, and the 6,460 attachment variables, and then stops with
+
+  ```
+  HARD ACL2 ERROR in EXTEND-WORLD1: Extend-world1 was called upon to ``extend''
+  CURRENT-ACL2-WORLD.  But the world supplied to extend-world1 ... is not an
+  extension of the current CURRENT-ACL2-WORLD.
+  ```
+
+  **This does not reproduce in Node.**  Ruled out, each measured: the
+  build-status token (`:COMPILED` and `:INITIALIZED` behave the same; the repo's
+  own `acl2-status.txt` says `:INITIALIZED`), the bytecode `doc.fasc`
+  substitution (Node runs the replay unchanged with it in place), and the load
+  path (a wrapper that `setenv`s and then `(load "wasm/world-replay.lsp")`
+  exactly as the page does also succeeds in Node).  What is left is the *web*
+  build binary (`dist/web-dylink`, which the page loads) differing from the node
+  build (`dist/node-raw-dylink2`, which every measurement above uses); the web
+  build does not run under Node, so it cannot be reproduced locally as things
+  stand.  Next: put progress markers either side of `(memoize-init)` -- that is
+  the only form between the attachment binding and "installing the world" -- and
+  read them off the page, or teach the web build to run headless in Node so this
+  is a 30 s iteration instead of a two-minute page reload.
+- The chunked image is implemented on the *read* side (`<image>.0`, `<image>.1`,
+  ...; the flat single-file form still reads) and `ACL2_REWRITE_IMAGE` writes the
+  chunk files, but the **encoder segfaults in wasm** on the large early chunks,
+  the same wall the writer always had, so the chunk files have to be produced
+  natively -- and `nsaved_acl2` currently cannot run because the native `.fas`
+  files are gone.  Neither the vector-of-chunks idea (ACL2's `COERCE` rejects
+  `VECTOR`, and its serializer then fails on the vector) nor a container format
+  is needed if the native converter is fixed.
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed

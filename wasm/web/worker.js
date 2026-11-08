@@ -114,6 +114,12 @@ async function bootWorldReplay(state) {
   }
   log(`[web] preloaded ${manifest.length} files, ` +
       `${(bytes / 1048576).toFixed(1)} MB`);
+  // LOAD-ACL2 and its callers read this to decide what state the sources are
+  // in.  :INITIALIZED is what a working start has (the repo's own
+  // acl2-status.txt says exactly this), because the image *is* an initialized
+  // world; :COMPILED makes ACL2 think initialization still has to happen and
+  // the install then fails in EXTEND-WORLD1.
+  FS.writeFile('/acl2/acl2-status.txt', ':INITIALIZED');
   status('installing the world image');
   // Empty stdin: the replay runs, reaches ACL2's loop, and hits EOF at once.
   state.input = {text: '', pos: 0};

@@ -92,15 +92,82 @@
 
 (ext:install-bytecodes-compiler)
 
+; The image is normally split into several files: <image>.0, <image>.1, ...
+;
+; SER-DECODE-FROM-STREAM recurses once per CONS of the object it reads, so one
+; flat 138,373-triple image needs a stack proportional to the whole world, while
+; a chunk of 2,000 triples needs one proportional to 2,000.  That is the
+; difference between the 5,551 frames a web worker has and the 10,339 a main
+; thread has (wasm/web/_stackprobe.html) -- and a worker is where
+; WebAssembly.Compile is permitted for a module over 8 MB, so it decides whether
+; ACL2 can run in a worker at all.
+;
+; One file per chunk rather than a container format: the browser manifest is a
+; list of files already, and a vector of chunks is rejected by ACL2's serializer.
+; A single-file image still reads correctly; it just needs the bigger stack.
+(defparameter cl-user::*image-chunk-size* 2000)
+
+(defun cl-user::chunk-path (path i)
+  (format nil "~a.~d" path i))
+
+(defun cl-user::read-chunked-image (path)
+  (let ((chunks nil)
+        (i 0))
+    (loop
+     (let ((p (cl-user::chunk-path path i)))
+       (if (probe-file p)
+           (progn (with-open-file (s p :direction :input)
+                    (push (ser-decode-from-stream nil :never s) chunks))
+                  (incf i))
+           (return))))
+    (when chunks
+      (let ((acc nil))
+        (dolist (c (nreverse chunks))
+          (setq acc (nconc acc c)))
+        acc))))
+
+(defun cl-user::read-world-image (path)
+  (or (cl-user::read-chunked-image path)
+      (with-open-file (s path :direction :input)
+        (ser-decode-from-stream nil :never s))))
+
 ; The image itself.
 (let ((t0 (get-internal-real-time)))
   (defparameter cl-user::*saved-world*
-    (with-open-file (s cl-user::*image-path* :direction :input)
-      (ser-decode-from-stream nil :never s)))
+    (cl-user::read-world-image cl-user::*image-path*))
   (cl-user::replay-step (format nil "deserialized ~a (~:d triples)"
                          cl-user::*image-path*
                          (length cl-user::*saved-world*))
                  t0))
+
+; Split an existing image into chunk files, then stop.  Run this once in Node,
+; where the stack is big enough to read a flat image:
+;
+;   ACL2_WORLD_IMAGE=/tmp/world2.ser ACL2_REWRITE_IMAGE=/tmp/world2.ser
+;     node --stack-size=8000 .../ecl.js --load wasm/world-replay.lsp
+;
+; This writes /tmp/world2.ser.0, .1, ... and nothing else.
+(when (let ((s (ext:getenv "ACL2_REWRITE_IMAGE")))
+        (and s (plusp (length s))))
+  (let ((out (ext:getenv "ACL2_REWRITE_IMAGE"))
+        (n 0)
+        (cur nil)
+        (i 0))
+    (labels ((flush ()
+               (when cur
+                 (with-open-file (s (cl-user::chunk-path out i)
+                                    :direction :output :if-exists :supersede)
+                   (ser-encode-to-stream (nreverse cur) s))
+                 (incf i)
+                 (setq cur nil n 0))))
+      (dolist (x cl-user::*saved-world*)
+        (push x cur)
+        (when (>= (incf n) cl-user::*image-chunk-size*)
+          (flush)))
+      (flush))
+    (format t "~&;; replay: wrote ~s chunk files for ~a~%" i out)
+    (force-output))
+  (si:quit))
 
 ; Diagnostic: what does the image say about a constant the raw side needs?
 (when (let ((s (ext:getenv "ACL2_REPLAY_DEBUG"))) (and s (plusp (length s))))
@@ -245,7 +312,15 @@
 ; memoized function calls MEMOIZE-FN, which refuses to work until this has run
 ; ("Memoize-fn:  *MEMOIZE-INIT-DONE* is still nil").  The boot strap runs it
 ; when it processes its memorum events.
+;
+; The two markers are not decoration: this is the only form between binding the
+; attachment variables and installing the world, and the browser reaches it and
+; then fails in EXTEND-WORLD1 in a way Node does not (WASM-PORT-NOTES.md,
+; "Where the browser version stands"), so the page needs to say whether the
+; failure is inside this call.
+(format t "~&;; replay: memoize-init ...") (force-output)
 (memoize-init)
+(format t "~&;; replay: memoize-init done") (force-output)
 
 ; ACL2's own reader is needed here: add-trip reads forms (the cltl-command
 ; blocks and the oneified code), and under the standard readtable a dispatch
