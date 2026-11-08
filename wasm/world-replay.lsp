@@ -79,6 +79,15 @@
         (setf (cdr hook) #'cl-user::load-fasc)
         (push (cons "fasc" #'cl-user::load-fasc) ext::*load-hooks*))))
 
+; Install the bytecodes compiler *first*.  A module (.fasc that is a wasm side
+; module) does not care, but the browser payload ships DOC.FASC as bytecode -- it
+; is 30 KB over the 8 MB that Chrome will compile synchronously on a main thread
+; -- and this tree's rule for loading bytecode .fasc is that the compiler must be
+; installed before INIT.LISP (ECL-PORT-NOTES.md).  Installing it later leaves
+; bytecode loading to whatever the runtime does by default, which is different
+; code in the two builds.
+(ext:install-bytecodes-compiler)
+
 (load "init.lisp")
 (in-package "ACL2")
 
@@ -89,8 +98,6 @@
 (let ((t0 (get-internal-real-time)))
   (load "acl2-exec-aot.fasc")
   (cl-user::replay-step "loaded the ahead-of-time *1* file" t0))
-
-(ext:install-bytecodes-compiler)
 
 ; The image is normally split into several files: <image>.0, <image>.1, ...
 ;
@@ -259,6 +266,37 @@
               (ext:exit 1))))
   (enter-boot-strap-mode nil (get-os)))
 (push nil *acl2-unwind-protect-stack*)
+
+; What did ENTER-BOOT-STRAP-MODE actually build here?  SET-W! retracts to the
+; longest common prefix, and that consults world globals, so it needs the live
+; world to have them.  The browser and Node builds agree on the three values
+; below (os=:UNIX, 686 triples, global present), so if they still differ it is
+; in a *trip* -- EXTEND-WORLD1 matches the live world against the image with
+; EQUAL, so one trip that differs (a pathname, a package) moves the common
+; prefix.  Printing the first and last trip names is enough to see that.
+(let ((l (w *the-live-state*)))
+  (format t "~&;; replay: os=~s live-world=~s triples, current-theory-augmented ~a~%"
+          (get-os)
+          (length l)
+          (if (eq (getpropc 'current-theory-augmented 'global-value
+                            :missing l)
+                  :missing)
+              "MISSING"
+              "present"))
+  (format t "~&;; replay: first trips ~s~%"
+          (mapcar #'car (if (> (length l) 6) (subseq l 0 6) l)))
+  (format t "~&;; replay: last trips ~s~%" (mapcar #'car (last l 6))))
+; Is the image's data made of the *same symbols* the live world uses?  The live
+; world is identical in both builds (same os, same 686 trips, same first and
+; last trip names) and the image is the same file, so the remaining way the two
+; can differ is that EXTEND-WORLD1's EQUAL fails on symbols because the decode
+; interned them into packages of its own.
+(let ((name (car (car cl-user::*saved-world*))))
+  (format t "~&;; replay: image trip name ~s, EQ to the live symbol: ~a, package ~s~%"
+          name
+          (eq name (car (car (w *the-live-state*))))
+          (and (symbolp name) (symbol-package name))))
+(force-output)
 
 ; The attachment side of the *1* symbols.
 ;
