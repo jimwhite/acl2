@@ -99,10 +99,14 @@ WFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false \
 if [ "${WEB:-0}" = 1 ]; then
   # Browser build.  Differences from the Node build, and why:
   #
-  #   -sFORCE_FILESYSTEM=1, -sENVIRONMENT=web,worker
+  #   -sFORCE_FILESYSTEM=1, -sENVIRONMENT=web,worker,node
   #       There is no host filesystem in a page, so the module gets an
   #       in-memory filesystem; a harness has to preload the ACL2 sources,
-  #       the .fasc files and any books into it before main runs.
+  #       the .fasc files and any books into it before main runs.  "node" is in
+  #       the list so the *same* binary can be bisected headlessly: the page and
+  #       the Node build do not behave identically (see WASM-PORT-NOTES.md,
+  #       "Where the browser version stands"), and a two-minute page reload per
+  #       hypothesis is not a debugging loop.
   #   -sMODULARIZE=1 -sINVOKE_RUN=0
   #       Gives the worker a factory it can await, so files can be written to
   #       MEMFS first and CALLMAIN started afterwards.  The factory is the
@@ -115,7 +119,7 @@ if [ "${WEB:-0}" = 1 ]; then
   WEB_STACK_BYTES=$(( ${WEB_STACK_MB:-512} * 1048576 ))
   WEB_INITIAL_BYTES=$(( ${WEB_MEMORY_MB:-1024} * 1048576 ))
   WFLAGS="-fwasm-exceptions -mllvm -wasm-use-legacy-eh=false \
--sSUPPORT_LONGJMP=wasm -sFORCE_FILESYSTEM=1 -sENVIRONMENT=web,worker \
+-sSUPPORT_LONGJMP=wasm -sFORCE_FILESYSTEM=1 -sENVIRONMENT=web,worker,node \
 -sALLOW_MEMORY_GROWTH=1 -sMAXIMUM_MEMORY=4GB \
 -sSTACK_SIZE=$WEB_STACK_BYTES -sINITIAL_MEMORY=$WEB_INITIAL_BYTES \
 -sEXIT_RUNTIME=1 -sMODULARIZE=1 -sINVOKE_RUN=0 \

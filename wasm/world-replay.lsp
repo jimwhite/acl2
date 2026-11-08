@@ -286,16 +286,63 @@
   (format t "~&;; replay: first trips ~s~%"
           (mapcar #'car (if (> (length l) 6) (subseq l 0 6) l)))
   (format t "~&;; replay: last trips ~s~%" (mapcar #'car (last l 6))))
-; Is the image's data made of the *same symbols* the live world uses?  The live
-; world is identical in both builds (same os, same 686 trips, same first and
-; last trip names) and the image is the same file, so the remaining way the two
-; can differ is that EXTEND-WORLD1's EQUAL fails on symbols because the decode
-; interned them into packages of its own.
-(let ((name (car (car cl-user::*saved-world*))))
-  (format t "~&;; replay: image trip name ~s, EQ to the live symbol: ~a, package ~s~%"
-          name
-          (eq name (car (car (w *the-live-state*))))
-          (and (symbolp name) (symbol-package name))))
+; A world image records globals that describe *where it was built*, and the
+; install requires the image to contain the live world as a tail (EXTEND-WORLD1
+; compares with EQUAL), so a world built in /workspaces/acl2-ecl cannot be
+; installed in a session whose cwd is /acl2: the two disagree on
+;
+;   (PROJECT-DIR-ALIST GLOBAL-VALUE ((:SYSTEM . "/workspaces/acl2-ecl/books/")))
+;   (PROJECT-DIR-ALIST GLOBAL-VALUE ((:SYSTEM . "/acl2/books/")))
+;
+; and that one trip moves the last common point of the two worlds back to the
+; beginning, after which the install fails with a missing primordial global.
+; This is a property of the session, not of the saved world, so take the live
+; value.  Add to this list any other global that names the host environment.
+(defparameter cl-user::*host-dependent-globals* '(project-dir-alist))
+
+(defun cl-user::rebase-host-globals (wrld)
+  (let ((n 0))
+    (dolist (trip wrld)
+      (when (and (consp trip)
+                 (eq (cadr trip) 'global-value)
+                 (member-eq (car trip) cl-user::*host-dependent-globals*))
+        (let ((live (getpropc (car trip) 'global-value :missing
+                              (w *the-live-state*))))
+          (unless (or (eq live :missing)
+                      (equal (cddr trip) live))
+            (format t "~&;; replay: rebasing ~s for this session~%" (car trip))
+            ; World trips are dotted: (NAME KEY . VALUE), so the value is CDDR.
+            (setf (cddr trip) live)
+            (incf n)))))
+    n))
+
+(format t "~&;; replay: rebased ~s host-dependent globals~%"
+        (cl-user::rebase-host-globals cl-user::*saved-world*))
+
+; EXTEND-WORLD1 matches the live world against the image with EQUAL, so if the
+; install fails it fails on a *value* inside a trip.  Print every trip that
+; differs (the first ten), not just the first, so one run shows them all.
+(let* ((img cl-user::*saved-world*)
+       (live (w *the-live-state*))
+       (n (- (length img) (length live))))
+  (if (minusp n)
+      (format t "~&;; replay: the image is shorter than the live world~%")
+      (let ((tail (nthcdr n img))
+            (shown 0))
+        (format t "~&;; replay: image tail EQUAL to the live world: ~a~%"
+                (equal tail live))
+        (loop for a in tail
+              for b in live
+              for i from 0
+              unless (equal a b)
+                do (when (< shown 10)
+                     (let ((*print-length* 6)
+                           (*print-level* 3))
+                       (format t "~&;; replay: trip ~s differs:~%  image: ~s~%  live:  ~s~%"
+                               i
+                               (list (car a) (cadr a) (cddr a))
+                               (list (car b) (cadr b) (cddr b))))
+                     (incf shown))))))
 (force-output)
 
 ; The attachment side of the *1* symbols.
