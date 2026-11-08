@@ -494,5 +494,12 @@
 
 (format t "~&;; replay: at the loop in ~,2f s~%" (cl-user::replay-elapsed))
 
+; From here the session is usable.  The browser harness has no way to hand ACL2
+; one line at a time except by re-entering MAIN, and ECL replays the original
+; command line when it does, so wasm/web/replay-web.lsp checks this flag and
+; simply calls (ACL2::LP) instead of reinstalling the world.
+(setq cl-user::*replay-installed* t)
+(force-output)
+
 (ext:chdir (or (ext:getenv "ACL2_WASM_INVOCATION_DIR") cl-user::*acl2-dir*))
 (acl2-default-restart)

@@ -12,6 +12,19 @@
 
 (setq *load-verbose* nil)
 
+; ECL caches its command line, so every CALLMAIN re-loads *this* file with the
+; arguments of the first call -- a different --load on a later call is ignored.
+; That is why the driver has to be idempotent: the second and later calls are
+; the harness asking the already-installed session for its prompt again, with
+; the next form waiting on stdin.  See the note in world-replay.lsp where the
+; flag is set.
+(when (and (boundp 'cl-user::*replay-installed*)
+           cl-user::*replay-installed*)
+  ; FIND-SYMBOL, not ACL2::LP: the ACL2 package does not exist yet when this
+  ; file is first READ, and the reader would fail on the package prefix.
+  (funcall (find-symbol "LP" "ACL2"))
+  (ext:exit 0))
+
 ; The wasm build has 30-bit fixnums, which ACL2 accepts only if
 ; ACL2_SMALL_FIXNUMS is set; ACL2_SNAPSHOT_INFO=NONE keeps ACL2 from running git
 ; for a commit hash.
