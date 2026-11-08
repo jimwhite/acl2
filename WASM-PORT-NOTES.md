@@ -1583,6 +1583,26 @@ to reduce frames or frame size (a native backend that keeps fewer values live pe
 frame, or turning ACL2's deep non-tail recursions into iteration); it cannot come
 from the engine.
 
+### Two engine limits that fight each other
+
+A page and a worker are good at different things, and ACL2 needs both:
+
+| | stack | wasm compilation |
+| --- | --- | --- |
+| main thread | 10,339 frames — enough | **refused** for buffers over 8 MB (`WebAssembly.Compile is disallowed on the main thread`) |
+| web worker | 5,551 frames — too few | allowed |
+
+So `acl2-replay.html` (worker) installs the image only as far as the
+deserialisation recursion and dies with `RangeError`, and `acl2-main.html`
+(main thread) gets past that and then cannot compile `doc.fasc`, which is
+8,418,742 bytes — **30 KB over the 8 MB line**.  `make-manifest.sh` therefore
+ships the *bytecode* build of `doc.fasc` (it is in `/opt/eclwasm/bytecode`) in
+the browser payload only; the load hook dispatches on the file's magic, so a tree
+of modules may contain one bytecoded file, and nothing else is over the limit.
+The real fixes are to make the deserialiser iterative (see "chunked, shallowly
+recursive image format" above) or to build that one module with `--strip-debug`,
+both of which would let the whole thing live in a worker again.
+
 ## Next steps
 
 1. **Fix wasm book certification.** *Done (2026-11-05.)* It was a malformed

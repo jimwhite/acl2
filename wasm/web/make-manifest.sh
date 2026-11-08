@@ -45,9 +45,20 @@ pack() {
 {
   printf '[\n'
   # ACL2 itself: initialize-acl2 ld's the sources, so both are needed.
+  #
+  # One exception: Chrome refuses to compile a wasm module larger than 8 MB
+  # synchronously on the main thread, and doc.fasc is 8,418,742 bytes -- 30 KB
+  # over.  The page has to use the main thread (a worker gets half the stack),
+  # so ship the bytecode build of that one file instead; the load hook
+  # dispatches on the file's magic, so a tree of modules may contain it.
+  BYTECODE=${BYTECODE:-/opt/eclwasm/bytecode}
   for f in "$ROOT"/*.lisp "$ROOT"/*.fasc; do
     b=${f##*/}
-    pack "$f" "/acl2/$b"
+    src=$f
+    if [ "$b" = "doc.fasc" ] && [ -f "$BYTECODE/doc.fasc" ]; then
+      src="$BYTECODE/doc.fasc"
+    fi
+    pack "$src" "/acl2/$b"
   done
   pack "$HERE/acl2-web.lsp" "/acl2/web-acl2.lsp"
   # The world-image replay: the web wrapper, the shared driver, and the image
