@@ -492,6 +492,14 @@
   (check-acl2-initialization)
   (cl-user::replay-step "passed ACL2's initialization checks" t0))
 
+; The default action on a slow fast-alist is :break (hons.lisp:150), and the
+; image's big alists are slow because a hash table is not part of a serialized
+; value.  Interactive ACL2 survives that -- the user answers the debugger -- but
+; a page does not: the first DEFUN reaches HONS-GET on one of those alists and
+; the session hangs in ECL's debugger.  :warning keeps the information and does
+; not break.
+(ld '((set-slow-alist-action :warning)))
+
 (format t "~&;; replay: at the loop in ~,2f s~%" (cl-user::replay-elapsed))
 
 ; From here the session is usable.  The browser harness has no way to hand ACL2
