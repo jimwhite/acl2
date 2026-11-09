@@ -2154,3 +2154,71 @@ Two things do follow from point 1:
    are small and self-contained; the `-O0` override in ECL's configure is
    worth revisiting upstream, as is the `MAIN_MODULE=1` + `ENABLE_DLOPEN`
    combination (ECL has no wasm branch for its loader at all).
+
+## A worker has half a page's stack, and the boot needs 918 kB (2026-11-09)
+
+This is what decides whether an ACL2 JupyterLite kernel can exist, because
+JupyterLite runs kernels in Web Workers.
+
+**Measured (Chromium 150, Linux arm64, `wasm/web/_stackprobe.html` and a copy
+that runs the same probe in a blob worker):**
+
+| Context | max JS frames | ≈ V8 stack |
+| --- | --- | --- |
+| page (main thread) | 10,339 | ~984 kB |
+| Web Worker | 5,301 | ~500 kB |
+
+Half, as the earlier 5,551-vs-10,339 measurement suggested.
+
+**And the boot's floor, which was never measured before, only bounded:** the
+world-image replay needs **~918 kB** of V8 stack, i.e. 66 kB less than a
+Chrome page has and 418 kB more than a Chrome worker has.  So the page has
+always been booting with almost no headroom, and a worker cannot boot ACL2 at
+all today.  (Method: binary-search `node --stack-size=N` over
+`/tmp/webrun-page.js '(+ 1 2)'`, with `replay: at the loop in` as the success
+marker; each probe is one full boot, ~10 s.)
+
+**Where the boot spends it.**  Instrumenting the replay's `load-fasc` to print
+each module and each load's completion shows the run dying after the *last*
+module (`boot-strap-pass-2-b`) has loaded and before `load-acl2` returns.  The
+only work left at that point is `(load "defpkgs.lisp")`, and the offending
+form is the `ACL2-USER` package:
+
+```lisp
+(defpkg "ACL2-USER"
+  (union-eq *acl2-exports*
+            *common-lisp-symbols-from-main-lisp-package*))
+```
+
+`*acl2-exports*` has **1,664** symbols and the union **2,441**.  ACL2's
+`union-eq` is not tail recursive in its `cons` branch, it is *compiled* code,
+and under `-DECL_C_COMPATIBLE_VARIADIC_DISPATCH` every compiled Lisp call
+costs 2 wasm frames: 1,664 levels x ~550 B = the 918 kB, and the observed
+stack trace is exactly the repeating `wasm-function[N]` /
+`variadic_dispatch1` pair.
+
+**The fix is not done, but it is aimed.**  Overriding `union-eq` with an
+iterative version before `defpkgs.lisp` runs moved the failure *past* the
+package creation — to ACL2's initialization checks, where the probe's own
+crudeness broke something (`setf symbol-function` on a compiled function plus
+an `nconc` that first corrupted a shared constant).  Two ways to land it
+properly, both in `acl2-ecl`:
+
+1. an `#+ecl` raw-Lisp `union-eq` installed only while `defpkgs.lisp` loads,
+   or a generated literal export list in that file;
+2. one wasm frame per compiled call instead of two (the ECL call-ABI work),
+   which would halve *every* number here rather than just the boot's.
+
+Until one of them lands, the honest statement is: ACL2 runs in a Firefox page
+(and in a Node `--stack-size=` of 1,000+), not in a Chrome worker.
+
+**ECL changes are now on a branch.**  `https://gitlab.com/jimwhite/ecl`,
+branch `acl2-wasm`: three commits on top of the "widen bytecode operands"
+commit `cb1e2e84` (`time.d` `clock()`, `stacks.d` explicit C stack size,
+`interpreter.d`+`main.d` activation records and the page entry points), which
+is exactly `wasm/ecl-patches/*.patch` applied in order.  `build-ecl-wasm.sh`
+now tests each patch both ways before touching the tree, so `ECL_SRC` may be
+either the base commit or that branch — use the branch and the patch files
+stop being a second source of truth.
+
+`JUPYTERLITE-KERNEL-DESIGN.md` turns all of this into the kernel design.

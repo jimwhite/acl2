@@ -24,7 +24,12 @@
 #
 # Environment variables:
 #
-#   ECL_SRC        ECL source tree (required; must match host ECL version)
+#   ECL_SRC        ECL source tree (required; must match host ECL version).
+#                  Either a checkout of the "widen bytecode operands" commit
+#                  cb1e2e84, or of the acl2-wasm branch of
+#                  https://gitlab.com/jimwhite/ecl, which is that commit plus
+#                  everything in wasm/ecl-patches applied as three commits.
+#                  Each patch is skipped when the tree already contains it.
 #   WORK           build/install root (default /opt/eclwasm)
 #   EMSDK_DIR      Emscripten SDK (default /opt/emsdk)
 #   JOBS           parallel make jobs (default: nproc)
@@ -277,7 +282,17 @@ tar -C "$ECL_SRC" -cf - --exclude='./build' --exclude='./.git' . |
 log "Applying ECL wasm patches"
 for p in "$(dirname "$0")/ecl-patches"/*.patch; do
   [ -e "$p" ] || continue
-  patch -d "$NODE_SRC" -p1 < "$p"
+  # ECL_SRC may already contain them (the acl2-wasm branch of the fork), so
+  # test both ways before touching the tree: --forward would skip hunks of a
+  # half-applied patch and leave a tree that compiles but does not work.
+  if patch -d "$NODE_SRC" -p1 --dry-run --forward --silent < "$p" >/dev/null 2>&1; then
+    patch -d "$NODE_SRC" -p1 < "$p"
+  elif patch -d "$NODE_SRC" -p1 --dry-run --reverse --silent < "$p" >/dev/null 2>&1; then
+    log "  $(basename "$p"): already applied"
+  else
+    echo "error: $(basename "$p") neither applies nor is already applied to $ECL_SRC" >&2
+    exit 1
+  fi
 done
 
 # Put the wasm link settings where COMPILER::BUILD-PROGRAM will find them.
