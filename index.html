@@ -44,12 +44,12 @@ loads at run time.</p>
       <code>textbook/chap10/fact</code> and
       <code>textbook/chap11/{perm,perm-append,qsort,mergesort}</code>
       (<code>qsort</code> and <code>mergesort</code> both define
-      <code>orderedp</code>, so include one or the other). Loading a compiled
-      book is the deepest recursion a page sees: these fit, and a book compiled
-      from its source instead (most community books, e.g.
-      <code>projects/apply/top</code>) needs more than the ~1 MB of engine
-      stack a page gets and is refused with a message rather than hanging.
-      Firefox gives a page about three times the stack.</span></li>
+      <code>orderedp</code>, so include one or the other). Community books are
+      shipped the same way, and
+      <code>(include-book "projects/apply/top" :dir :system)</code> loads in
+      4.4 s -- but it needs about 1.09 MB of engine stack, which a Chrome page
+      does not have and a Firefox page does. In Chrome it is refused with a
+      message rather than hanging.</span></li>
   <li><a href="repl.html">Interactive ECL console</a>
       <span>A real REPL: one ECL instance stays alive between inputs, so
       definitions and values persist. Enter evaluates; arrow keys recall

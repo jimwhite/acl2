@@ -512,7 +512,7 @@
   {
     "src": "files/acl2_wasm_world-replay.lsp.gz",
     "dst": "/acl2/wasm/world-replay.lsp",
-    "mtime": 1794174628
+    "mtime": 1794182245
   },
   {
     "src": "files/acl2_world-image.ser.gz",
@@ -527,12 +527,12 @@
   {
     "src": "files/acl2_books_projects_apply_top.cert.gz",
     "dst": "/acl2/books/projects/apply/top.cert",
-    "mtime": 1793907271
+    "mtime": 1794184414
   },
   {
     "src": "files/acl2_books_projects_apply_top.fasc.gz",
     "dst": "/acl2/books/projects/apply/top.fasc",
-    "mtime": 1794173449
+    "mtime": 1794185127
   },
   {
     "src": "files/acl2_books_projects_apply_loop.lisp.gz",
@@ -542,12 +542,12 @@
   {
     "src": "files/acl2_books_projects_apply_loop.cert.gz",
     "dst": "/acl2/books/projects/apply/loop.cert",
-    "mtime": 1793906744
+    "mtime": 1794184369
   },
   {
     "src": "files/acl2_books_projects_apply_loop.fasc.gz",
     "dst": "/acl2/books/projects/apply/loop.fasc",
-    "mtime": 1794173449
+    "mtime": 1794185127
   },
   {
     "src": "files/acl2_books_projects_apply_relink-fancy-scion.lisp.gz",
@@ -557,12 +557,12 @@
   {
     "src": "files/acl2_books_projects_apply_relink-fancy-scion.cert.gz",
     "dst": "/acl2/books/projects/apply/relink-fancy-scion.cert",
-    "mtime": 1793906222
+    "mtime": 1794184324
   },
   {
     "src": "files/acl2_books_projects_apply_relink-fancy-scion.fasc.gz",
     "dst": "/acl2/books/projects/apply/relink-fancy-scion.fasc",
-    "mtime": 1794173449
+    "mtime": 1794185127
   },
   {
     "src": "files/acl2_books_projects_apply_definductor.lisp.gz",
@@ -572,12 +572,12 @@
   {
     "src": "files/acl2_books_projects_apply_definductor.cert.gz",
     "dst": "/acl2/books/projects/apply/definductor.cert",
-    "mtime": 1793871476
+    "mtime": 1794182918
   },
   {
     "src": "files/acl2_books_projects_apply_definductor.fasc.gz",
     "dst": "/acl2/books/projects/apply/definductor.fasc",
-    "mtime": 1794173449
+    "mtime": 1794185127
   },
   {
     "src": "files/acl2_books_projects_apply_loop-lemmas.lisp.gz",
@@ -587,12 +587,12 @@
   {
     "src": "files/acl2_books_projects_apply_loop-lemmas.cert.gz",
     "dst": "/acl2/books/projects/apply/loop-lemmas.cert",
-    "mtime": 1793905489
+    "mtime": 1794184250
   },
   {
     "src": "files/acl2_books_projects_apply_loop-lemmas.fasc.gz",
     "dst": "/acl2/books/projects/apply/loop-lemmas.fasc",
-    "mtime": 1794173449
+    "mtime": 1794185126
   },
   {
     "src": "files/acl2_books_projects_apply_apply.lisp.gz",
@@ -602,12 +602,12 @@
   {
     "src": "files/acl2_books_projects_apply_apply.cert.gz",
     "dst": "/acl2/books/projects/apply/apply.cert",
-    "mtime": 1793905291
+    "mtime": 1794184197
   },
   {
     "src": "files/acl2_books_projects_apply_apply.fasc.gz",
     "dst": "/acl2/books/projects/apply/apply.fasc",
-    "mtime": 1794173449
+    "mtime": 1794185126
   },
   {
     "src": "files/acl2_books_projects_apply_base.lisp.gz",
@@ -617,12 +617,12 @@
   {
     "src": "files/acl2_books_projects_apply_base.cert.gz",
     "dst": "/acl2/books/projects/apply/base.cert",
-    "mtime": 1793904759
+    "mtime": 1794185332
   },
   {
     "src": "files/acl2_books_projects_apply_base.fasc.gz",
     "dst": "/acl2/books/projects/apply/base.fasc",
-    "mtime": 1794173449
+    "mtime": 1794185332
   },
   {
     "src": "files/acl2_books_centaur_bitops_portcullis.lisp.gz",
@@ -647,12 +647,12 @@
   {
     "src": "files/acl2_books_system_apply_apply-constraints.cert.gz",
     "dst": "/acl2/books/system/apply/apply-constraints.cert",
-    "mtime": 1793893478
+    "mtime": 1794182735
   },
   {
     "src": "files/acl2_books_system_apply_apply-constraints.fasc.gz",
     "dst": "/acl2/books/system/apply/apply-constraints.fasc",
-    "mtime": 1794173449
+    "mtime": 1794184553
   },
   {
     "src": "files/acl2_books_system_apply_apply-prim.lisp.gz",
@@ -662,12 +662,12 @@
   {
     "src": "files/acl2_books_system_apply_apply-prim.cert.gz",
     "dst": "/acl2/books/system/apply/apply-prim.cert",
-    "mtime": 1793892325
+    "mtime": 1794182688
   },
   {
     "src": "files/acl2_books_system_apply_apply-prim.fasc.gz",
     "dst": "/acl2/books/system/apply/apply-prim.fasc",
-    "mtime": 1794173449
+    "mtime": 1794184553
   },
   {
     "src": "files/acl2_books_system_apply_apply-prim-support.lisp.gz",
@@ -677,12 +677,12 @@
   {
     "src": "files/acl2_books_system_apply_apply-prim-support.cert.gz",
     "dst": "/acl2/books/system/apply/apply-prim-support.cert",
-    "mtime": 1793871459
+    "mtime": 1794182548
   },
   {
     "src": "files/acl2_books_system_apply_apply-prim-support.fasc.gz",
     "dst": "/acl2/books/system/apply/apply-prim-support.fasc",
-    "mtime": 1794173449
+    "mtime": 1794184552
   },
   {
     "src": "files/acl2_books_cowles_portcullis.lisp.gz",
@@ -788,5 +788,65 @@
     "src": "files/acl2_books_textbook_chap11_mergesort.fasc.gz",
     "dst": "/acl2/books/textbook/chap11/mergesort.fasc",
     "mtime": 1794175525
+  },
+  {
+    "src": "files/acl2_books_system_legal-variablep.lisp.gz",
+    "dst": "/acl2/books/system/legal-variablep.lisp",
+    "mtime": 1793775243
+  },
+  {
+    "src": "files/acl2_books_system_legal-variablep.cert.gz",
+    "dst": "/acl2/books/system/legal-variablep.cert",
+    "mtime": 1794183229
+  },
+  {
+    "src": "files/acl2_books_system_legal-variablep.fasc.gz",
+    "dst": "/acl2/books/system/legal-variablep.fasc",
+    "mtime": 1794184552
+  },
+  {
+    "src": "files/acl2_books_system_termp.lisp.gz",
+    "dst": "/acl2/books/system/termp.lisp",
+    "mtime": 1793775243
+  },
+  {
+    "src": "files/acl2_books_system_termp.cert.gz",
+    "dst": "/acl2/books/system/termp.cert",
+    "mtime": 1794183271
+  },
+  {
+    "src": "files/acl2_books_system_termp.fasc.gz",
+    "dst": "/acl2/books/system/termp.fasc",
+    "mtime": 1794184552
+  },
+  {
+    "src": "files/acl2_books_ordinals_lexicographic-ordering-without-arithmetic.lisp.gz",
+    "dst": "/acl2/books/ordinals/lexicographic-ordering-without-arithmetic.lisp",
+    "mtime": 1793775241
+  },
+  {
+    "src": "files/acl2_books_ordinals_lexicographic-ordering-without-arithmetic.cert.gz",
+    "dst": "/acl2/books/ordinals/lexicographic-ordering-without-arithmetic.cert",
+    "mtime": 1794183315
+  },
+  {
+    "src": "files/acl2_books_ordinals_lexicographic-ordering-without-arithmetic.fasc.gz",
+    "dst": "/acl2/books/ordinals/lexicographic-ordering-without-arithmetic.fasc",
+    "mtime": 1794185126
+  },
+  {
+    "src": "files/acl2_books_tools_flag.lisp.gz",
+    "dst": "/acl2/books/tools/flag.lisp",
+    "mtime": 1793775243
+  },
+  {
+    "src": "files/acl2_books_tools_flag.cert.gz",
+    "dst": "/acl2/books/tools/flag.cert",
+    "mtime": 1794183904
+  },
+  {
+    "src": "files/acl2_books_tools_flag.fasc.gz",
+    "dst": "/acl2/books/tools/flag.fasc",
+    "mtime": 1794183904
   }
 ]
