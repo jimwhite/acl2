@@ -30,3 +30,7 @@ textbook/chap11/perm
 textbook/chap11/perm-append
 textbook/chap11/qsort
 textbook/chap11/mergesort
+system/legal-variablep
+system/termp
+ordinals/lexicographic-ordering-without-arithmetic
+tools/flag

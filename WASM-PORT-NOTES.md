@@ -1917,6 +1917,59 @@ The same thing should work for the community books: certify with
 `wasm/web/books.txt`.  What that does not fix is start-up time (45 s per book)
 or the size of the payload.
 
+### The community `projects/apply` chain, and what `basic` would take (2026-11-08)
+
+The whole `projects/apply` chain now goes through the same pipeline:
+`system/legal-variablep`, `system/termp`,
+`system/apply/{apply-prim-support,apply-prim,apply-constraints,apply}`,
+`ordinals/lexicographic-ordering-without-arithmetic`, `tools/flag`,
+`projects/apply/{base,apply,loop-lemmas,definductor,relink-fancy-scion,loop,top}`
+-- fifteen books certified with expansion files and compiled from them, plus the
+three portcullis books (which have no expansion file because they compile to
+nothing).  `(include-book "projects/apply/top" :dir :system)` then loads in
+**4.4 s**, with no `make-event` error and no missing certificate.
+
+What it does not fit in is a *Chrome* page.  Measured, exactly as before:
+
+| stack | `include-book "projects/apply/top"` |
+| --- | --- |
+| 984 kB (Node default, ~a Chrome page) | RangeError |
+| 1090 kB | loads |
+| 1400 kB | loads |
+
+The depth is not in the book's construction.  It is 1,090 kB with modules built
+from the expansion files and 1,079 kB with modules built from the sources, it is
+1,090 kB at `-O0` as well as at `-O2`, and a single book -- `projects/apply/base`
+-- already needs 1,048 kB on its own, so it is not the sum over the chain.  The
+trace is a compiled function in one of ACL2's *own* modules (function 443 of a
+module at a 1.4 MB code offset) calling itself through its function value, i.e.
+ACL2 recursing over the book while it is loaded, two wasm frames per level.  That
+is the same `variadic_dispatch3` cost described above, and the only handle on it
+is the ECL ABI change that does not boot.  So: `projects/apply/top` fits a
+Firefox page (about three times Chrome's stack, emscripten #13043) and a Node
+run with `--stack-size=1100`, and not a Chrome one.
+
+Two certification traps found on the way, both now handled by
+`wasm/certify-books.sh`:
+
+* **`<book>.acl2` is the book's portcullis** and has to be applied before
+  certifying, exactly as cert.pl inlines it.  Without it, `tools/flag` cannot
+  even read (`IN-PACKAGE "FLAG"` is not a known package) and
+  `system/apply/apply` fails its `BADGE-TYPE` proof, because its `.acl2` is
+  what includes `apply-constraints`.
+* **One book per process.**  Certifying several books in one ACL2 session does
+  not work: after the first, ACL2 reports the *previous* `certify-book` form as
+  "not an embedded event form" and refuses all the rest.  So the cost is about
+  42 s of start-up per book plus its proof time -- 1,479 `basic` books would be
+  ~18 hours, before the payload question.
+
+On `basic`: the artifacts are large.  The apply chain alone is 2.9 MB of
+certificates plus 1.1 MB of modules, and the biggest single certificate here is
+929 KB (`projects/apply/base`).  A 1,479-book `basic` payload would be
+gigabytes, and the page preloads all of it into MEMFS before the prompt.  What
+is worth doing instead is a curated set -- the tutorial books plus whatever a
+course actually includes -- and the pipeline above now makes that mechanical.
+
 ### Which books fit in a Chrome-sized page (2026-11-08)
 
 At 1000 kB (a Chrome page), including these succeeds and these do not, in the
