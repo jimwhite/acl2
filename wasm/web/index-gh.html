@@ -49,7 +49,9 @@ loads at run time.</p>
       <code>(include-book "projects/apply/top" :dir :system)</code> loads in
       4.4 s -- but it needs about 1.09 MB of engine stack, which a Chrome page
       does not have and a Firefox page does. In Chrome it is refused with a
-      message rather than hanging.</span></li>
+      message rather than hanging. <a href="books.html">The list of books this
+      site can include</a> is generated from the payload, so it is exactly what
+      is present, not what is hoped for.</span></li>
   <li><a href="repl.html">Interactive ECL console</a>
       <span>A real REPL: one ECL instance stays alive between inputs, so
       definitions and values persist. Enter evaluates; arrow keys recall
@@ -83,6 +85,13 @@ form at a time: ECL is entered through <code>ecl_page_start</code>,
 <code>main</code>, so no read-eval-print loop runs and nothing exits between
 forms. Start to the prompt in a page: 8.9 s.</p>
 
+<h2>Books</h2>
+<p><a href="books.html">Every book the payload can include</a>, with the exact
+form to type. The page is generated from the manifest when the payload is
+built, so it cannot promise a book that is not there. A book is includable
+when its <code>.cert</code> and its wasm <code>.fasc</code> are both shipped;
+<code>include-book</code> works as often as you like in one session.</p>
+
 <h2>The remaining gap</h2>
 <p><span class="gap">Loading a big compiled module needs more stack than a
 page has.</span> The depth is inside <code>si::load-binary</code> -- the
@@ -96,7 +105,13 @@ is refused with a message, and the session can be reloaded.</p>
 <p>So the work ahead is to reduce that recursion — or to ship a base that does
 not boot-strap in the page at all. Details, measurements and the two bugs that
 made the AOT path work are in
-<code>WASM-PORT-NOTES.md</code> and <code>wasm/web/README.md</code> in the
-<a href="https://github.com/jimwhite/acl2/tree/ecl">repository</a>.</p>
+<a href="https://github.com/jimwhite/acl2/blob/ecl/WASM-PORT-NOTES.md"><code>WASM-PORT-NOTES.md</code></a>
+and
+<a href="https://github.com/jimwhite/acl2/blob/ecl/wasm/web/README.md"><code>wasm/web/README.md</code></a>,
+in <a href="https://github.com/jimwhite/acl2/tree/ecl/wasm">the port's
+<code>wasm/</code> directory</a> (branch <code>ecl</code> of the ACL2 fork). The
+engine's own patches are three commits on
+<a href="https://gitlab.com/jimwhite/ecl/-/tree/acl2-wasm">branch
+<code>acl2-wasm</code> of the ECL fork</a>.</p>
 </body>
 </html>
