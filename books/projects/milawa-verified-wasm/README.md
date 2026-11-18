@@ -17,10 +17,8 @@ HOL4 and WebAssembly in place of x86-64:
 ## Status
 
 Seven books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean build
-takes about ten seconds plus ten *minutes* for one event: the `MILAWA-RUNS`
-elimination principle (see below).  That is deliberate.  Correctness first —
-Milawa's own ECL/WebAssembly checker run takes two days — and the proof
-engineering to make that event fast is tracked as a next step.
+takes about ten seconds.  Nothing in the tree is expensive any more: the one
+event that used to cost ten minutes is gone (see "What we learned" for why).
 
 | Piece | State |
 |---|---|
@@ -30,10 +28,9 @@ engineering to make that event fast is tracked as a next step.
 | Evaluation checks (rank, lookup, ord<, overflow, fuel exhaustion) | **proved** (`milawa-lisp/demo.lisp`) |
 | **Fuel monotonicity** — a longer budget never changes a successful result | **proved** (`milawa-lisp/metatheory.lisp`) |
 | Abort/acceptance disjointness, zero-fuel aborts, `-` closed under values | **proved** (`milawa-lisp/metatheory.lisp`) |
-| `MILAWA-RUNS`: relational presentation of the machine (`definductive`), the per-rule step-count facts, and a worked derivation | **proved** (`milawa-lisp/reachability.lisp`) |
-| Elimination principle for `MILAWA-RUNS`, via `definductive`'s `-ALT` rule and functional instantiation | **proved** (`milawa-lisp/reachability.lisp`); one event costs ~600 s |
-| `milawa-runs-positive` and `milawa-runs-shape` (corollaries of elimination) | **not yet** — statements recorded; proving them through `:use` currently exceeds 30 min |
-| `MILAWA-RUNS` agrees with `MILAWA-RUN` | **not yet**; follows from the corollaries |
+| `MILAWA-RUNS`: exact step-count relation, the two inference rules (`-HALT`, `-STEP`) and their step counts, positivity and shape, a worked derivation | **proved** (`milawa-lisp/reachability.lisp`) |
+| Elimination principle for `MILAWA-RUNS` | **proved** — immediate, because the relation is a function of the exact count |
+| `MILAWA-RUNS` agrees with `MILAWA-RUN` | **next**; `milawa-conf-run-halt` / `-step` are in place for it |
 | `MVM` step machine port, WASM module, L1/L2 refinement | **not started** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
@@ -82,7 +79,7 @@ milawa-lisp/
   programs.lisp      kernel functions as data (*MILAWA-DEMO-PROGRAM*)
   demo.lisp          executable checks on that program
   metatheory.lisp    fuel monotonicity, abort/acceptance facts
-  reachability.lisp  inference rules for reaching a result (definductive)
+  reachability.lisp  exact step-count run relation, its inference rules
   top.lisp           includes the above
   Makefile
 ```
@@ -107,10 +104,10 @@ $ACL2_SYSTEM_BOOKS/build/cert.pl --acl2 $ACL2 values
 ```
 
 Use the same ACL2 that certifies the rest of the community books.  No external
-books are needed yet beyond `std/util/definductive`.  When the WASM books
-arrive, `wasm-acl2` is pinned rather than vendored, and this directory must stay
-out of the default community-books scan (or be listed in `EXCLUDED_PREFIXES`),
-because a missing dependency is a build failure for everyone.
+books are needed at all yet.  When the WASM books arrive, `wasm-acl2` is pinned
+rather than vendored, and this directory must stay out of the default
+community-books scan (or be listed in `EXCLUDED_PREFIXES`), because a missing
+dependency is a build failure for everyone.
 
 ## Adding a program
 
@@ -160,20 +157,40 @@ into one with a smaller measure, or into one that contains the original as a
 conjunct.  As rewrite rules they loop: ACL2 either reports a call-depth error or
 grinds for minutes.  `:rule-classes nil` plus `:use` is the fix, every time.
 
-**`definductive` gives you the elimination principle for free — use it.**
-Unfolding a `definductive` predicate is hopeless (it is stored as "a minimal
-valid proof tree exists", so unfolding drags in the minimality machinery).
-`MILAWA-RUNS-ALT-WHEN-MILAWA-RUNS` is the least-fixpoint principle: instantiate
-`ALT` with the property you want and discharge its two constraints by functional
-instantiation.  Two details: the property must *include the relation itself*
-(otherwise the step rule's premise is unrecoverable), and an introduction rule
-whose continuation appears only in hypotheses has a free variable, so it cannot
-backchain — instantiate it with `:use`.
+**`definductive` gives the elimination principle, but you cannot use it.**
+This one cost a day.  `std/util/definductive` (Coglio and Jurgensen) takes the
+inference rules and generates the predicate, the intro rules and
+`MILAWA-RUNS-ALT-WHEN-MILAWA-RUNS`; instantiating `ALT` with the property you
+want *is* the elimination principle.  It also admits the predicate over a proof
+object, so the generated induction scheme's step case is stated in terms of
+`MILAWA-RUNS-PROOF-KIND` and `MILAWA-RUNS-PROOF-STEP->C2`, not in terms of the
+rule's premises.  Every route back to the premises was measured and failed:
 
-**Measure before guessing.**  Two certification timeouts in a row were resolved
-by running the book's forms directly and reading the `Time:` lines, which named
-the single 598-second event.  `(ld "book.lisp")` after including its
-dependencies is the cheapest way to get per-event timings.
+| Attempt | Result |
+|---|---|
+| `:induct (milawa-runs c n r ftbl)` | step case splits on `milawa-step`, `apply-step`, `nth`, `assoc-equal`; 147 subgoals, then exponential |
+| `(disable milawa-runs)` first | also disables the `:induction` rune; "no schemes are suggested" |
+| `:induct (milawa-runs-induct ...)`, the scheme function by name | same proof-object scheme |
+| `:by (:functional-instance NAME-ALT-WHEN-NAME ...)` | re-proves the source theorem by induction on the proof object: >16 min and still running |
+| deriving the corollaries with `:use` | pushes a build past 30 min |
+
+The fix is to stop paying for the proof object: state the relation as the two
+rules *as a function of the exact step count*, so the continuation is `(cdr s)`
+rather than an existential, and the induction scheme is the halt/step split you
+wanted in the first place.  Thirteen events, 0.2 s total, same theorems.  The
+`definductive` version is in the history at commit `4814380c1b`.
+
+**"Exactly N" is not "at most N".**  Defining `MILAWA-RUNS` from
+`(milawa-conf-run c ftbl n)` looks equivalent and is not: `MILAWA-RUN` stops the
+moment it produces a result, so a halting machine "runs" in every count at least
+as large as its step count.  A WASM `STEP` derivation gives an exact count, so
+the definition must spend its count.
+
+**Measure before guessing.**  Several certification timeouts in a row were
+resolved by running the book's forms directly and reading the `Time:` lines,
+which named the single expensive event.  `(ld "book.lisp")` after including its
+dependencies is the cheapest way to get per-event timings — and the `Form:` line
+that appears before a long grind is not evidence about which event is grinding.
 
 **Guard the demo with executable checks.**  The refactor from a recursive
 evaluator to a step machine introduced a real bug — a primitive's value was
@@ -196,30 +213,19 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 ## Next steps, in order
 
-1. **Add the elimination corollaries.**  `milawa-runs-positive` (every
-derivation has `N > 0`) and `milawa-runs-shape` (one finishing step, or at least
-two steps with a derivation of the continuation) follow from the elimination
-principle alone and are the form the refinement books consume.  Their
-statements are commented at the end of `reachability.lisp`; proving them through
-`:use` currently pushes a build past thirty minutes, so this wants either a
-cheaper elimination proof or a direct proof from `MILAWA-RUNS-GOODP`.
-2. **Make the elimination proof cheap.**  The event costs ~600 s because ACL2
-specialises `N` to 1 (via the HALT closure lemma) before re-deriving the
-relation conjunct, after which `(+ 1 N)` no longer matches `MILAWA-RUNS-STEP`.
-Explicit `:use` instantiations of the two intro rules for the shapes ACL2
-actually reaches should collapse it.  Speed is a *later* concern; this is listed
-second only because it unblocks item 1.
-2. **Prove `MILAWA-RUNS` agrees with `MILAWA-RUN`.**  Soundness and
+1. **Prove `MILAWA-RUNS` agrees with `MILAWA-RUN`.**  Soundness and
    completeness, with the fuel-exhaustion case excluded (stopping for lack of
-   fuel is not a run; it is the runtime declining to answer).  The matched
-   induction trick from `metatheory.lisp` applies here too.
-3. **Port the loop to WASM.**  L1: one dispatch iteration of the module is one
+   fuel is not a run, it is the runtime declining to answer).  The two bridge
+   lemmas, `milawa-conf-run-halt` and `milawa-conf-run-step`, are already proved
+   in `reachability.lisp`, and the matched induction trick from
+   `metatheory.lisp` applies.
+2. **Port the loop to WASM.**  L1: one dispatch iteration of the module is one
    `MILAWA-STEP`.  L2: instantiate the run-level theorem from `wasm-acl2`'s
-   `engine/`.  This needs `wasm-acl2` pinned, and it is where `definductive`
-   pays off again, since `W3T::STEP` is relational.
-4. **`kernel/`.**  One lemma per `defun` of `milawa-init`, generated with
+   `engine/`.  This needs `wasm-acl2` pinned.  `milawa-runs-halt` and
+   `milawa-runs-step` are already stated in the shape `W3T::STEP` has, which is
+   what the refinement cases match against.
+3. **`kernel/`.**  One lemma per `defun` of `milawa-init`, generated with
    `make-event` from the ACL2 bodies.
-5. **The phase-0 experiments from the design document**, which are still open:
-   instrument `+` for its maximum value (does anything exceed `2^30`?) and
+4. **The phase-0 experiments from the design document**, which are still open: instrument `+` for its maximum value (does anything exceed `2^30`?) and
    `ftbl` (does the checker ever call a function installed by a `DEFINE`
    event?).  The second one underwrites the whole "no JIT" argument.

@@ -63,11 +63,20 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   facts.  It is a *single* recursive function rather than the mutual recursion
   suggested by the shape of an evaluator, because a `mutual-recursion` clique
   gets no induction machine in ACL2 and the metatheory becomes unreachable.
-- **A relational presentation exists and is usable** (`MILAWA-RUNS`, via
-  `std/util/definductive`), which is the shape `W3T::STEP` has and therefore
-  what L1 will compare a WASM module against.  Its elimination principle is
-  proved, by functional instantiation of `MILAWA-RUNS-ALT-WHEN-MILAWA-RUNS`;
-  that one event costs about ten minutes, which is accepted for now.
+- **A relational presentation exists and is usable** (`MILAWA-RUNS`), which is
+  the shape `W3T::STEP` has and therefore what L1 will compare a WASM module
+  against: an exact step count, an `-HALT` rule for the step that finishes, and
+  a `-STEP` rule for the step that continues to a named continuation.  It was
+  first written with `std/util/definductive`, and that version is in the history
+  (`4814380c1b`), but its elimination principle was unusable: `definductive`
+  admits the predicate over a proof object, so the generated induction scheme is
+  stated in terms of the proof's kind and accessors rather than the rule
+  premises, and the only route back to the premises is the `-ALT` rule, whose
+  functional instantiation re-proves the source theorem by induction on that
+  proof object (>16 min, unfinished).  The delivered version states the two
+  rules *as a function of the exact count*, which gives the same theorems, the
+  elimination principle for free, and the halt/step induction scheme a
+  refinement proof actually wants.  Thirteen events, 0.2 s.
 - **Phases 2-6 are untouched.**  Nothing has been built against a WASM
   semantics yet, so the L1/L2 risk analysis in §8 is unchanged.
 
