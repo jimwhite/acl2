@@ -37,7 +37,8 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | The artifact decodes in the certified semantics; the module is pinned as a logic constant; `W3T::MODULE-P` of it is proved | **proved** (`wasm3/`) |
 | The certified semantics executes the artifact: entry config is a call to function 6, `STEP` applies and is single-valued | **proved** (`wasm3/l1.lisp`) |
 | Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness | **proved** (`wasm3/memory.lisp`) |
-| L1 — one call to `STEP` equals `MVM-STEP` | **in progress** — ingredients proved; the state mapping is next |
+| The abstraction `MVM` state → spec configuration, and the clock for every path (47–101 spec steps, opcode-determined) | **proved** (`wasm3/abs.lisp`, 16 theorems by evaluation) |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — statement fixed and validated on all 16 paths; the symbolic execution is next |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |

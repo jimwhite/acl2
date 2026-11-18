@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (thirteen books, no `skip-proofs`, no `defaxiom`)
+## What is proved (17 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -37,6 +37,7 @@ flowchart TB
 | `machine/mvm.lisp` | `MVM-STEP`/`MVM-RUN`: the ACL2 model of the module, 32-bit words, status protocol.  A stopped machine is a fixed point; spending a budget in two instalments is spending it at once; **fuel monotonicity** — once it has stopped, a larger budget changes nothing |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
+| `wasm3/abs.lisp` | the abstraction itself: `MVM` state → entry configuration of a call to the exported `STEP`, through the spec's own `$WITH_MEM`/`$WITH_GLOBAL`, and the inverse observations. **Sixteen theorems, one per path through the module** — every opcode, every abort, both frozen statuses — each giving the exact clock and the fact that what the semantics stopped on reads back as `MVM-STEP` |
 | `wasm3/l1.lisp` | the certified semantics executes the artifact: entry configuration is a call to function 6 with no arguments, `STEP` applies and is single-valued, three steps apply, one step enters the frame |
 | `wasm3/decode.lisp` | the artifact decodes completely and instantiates with no externs (scripted, since the decoder and the instantiator are `:program` mode); the module is pinned as a logic constant; its shape, export names, and the fact that `STEP` is function 6 are theorems |
 
@@ -80,6 +81,51 @@ once `kernel/` exists — the correspondence between the kernel program and
    `MILAWA-CONF-STEP` in a symbolic proof turns one subgoal into ~150; every hard
    proof here depends on disabling it and matching the hypothesis instead.
 
+## The abstraction, and the clock
+
+`mvm-abs` turns an MVM state into the configuration the certified semantics runs:
+the artifact's own store, with the stack image written below byte 4096 and the
+code image above it, and five globals set — SP (byte offset), PC (byte address),
+CODE-LEN, STATUS, RESULT.  Those five and the memory under SP are the module's
+whole mutable state, so `milawa-observations` reads a stopped configuration back
+as machine state.
+
+With the abstraction fixed, the clock is a fact rather than a parameter.  One
+machine step is **47 to 101 spec steps, and the count depends only on the
+opcode**:
+
+| Path | Spec steps |
+|---|---|
+| status already 0 or 2 (frozen) | 9 |
+| PC off the end of the code | 26 |
+| HALT with an empty stack (abort) | 47 |
+| HALT, one or two values | 53 |
+| CONST | 67 |
+| CONST with the immediate off the end (abort) | 55 |
+| ADD / SUB / LT | 96 / 101 / 101 |
+| ADD with fewer than two values (abort) | 63 |
+| IFZ taken / not taken | 99 / 95 |
+| JMP | 78 |
+| unknown opcode (abort) | 63 |
+
+That the clock does not depend on the *values* is what makes the symbolic proof's
+clock a small case split rather than a search, and it is why `abs.lisp` is the
+template for L1 proper rather than a detour.  Two of the numbers are worth
+reading twice: an unknown opcode is cheaper than a known one (63 < 96) because it
+falls out of the dispatch chain straight into `$abort`, and a truncated `CONST`
+is cheaper than a good one (55 < 67) because it aborts before pushing.
+
+Two things about the spec's API that cost time and are now written down in the
+book:
+
+- `$WITH_MEM` and `$WITH_GLOBAL` take the store-**and-frame** pair `Z`, not a
+  store: `($SOF Z)` is the store and `($FOF Z)` the frame, and the module's index
+  vector — the thing mapping a module global to a store slot — lives in the
+  *frame*.  A store alone cannot be updated.
+- the frame `$INVOKE` builds does not answer `%GET-FIELD :MODULE`, so the
+  observers read the store through the pinned frame.  That is sound and is what
+  we want: the module is a constant of the artifact and only the store varies.
+
 ## Where L1 stands
 
 The certified WASM 3.0 semantics **executes the artifact**, and that is proved, not
@@ -99,6 +145,15 @@ imports, data or start function); the store and frame are `(CADR (CADR C))` and
 Two steps remain outside the logic: decode and instantiate are both `:program`
 mode, so they are scripted and drift-checked (`harness/gen_module.py --check`)
 rather than proved.  Everything after them is statable.
+
+With `abs.lisp` the *statement* of L1 is fixed and checked on every path the
+module has: sixteen ground theorems, each giving the exact clock, each showing
+one more step is not available, and each showing that the configuration the
+semantics stopped on reads back as `MVM-STEP`.  What remains is the same theorem
+with the state symbolic — a symbolic execution of the module's twelve function
+bodies.  That is the piece the `wasm-acl2` engine goes after as E11, and it is
+unfinished there too (its C2 is proved for clock-0 steps only), so this is the
+project's hardest open problem, not a formality.
 
 Underneath L1 proper sits the memory correspondence, and the hardest piece of it
 is now proved: **decoding the image of a word list gives the word list back**
@@ -124,17 +179,16 @@ The induction then finishes in 0.48 s.
 
 ## What is next, in order
 
-1. Pin the instantiated store as a logic constant (instantiation is `:program`
-   mode too), which completes the configuration L1 and L2 are stated about.
-2. **L1**: one call to the exported `STEP` equals `MVM-STEP`, for a well-formed
-   state.  `MILAWA-VERIFIED-STEP-IS-FUNCTION-6` says which body to reason about.
-3. **L2**: instantiate `ENGINE-RESULT-IS-SPEC-RESULT` from `wasm-acl2`'s
-   `engine/`, discharging its four constraints for `MVM`.  Its C2 (clock-1 steps)
-   is an open proof upstream; we may have to finish it or carry a
-   stated-and-tested hypothesis.
-4. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
+1. **L1, symbolic**: the sixteen paths of `abs.lisp` generalised to symbolic
+   state.  The clock is already known per opcode, so the shape is seven
+   independent lemmas plus the frozen-status and off-the-end cases.
+2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
+   theorem is a "re-entry" composition rather than one long `STEPS/%FUEL`; the
+   engine's `ENGINE-RESULT-IS-SPEC-RESULT` packaging (`wasm-acl2` `engine/`) is
+   the reference, not a drop-in.
+3. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
    untrusted — L3 is what makes that acceptable.
-5. Conses, symbols, environments and the heap in the module and the model; then
+4. Conses, symbols, environments and the heap in the module and the model; then
    the whole `milawa-init` kernel, and one lemma per `defun` against
    `ACL2/logic/`.
 
@@ -143,7 +197,7 @@ The induction then finishes in 0.48 s.
 ```sh
 make -C books/projects/milawa-verified-wasm/milawa-lisp ACL2=$ACL2   # 7 books, seconds
 make -C books/projects/milawa-verified-wasm/machine     ACL2=$ACL2   # 3 books, seconds
-make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # 3 books, needs the pin
+make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # 7 books, needs the pin
 ```
 
 The `wasm3/` books depend on `wasm-acl2`, pinned at `7f96c89` and cloned (not
