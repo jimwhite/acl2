@@ -36,7 +36,7 @@ flowchart TB
 | `milawa-lisp/reachability.lisp` | `MILAWA-RUNS`: exact step count, the two inference rules, positivity, shape, and that it agrees with `MILAWA-RUN` both ways |
 | `machine/mvm.lisp` | `MVM-STEP`/`MVM-RUN`: the ACL2 model of the module, 32-bit words, status protocol.  A stopped machine is a fixed point; spending a budget in two instalments is spending it at once; **fuel monotonicity** — once it has stopped, a larger budget changes nothing |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
-| `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words, image lengths, and the disjointness invariant |
+| `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
 | `wasm3/l1.lisp` | the certified semantics executes the artifact: entry configuration is a call to function 6 with no arguments, `STEP` applies and is single-valued, three steps apply, one step enters the frame |
 | `wasm3/decode.lisp` | the artifact decodes completely and instantiates with no externs (scripted, since the decoder and the instantiator are `:program` mode); the module is pinned as a logic constant; its shape, export names, and the fact that `STEP` is function 6 are theorems |
 
@@ -99,6 +99,28 @@ imports, data or start function); the store and frame are `(CADR (CADR C))` and
 Two steps remain outside the logic: decode and instantiate are both `:program`
 mode, so they are scripted and drift-checked (`harness/gen_module.py --check`)
 rather than proved.  Everything after them is statable.
+
+Underneath L1 proper sits the memory correspondence, and the hardest piece of it
+is now proved: **decoding the image of a word list gives the word list back**
+(`mvm-image-words-of-mvm-word-list-to-bytes`), and the stack case follows
+(`mvm-image-of-stack`).  The route there is worth recording, because the obvious
+statements do not work:
+
+- the indexed form `(nthcdr (* 4 i) bytes)` is the natural thing to write and is
+  unusable — `(* 4 i)` blocks every append lemma, and rewriting it to
+  `(+ 4 (* 4 (i-1)))` makes ACL2's `fold-consts-in-+` fold it straight back, to a
+  HARD ERROR [Call depth] 1000;
+- letting the recogniser `mvm-word-list-p` unfold splits each induction step on
+  `(integerp (car ws))`, `(<= 0 ...)` and `(< ... 2^32)`: 259, then 4963 subgoals,
+  387 s and 56 GB before giving up;
+- letting `mvm-word-to-bytes` unfold brings `loghead`/`logtail` in, and ACL2 then
+  splits on the arithmetic: 9.5M prover steps, still open.
+
+What closes it is all three together: a decoder that consumes four bytes a step
+(`car`/`cadr`/`caddr`/`cadddr` instead of an index), a **step rule** about the
+append form, and the recogniser plus the byte-level definitions **disabled** so
+that forward-chaining supplies the recogniser's facts without ever unfolding it.
+The induction then finishes in 0.48 s.
 
 ## What is next, in order
 

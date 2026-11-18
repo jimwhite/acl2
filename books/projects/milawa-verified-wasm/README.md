@@ -35,7 +35,9 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | `milawa-verified.wat` — the module: one step per call, runnable in Node | **done** (milestones: `wasm/`) |
 | `MVM` model vs the module, on a spread of programs and every abort case | **tested** (`machine/mvm-tests.lisp`, Node recording) |
 | The artifact decodes in the certified semantics; the module is pinned as a logic constant; `W3T::MODULE-P` of it is proved | **proved** (`wasm3/`) |
-| L1 — one call to `STEP` equals `MVM-STEP` | **not started** |
+| The certified semantics executes the artifact: entry config is a call to function 6, `STEP` applies and is single-valued | **proved** (`wasm3/l1.lisp`) |
+| Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness | **proved** (`wasm3/memory.lisp`) |
+| L1 — one call to `STEP` equals `MVM-STEP` | **in progress** — ingredients proved; the state mapping is next |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
@@ -235,6 +237,27 @@ evaluator to a step machine introduced a real bug — a primitive's value was
 returned as the machine's result instead of being handed to the waiting frames,
 so any application of a primitive inside a larger expression returned nil.  The
 `assert-event` checks in `demo.lisp` caught it immediately; the proofs did not.
+
+**An index is not a shape.**  The memory correspondence — decode the image of a
+word list and get the word list back — looks like a one-liner and resisted about
+eighteen attempts across two sessions, because the natural statement indexes
+bytes with `(nthcdr (* 4 i) bytes)`.  The `(* 4 i)` is equal to
+`(+ 4 (* 4 (i-1)))` but is a *different term*, so every append lemma fails to
+match; making the split a rewrite rule hits a HARD ERROR [Call depth] 1000 as
+`fold-consts-in-+` folds it back.  Unfolding the 32-bit recogniser instead splits
+each induction step on `(integerp (car ws))`, `(<= 0 ...)` and `(< ... 2^32)`:
+259 subgoals, then 4963, then 387 s and 56 GB.  Unfolding `mvm-word-to-bytes`
+brings `loghead`/`logtail` in and does the same thing arithmetically: 9.5M
+prover steps, still open.
+
+What works is to change the *shape of the decoder* to match the shape of the
+event: it consumes four bytes a step (`car`, `cadr`, `caddr`, `cadddr`), never an
+index; a **step rule** states the per-word round trip about the append form
+(`mvm-image-words-of-append-word`); and the recogniser plus the byte-level
+definitions are **disabled** during the region induction, with
+`:forward-chaining` rules supplying the recogniser's facts.  0.48 s.  The lesson
+generalises: when an induction will not close, stop looking for the right hint
+and look for the right *statement*.
 
 ## Trust
 
