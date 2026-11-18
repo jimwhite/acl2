@@ -17,7 +17,10 @@ HOL4 and WebAssembly in place of x86-64:
 ## Status
 
 Seven books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean build
-takes about ten seconds.
+takes about ten seconds plus ten *minutes* for one event: the `MILAWA-RUNS`
+elimination principle (see below).  That is deliberate.  Correctness first —
+Milawa's own ECL/WebAssembly checker run takes two days — and the proof
+engineering to make that event fast is tracked as a next step.
 
 | Piece | State |
 |---|---|
@@ -28,8 +31,9 @@ takes about ten seconds.
 | **Fuel monotonicity** — a longer budget never changes a successful result | **proved** (`milawa-lisp/metatheory.lisp`) |
 | Abort/acceptance disjointness, zero-fuel aborts, `-` closed under values | **proved** (`milawa-lisp/metatheory.lisp`) |
 | `MILAWA-RUNS`: relational presentation of the machine (`definductive`), the per-rule step-count facts, and a worked derivation | **proved** (`milawa-lisp/reachability.lisp`) |
-| Elimination principle for `MILAWA-RUNS` | **proved in a scratch session**, recipe and cost recorded at the end of `reachability.lisp`; not checked in because one event costs ~600 s |
-| `MILAWA-RUNS` agrees with `MILAWA-RUN` | **not yet**; follows from the elimination principle |
+| Elimination principle for `MILAWA-RUNS`, via `definductive`'s `-ALT` rule and functional instantiation | **proved** (`milawa-lisp/reachability.lisp`); one event costs ~600 s |
+| `milawa-runs-positive` and `milawa-runs-shape` (corollaries of elimination) | **not yet** — statements recorded; proving them through `:use` currently exceeds 30 min |
+| `MILAWA-RUNS` agrees with `MILAWA-RUN` | **not yet**; follows from the corollaries |
 | `MVM` step machine port, WASM module, L1/L2 refinement | **not started** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
@@ -192,13 +196,19 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 ## Next steps, in order
 
-1. **Finish the elimination principle.**  It is proved, but the constraint
-   discharge costs ~600 s and the corollaries push a build past thirty minutes.
-   The intended fix is explicit `:use` instantiations of `milawa-runs-halt` and
-   `milawa-runs-step` for the specialised shapes ACL2 reaches (the `N = 1` case
-   is where the current proof stalls).  Then add `milawa-runs-positive` and
-   `milawa-runs-shape`; the statements are in the comment at the end of
-   `reachability.lisp`.
+1. **Add the elimination corollaries.**  `milawa-runs-positive` (every
+derivation has `N > 0`) and `milawa-runs-shape` (one finishing step, or at least
+two steps with a derivation of the continuation) follow from the elimination
+principle alone and are the form the refinement books consume.  Their
+statements are commented at the end of `reachability.lisp`; proving them through
+`:use` currently pushes a build past thirty minutes, so this wants either a
+cheaper elimination proof or a direct proof from `MILAWA-RUNS-GOODP`.
+2. **Make the elimination proof cheap.**  The event costs ~600 s because ACL2
+specialises `N` to 1 (via the HALT closure lemma) before re-deriving the
+relation conjunct, after which `(+ 1 N)` no longer matches `MILAWA-RUNS-STEP`.
+Explicit `:use` instantiations of the two intro rules for the shapes ACL2
+actually reaches should collapse it.  Speed is a *later* concern; this is listed
+second only because it unblocks item 1.
 2. **Prove `MILAWA-RUNS` agrees with `MILAWA-RUN`.**  Soundness and
    completeness, with the fuel-exhaustion case excluded (stopping for lack of
    fuel is not a run; it is the runtime declining to answer).  The matched

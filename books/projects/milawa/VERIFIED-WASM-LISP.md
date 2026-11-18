@@ -66,8 +66,8 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
 - **A relational presentation exists and is usable** (`MILAWA-RUNS`, via
   `std/util/definductive`), which is the shape `W3T::STEP` has and therefore
   what L1 will compare a WASM module against.  Its elimination principle is
-  proved but currently too expensive to keep in the default build; the recipe
-  and the reason are recorded at the end of `reachability.lisp`.
+  proved, by functional instantiation of `MILAWA-RUNS-ALT-WHEN-MILAWA-RUNS`;
+  that one event costs about ten minutes, which is accepted for now.
 - **Phases 2-6 are untouched.**  Nothing has been built against a WASM
   semantics yet, so the L1/L2 risk analysis in §8 is unchanged.
 

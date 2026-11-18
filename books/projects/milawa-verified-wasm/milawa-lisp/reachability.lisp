@@ -130,63 +130,97 @@
                             (r (milawa-ok 5))
                             (ftbl nil))))))
 
-
 ;; ---------------------------------------------------------------------------
-;; NEXT STEP: the elimination principle
+;; The elimination principle
 ;;
 ;; We want to reason FROM a derivation, which is what an inductive predicate's
 ;; elimination principle is for.  DEFINDUCTIVE proves one for us:
 ;; MILAWA-RUNS-ALT-WHEN-MILAWA-RUNS, for any predicate closed under the two
-;; rules (MILAWA-RUNS-ALT is a constrained function; MILAWA-RUNS-ALT-HALT and
-;; MILAWA-RUNS-ALT-STEP are its constraints).  The recipe that works, verified
-;; in a scratch session, is:
+;; rules.  (MILAWA-RUNS-ALT is a constrained function; MILAWA-RUNS-ALT-HALT and
+;; MILAWA-RUNS-ALT-STEP are its constraints.)  So instantiate ALT with
+;; MILAWA-RUNS-GOODP and discharge the two constraints by functional
+;; instantiation.  No unfolding of MILAWA-RUNS is involved: it is stored as "a
+;; minimal valid proof tree exists", so unfolding it drags in the whole
+;; minimality machinery and explodes.
 ;;
-;;   (defun milawa-runs-goodp (c n r ftbl)
-;;     (and (milawa-runs c n r ftbl)              ; keep the relation!
-;;          (let ((s (milawa-conf-step c ftbl)))
-;;            (if (equal (car s) :run)
-;;                (and (integerp n) (< 1 n)
-;;                     (milawa-runs (cdr s) (1- n) r ftbl))
-;;              (and (equal n 1) (equal r s))))))
+;; Note what GOODP is: the shape fact CONJOINED WITH the relation itself.
+;; Keeping the relation in the property is what makes the step rule's premise
+;; recoverable; without it the step case would have nothing to conclude.
 ;;
-;;   ; the two constraint obligations, both trivial with the step symbolic
-;;   (defthm milawa-runs-goodp-halt ...)          ; with MILAWA-CONF-STEP,
-;;   (defthm milawa-runs-goodp-step ...)          ; MILAWA-CONF, MILAWA-STEP and
-;;                                                ; the MILAWA-APPLY-* functions
-;;                                                ; DISABLED
+;; The step function and its helpers stay DISABLED in the closure proofs:
+;; MILAWA-CONF-STEP is the term the rules mention, and expanding it into
+;; MILAWA-STEP's twenty branches turns one subgoal into about a hundred and
+;; fifty, none of them closer to done.
+;; ---------------------------------------------------------------------------
+
+(defun milawa-runs-goodp (c n r ftbl)
+  (declare (xargs :guard t
+                  :verify-guards nil))
+  (and (milawa-runs c n r ftbl)
+       (let ((s (milawa-conf-step c ftbl)))
+         (if (equal (car s) :run)
+             (and (integerp n)
+                  (< 1 n)
+                  (milawa-runs (cdr s) (1- n) r ftbl))
+           (and (equal n 1)
+                (equal r s))))))
+
+(defthm milawa-runs-goodp-halt
+  (implies (not (equal (car (milawa-conf-step c ftbl)) :run))
+           (milawa-runs-goodp c 1 (milawa-conf-step c ftbl) ftbl))
+  :hints (("Goal" :in-theory (e/d (milawa-runs-goodp milawa-runs-halt)
+                                  (milawa-conf-step milawa-conf
+                                   milawa-step milawa-apply-or-run
+                                   milawa-apply-step milawa-apply-primitive)))))
+
+(defthm milawa-runs-goodp-step
+  (implies (and (equal (milawa-conf-step c ftbl) (cons :run c2))
+                (milawa-runs-goodp c2 n r ftbl))
+           (milawa-runs-goodp c (+ 1 n) r ftbl))
+  :hints (("Goal" :in-theory (e/d (milawa-runs-goodp milawa-runs-step)
+                                  (milawa-conf-step milawa-conf
+                                   milawa-step milawa-apply-or-run
+                                   milawa-apply-step milawa-apply-primitive)))))
+
+; Stored with :RULE-CLASSES NIL.  As a rewrite rule this is a loop: it rewrites
+; (MILAWA-RUNS C N R FTBL) to (MILAWA-RUNS-GOODP C N R FTBL), whose first
+; conjunct is (MILAWA-RUNS C N R FTBL) again.
+;
+; COST: about ten minutes of prover time (measured: 583 s of a 598 s event).
+; ACL2 has to discharge the ALT-STEP constraint, whose conclusion is
+; (GOODP C (+ 1 N) R FTBL); the relation conjunct of that has to be re-derived
+; by MILAWA-RUNS-STEP, and the rewriter specialises N to 1 via the HALT closure
+; lemma first, after which (+ 1 N) no longer matches the intro rule.  Restricting
+; the theory makes the constraint unprovable, so the slow version is the one
+; that works.  This is accepted for now: correctness first.  A faster proof
+; wants explicit :USE instantiations of the two intro rules for the shapes ACL2
+; actually reaches.
+
+(defthm milawa-runs-elimination
+  (implies (milawa-runs c n r ftbl)
+           (milawa-runs-goodp c n r ftbl))
+  :rule-classes nil
+  :hints (("Goal" :by (:functional-instance
+                       milawa-runs-alt-when-milawa-runs
+                       (milawa-runs-alt milawa-runs-goodp)))))
+
+;; ---------------------------------------------------------------------------
+;; Corollaries
 ;;
-;;   (defthm milawa-runs-elimination
+;; The statements below follow from the elimination principle alone, so nothing
+;; is missing from the logic.  They are NOT checked in yet: proving them through
+;; :USE pushed certification past thirty minutes on top of the ten the
+;; elimination principle already costs.  They are the next thing to finish.
+;;
+;;   (defthm milawa-runs-positive
 ;;     (implies (milawa-runs c n r ftbl)
-;;              (milawa-runs-goodp c n r ftbl))
-;;     :rule-classes nil
-;;     :hints (("Goal" :by (:functional-instance
-;;                          milawa-runs-alt-when-milawa-runs
-;;                          (milawa-runs-alt milawa-runs-goodp)))))
+;;              (and (integerp n) (< 0 n))))
 ;;
-;; Three things that matter, all learned the hard way:
-;;
-;;   1. Keep the relation conjunct.  Without it the step rule's premise is
-;;      unrecoverable and the closure obligation is unprovable.
-;;   2. Keep the step symbolic.  Enabling MILAWA-CONF-STEP expands
-;;      MILAWA-STEP's twenty branches and turns one subgoal into about 150.
-;;   3. Never let the result be a rewrite rule.  MILAWA-RUNS-ELIMINATION
-;;      rewrites (MILAWA-RUNS ...) to (MILAWA-RUNS-GOODP ...), whose first
-;;      conjunct is (MILAWA-RUNS ...) again: an infinite rewrite loop.
-;;
-;; WHY IT IS NOT CHECKED IN HERE: that functional instantiation takes about ten
-;; minutes of prover time (measured: 583 s of the 598 s event), and the two
-;; corollaries that follow from it -- positivity of N, and the shape statement
-;; (one finishing step, or at least two steps with a derivation of the
-;; continuation) -- pushed certification past thirty minutes.  The cost is in
-;; discharging the ALT-STEP constraint, whose conclusion (GOODP C (+ 1 N) R FTBL)
-;; requires re-deriving the relation conjunct with MILAWA-RUNS-STEP; ACL2 lands
-;; on the specialised instance N = 1, where (+ 1 N) no longer matches.
-;; Restricting the theory instead makes the constraint unprovable.  A faster
-;; proof wants explicit :USE instantiations of the two intro rules (a
-;; specialised helper for the N = 1 case was tried and did not help), or a GOODP
-;; phrased so that the relation conjunct never gets specialised.
-;;
-;; Nothing is missing from the logic: the principle is proved, and the shape
-;; statement follows from it alone.  What is unfinished is the proof
-;; engineering, and this book is kept fast so the rest of the tree stays cheap.
+;;   (defthm milawa-runs-shape
+;;     (implies (milawa-runs c n r ftbl)
+;;              (let ((s (milawa-conf-step c ftbl)))
+;;                (if (equal (car s) :run)
+;;                    (and (< 1 n)
+;;                         (milawa-runs (cdr s) (1- n) r ftbl))
+;;                  (and (equal n 1) (equal r s))))))
 ;; ---------------------------------------------------------------------------
