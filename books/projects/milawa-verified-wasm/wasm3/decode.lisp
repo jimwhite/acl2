@@ -52,6 +52,77 @@
   (w3t::module-p *milawa-verified-module*))
 
 ;; ---------------------------------------------------------------------------
+;; The artifact's shape, as theorems
+;;
+;; The module's fields are positional: (NTH I (CDR MODULE)) for I = 0..10, in the
+;; order the spec's module record gives them.  Measured on this artifact by
+;; printing each field's tag: types at 0, globals at 3, mems at 4, funcs at 6,
+;; exports at 10, and NIL everywhere else (1, 2, 5, 7, 8, 9 -- so no imports, no
+;; tables, no tags, no rec groups, no elements, no data segments).
+;;
+;; These are ground facts, so they are proved by evaluation; what makes them worth
+;; stating is that WABT is untrusted.  An assembler that dropped the memory or
+;; mangled an export would leave the proofs about the model intact and break the
+;; runtime, and these are the theorems that would catch it.
+;; ---------------------------------------------------------------------------
+
+(defthm milawa-verified-export-count
+  (equal (len (nth 10 (cdr *milawa-verified-module*))) 8))
+
+(defthm milawa-verified-function-count
+  (equal (len (nth 6 (cdr *milawa-verified-module*))) 12))
+
+(defthm milawa-verified-global-count
+  (equal (len (nth 3 (cdr *milawa-verified-module*))) 5))
+
+(defthm milawa-verified-memory-count
+  (equal (len (nth 4 (cdr *milawa-verified-module*))) 1))
+
+; No imports and no data segments: the module takes nothing from the host and
+; carries its code in its own bodies, which is why instantiation needs no externs
+; and why L2 has no import hypothesis to carry.
+(defthm milawa-verified-imports-and-data-are-empty
+  (and (equal (nth 1 (cdr *milawa-verified-module*)) nil)
+       (equal (nth 2 (cdr *milawa-verified-module*)) nil)
+       (equal (nth 5 (cdr *milawa-verified-module*)) nil)
+       (equal (nth 7 (cdr *milawa-verified-module*)) nil)
+       (equal (nth 8 (cdr *milawa-verified-module*)) nil)
+       (equal (nth 9 (cdr *milawa-verified-module*)) nil)))
+
+;; ---------------------------------------------------------------------------
+;; The interface, by name
+;; ---------------------------------------------------------------------------
+
+; Export names are byte lists in the syntax.  "step" is the function L1 is about;
+; pinning its INDEX here is what lets the next book say which body to reason
+; about instead of searching the export list every time.
+
+(defun milawa-export-names (exports)
+  (declare (xargs :guard t
+                  :verify-guards nil))
+  (if (consp exports)
+      (cons (car (cdr (car exports)))
+            (milawa-export-names (cdr exports)))
+    nil))
+
+(defthm milawa-verified-export-names
+  (equal (milawa-export-names (nth 10 (cdr *milawa-verified-module*)))
+         '((109 101 109 111 114 121)                     ; memory
+           (114 101 115 101 116)                         ; reset
+           (115 116 101 112)                             ; step
+           (115 116 97 116 117 115)                      ; status
+           (114 101 115 117 108 116)                     ; result
+           (112 99)                                      ; pc
+           (115 112)                                     ; sp
+           (99 111 100 101 95 98 97 115 101))))          ; code_base
+
+; "step" is function 6, which is the body L1 refines against MVM-STEP.
+
+(defthm milawa-verified-step-is-function-6
+  (member-equal '(:export (115 116 101 112) (:func 6))
+                (nth 10 (cdr *milawa-verified-module*))))
+
+;; ---------------------------------------------------------------------------
 ;; The layout, recorded for whoever writes the next book
 ;;
 ;; A :MODULE value has 11 fields, in this order, each a list of field records or
