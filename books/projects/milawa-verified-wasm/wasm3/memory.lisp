@@ -90,6 +90,14 @@
   (equal (len (mvm-word-list-to-bytes ws))
          (* 4 (len ws))))
 
+; The structural fact the slot lemma below will need: the image of an append is
+; the append of the images.  (This one goes through; the Nthcdr version does not,
+; see the note at the end of the book.)
+(defthm mvm-word-list-to-bytes-of-append
+  (equal (mvm-word-list-to-bytes (append a b))
+         (append (mvm-word-list-to-bytes a)
+                 (mvm-word-list-to-bytes b))))
+
 ;; ---------------------------------------------------------------------------
 ;; The two regions
 ;; ---------------------------------------------------------------------------
@@ -131,3 +139,29 @@
 (defthm mvm-regions-disjoint
   (implies (< (* 4 (len stack)) *mvm-code-base*)
            (< (len (mvm-stack-image stack)) *mvm-code-base*)))
+
+;; ---------------------------------------------------------------------------
+;; Next: reading a stack slot back out of the image
+;;
+;; L1's i32.load cases need to know which stack element a four-byte load returns,
+;; which is this lemma:
+;;
+;;   (defthm mvm-stack-image-slot
+;;     (implies (and (natp i) (< i (len stack)) (unsigned-byte-p 32 (nth i stack)))
+;;              (equal (mvm-bytes-to-word (take 4 (nthcdr (* 4 i)
+;;                                             (mvm-stack-image stack))))
+;;                     (nth (- (len stack) 1 i) stack))))
+;;
+;; (the stack is top-first, so byte offset 4i is the element (len stack)-1-i from
+;; the top).  It rests on
+;;
+;;   (equal (nthcdr (* 4 i) (mvm-word-list-to-bytes ws))
+;;          (mvm-word-list-to-bytes (nthcdr i ws)))
+;;
+;; which is the shape to prove by induction on WS with I general, splitting on
+;; (zp i): the i>0 case is Nthcdr-of-nthcdr then the induction hypothesis, and the
+;; i=0 case is trivial.  DO NOT let ACL2 induct on (nthcdr i ws) instead -- that
+;; was tried and it spent 387 s and 56 GB before giving up, because the (* 4 i)
+;; inside NTHCDR blocks the step case.  The APPEND lemma above is the part of that
+;; proof that does go through, and is kept for it.
+
