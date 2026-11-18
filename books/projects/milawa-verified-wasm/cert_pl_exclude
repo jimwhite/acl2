@@ -1,0 +1,7 @@
+The books under wasm3/ depend on the pinned wasm-acl2 tree, which is not in this
+repository; they are certified by `make -C wasm3` with the pin in place, and are
+excluded from a community certification run.  The books under milawa-lisp/ and
+machine/ have no external dependencies and are certified as usual.
+
+This is the arrangement section 3.4 of books/projects/milawa/VERIFIED-WASM-LISP.md
+describes: a pinned external dependency is never assumed to be present.

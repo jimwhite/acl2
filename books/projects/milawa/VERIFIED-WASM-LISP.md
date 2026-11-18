@@ -93,8 +93,22 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   `make -C translate check-il SPEC=3.0` re-derives that IL from the WebAssembly
   spec sources through `nix` and reports it reproducible.  See §3.4.  Nothing
   blocks L1 any more.
-- **Phases 2-6 are untouched.**  Nothing has been built against a WASM
-  semantics yet, so the L1/L2 risk analysis in §8 is unchanged.
+- **Phase 2 has started.**  `wasm/milawa-verified.wat` implements one machine
+  step per call and runs in Node; `machine/mvm.lisp` is the ACL2 model of it, with
+  a halted/aborted machine proved to be a fixed point, and `machine/
+  mvm-tests.lisp` checks model against module on a spread of programs (tests,
+  not proofs, and labelled as such).  `wasm3/` is the first tree that depends on
+  the pinned semantics: our artifact decodes completely, the decoded module is
+  pinned as a logic constant, and `W3T::MODULE-P` of it is proved.
+- **A constraint on L1/L2 found by measurement.**  `W3T::GRAM/BMODULE` and
+  `W3T::$INSTANTIATE` are `:program` mode, so bytes → module and module → store
+  cannot be theorems; `W3T::STEP` and `W3T::MODULE-P` are `:logic` mode, so the
+  per-step reasoning and everything after it can be.  The plan therefore pins the
+  decoded module (and, next, the instantiated store) as logic constants produced
+  by a scripted, checked decode.  See §3.4.
+- **Phases 3-6 are untouched.**  Nothing has been built against a WASM
+  semantics beyond decoding the artifact, so the L1/L2 risk analysis in §8 is
+  otherwise unchanged.
 
 One correction to the plan as written: §3.1 treats "the kernel never calls a
 function installed by an event" as something to confirm by instrumentation
@@ -271,8 +285,17 @@ because:
 - it is the most complete and current artifact: syntax, validation, numerics,
   execution and the binary format are all translated, and the generated step is
   in logic mode; 64,005 of 64,018 spec-test-3 commands pass;
-- the binary decoder is *inside* the formal model, so the shipped `.wasm` file
-  can itself be the subject of the theorem rather than a reconstruction of it;
+- the binary decoder is *inside* the formal model — with a caveat found by
+  measurement on 2026-11-18: `W3T::GRAM/BMODULE` and `W3T::$INSTANTIATE` are in
+  `:program` mode in the generated books, so the decoder's code is in the model
+  but its *use* cannot appear in a theorem.  `W3T::STEP`, `W3T::STEPS/%FUEL` and
+  `W3T::MODULE-P` are `:logic` mode, so everything downstream of decoding is
+  provable.  The consequence is that bytes → module is a scripted step
+  (`harness/gen_module.py`, which fails unless the decode is complete and
+  unchanged), leaving one line of trusted execution of the certified decoder; the
+  module and the store are then pinned as logic constants.  Getting the decoder
+  into logic mode is a translator question for `wasm-acl2`, not a proof question
+  for us, and is recorded as an open item;
 - `main` also carries the faster `engine/` (list machine and stobj machine, with
   `FAST-STEP-REFINES` per rule) plus `ENGINE-RESULT-IS-SPEC-RESULT`, which is
   the theorem L2 instantiates.

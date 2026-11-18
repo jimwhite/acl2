@@ -34,6 +34,7 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | `MVM-STEP` — ACL2 model of the module, 32-bit words, status protocol, fixed points | **proved** (`machine/mvm.lisp`) |
 | `milawa-verified.wat` — the module: one step per call, runnable in Node | **done** (milestones: `wasm/`) |
 | `MVM` model vs the module, on a spread of programs and every abort case | **tested** (`machine/mvm-tests.lisp`, Node recording) |
+| The artifact decodes in the certified semantics; the module is pinned as a logic constant; `W3T::MODULE-P` of it is proved | **proved** (`wasm3/`) |
 | L1 — one call to `STEP` equals `MVM-STEP` | **not started** |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -105,6 +106,10 @@ harness/
 
 The module and the model are kept in step by hand, and the tests say so; L1 is
 what makes that a theorem rather than a promise.
+
+A fourth directory, `wasm3/`, holds the books that depend on the pinned
+semantics; they are listed in `cert_pl_exclude`, so a community certification run
+never has to find `wasm-acl2`, and are certified by `make -C wasm3`.
 
 Still to come: L1 (one call to `STEP` equals `MVM-STEP`, stated against the
 certified WASM 3.0 semantics from
@@ -238,6 +243,7 @@ so any application of a primitive inside a larger expression returned nil.  The
 | ACL2 and its host Lisp | already trusted by Milawa's own stage-1 proof |
 | SpecTec and the SpecTec→ACL2 translator (`wasm-acl2`) | generated semantics; no theorem connects the output to the source |
 | the WASM engine that runs the artifact | the role the CPU plays in Jitawa |
+| one execution of the certified binary decoder, to turn the `.wasm` into the module constant | `W3T::GRAM/BMODULE` is `:program` mode, so this step cannot be a theorem; it is scripted and checked (`harness/gen_module.py --check`) |
 | the front end and the I/O shim | untrusted by design: a bug there can cause a rejection, never a false acceptance, provided the acceptance predicate is proved about the parsed value |
 
 Not trusted: the evaluator, the primitives, the allocator, the compiled runtime,
