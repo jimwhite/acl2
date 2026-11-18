@@ -43,12 +43,15 @@
         (loghead 8 (logtail 16 w))
         (loghead 8 (logtail 24 w))))
 
+; The four-byte primitive, and the list version in terms of it: the decoder below
+; reads with CAR/CADR/CADDR/CADDR, so this is the shape the proofs want.
+(defun mvm-bytes4-to-word (b0 b1 b2 b3)
+  (declare (xargs :guard t :verify-guards nil))
+  (logapp 8 b0 (logapp 8 b1 (logapp 8 b2 (loghead 8 b3)))))
+
 (defun mvm-bytes-to-word (bs)
   (declare (xargs :guard t :verify-guards nil))
-  (logapp 8 (nth 0 bs)
-          (logapp 8 (nth 1 bs)
-                  (logapp 8 (nth 2 bs)
-                          (loghead 8 (nth 3 bs))))))
+  (mvm-bytes4-to-word (nth 0 bs) (nth 1 bs) (nth 2 bs) (nth 3 bs)))
 
 (defun mvm-bytes-p (bs)
   (declare (xargs :guard t))
@@ -69,7 +72,8 @@
   ; and FLOOR, after which the library's algebraic lemmas about them no longer
   ; match and the goal becomes a mess of rationals.  This is the same lesson as
   ; keeping MILAWA-STEP symbolic, in a different library.
-  :hints (("Goal" :in-theory (e/d (mvm-word-to-bytes mvm-bytes-to-word)
+  :hints (("Goal" :in-theory (e/d (mvm-word-to-bytes mvm-bytes-to-word
+                                                    mvm-bytes4-to-word)
                                   (loghead logtail logapp)))))
 
 (defthm mvm-word-to-bytes-length
@@ -166,92 +170,103 @@
 ;; proof that does go through, and is kept for it.
 
 ;; ---------------------------------------------------------------------------
-;; Next: reading a slot back out of the image
+;; Reading words back out of the image
 ;;
-;; L1's i32.load cases need to know which stack element a four-byte load at a
-;; byte offset returns:
-;;
-;;   (defthm mvm-stack-image-slot
-;;     (implies (and (natp i) (< i (len stack)) (unsigned-byte-p 32 (nth i stack)))
-;;              (equal (mvm-bytes-to-word
-;;                      (take 4 (nthcdr (* 4 i) (mvm-stack-image stack))))
-;;                     (nth (- (len stack) 1 i) stack))))
-;;
-;; (the stack is top-first, so byte offset 4i holds the element (len stack)-1-i
-;; from the top).  Two things were measured the hard way and should not be
-;; rediscovered.
-;;
-;; FIRST: the append drop lemma needs induction on X, not on K --
-;;
-;;   (defthm nthcdr-of-append-general
-;;     (implies (natp k)
-;;              (equal (nthcdr (+ (len x) k) (append x y)) (nthcdr k y)))
-;;     :hints (("Goal" :induct (append x y) :in-theory (enable nthcdr len))))
-;;
-;; -- because (CDR (APPEND X Y)) is only (APPEND (CDR X) Y) when X is a cons, so
-;; the K induction's step does not match its own conclusion.  With the induction
-;; on X this lemma goes through, and it is the piece that was missing.
-;;
-;; SECOND: the slot lemma then needs the step
-;;
-;;   (nthcdr (* 4 i) (append (mvm-word-to-bytes a) (mvm-word-list-to-bytes d)))
-;;
-;; to be handed to that lemma, which requires rewriting (* 4 i) to
-;; (+ 4 (* 4 (i-1))) for i > 0 -- they are equal for integers but not
-;; syntactically, so the lemma's premise cannot match.  Provide it as an
-;; un-stored arithmetic fact and :USE it:
-;;
-;;   (defthm 4i-splits
-;;     (implies (and (integerp i) (< 0 i))
-;;              (equal (* 4 i) (+ 4 (* 4 (+ -1 i)))))
-;;     :rule-classes nil)
-;;
-;; and induct on (WS, I) together with a (zp i) split (the obvious induction on
-;; (nthcdr i ws) spent 387 s and 56 GB and failed).
-;;
-;; WHAT ACTUALLY BLOCKS IT, diagnosed after many attempts: enabling a recognizer
-;; that contains arithmetic turns the induction into a combinatorial case split.
-;; With (MVM-WORD-LIST-P WS) as the hypothesis and the predicate ENABLED, ACL2
-;; splits on (INTEGERP (CAR WS)), (<= 0 (CAR WS)), (< (CAR WS) 2^32) and on the
-;; LOGHEAD/LOGTAIL structure of the round trip at every step: 259 and then 4963
-;; subgoals were measured.  The shape that should work, and was not yet tried:
-;;
-;;   * a single-word fact, (implies (unsigned-byte-p 32 w)
-;;                                  (equal (mvm-load-word (mvm-word-to-bytes w)) w))
-;;   * a STEP rewrite rule whose left-hand side is the append form,
-;;       (equal (mvm-image-words (append (mvm-word-to-bytes w) rest) (+ 1 n))
-;;              (cons w (mvm-image-words rest n)))
-;;     provable by unfolding CAR/CADDR/CADDDR of a literal four-list prefix;
-;;   * and for the region, forward-chaining rules
-;;       (mvm-word-list-p ws) & (consp ws) => (unsigned-byte-p 32 (car ws))
-;;       (mvm-word-list-p ws) => (mvm-word-list-p (cdr ws))
-;;     with the recognizer itself DISABLED, so nothing splits on its arithmetic.
-;;
-;; The take side needs
-;;   (implies (and (true-listp x) (natp n) (equal (len x) n))
-;;            (equal (take n (append x y)) x))
-;; inducting on (take n x) -- both N and X descend -- and TRUE-LISTP is essential:
-;; the statement is false for atoms, since (LEN 'A) is 0 but (TAKE 0 'A) is NIL.
-;;
-;; THIRD, and this one was verified: the take side of the same argument needs
-;;
-;;   (defthm take-len-of-append
-;;     (implies (and (true-listp x) (natp n) (equal (len x) n))
-;;              (equal (take n (append x y)) x))
-;;     :hints (("Goal" :induct (take n x) :in-theory (enable take))))
-;;
-;; with TWO details that are easy to get wrong.  TRUE-LISTP is not decoration:
-;; the statement is false for atoms, because (LEN 'A) is 0 while (TAKE 0 'A) is
-;; NIL.  And the induction must be on (TAKE N X) so that N and X descend
-;; together; inducting on X alone leaves N fixed and hands the step the false
-;; hypothesis (EQUAL (LEN (CDR X)) N).
-;;
-;; FOURTH, unresolved, and the reason the indexed form was abandoned in favour of
-;; a recursive decoder (MVM-IMAGE-WORDS, which consumes four bytes per word and so
-;; matches the module's own byte-at-a-time addressing): with the decoder and
-;; MVM-WORD-LIST-TO-BYTES ENABLED in the induction, ACL2 produced a 259-way case
-;; split, and with a hand-written joint induction over (WS, N) it produced 4963
-;; subgoals before being killed.  The next attempt should keep both definitions
-;; DISABLED and reason with their defining equations by hand, or prove the round
-;; trip one word at a time with the region-level statement derived afterwards.
+;; The module walks memory a word at a time, so the decoder consumes four bytes
+;; per step rather than indexing with (nthcdr (* 4 i)).  The indexed version needs
+;; (* 4 i) rewritten into (+ 4 (* 4 (i-1))) before the APPEND lemmas can match, and
+;; the recognizer MVM-WORD-LIST-P then splits the induction into (INTEGERP (CAR WS)),
+;; (<= 0 (CAR WS)) and (< (CAR WS) 2^32) cases at every step: 259 and then 4963
+;; subgoals were measured.  The way out is a STEP rule about the append form, with
+;; the recognizer's facts supplied by forward chaining and the recognizer itself
+;; DISABLED.
+;; ---------------------------------------------------------------------------
 
+(defun mvm-word-list-p (ws)
+  (declare (xargs :guard t))
+  (if (consp ws)
+      (and (unsigned-byte-p 32 (car ws))
+           (mvm-word-list-p (cdr ws)))
+    (equal ws nil)))
+
+(defthm mvm-word-list-p-car
+  (implies (and (mvm-word-list-p ws) (consp ws))
+           (unsigned-byte-p 32 (car ws)))
+  :rule-classes :forward-chaining)
+
+(defthm mvm-word-list-p-cdr
+  (implies (mvm-word-list-p ws)
+           (mvm-word-list-p (cdr ws)))
+  :rule-classes :forward-chaining)
+
+(defun mvm-image-words (bytes n)
+  (declare (xargs :guard (natp n) :verify-guards nil))
+  (if (zp n)
+      nil
+    (cons (mvm-bytes4-to-word (car bytes)
+                              (car (cdr bytes))
+                              (car (cdr (cdr bytes)))
+                              (car (cdr (cdr (cdr bytes)))))
+          (mvm-image-words (cdr (cdr (cdr (cdr bytes)))) (1- n)))))
+
+; The step rule.  A word's bytes are a literal four-list, so the four CARs and
+; the CDDDDR of (append (word-to-bytes w) rest) all unfold, and what is left is
+; the per-word round trip.
+(defthm mvm-image-words-of-append-word
+  (implies (and (unsigned-byte-p 32 w) (natp n))
+           (equal (mvm-image-words (append (mvm-word-to-bytes w) rest) (+ 1 n))
+                  (cons w (mvm-image-words rest n))))
+  :hints (("Goal" :in-theory (e/d (mvm-image-words mvm-word-to-bytes
+                                                  mvm-bytes4-to-word
+                                                  mvm-bytes-to-word)
+                                  (loghead logtail logapp)))))
+
+; The base case of the induction needs to know that a non-cons word list is NIL,
+; and the recognizer is disabled in the proof so it cannot be unfolded there.
+(defthm mvm-word-list-p-of-atom
+  (implies (atom ws)
+           (equal (mvm-word-list-p ws)
+                  (equal ws nil)))
+  :hints (("Goal" :in-theory (enable mvm-word-list-p))))
+
+; The region: decoding a word list's image gives the word list back, bottom-first.
+(defthm mvm-image-words-of-mvm-word-list-to-bytes
+  (implies (mvm-word-list-p ws)
+           (equal (mvm-image-words (mvm-word-list-to-bytes ws) (len ws))
+                  ws))
+  ; MVM-WORD-TO-BYTES and the byte-level decoders stay DISABLED: unfolding them
+  ; brings LOGHEAD/LOGTAIL into the goal, and ACL2 then splits on the arithmetic
+  ; (9.5M prover steps were measured that way).  The step rule
+  ; MVM-IMAGE-WORDS-OF-APPEND-WORD already knows what the bytes mean, so the
+  ; induction never needs to see them.
+  :hints (("Goal" :induct (len ws)
+                  :in-theory (e/d (mvm-word-list-to-bytes)
+                                  (mvm-word-list-p mvm-image-words
+                                   mvm-word-to-bytes mvm-bytes-to-word
+                                   mvm-bytes4-to-word)))))
+
+; ... and the stack region, which is MVM's stack bottom-first: the module pushes
+; at increasing addresses while MVM keeps the most recent value first.
+;; REVAPPEND generalises: the accumulator must be a word list too, so state the
+;; lemma that way and get the NIL case by instantiation.
+(defthm mvm-word-list-p-of-revappend
+  (implies (and (mvm-word-list-p x)
+                (mvm-word-list-p acc))
+           (mvm-word-list-p (revappend x acc)))
+  :hints (("Goal" :induct (revappend x acc)
+                  :in-theory (enable mvm-word-list-p revappend))))
+
+(defthm mvm-word-list-p-of-revappend-nil
+  (implies (mvm-word-list-p x)
+           (mvm-word-list-p (revappend x nil)))
+  :hints (("Goal" :use ((:instance mvm-word-list-p-of-revappend (acc nil)))
+                  :in-theory (enable mvm-word-list-p))))
+
+(defthm mvm-image-of-stack
+  (implies (mvm-word-list-p stack)
+           (equal (mvm-image-words (mvm-stack-image stack) (len stack))
+                  (revappend stack nil)))
+  :hints (("Goal" :in-theory (e/d (mvm-stack-image)
+                                  (mvm-image-words-of-mvm-word-list-to-bytes mvm-word-list-p))
+                  :use ((:instance mvm-image-words-of-mvm-word-list-to-bytes
+                                   (ws (revappend stack nil)))))))
