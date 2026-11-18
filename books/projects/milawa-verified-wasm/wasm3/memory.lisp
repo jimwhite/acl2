@@ -165,3 +165,47 @@
 ;; inside NTHCDR blocks the step case.  The APPEND lemma above is the part of that
 ;; proof that does go through, and is kept for it.
 
+;; ---------------------------------------------------------------------------
+;; Next: reading a slot back out of the image
+;;
+;; L1's i32.load cases need to know which stack element a four-byte load at a
+;; byte offset returns:
+;;
+;;   (defthm mvm-stack-image-slot
+;;     (implies (and (natp i) (< i (len stack)) (unsigned-byte-p 32 (nth i stack)))
+;;              (equal (mvm-bytes-to-word
+;;                      (take 4 (nthcdr (* 4 i) (mvm-stack-image stack))))
+;;                     (nth (- (len stack) 1 i) stack))))
+;;
+;; (the stack is top-first, so byte offset 4i holds the element (len stack)-1-i
+;; from the top).  Two things were measured the hard way and should not be
+;; rediscovered.
+;;
+;; FIRST: the append drop lemma needs induction on X, not on K --
+;;
+;;   (defthm nthcdr-of-append-general
+;;     (implies (natp k)
+;;              (equal (nthcdr (+ (len x) k) (append x y)) (nthcdr k y)))
+;;     :hints (("Goal" :induct (append x y) :in-theory (enable nthcdr len))))
+;;
+;; -- because (CDR (APPEND X Y)) is only (APPEND (CDR X) Y) when X is a cons, so
+;; the K induction's step does not match its own conclusion.  With the induction
+;; on X this lemma goes through, and it is the piece that was missing.
+;;
+;; SECOND: the slot lemma then needs the step
+;;
+;;   (nthcdr (* 4 i) (append (mvm-word-to-bytes a) (mvm-word-list-to-bytes d)))
+;;
+;; to be handed to that lemma, which requires rewriting (* 4 i) to
+;; (+ 4 (* 4 (i-1))) for i > 0 -- they are equal for integers but not
+;; syntactically, so the lemma's premise cannot match.  Provide it as an
+;; un-stored arithmetic fact and :USE it:
+;;
+;;   (defthm 4i-splits
+;;     (implies (and (integerp i) (< 0 i))
+;;              (equal (* 4 i) (+ 4 (* 4 (+ -1 i)))))
+;;     :rule-classes nil)
+;;
+;; and induct on (WS, I) together with a (zp i) split (the obvious induction on
+;; (nthcdr i ws) spent 387 s and 56 GB and failed).
+
