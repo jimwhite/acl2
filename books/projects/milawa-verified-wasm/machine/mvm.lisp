@@ -278,6 +278,17 @@
   :hints (("Goal" :induct (mvm-run st n)
                   :in-theory (e/d (mvm-run) (mvm-step)))))
 
+; Burning exactly the steps the machine spends reaches the same state as burning
+; the whole budget.  This is the companion to monotonicity, and it is what L2
+; needs: the run-level theorem compares an exact step count against a fuelled
+; loop, so the two have to agree at the point where the loop actually stops.
+(defthm mvm-run-of-mvm-steps
+  (implies (natp fuel)
+           (equal (mvm-run st (mvm-steps st fuel))
+                  (mvm-run st fuel)))
+  :hints (("Goal" :induct (mvm-steps st fuel)
+                  :in-theory (e/d (mvm-steps mvm-run) (mvm-step)))))
+
 ; Once the machine has stopped inside the budget, a larger budget changes nothing.
 ; So the point at which the driver stops is a property of the program, not of how
 ; patient the driver was -- which is exactly what the run-level theorem needs, and
