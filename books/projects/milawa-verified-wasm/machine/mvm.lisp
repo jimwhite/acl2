@@ -261,16 +261,35 @@
   (<= (mvm-steps st fuel) (nfix fuel))
   :rule-classes :linear)
 
-; STILL TO PROVE, and deliberately not faked: once the machine has stopped inside
-; the budget, a larger budget changes nothing --
-;
-;   (implies (not (mvm-runningp (mvm-run st n)))
-;            (equal (mvm-run st (+ n k)) (mvm-run st n)))
-;
-; The obvious statement does not go through by the induction ACL2 picks: the
-; budget has to be split so that the hypothesis about N is available at the
-; point where the extra K is spent, which wants the "run of n then k is run of
-; n+k" decomposition proved first, by induction on K, with the fixed-point lemma
-; above as the base case.  It is needed for L2 (the run-level theorem compares an
-; exact number of steps against a fuelled loop) and is the next thing to do here,
-; not a gap in the argument.
+; Spending a budget in two instalments is spending it at once.  This is the
+; decomposition that makes monotonicity go through, and it is worth stating on its
+; own because L2 needs it directly: it is how a run of n steps is compared with a
+; loop that was given a larger budget.
+
+; MVM-STEP stays DISABLED, for the reason it does everywhere in this project: it
+; is the term the induction has to keep symbolic.  Enabling it lets the rewriter
+; unfold the machine at every step and the proof becomes 14 million prover steps
+; and no closer to done.
+
+(defthm mvm-run-add
+  (implies (and (natp n) (natp k))
+           (equal (mvm-run st (+ n k))
+                  (mvm-run (mvm-run st n) k)))
+  :hints (("Goal" :induct (mvm-run st n)
+                  :in-theory (e/d (mvm-run) (mvm-step)))))
+
+; Once the machine has stopped inside the budget, a larger budget changes nothing.
+; So the point at which the driver stops is a property of the program, not of how
+; patient the driver was -- which is exactly what the run-level theorem needs, and
+; what makes "the loop ran out of fuel" a distinguishable outcome rather than a
+; difference of answer.
+
+(defthm mvm-run-monotone
+  (implies (and (natp n)
+                (natp m)
+                (<= n m)
+                (not (mvm-runningp (mvm-run st n))))
+           (equal (mvm-run st m) (mvm-run st n)))
+  :hints (("Goal" :use ((:instance mvm-run-add (k (- m n))))
+                  :in-theory (disable mvm-run-add))))
+
