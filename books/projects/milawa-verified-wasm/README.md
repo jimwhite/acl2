@@ -32,6 +32,7 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | Elimination principle for `MILAWA-RUNS` | **proved** — immediate, because the relation is a function of the exact count |
 | `MILAWA-RUNS` agrees with `MILAWA-RUN` — soundness and completeness | **proved** (`milawa-lisp/reachability.lisp`) |
 | `MVM` step machine port, WASM module, L1/L2 refinement | **not started** |
+| WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
 ## Why this shape
@@ -95,6 +96,17 @@ instantiation), `kernel/` (per-`defun` correspondence to `ACL2/logic/`), and
 ```sh
 cd books/projects/milawa-verified-wasm/milawa-lisp
 make ACL2=/path/to/saved_acl2
+```
+
+That certifies every book here; the whole tree takes a few seconds.  The WASM
+side is a separate, pinned clone, `../../../../.wasm-acl2` (commit `7f96c89`),
+and its 3.0 books are generated rather than checked in:
+
+```sh
+cd ../../../../.wasm-acl2/translate
+make gen SPEC=3.0 ACL2=$ACL2                    # ~2 min, no Nix needed
+$ACL2_SYSTEM_BOOKS/build/cert.pl --acl2 $ACL2 -j 4 gen/wasm-3.0/wasm3
+make check-il SPEC=3.0 NIX=/nix/var/nix/profiles/default/bin/nix   # Nix; the IL must match SpecTec
 ```
 
 or, for a single book,

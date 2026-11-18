@@ -39,8 +39,11 @@ The things that make this tractable now, and did not exist in 2012:
    runtime does not need a JIT, and does not need a verified compiler either —
    an interpreted function table suffices.  This is the single largest
    simplification available over Jitawa.
-4. **The W3T semantics has a *relational*, logic-mode step** we can state
-   theorems about, rather than a program-mode interpreter.
+4. **The W3T semantics has a logic-mode step** we can state theorems about,
+   rather than a program-mode interpreter.  It is a function returning the list
+   of successor configurations the spec's rules produce, in rule order; the
+   relation is read off it, which is the same choice we made for `MILAWA-RUNS`
+   (§0.1) and it is what makes the two comparable.
 
 Recommended shape: **verify an interpreter, not a compiler.**  The proof work is
 then O(size of the runtime), not O(size of the Milawa kernel), and the kernel can
@@ -83,8 +86,13 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   fuel-exhaustion answer excluded -- stopping for lack of fuel is the runtime
   declining to answer, not a run.  That closes the "is the relation about the
   right machine?" question before any WASM work starts.
-- **`wasm-acl2` is pinned** at `7f96c89` (clone, not vendored; see §3.4 for the
-  `nix` caveat and for the local WASM 1.0 build that does certify).
+- **The WASM 3.0 semantics is available and reproducible.**  `wasm-acl2` is
+  pinned at `7f96c89` (clone, not vendored); the 26 books of `gen/wasm-3.0`
+  were generated from the checked-in IL and certified here (349k lines, ~5 min
+  of certification, `5_4-binary_modules` the slowest at 211 s); and
+  `make -C translate check-il SPEC=3.0` re-derives that IL from the WebAssembly
+  spec sources through `nix` and reports it reproducible.  See §3.4.  Nothing
+  blocks L1 any more.
 - **Phases 2-6 are untouched.**  Nothing has been built against a WASM
   semantics yet, so the L1/L2 risk analysis in §8 is unchanged.
 
@@ -280,31 +288,45 @@ non-trapping must be proved for our module; and `wasm-acl2` is not in the
 community books, so the dependency is pinned and either vendored or excluded
 from the community scan, never assumed.
 
-**Pinned, and a toolchain caveat.**  `wasm-acl2` is cloned (not vendored) at
-`/workspaces/acl2/.wasm-acl2`, commit `7f96c89`, which is `main` as of the
-WASM 3.0 workshop merge.  The generated books are *not* checked in: `translate/
-Makefile` regenerates them from SpecTec with `nix build ..#wasm3-il`, and `nix`
-is not installed in this container, so `make -C translate check-3.0` stops at
-`check-il` with `nix: not found`.  What *is* checked in is `translate/gen/
-wasm-1.0`, and it certifies here in about twenty seconds with the tree's own
-ACL2, bypassing the IL regenerator:
+**Pinned, generated, certified, and reproducible.**  `wasm-acl2` is cloned (not
+vendored) at `/workspaces/acl2/.wasm-acl2`, commit `7f96c89`, which is `main` as
+of the WASM 3.0 workshop merge.  The *generated ACL2 books are not checked in*
+(the 3.0 tree is 349k lines); what is checked in is the IL they are translated
+from, `translate/il/wasm-3.0.il.sexp`, and the translation is a pure function of
+that IL plus its declarations.  So:
 
 ```sh
 cd /workspaces/acl2/.wasm-acl2/translate
-$ACL2_SYSTEM_BOOKS/build/cert.pl --acl2 /workspaces/acl2/saved_acl2 gen/wasm-1.0/wasm1
+make gen SPEC=3.0 ACL2=/workspaces/acl2/saved_acl2        # ~2 min
+$ACL2_SYSTEM_BOOKS/build/cert.pl --acl2 /workspaces/acl2/saved_acl2 \
+    -j 4 gen/wasm-3.0/wasm3                              # 26 books, ~5 min
 ```
 
-So L1/L2 development can start against `W1T::STEP` and `W1T::STEPS/%FUEL` today,
-and the move to 3.0 is a rebuild once `nix` is available (or once the generated
-3.0 books are produced elsewhere and pinned).  The module we emit is inside the
-1.0 instruction set by construction -- see the subset list below -- so the
-refinement obligations have the same shape in both.
+Both were run on 2026-11-18: 26 books, all certified, the slowest being
+`5_4-binary_modules` at 211 s.  `Nix` is *not* needed for either step.
 
-Two facts about the generated step worth knowing before writing L1:
-`W1T::STEP` returns a *list* of outcomes and `STEPS/%FUEL` takes its first
-element, so the spec encodes determinism by an ordered match rather than by
-proof; and `STEPS/%FUEL` returns `(LIST A)` when it stops, so a stopped machine
-is a one-element list, which is what the run-level theorem compares against.
+What Nix is needed for is the step that makes the certified book trustworthy
+rather than self-consistent: regenerating the IL from the WebAssembly spec
+sources (`SpecTec`) and comparing.  Nix is installed here (`.devcontainer/
+setup.sh`; this image has no init system, so that script also starts
+`nix-daemon` by hand, and enables the `nix-command` and `flakes` experimental
+features), and
+
+```sh
+make -C translate check-il SPEC=3.0 NIX=/nix/var/nix/profiles/default/bin/nix
+```
+
+answers `IL is up to date and reproducible` at commit `7f96c89`.  So the
+`W3T::` books we certify are the WebAssembly 3.0 specification as translated,
+not a hand-edited stand-in.  Re-run `check-il` whenever the pin moves.
+
+Two facts about the generated step that shape L1.  `W3T::STEP` is a *function*
+returning a list of successor configurations, tried in the spec's rule order, so
+determinism comes from an ordered match rather than from a proof — which is the
+same decision this project reached independently for `MILAWA-RUNS` (§0.1).  And
+`W3T::STEPS/%FUEL` answers `(LIST A)` when the machine has stopped, so a stopped
+configuration is a one-element list; that is the shape the run-level theorem
+compares a Milawa run against.
 
 **Instruction subset actually emitted.**  `i32.const`, `i32` arithmetic and
 comparisons, `local.get/set/tee`, `global.get/set`, `i32.load/store` (8/16/32),
