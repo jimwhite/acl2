@@ -239,22 +239,28 @@ returned as the machine's result instead of being handed to the waiting frames,
 so any application of a primitive inside a larger expression returned nil.  The
 `assert-event` checks in `demo.lisp` caught it immediately; the proofs did not.
 
-**Symbolic execution stops at the context rules, not at the cost.**  Three
-measured attempts at L1's symbolic form, and the third is the informative one.
-With no hints the goal comes back *unreduced* — ACL2 will not unfold a recursive
-definition on symbolic arguments unless asked, so the first run measured nothing.
-With `(enable w3t::step)` on the whole 9-step chain: killed at 400 s.  But a
-*single* step, with the configuration's shape concrete and only its leaves
-symbolic, gets a long way cheaply: `$INVOKE`, `$WITH_GLOBAL`,
-`%GET-FIELD`/`%PUT-FIELD`, `EXPAND` and the module's own lookups all reduce, and
-the rewriter walks down `STEP`'s rule chain until it stops at
-`STEP/R-CTXT-INSTRS` — the rule that steps inside an instruction sequence, whose
-guard is a `%SIZE` comparison between the inner configuration and the whole one.
-It fails in 0.13 s and 29k prover steps, which is cheap enough to iterate on.
-What is missing is `%SIZE` context lemmas for the four `ctxt-*` rules: the
-"context lemma" upstream names as E11's hard part, now with a concrete shape here.
+**A hypothesis you can measure is better than one you can argue for.**  Three
+attempts at L1's symbolic form.  With no hints the goal comes back *unreduced* --
+ACL2 will not unfold a recursive definition on symbolic arguments unless asked, so
+the first run measured a hint problem and nothing else.  With
+`(enable w3t::step)` on the whole 9-step chain: killed at 400 s.  One single step
+gets a long way cheaply -- `$INVOKE`, `$WITH_GLOBAL`, `%GET-FIELD`/`%PUT-FIELD`,
+`EXPAND` and the module's lookups all reduce -- and stops at `STEP/R-CTXT-INSTRS`,
+the rule that steps inside an instruction sequence.  That looks like the "context
+lemma" upstream calls E11's hard part, and it is not: the module's WASM code is a
+constant of the artifact, so every instruction list in a configuration is
+concrete, and the split point the context rules search for is decidable on one
+(`step/prefix7` = 0, 1, 2 on the module's own bodies).  The `%SIZE` guard goes with
+it.  The real blocker is ACL2 declining to unfold `STEP`'s recursive chain -- a
+theory-design problem, not a missing lemma -- which is why the work is an
+instruction-lemma library rather than a size-lemma library.
 
-**An index is not a shape.****An index is not a shape.**  The memory correspondence — decode the image of a
+**ACL2's `TAKE` pads.**  `(take 3 '(a b))` is `(A B NIL)` and `(take 1 nil)` is
+`(NIL)`: there is no `ENDP` test, so "a prefix is no bigger than the list" is
+*false* without a length hypothesis, and a length hypothesis is not obvious until
+the padding has bitten you once.
+
+**An index is not a shape.****An index is not a shape.****An index is not a shape.**  The memory correspondence — decode the image of a
 word list and get the word list back — looks like a one-liner and resisted about
 eighteen attempts across two sessions, because the natural statement indexes
 bytes with `(nthcdr (* 4 i) bytes)`.  The `(* 4 i)` is equal to

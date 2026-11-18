@@ -128,51 +128,62 @@ book:
 
 ### What the symbolic version actually hits
 
-Three measured attempts, in the order they were tried.  The negative results are
-the useful part: the obstacle is not where the plan assumed.
+Four measured attempts.  The negative results are the useful part: the obstacle
+is not where the plan assumed, and one of them dissolved on measurement.
 
 **(a) The whole 9-step frozen-status chain, no hints.**  It does not even start:
-the goal comes back *unreduced*, with `STEPS/%FUEL`, `STEP` and `$INVOKE` still
-there.  ACL2 will not unfold a recursive definition on symbolic arguments unless
-asked.  This is a hint problem, not a cost problem — and it means the earlier
-"900 s and no output" run was not measuring the chain either.
+the goal comes back *unreduced*, with `STEPS/%FUEL`, `STEP` and `$INVOKE` still in
+it.  ACL2 will not unfold a recursive definition on symbolic arguments unless
+asked.  A hint problem, not a cost problem — so the earlier "900 s and no output"
+run was not measuring the chain either.
 
 **(b) The whole chain with `(enable w3t::step)`.**  Killed at 400 s.
 
-**(c) One single step, no hints.**  This is the informative one.  The rewriter
-does expand `$INVOKE`, `$WITH_GLOBAL`, `%GET-FIELD`/`%PUT-FIELD`, `EXPAND` and the
-module's own lookups — so a configuration with concrete shape and symbolic leaves
-*is* tractable — and it walks down `STEP`'s rule chain until it stops at
+**(c) One single step, no hints.**  The rewriter *does* expand `$INVOKE`,
+`$WITH_GLOBAL`, `%GET-FIELD`/`%PUT-FIELD`, `EXPAND` and the module's own lookups,
+so a configuration with concrete shape and symbolic leaves is tractable; it walks
+down `STEP`'s rule chain and stops at `STEP/R-CTXT-INSTRS` — the rule that steps
+*inside* an instruction sequence.  It fails in 0.13 s and 29k prover steps, cheap
+enough to iterate on.
+
+**(d) The context-rule guard, measured.**  I first read (c) as "the `%SIZE`
+guard in the context rules needs context lemmas".  That was wrong, and the
+measurement is in `wasm3/size.lisp`: the module's WASM code lives in the store's
+`:CODE` field, which neither `$WITH_MEM` nor `$WITH_GLOBAL` touches, so **every
+instruction list in a configuration is concrete**; only the memory bytes and the
+five globals are symbolic.  And the split point the context rules search for is
+decidable on a concrete instruction list:
 
 ```
-Subgoal 2
-(IMPLIES (W3T::STEP/R-CTXT-INSTRS (LIST* :|%;%| ...))  ...)
+(step/prefix7 '((:GLOBAL.GET 3) (:CONST (:I32) 1) ...))    = 0
+(step/prefix7 '((:CONST (:I32) 7) (:RETURN)))              = 1
+(step/prefix7 '((:CONST (:I32) 7) (:CONST (:I32) 9) ...))  = 2
 ```
 
-`Step/ctxt-instrs` is the rule that steps *inside* the instruction sequence, and
-its guard is a `%SIZE` comparison between the inner configuration
-`(:|%;%| Z instr_star)` and the whole one.  With the instructions symbolic, that
-comparison is a real goal, and there is nothing in the books that discharges it.
-It fails cheaply (0.13 s, 29k prover steps), which is good news for iterating.
+So the `%SIZE` guard — which mentions only the instruction list — evaluates too,
+and the strict size lemmas are **not** on the critical path.  They are in
+`wasm3/size.lisp` anyway (with the bridge that `%SIZE` is `acl2-count` hidden
+behind `mbe` and disabled), because they are cheap and true and would be what an
+arbitrary-program statement needs.
 
-So the first thing symbolic L1 needs is not a better hint but **`%SIZE` context
-lemmas**: for each of the four `ctxt-*` rules, the fact that a configuration
-whose instruction list is a proper sublist of another's has smaller `%SIZE`.  That
-is precisely the "context lemma" upstream lists as the hard part of E11, and it
-now has a concrete form here rather than being folklore.
+So the remaining blocker for a symbolic step is (a)+(b): ACL2's refusal to unfold
+`STEP`'s recursive chain on a symbolic configuration.  That is a theory-design
+problem — which rules to enable for which configuration shape — not a missing
+lemma.  The next experiment is exactly that: one instruction, one enabled
+`STEP/R-*` rule, and the recursive call replaced by an instance of a lemma proved
+at the previous instruction.  Which is the instruction-lemma library, arrived at
+from the other direction.
 
 The order of work that follows:
 
-1. **`%SIZE` context lemmas** for `ctxt-instrs`, `ctxt-label`, `ctxt-frame`,
-   `ctxt-handler`.  Without them no symbolic step inside a body is possible.
-2. **An instruction-lemma library**: one lemma per (instruction, context) pair,
-   with the store's code concrete and the values symbolic, composed because the
-   module's instruction sequences are concrete.  Upstream measures ~10k prover
-   steps for the first such lemma.
-3. **C2 per opcode** as a chain of those lemmas — ~50 to 100 links, exactly the
+1. **An instruction-lemma library**: one lemma per (instruction, context) pair,
+   with a concrete instruction list, the store's code concrete, and the values
+   symbolic; each proved with only the one rule it needs enabled, then composed.
+   Upstream measures ~10k prover steps for the first such lemma.
+2. **C2 per opcode** as a chain of those lemmas — ~50 to 100 links, exactly the
    clock in the table above, writable because the clock does not depend on the
    values.
-4. **An abstract memory** in the abstraction rather than the materialised page, so
+3. **An abstract memory** in the abstraction rather than the materialised page, so
    that the `take`/`append`/`nthcdr` of `$WITH_MEM` on a 65536-element list stops
    appearing in every term.
 
