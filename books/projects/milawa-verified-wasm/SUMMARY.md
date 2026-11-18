@@ -126,39 +126,55 @@ book:
   observers read the store through the pinned frame.  That is sound and is what
   we want: the module is a constant of the artifact and only the store varies.
 
-### Why the symbolic version is not this one unfolded
+### What the symbolic version actually hits
 
-The obvious attack on L1's symbolic form — state `mvm-abs` of a symbolic state,
-unfold `STEPS/%FUEL` and the sixteen paths of `abs.lisp` generalise themselves —
-was measured and does not work: **900 s, no subgoals printed, killed**.  Two
-reasons, both structural:
+Three measured attempts, in the order they were tried.  The negative results are
+the useful part: the obstacle is not where the plan assumed.
 
-- `mvm-abs` materialises the pinned 64 KB page, so every term in the proof
-  carries a 65536-element byte list;
-- `STEP` is a ~2700-line linear dispatch whose `ctxt-*` rules call it
-  recursively, so each opening has to discharge its `%SIZE` measure again — and
-  the whole instruction sequence of a function body is in the term at once.
+**(a) The whole 9-step frozen-status chain, no hints.**  It does not even start:
+the goal comes back *unreduced*, with `STEPS/%FUEL`, `STEP` and `$INVOKE` still
+there.  ACL2 will not unfold a recursive definition on symbolic arguments unless
+asked.  This is a hint problem, not a cost problem — and it means the earlier
+"900 s and no output" run was not measuring the chain either.
 
-The way forward is the route `wasm-acl2`'s engine takes (E4, then E11), and it is
-worth being explicit that it is a project, not a formality:
+**(b) The whole chain with `(enable w3t::step)`.**  Killed at 400 s.
 
-1. **An instruction-lemma library.**  One lemma per (instruction, context) pair —
-   "a configuration whose instruction list starts with *this concrete
-   instruction*, with the store and the operand stack symbolic, steps to *that*
-   configuration".  Each is proved once (upstream measures ~10k prover steps for
-   the first), and they compose because the module's instruction sequences are
-   concrete.
-2. **C2 per opcode** is then a chain of those lemmas: ~50 to 100 links, exactly
-   the clock in the table above, and the chain is short enough to write out
-   because the clock does not depend on the values.
-3. **The abstraction carries an abstract memory**, not the materialised page: an
-   arbitrary byte list constrained only at the stack region and the code region.
-   The sixteen ground theorems of `abs.lisp` pin the target facts; the symbolic
-   book differs from them only in that the page is a variable.
+**(c) One single step, no hints.**  This is the informative one.  The rewriter
+does expand `$INVOKE`, `$WITH_GLOBAL`, `%GET-FIELD`/`%PUT-FIELD`, `EXPAND` and the
+module's own lookups — so a configuration with concrete shape and symbolic leaves
+*is* tractable — and it walks down `STEP`'s rule chain until it stops at
 
-The first demonstration that a *single* symbolic step is feasible at the
-instruction level is the next thing to get; everything else in L1 follows from it
-or fails with it.
+```
+Subgoal 2
+(IMPLIES (W3T::STEP/R-CTXT-INSTRS (LIST* :|%;%| ...))  ...)
+```
+
+`Step/ctxt-instrs` is the rule that steps *inside* the instruction sequence, and
+its guard is a `%SIZE` comparison between the inner configuration
+`(:|%;%| Z instr_star)` and the whole one.  With the instructions symbolic, that
+comparison is a real goal, and there is nothing in the books that discharges it.
+It fails cheaply (0.13 s, 29k prover steps), which is good news for iterating.
+
+So the first thing symbolic L1 needs is not a better hint but **`%SIZE` context
+lemmas**: for each of the four `ctxt-*` rules, the fact that a configuration
+whose instruction list is a proper sublist of another's has smaller `%SIZE`.  That
+is precisely the "context lemma" upstream lists as the hard part of E11, and it
+now has a concrete form here rather than being folklore.
+
+The order of work that follows:
+
+1. **`%SIZE` context lemmas** for `ctxt-instrs`, `ctxt-label`, `ctxt-frame`,
+   `ctxt-handler`.  Without them no symbolic step inside a body is possible.
+2. **An instruction-lemma library**: one lemma per (instruction, context) pair,
+   with the store's code concrete and the values symbolic, composed because the
+   module's instruction sequences are concrete.  Upstream measures ~10k prover
+   steps for the first such lemma.
+3. **C2 per opcode** as a chain of those lemmas — ~50 to 100 links, exactly the
+   clock in the table above, writable because the clock does not depend on the
+   values.
+4. **An abstract memory** in the abstraction rather than the materialised page, so
+   that the `take`/`append`/`nthcdr` of `$WITH_MEM` on a 65536-element list stops
+   appearing in every term.
 
 ## Where L1 stands
 
