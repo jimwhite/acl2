@@ -239,6 +239,18 @@ returned as the machine's result instead of being handed to the waiting frames,
 so any application of a primitive inside a larger expression returned nil.  The
 `assert-event` checks in `demo.lisp` caught it immediately; the proofs did not.
 
+**A materialised page is not an abstraction.**  The obvious attack on L1's
+symbolic form — state `mvm-abs` of a symbolic state and unfold `STEPS/%FUEL` — was
+measured at 900 s with no subgoals printed, then killed.  Two structural reasons:
+`mvm-abs` materialises the pinned 64 KB page, so every term carries a 65536-element
+byte list; and `STEP` is a ~2700-line linear dispatch whose `ctxt-*` rules recurse,
+so each opening must discharge its `%SIZE` measure again.  The fix is not a hint:
+it is an instruction-lemma library (one lemma per instruction/context pair, proved
+once, composed because the module's instruction sequences are concrete) and an
+abstraction over an *abstract* memory constrained only at the two regions.  The
+ground theorems are still worth having first — they fix the statement, and a
+statement that is wrong is not made right by a better proof strategy.
+
 **An index is not a shape.**  The memory correspondence — decode the image of a
 word list and get the word list back — looks like a one-liner and resisted about
 eighteen attempts across two sessions, because the natural statement indexes

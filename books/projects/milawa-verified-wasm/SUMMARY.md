@@ -126,6 +126,40 @@ book:
   observers read the store through the pinned frame.  That is sound and is what
   we want: the module is a constant of the artifact and only the store varies.
 
+### Why the symbolic version is not this one unfolded
+
+The obvious attack on L1's symbolic form — state `mvm-abs` of a symbolic state,
+unfold `STEPS/%FUEL` and the sixteen paths of `abs.lisp` generalise themselves —
+was measured and does not work: **900 s, no subgoals printed, killed**.  Two
+reasons, both structural:
+
+- `mvm-abs` materialises the pinned 64 KB page, so every term in the proof
+  carries a 65536-element byte list;
+- `STEP` is a ~2700-line linear dispatch whose `ctxt-*` rules call it
+  recursively, so each opening has to discharge its `%SIZE` measure again — and
+  the whole instruction sequence of a function body is in the term at once.
+
+The way forward is the route `wasm-acl2`'s engine takes (E4, then E11), and it is
+worth being explicit that it is a project, not a formality:
+
+1. **An instruction-lemma library.**  One lemma per (instruction, context) pair —
+   "a configuration whose instruction list starts with *this concrete
+   instruction*, with the store and the operand stack symbolic, steps to *that*
+   configuration".  Each is proved once (upstream measures ~10k prover steps for
+   the first), and they compose because the module's instruction sequences are
+   concrete.
+2. **C2 per opcode** is then a chain of those lemmas: ~50 to 100 links, exactly
+   the clock in the table above, and the chain is short enough to write out
+   because the clock does not depend on the values.
+3. **The abstraction carries an abstract memory**, not the materialised page: an
+   arbitrary byte list constrained only at the stack region and the code region.
+   The sixteen ground theorems of `abs.lisp` pin the target facts; the symbolic
+   book differs from them only in that the page is a variable.
+
+The first demonstration that a *single* symbolic step is feasible at the
+instruction level is the next thing to get; everything else in L1 follows from it
+or fails with it.
+
 ## Where L1 stands
 
 The certified WASM 3.0 semantics **executes the artifact**, and that is proved, not
