@@ -50,4 +50,11 @@
        (pprogn
         (fms "MODULE-BEGIN=~x0=MODULE-END~%" (list (cons #\0 (car p)))
              (standard-co state) state nil)
-        (value :q))))))
+        ;; Instantiating needs no externs: the module imports nothing, which is
+        ;; proved in wasm3/decode.lisp.  This is a check, not a theorem -- like the
+        ;; decode itself, because W3T::$INSTANTIATE is in :program mode.
+        (let ((r (w3t::$instantiate nil (car p) nil)))
+          (pprogn
+           (fms "INSTANTIATE=~x0~%" (list (cons #\0 (if r 'OK 'FAILED)))
+                (standard-co state) state nil)
+           (value :q))))))))

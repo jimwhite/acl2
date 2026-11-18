@@ -57,6 +57,10 @@ def decode():
         sys.exit('decode: no PARSE-REST marker; see the decoder output')
     if rest.group(1) != '0':
         sys.exit(f'decode: {rest.group(1)} bytes left over; the parse is not complete')
+    if 'INSTANTIATE=FAILED' in out:
+        sys.exit('decode: the certified instantiation rejected the module')
+    if 'INSTANTIATE=OK' not in out:
+        sys.exit('decode: no INSTANTIATE marker; see the decoder output')
     m = re.search(r'MODULE-BEGIN=(.*?)=MODULE-END', out, re.S)
     if not m:
         sys.exit('decode: no module printed')

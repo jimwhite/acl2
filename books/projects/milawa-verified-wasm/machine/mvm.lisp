@@ -247,3 +247,30 @@
   (implies (not (mvm-runningp st))
            (equal (mvm-run st fuel) st))
   :hints (("Goal" :in-theory (enable mvm-run))))
+
+;; ---------------------------------------------------------------------------
+;; Fuel is a budget, not a part of the answer
+;;
+;; Two facts the run level needs.  The first bounds the steps actually spent by
+;; the budget.  The second is the one that matters: once the machine has stopped
+;; inside the budget, a larger budget changes nothing -- so the host loop's
+;; stopping point is a property of the program, not of how patient the driver was.
+;; ---------------------------------------------------------------------------
+
+(defthm mvm-steps-bounded-by-fuel
+  (<= (mvm-steps st fuel) (nfix fuel))
+  :rule-classes :linear)
+
+; STILL TO PROVE, and deliberately not faked: once the machine has stopped inside
+; the budget, a larger budget changes nothing --
+;
+;   (implies (not (mvm-runningp (mvm-run st n)))
+;            (equal (mvm-run st (+ n k)) (mvm-run st n)))
+;
+; The obvious statement does not go through by the induction ACL2 picks: the
+; budget has to be split so that the hypothesis about N is available at the
+; point where the extra K is spent, which wants the "run of n then k is run of
+; n+k" decomposition proved first, by induction on K, with the fixed-point lemma
+; above as the base case.  It is needed for L2 (the run-level theorem compares an
+; exact number of steps against a fuelled loop) and is the next thing to do here,
+; not a gap in the argument.
