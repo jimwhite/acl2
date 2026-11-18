@@ -428,6 +428,36 @@ from `milawa.lsp`, which is what replaces the missing image dump.  A full
 
 ---
 
+## 3.3 WebAssembly (checker only)
+
+The standalone checker can also run on WebAssembly, either under Node or in a
+browser.  This is still the ECL build of the kernel, so the same
+`<level>.wasm/state.lisp` images are used; the ACL2 proof builder is not
+supported on wasm, and the proofs still come from a CCL (or SBCL) build.
+
+```sh
+cd /workspaces/acl2/books/projects/milawa
+./wasm/build.sh         # Node:    .wasm-build/milawa-wasm.{js,wasm}
+./wasm/build-web.sh     # browser: .wasm-build/web/milawa-wasm.{js,wasm}
+```
+
+`wasm/build.sh` produces the Node launcher (`./milawa-wasm <image> [events]`,
+which also works with `final-checks.sh wasm wasm`).  `wasm/build-web.sh`
+produces a `MODULARIZE` module with an in-memory filesystem and wasm longjmp,
+because a page has about 1 MB of native stack and the Node build's setjmp
+trampolines need two JavaScript frames per Lisp call.  A page writes the image,
+the events and the proof files under `/real` in MEMFS and calls `main` with
+`/base.wasm` and the events file.  That is what the `gh-pages-wasm` branch
+ships as `milawa.html`, where it checks four `utilities` proofs in under a
+second.
+
+Both builds need emscripten (`emcc`, `emconfigure`, `emmake`), `llvm-nm`, and
+the ECL fork; see MILAWA-WASM.md for the stack sizes and the details of each
+build.  `wasm/build.sh` builds everything under `.wasm-build/` (gitignored),
+and `wasm/build-web.sh` under `.wasm-build/web/`, so neither writes to `/tmp`.
+
+---
+
 ## 4. Building
 
 First build ACL2 with the host Lisp you will use.  CCL is the default:

@@ -135,14 +135,15 @@ Files
 
   milawa-wasm
     -- Runs the checker on WebAssembly (under node).  Build it first with
-       wasm/build.sh; see MILAWA-WASM.md.
+       wasm/build.sh; see MILAWA-WASM.md.  The browser build is
+       wasm/build-web.sh; the gh-pages-wasm branch ships it as milawa.html.
 
   BUILD-PROCEDURE.md
     -- Detailed build procedure, as measured on a known-good setup
 
   MILAWA-WASM.md, wasm/
     -- How the checker is built and run on WebAssembly (ECL compiled with
-       emscripten), and the build scripts
+       emscripten), and the Node and browser build scripts
 
   report-time.rb
     -- Tool for seeing which events took longest to process
