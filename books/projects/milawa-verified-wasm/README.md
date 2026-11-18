@@ -30,7 +30,7 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | Abort/acceptance disjointness, zero-fuel aborts, `-` closed under values | **proved** (`milawa-lisp/metatheory.lisp`) |
 | `MILAWA-RUNS`: exact step-count relation, the two inference rules (`-HALT`, `-STEP`) and their step counts, positivity and shape, a worked derivation | **proved** (`milawa-lisp/reachability.lisp`) |
 | Elimination principle for `MILAWA-RUNS` | **proved** — immediate, because the relation is a function of the exact count |
-| `MILAWA-RUNS` agrees with `MILAWA-RUN` | **next**; `milawa-conf-run-halt` / `-step` are in place for it |
+| `MILAWA-RUNS` agrees with `MILAWA-RUN` — soundness and completeness | **proved** (`milawa-lisp/reachability.lisp`) |
 | `MVM` step machine port, WASM module, L1/L2 refinement | **not started** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
@@ -213,19 +213,14 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 ## Next steps, in order
 
-1. **Prove `MILAWA-RUNS` agrees with `MILAWA-RUN`.**  Soundness and
-   completeness, with the fuel-exhaustion case excluded (stopping for lack of
-   fuel is not a run, it is the runtime declining to answer).  The two bridge
-   lemmas, `milawa-conf-run-halt` and `milawa-conf-run-step`, are already proved
-   in `reachability.lisp`, and the matched induction trick from
-   `metatheory.lisp` applies.
-2. **Port the loop to WASM.**  L1: one dispatch iteration of the module is one
+1. **Port the loop to WASM.**  L1: one dispatch iteration of the module is one
    `MILAWA-STEP`.  L2: instantiate the run-level theorem from `wasm-acl2`'s
    `engine/`.  This needs `wasm-acl2` pinned.  `milawa-runs-halt` and
    `milawa-runs-step` are already stated in the shape `W3T::STEP` has, which is
    what the refinement cases match against.
-3. **`kernel/`.**  One lemma per `defun` of `milawa-init`, generated with
+2. **`kernel/`.**  One lemma per `defun` of `milawa-init`, generated with
    `make-event` from the ACL2 bodies.
-4. **The phase-0 experiments from the design document**, which are still open: instrument `+` for its maximum value (does anything exceed `2^30`?) and
+3. **The phase-0 experiments from the design document**, which are still open:
+   instrument `+` for its maximum value (does anything exceed `2^30`?) and
    `ftbl` (does the checker ever call a function installed by a `DEFINE`
    event?).  The second one underwrites the whole "no JIT" argument.

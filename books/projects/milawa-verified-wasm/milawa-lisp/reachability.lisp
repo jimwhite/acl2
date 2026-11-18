@@ -204,6 +204,133 @@
                                    milawa-apply-step
                                    milawa-apply-primitive)))))
 
+; The same step fact phrased in CAR/CDR terms, because a caller that has split
+; on (CAR S) does not have (CONS :RUN C2) any more -- and (CDR S) need not even
+; be a proper list, since a malformed step result is just an atom there.
+
+(defthm milawa-conf-run-of-run
+  (implies (and (integerp n)
+                (< 0 n)
+                (equal (car (milawa-conf-step c ftbl)) :run))
+           (equal (milawa-conf-run c ftbl n)
+                  (milawa-conf-run (cdr (milawa-conf-step c ftbl))
+                                   ftbl (1- n))))
+  :hints (("Goal" :in-theory (e/d (milawa-conf-run milawa-conf-step
+                                     milawa-conf)
+                                  (milawa-step milawa-apply-or-run
+                                   milawa-apply-step
+                                   milawa-apply-primitive)))))
+
+;; ---------------------------------------------------------------------------
+;; Agreement with MILAWA-RUN
+;;
+;; MILAWA-RUN is given a fuel budget and stops as soon as it has a result, so its
+;; answer is the same for every budget at least as large as the number of steps
+;; actually taken.  MILAWA-RUNS spends its count exactly.  These two theorems say
+;; the relation is about the same machine as the loop: a run of the relation is
+;; what the loop computes (soundness), and whatever the loop computes is a run of
+;; some count no larger than the budget (completeness).  MILAWA-STEPS recovers
+;; how many steps the loop spent, which is what makes the second direction state
+;; itself without an existential.
+;; ---------------------------------------------------------------------------
+
+(defun milawa-steps (c ftbl n)
+  (declare (xargs :measure (nfix n)
+                  :guard t
+                  :verify-guards nil))
+  (if (zp n)
+      0
+    (let ((s (milawa-conf-step c ftbl)))
+      (if (equal (car s) :run)
+          (+ 1 (milawa-steps (cdr s) ftbl (1- n)))
+        1))))
+
+; A halted machine answers immediately, whatever budget it was given.
+
+(defthm milawa-conf-run-of-halt
+  (implies (and (integerp n)
+                (< 0 n)
+                (not (equal (car (milawa-conf-step c ftbl)) :run)))
+           (equal (milawa-conf-run c ftbl n)
+                  (milawa-conf-step c ftbl)))
+  :hints (("Goal" :in-theory (e/d (milawa-conf-run milawa-conf-step
+                                     milawa-conf)
+                                  (milawa-step milawa-apply-or-run
+                                   milawa-apply-step
+                                   milawa-apply-primitive)))))
+
+; The loop spends at least one step whenever it has a budget, which is what
+; keeps the degenerate continuations below from being taken seriously.
+
+(defthm milawa-steps-positive
+  (implies (not (zp n))
+           (< 0 (milawa-steps c ftbl n)))
+  :hints (("Goal" :induct (milawa-steps c ftbl n)
+                  :in-theory (e/d (milawa-steps)
+                                  (milawa-conf-step milawa-step
+                                   milawa-apply-or-run milawa-apply-step
+                                   milawa-apply-primitive)))))
+
+; Soundness: the loop agrees with the relation at the relation's own count.
+
+(defthm milawa-runs-implies-conf-run
+  (implies (milawa-runs c n r ftbl)
+           (equal (milawa-conf-run c ftbl n) r))
+  :hints (("Goal" :induct (milawa-runs c n r ftbl)
+                  :in-theory (e/d (milawa-runs
+                                   milawa-conf-run-of-halt
+                                   milawa-conf-run-of-run)
+                                  (milawa-conf-step milawa-step
+                                   milawa-apply-or-run milawa-apply-step
+                                   milawa-apply-primitive)))))
+
+; How MILAWA-STEPS spends a budget: one step when the machine has halted, and
+; one step plus the rest when it continues.
+
+(defthm milawa-steps-halt
+  (implies (and (not (zp n))
+                (not (equal (car (milawa-conf-step c ftbl)) :run)))
+           (equal (milawa-steps c ftbl n) 1))
+  :hints (("Goal" :in-theory (e/d (milawa-steps)
+                                  (milawa-conf-step milawa-step
+                                   milawa-apply-or-run milawa-apply-step
+                                   milawa-apply-primitive)))))
+
+(defthm milawa-steps-run
+  (implies (and (not (zp n))
+                (equal (car (milawa-conf-step c ftbl)) :run))
+           (equal (milawa-steps c ftbl n)
+                  (+ 1 (milawa-steps (cdr (milawa-conf-step c ftbl))
+                                     ftbl (1- n)))))
+  :hints (("Goal" :in-theory (e/d (milawa-steps)
+                                  (milawa-conf-step milawa-step
+                                   milawa-apply-or-run milawa-apply-step
+                                   milawa-apply-primitive)))))
+
+; Completeness: whatever the loop computes is a run of MILAWA-STEPS steps.
+; The fuel-exhaustion case is excluded, and it has to be: when the budget runs
+; out the loop answers (:MILAWA-ABORT :FUEL), and stopping for lack of fuel is
+; not a run -- it is the runtime declining to answer.  Excluding it is also what
+; forces the recursion below to stay above one step, since a budget of zero
+; answers with exactly that abort.
+
+(defthm milawa-conf-run-implies-runs
+  (implies (and (integerp n)
+                (< 0 n)
+                (not (equal (milawa-conf-run c ftbl n) (milawa-abort :fuel))))
+           (milawa-runs c
+                        (milawa-steps c ftbl n)
+                        (milawa-conf-run c ftbl n)
+                        ftbl))
+  :hints (("Goal" :in-theory (e/d (milawa-runs
+                                   milawa-steps-halt
+                                   milawa-steps-run
+                                   milawa-conf-run-of-halt
+                                   milawa-conf-run-of-run)
+                                  (milawa-conf-step milawa-step
+                                   milawa-apply-or-run milawa-apply-step
+                                   milawa-apply-primitive)))))
+
 ;; ---------------------------------------------------------------------------
 ;; A worked derivation
 ;; ---------------------------------------------------------------------------
