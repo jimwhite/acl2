@@ -50,7 +50,7 @@ to reason about a loop.  It runs in Node today (`node harness/run.js`).
 | SpecTec + the SpecTec→ACL2 translator | generated semantics; no theorem connects output to source |
 | the WebAssembly engine | the role the CPU plays in Jitawa |
 | the front end and the I/O shim | can only cause a rejection, never a false acceptance |
-| **one execution of the certified binary decoder** | `W3T::GRAM/BMODULE` is `:program` mode, so bytes → module cannot be a theorem; it is a scripted, checked step (`harness/gen_module.py --check`) |
+| **one execution of the certified binary decoder, and one of the instantiator**, to turn the `.wasm` into the module and store constants | `W3T::GRAM/BMODULE` and `W3T::$INSTANTIATE` are `:program` mode, so neither step can be a theorem; both are scripted and checked (`harness/gen_module.py --check`).  Everything after them — `$INVOKE`, `STEP`, `STEPS/%FUEL`, `MODULE-P` — is `:logic`, so L1 and L2 are statable |
 | WABT (`wat2wasm`) | untrusted by construction: a buggy assembler can produce a module that fails the proof, never one that passes it |
 
 Not trusted: the evaluator, the primitives, the heap, the compiled runtime, and —
