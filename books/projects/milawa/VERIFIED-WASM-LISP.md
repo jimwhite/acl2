@@ -632,6 +632,44 @@ Note the shape: the *observable* is a verdict function on values, so no
 statement has to be made about printing, file offsets, or the WASM binary —
 which is precisely the part we do not want in the trusted base.
 
+**What the layers actually say, in the names we now have.**  Written out because
+it fixes which `wasm-acl2` functions each layer may use, and that turned out to be
+the scheduling constraint on the whole project.  Measured modes, on the generated
+3.0 books at pin `7f96c89`:
+
+| Function | Mode | Consequence |
+|---|---|---|
+| `W3T::GRAM/BMODULE` | `:program` | bytes -> module is a scripted step, not a theorem |
+| `W3T::$INSTANTIATE` | `:program` | module -> store is a scripted step, not a theorem |
+| `W3T::$INVOKE` | **`:logic`** | the entry configuration for a call IS statable |
+| `W3T::STEP`, `W3T::STEPS/%FUEL` | `:logic` | the per-step and run-level statements ARE statable |
+| `W3T::MODULE-P` | `:logic` | well-formedness is statable |
+
+So exactly two steps are outside the logic, and both are one-shot: decode the
+artifact, instantiate it with no externs.  Their results are pinned as constants
+(`wasm3/module.lisp`, and the store next), the scripts that produce them are
+checked (`harness/gen_module.py --check`), and neither appears in a theorem.
+Everything from `$INVOKE` onwards is logic, which is what makes L1 sayable:
+
+```
+L1  (implies (mvm-statep st)
+             (step-corresponds (w3t::step (w3t::$invoke STORE STEP-FUNC nil)) st))
+      where STORE is the pinned instantiation and STEP-FUNC is 6
+            (MILAWA-VERIFIED-STEP-IS-FUNCTION-6)
+
+L2  either the same shape at the run level with w3t::steps/%fuel, or --
+    preferably -- wasm-acl2's ENGINE-RESULT-IS-SPEC-RESULT with MVM discharged
+    against its four constraints; MVM-RUN-MONOTONE and MVM-STEPS-BOUNDED-BY-FUEL
+    are two of the ingredients.
+
+L3  (equal (mvm-run (mvm-init (compile p args)) fuel)
+           (milawa-eval-related p args))
+```
+
+`step-corresponds`, and the mapping between an MVM state and the WASM
+configuration (store, frame, memory contents), are the actual content of L1 and
+are not defined yet; they are what the next book has to write.
+
 ---
 
 ## 8. Risks and open questions

@@ -1,0 +1,4 @@
+local means check-proofs will give a warning so the warning should say it is to be expected in those cases.
+
+Alternatives include whether the local is required (guessing yes though) and if so then recording that somewhere - the events log seem like the place but also seems obnoxious.
+    
