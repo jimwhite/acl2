@@ -31,7 +31,12 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | `MILAWA-RUNS`: exact step-count relation, the two inference rules (`-HALT`, `-STEP`) and their step counts, positivity and shape, a worked derivation | **proved** (`milawa-lisp/reachability.lisp`) |
 | Elimination principle for `MILAWA-RUNS` | **proved** — immediate, because the relation is a function of the exact count |
 | `MILAWA-RUNS` agrees with `MILAWA-RUN` — soundness and completeness | **proved** (`milawa-lisp/reachability.lisp`) |
-| `MVM` step machine port, WASM module, L1/L2 refinement | **not started** |
+| `MVM-STEP` — ACL2 model of the module, 32-bit words, status protocol, fixed points | **proved** (`machine/mvm.lisp`) |
+| `milawa-verified.wat` — the module: one step per call, runnable in Node | **done** (milestones: `wasm/`) |
+| `MVM` model vs the module, on a spread of programs and every abort case | **tested** (`machine/mvm-tests.lisp`, Node recording) |
+| L1 — one call to `STEP` equals `MVM-STEP` | **not started** |
+| L2 — `MVM` run level = `W3T::STEPS` | **not started** |
+| L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
@@ -83,13 +88,29 @@ milawa-lisp/
   reachability.lisp  exact step-count run relation, its inference rules
   top.lisp           includes the above
   Makefile
+
+machine/             the machine the module implements
+  mvm.lisp           MVM-STEP, MVM-RUN, 32-bit words, status protocol
+  mvm-tests.lisp     differential checks against the module, recorded in Node
+  top.lisp           includes the above
+  Makefile
+
+wasm/                the artifact
+  milawa-verified.wat  one exported STEP per machine step; hand-written
+  build.sh             assembles it with wat2wasm (WABT is untrusted)
+
+harness/
+  run.js               the untrusted host loop: node harness/run.js <wasm> <words...>
 ```
 
-Planned: `machine/` (the `MVM` port of the step machine), `wasm/` (L1 per-step
-refinement against the WASM 3.0 semantics from
-[`wasm-acl2`](https://github.com/raymyers/wasm-acl2), and the L2 run-level
-instantiation), `kernel/` (per-`defun` correspondence to `ACL2/logic/`), and
-`harness/` (WAT sources, the build, the JS shim, differential tests).
+The module and the model are kept in step by hand, and the tests say so; L1 is
+what makes that a theorem rather than a promise.
+
+Still to come: L1 (one call to `STEP` equals `MVM-STEP`, stated against the
+certified WASM 3.0 semantics from
+[`wasm-acl2`](https://github.com/raymyers/wasm-acl2)), L2 (the run-level
+instantiation), conses/symbols/environments in the module and the model, and
+`kernel/` (per-`defun` correspondence to `ACL2/logic/`).
 
 ## Building
 

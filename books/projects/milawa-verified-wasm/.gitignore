@@ -1,0 +1,2 @@
+# The module is a build artifact of the .wat beside it; `wasm/build.sh` makes it.
+*.wasm
