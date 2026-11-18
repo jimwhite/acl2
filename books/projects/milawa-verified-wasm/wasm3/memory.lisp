@@ -209,6 +209,30 @@
 ;; and induct on (WS, I) together with a (zp i) split (the obvious induction on
 ;; (nthcdr i ws) spent 387 s and 56 GB and failed).
 ;;
+;; WHAT ACTUALLY BLOCKS IT, diagnosed after many attempts: enabling a recognizer
+;; that contains arithmetic turns the induction into a combinatorial case split.
+;; With (MVM-WORD-LIST-P WS) as the hypothesis and the predicate ENABLED, ACL2
+;; splits on (INTEGERP (CAR WS)), (<= 0 (CAR WS)), (< (CAR WS) 2^32) and on the
+;; LOGHEAD/LOGTAIL structure of the round trip at every step: 259 and then 4963
+;; subgoals were measured.  The shape that should work, and was not yet tried:
+;;
+;;   * a single-word fact, (implies (unsigned-byte-p 32 w)
+;;                                  (equal (mvm-load-word (mvm-word-to-bytes w)) w))
+;;   * a STEP rewrite rule whose left-hand side is the append form,
+;;       (equal (mvm-image-words (append (mvm-word-to-bytes w) rest) (+ 1 n))
+;;              (cons w (mvm-image-words rest n)))
+;;     provable by unfolding CAR/CADDR/CADDDR of a literal four-list prefix;
+;;   * and for the region, forward-chaining rules
+;;       (mvm-word-list-p ws) & (consp ws) => (unsigned-byte-p 32 (car ws))
+;;       (mvm-word-list-p ws) => (mvm-word-list-p (cdr ws))
+;;     with the recognizer itself DISABLED, so nothing splits on its arithmetic.
+;;
+;; The take side needs
+;;   (implies (and (true-listp x) (natp n) (equal (len x) n))
+;;            (equal (take n (append x y)) x))
+;; inducting on (take n x) -- both N and X descend -- and TRUE-LISTP is essential:
+;; the statement is false for atoms, since (LEN 'A) is 0 but (TAKE 0 'A) is NIL.
+;;
 ;; THIRD, and this one was verified: the take side of the same argument needs
 ;;
 ;;   (defthm take-len-of-append
