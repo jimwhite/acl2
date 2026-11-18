@@ -77,6 +77,14 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   rules *as a function of the exact count*, which gives the same theorems, the
   elimination principle for free, and the halt/step induction scheme a
   refinement proof actually wants.  Thirteen events, 0.2 s.
+- **The relation is related to the loop.**  `MILAWA-RUNS` is sound for
+  `MILAWA-RUN` (a run of count N is what the loop answers at budget N) and
+  complete (whatever the loop answers is a run of `MILAWA-STEPS` steps), with the
+  fuel-exhaustion answer excluded -- stopping for lack of fuel is the runtime
+  declining to answer, not a run.  That closes the "is the relation about the
+  right machine?" question before any WASM work starts.
+- **`wasm-acl2` is pinned** at `7f96c89` (clone, not vendored; see §3.4 for the
+  `nix` caveat and for the local WASM 1.0 build that does certify).
 - **Phases 2-6 are untouched.**  Nothing has been built against a WASM
   semantics yet, so the L1/L2 risk analysis in §8 is unchanged.
 
@@ -271,6 +279,32 @@ text format (`6.*`) are deferred, so type safety is not available for free and
 non-trapping must be proved for our module; and `wasm-acl2` is not in the
 community books, so the dependency is pinned and either vendored or excluded
 from the community scan, never assumed.
+
+**Pinned, and a toolchain caveat.**  `wasm-acl2` is cloned (not vendored) at
+`/workspaces/acl2/.wasm-acl2`, commit `7f96c89`, which is `main` as of the
+WASM 3.0 workshop merge.  The generated books are *not* checked in: `translate/
+Makefile` regenerates them from SpecTec with `nix build ..#wasm3-il`, and `nix`
+is not installed in this container, so `make -C translate check-3.0` stops at
+`check-il` with `nix: not found`.  What *is* checked in is `translate/gen/
+wasm-1.0`, and it certifies here in about twenty seconds with the tree's own
+ACL2, bypassing the IL regenerator:
+
+```sh
+cd /workspaces/acl2/.wasm-acl2/translate
+$ACL2_SYSTEM_BOOKS/build/cert.pl --acl2 /workspaces/acl2/saved_acl2 gen/wasm-1.0/wasm1
+```
+
+So L1/L2 development can start against `W1T::STEP` and `W1T::STEPS/%FUEL` today,
+and the move to 3.0 is a rebuild once `nix` is available (or once the generated
+3.0 books are produced elsewhere and pinned).  The module we emit is inside the
+1.0 instruction set by construction -- see the subset list below -- so the
+refinement obligations have the same shape in both.
+
+Two facts about the generated step worth knowing before writing L1:
+`W1T::STEP` returns a *list* of outcomes and `STEPS/%FUEL` takes its first
+element, so the spec encodes determinism by an ordered match rather than by
+proof; and `STEPS/%FUEL` returns `(LIST A)` when it stops, so a stopped machine
+is a one-element list, which is what the run-level theorem compares against.
 
 **Instruction subset actually emitted.**  `i32.const`, `i32` arithmetic and
 comparisons, `local.get/set/tee`, `global.get/set`, `i32.load/store` (8/16/32),
