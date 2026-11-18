@@ -1,6 +1,7 @@
 *.mpcert
 /Proofs/*.events
 /Proofs/*/
+/Proofs/*.tar.gz
 /*.sbcl-*
 /*.ccl-*
 /*.cmucl-*
