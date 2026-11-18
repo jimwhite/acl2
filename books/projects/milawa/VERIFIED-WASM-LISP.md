@@ -670,25 +670,32 @@ L3  (equal (mvm-run (mvm-init (compile p args)) fuel)
 configuration (store, frame, memory contents), are the actual content of L1 and
 are not defined yet; they are what the next book has to write.
 
-**An obstruction found while trying to run the artifact inside the semantics.**
-`W3T::$INVOKE` is logic mode and is the right entry point, but it answers NIL for
-our module when given the store that `W3T::$INSTANTIATE` produces.  The reason is a
-representation mismatch, not a problem with the module: in that store, function
-records are *positional* (`(:%REC typeidx locals body)`-shaped, so `STRIP-CARS`
-gives all NILs and `(%GET-FIELD REC :TYPE)` is NIL), while `$INVOKE` reads the
-function's type with `(%GET-FIELD ... :TYPE)` and needs it to be a
-`(:FUNC%->% params results)` pair.  Global records in the same store ARE alists
-(`(:%REC (:TYPE ...) (:VALUE ...))`), which is why the two agree on globals and
-disagree on functions.
+**The certified semantics executes the artifact (2026-11-18).**  This supersedes an
+earlier note in this document that claimed `$INVOKE` was broken; it was not, I was
+misusing the API.  The usage, which is worth writing down because it cost a day:
 
-Two consequences.  First, L1's entry configuration cannot be built with `$INVOKE`
-until this is sorted, so the next book has to either construct the configuration
-directly (a frame plus a `REF.FUNC_ADDR`/`CALL_REF` instruction pair, which is all
-`$INVOKE` does) or wait for the store representation to be reconciled upstream.
-Second, this is worth raising with `wasm-acl2`: it is the difference between a
-semantics you can execute through its own API and one you can only execute through
-its test driver, and it is invisible until you try to use the API from a book.
+- `$INSTANTIATE` returns a **configuration to run**, not a store.  Our module has
+  no imports, no data and no start function, so there is nothing to execute and
+  that configuration is already final: the store is `(CADR (CADR C))` and the
+  frame `(CADDR (CADR C))`, which is how the driver's `FINAL-CONFIG` destructures
+  a stopped configuration.
+- `$INVOKE` (logic mode) then builds the entry configuration for a call: a frame
+  with no locals, the argument values, then `REF.FUNC_ADDR` and `CALL_REF`.
+- `STEP` (logic mode) returns the **list** of successors, so a step exists exactly
+  when that list is non-empty.
 
+Both the store and the frame are pinned as logic constants (`wasm3/state.lisp`,
+generated and drift-checked), and `wasm3/l1.lisp` proves, by evaluation on those
+constants: the entry configuration exists (so the store is well-formed enough for
+`$INVOKE`), it is a call to function 6 with no arguments, the spec's step applies
+and is single-valued, three steps still apply, and one step enters a
+`:FRAME_%{%}%` — the frame pushed for our function's locals.  Those are the first
+facts in this project stated about the certified WASM semantics *executing our
+artifact* rather than about our model of it.
+
+That is where L1 stops being speculative: `step-corresponds` and the mapping from
+an `MVM` state to this configuration (store, frame, memory contents) are now
+ordinary proof engineering against a semantics we can drive.
 ---
 
 ## 8. Risks and open questions

@@ -53,8 +53,27 @@
         ;; Instantiating needs no externs: the module imports nothing, which is
         ;; proved in wasm3/decode.lisp.  This is a check, not a theorem -- like the
         ;; decode itself, because W3T::$INSTANTIATE is in :program mode.
-        (let ((r (w3t::$instantiate nil (car p) nil)))
+        ;;
+        ;; The result of $INSTANTIATE is a CONFIGURATION to run, not a store.  Our
+        ;; module has no imports, no data and no start function, so there is
+        ;; nothing to execute and that configuration is already final: the store
+        ;; is (CADR (CADR C)) and the frame (CADDR (CADR C)), which is exactly how
+        ;; the driver's FINAL-CONFIG destructures a stopped configuration.  Both
+        ;; are pinned below, because W3T::$INVOKE -- which IS logic mode -- needs
+        ;; them to build the entry configuration L1 is about.
+        (let* ((c (w3t::$instantiate nil (car p) nil))
+               (z (and c (cadr c)))
+               (store (and z (cadr z)))
+               (frame (and z (caddr z))))
           (pprogn
-           (fms "INSTANTIATE=~x0~%" (list (cons #\0 (if r 'OK 'FAILED)))
+           (fms "INSTANTIATE=~x0~%" (list (cons #\0 (if c 'OK 'FAILED)))
                 (standard-co state) state nil)
-           (value :q))))))))
+           (if (null c)
+               (value :q)
+             (pprogn
+              (fms "STORE-BEGIN=~x0=STORE-END~%" (list (cons #\0 store))
+                   (standard-co state) state nil)
+              (pprogn
+               (fms "FRAME-BEGIN=~x0=FRAME-END~%" (list (cons #\0 frame))
+                    (standard-co state) state nil)
+               (value :q)))))))))))

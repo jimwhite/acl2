@@ -78,16 +78,25 @@ once `kernel/` exists — the correspondence between the kernel program and
    `MILAWA-CONF-STEP` in a symbolic proof turns one subgoal into ~150; every hard
    proof here depends on disabling it and matching the hypothesis instead.
 
-## Two open items a reader should know about
+## Where L1 stands
 
-- `W3T::$INVOKE` (logic mode, the right L1 entry point) answers NIL for our module
-  on the store `W3T::$INSTANTIATE` produces, because store function records are
-  positional while `$INVOKE` reads the function's type through `%GET-FIELD`.
-  L1's entry configuration therefore has to be built directly (a frame plus
-  `REF.FUNC_ADDR`/`CALL_REF`, which is all `$INVOKE` does) or the representation
-  reconciled upstream.  Worth raising with `wasm-acl2`.
-- `W3T::GRAM/BMODULE` and `W3T::$INSTANTIATE` are `:program` mode, so the two steps
-  from bytes to a steppable store are scripted and checked rather than proved.
+The certified WASM 3.0 semantics **executes the artifact**, and that is proved, not
+tested: `wasm3/l1.lisp` pins the instantiated store and frame as logic constants
+and proves, by evaluation on them, that the entry configuration exists, that it is
+a call to function 6 with no arguments, that `STEP` applies and is single-valued,
+that three steps still apply, and that one step enters the frame pushed for our
+function's locals.  Those are the first facts here stated about the certified
+semantics running our module rather than about our model of it.
+
+Getting there needed the API written down: `$INSTANTIATE` returns a
+*configuration*, not a store (ours is already final, since the module has no
+imports, data or start function); the store and frame are `(CADR (CADR C))` and
+`(CADDR (CADR C))`; `$INVOKE` builds the entry configuration; `STEP` returns the
+*list* of successors.
+
+Two steps remain outside the logic: decode and instantiate are both `:program`
+mode, so they are scripted and drift-checked (`harness/gen_module.py --check`)
+rather than proved.  Everything after them is statable.
 
 ## What is next, in order
 
