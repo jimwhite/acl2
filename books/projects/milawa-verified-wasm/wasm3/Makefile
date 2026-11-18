@@ -7,7 +7,7 @@
 
 ACL2 ?= ../../../../saved_acl2
 CERT_PL ?= ../../../build/cert.pl
-BOOKS ?= bytes module state decode l1 memory
+BOOKS ?= bytes module state decode l1 memory abs
 
 all: cert
 
