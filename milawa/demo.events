@@ -1,0 +1,6 @@
+
+(VERIFY THEOREM-SUBSTITUTE-INTO-NOT-PEQUAL (POR* (PEQUAL* X Y) (POR* (PNOT* (PEQUAL* Z X)) (PNOT* (PEQUAL* Z Y)))) "Proofs/utilities/prepare-for-bootstrapping/thm-theorem-substitute-into-not-pequal.proof")
+(VERIFY THEOREM-NOT-T-OR-NOT-NIL (POR* (PNOT* (PEQUAL* X 'T)) (PNOT* (PEQUAL* X 'NIL))) "Proofs/utilities/prepare-for-bootstrapping/thm-theorem-not-t-or-not-nil.proof")
+(DEFINE NOT (X) (IF X NIL T) NIL T "Proofs/utilities/prepare-for-bootstrapping/admit-not.proofs")
+(VERIFY NOT (PNOT* (PEQUAL* (EQUAL (NOT X) (IF X 'NIL 'T)) 'NIL)) "Proofs/utilities/prepare-for-bootstrapping/thm-not.proof")
+(FINISH "wasm-probe")

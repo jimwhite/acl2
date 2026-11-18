@@ -52,6 +52,12 @@ loads at run time.</p>
       message rather than hanging. <a href="books.html">The list of books this
       site can include</a> is generated from the payload, so it is exactly what
       is present, not what is hoped for.</span></li>
+  <li><a href="milawa.html"><strong>Milawa proof checker</strong></a>
+      <span>Milawa's standalone checker, another Common Lisp program running on
+      the same wasm ECL. It restores the checker's <code>base</code> image and
+      replays the first four commands of the <code>utilities</code> level,
+      reading and checking the shipped proof files. Checker only: building the
+      levels needs ACL2's proof builder and more stack than a page has.</span></li>
   <li><a href="repl.html">Interactive ECL console</a>
       <span>A real REPL: one ECL instance stays alive between inputs, so
       definitions and values persist. Enter evaluates; arrow keys recall

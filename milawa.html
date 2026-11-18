@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Milawa on WebAssembly</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0 auto; padding: 2rem 1rem;
+         max-width: 52rem; background: #10131a; color: #d6dbe5;
+         line-height: 1.55; }
+  h1 { font-size: 1.4rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1rem; margin: 2rem 0 .5rem; }
+  p, li { font-size: .92rem; }
+  code { font-family: ui-monospace, monospace; font-size: .85rem; }
+  .lede { color: #9aa7ba; margin: 0 0 1.5rem; }
+  #status { font-family: ui-monospace, monospace; font-size: .8rem;
+            color: #7fb2ff; margin: .75rem 0 .5rem; min-height: 1.1rem; }
+  #log { font-family: ui-monospace, monospace; font-size: .8rem;
+         white-space: pre-wrap; word-break: break-word; background: #0a0d12;
+         border: 1px solid #222b38; border-radius: 6px; padding: .75rem;
+         height: 50vh; overflow: auto; margin: 0; }
+  textarea { width: 100%; box-sizing: border-box; height: 8.5rem;
+             font-family: ui-monospace, monospace; font-size: .8rem;
+             background: #0a0d12; color: #d6dbe5; border: 1px solid #222b38;
+             border-radius: 6px; padding: .6rem; resize: vertical; }
+  .tools { margin: .5rem 0 .75rem; font-size: .8rem; color: #9aa7ba; }
+  .tools button { font: inherit; background: #161b24; color: #7fb2ff;
+                  border: 1px solid #222b38; border-radius: 4px;
+                  padding: .3rem .7rem; cursor: pointer; }
+  .tools button:disabled { color: #6b7788; cursor: default; }
+  a { color: #7fb2ff; }
+  .note { color: #9aa7ba; font-size: .85rem; }
+</style>
+</head>
+<body>
+<h1>Milawa on WebAssembly</h1>
+<p class="lede">Milawa's standalone proof checker, compiled to WebAssembly with
+ECL. It restores a checkpoint of the checker's own history and replays commands
+from Milawa's <code>utilities</code> level, reading and checking the proof files
+in this page.</p>
+
+<h2>Run</h2>
+<p class="note">The events below are the first four commands of
+<code>Proofs/utilities.events</code>. Edit them if you like &mdash; the image and
+the four proof files they name are preloaded.</p>
+<textarea id="events" spellcheck="false" autocomplete="off"
+          placeholder="loading the demo events…"></textarea>
+<p class="tools">
+  <button id="run" type="button" disabled>Run the checker</button>
+  <button id="reset" type="button">Reset demo</button>
+  &nbsp;The checker starts from the <code>base</code> image, so each run is
+  independent.
+</p>
+<div id="status">starting…</div>
+<pre id="log"></pre>
+
+<h2>What is happening</h2>
+<p>Milawa is a verified proof checker for ACL2, written (and proved) by Jared
+Davis. This page runs its standalone kernel, <code>milawa.lsp</code>, which is a
+Common Lisp program. ECL is compiled to <code>wasm32-unknown-emscripten</code>,
+the kernel is cross-compiled ahead of time with the same ECL, and the two are
+linked into a single module. The page writes the <code>base</code> image
+(<code>state.lisp</code>, the checker's arity table, axioms, theorems and the
+definitions it has admitted), the events and the proof files into an in-memory
+filesystem, then starts the checker.</p>
+<p>Only the checker runs here. Building the levels from scratch needs the ACL2
+proof builder, which does not fit in a page; the proofs above were built
+offline and are checked by the wasm checker.</p>
+<p class="note">Source and build notes:
+<a href="https://github.com/jimwhite/acl2/tree/milawa-ecl/books/projects/milawa">books/projects/milawa</a>,
+<a href="https://github.com/jimwhite/acl2/blob/milawa-ecl/books/projects/milawa/MILAWA-WASM.md">MILAWA-WASM.md</a>.</p>
+
+<script>
+const logEl = document.getElementById('log');
+const statusEl = document.getElementById('status');
+const eventsEl = document.getElementById('events');
+const runEl = document.getElementById('run');
+const resetEl = document.getElementById('reset');
+
+let worker = null;
+let t0 = 0;
+let demo = '';
+
+function append(text) {
+  logEl.textContent += text + '\n';
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function setStatus(text) {
+  const secs = t0 ? ` — ${((performance.now() - t0) / 1000).toFixed(1)}s` : '';
+  statusEl.textContent = text + secs;
+}
+
+function stop() {
+  if (worker) {
+    worker.terminate();
+    worker = null;
+  }
+}
+
+function start() {
+  stop();
+  logEl.textContent = '';
+  t0 = performance.now();
+  runEl.disabled = true;
+  setStatus('starting');
+  worker = new Worker('milawa/worker.js?v=2');
+  worker.onmessage = (ev) => {
+    const m = ev.data;
+    if (m.type === 'log') append(m.text);
+    else if (m.type === 'status') setStatus(m.text);
+    else if (m.type === 'done') {
+      setStatus(m.ok ? 'done' : 'failed');
+      runEl.disabled = false;
+    }
+  };
+  worker.onerror = (e) => {
+    append('[page] worker error: ' + e.message);
+    setStatus('failed');
+    runEl.disabled = false;
+    stop();
+  };
+  worker.postMessage({cmd: 'run', events: eventsEl.value});
+}
+
+function loadDemo() {
+  fetch('milawa/demo.events', {cache: 'no-store'})
+    .then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.text();
+    })
+    .then((text) => {
+      demo = text.trim();
+      eventsEl.value = demo;
+      runEl.disabled = false;
+      start();
+    })
+    .catch((e) => {
+      append('[page] could not load milawa/demo.events: ' + e.message);
+      setStatus('failed');
+    });
+}
+
+runEl.addEventListener('click', start);
+resetEl.addEventListener('click', () => {
+  eventsEl.value = demo;
+  start();
+});
+
+loadDemo();
+</script>
+</body>
+</html>
