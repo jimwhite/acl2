@@ -208,4 +208,26 @@
 ;;
 ;; and induct on (WS, I) together with a (zp i) split (the obvious induction on
 ;; (nthcdr i ws) spent 387 s and 56 GB and failed).
+;;
+;; THIRD, and this one was verified: the take side of the same argument needs
+;;
+;;   (defthm take-len-of-append
+;;     (implies (and (true-listp x) (natp n) (equal (len x) n))
+;;              (equal (take n (append x y)) x))
+;;     :hints (("Goal" :induct (take n x) :in-theory (enable take))))
+;;
+;; with TWO details that are easy to get wrong.  TRUE-LISTP is not decoration:
+;; the statement is false for atoms, because (LEN 'A) is 0 while (TAKE 0 'A) is
+;; NIL.  And the induction must be on (TAKE N X) so that N and X descend
+;; together; inducting on X alone leaves N fixed and hands the step the false
+;; hypothesis (EQUAL (LEN (CDR X)) N).
+;;
+;; FOURTH, unresolved, and the reason the indexed form was abandoned in favour of
+;; a recursive decoder (MVM-IMAGE-WORDS, which consumes four bytes per word and so
+;; matches the module's own byte-at-a-time addressing): with the decoder and
+;; MVM-WORD-LIST-TO-BYTES ENABLED in the induction, ACL2 produced a 259-way case
+;; split, and with a hand-written joint induction over (WS, N) it produced 4963
+;; subgoals before being killed.  The next attempt should keep both definitions
+;; DISABLED and reason with their defining equations by hand, or prove the round
+;; trip one word at a time with the region-level statement derived afterwards.
 
