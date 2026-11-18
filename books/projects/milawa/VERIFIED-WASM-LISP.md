@@ -670,6 +670,25 @@ L3  (equal (mvm-run (mvm-init (compile p args)) fuel)
 configuration (store, frame, memory contents), are the actual content of L1 and
 are not defined yet; they are what the next book has to write.
 
+**An obstruction found while trying to run the artifact inside the semantics.**
+`W3T::$INVOKE` is logic mode and is the right entry point, but it answers NIL for
+our module when given the store that `W3T::$INSTANTIATE` produces.  The reason is a
+representation mismatch, not a problem with the module: in that store, function
+records are *positional* (`(:%REC typeidx locals body)`-shaped, so `STRIP-CARS`
+gives all NILs and `(%GET-FIELD REC :TYPE)` is NIL), while `$INVOKE` reads the
+function's type with `(%GET-FIELD ... :TYPE)` and needs it to be a
+`(:FUNC%->% params results)` pair.  Global records in the same store ARE alists
+(`(:%REC (:TYPE ...) (:VALUE ...))`), which is why the two agree on globals and
+disagree on functions.
+
+Two consequences.  First, L1's entry configuration cannot be built with `$INVOKE`
+until this is sorted, so the next book has to either construct the configuration
+directly (a frame plus a `REF.FUNC_ADDR`/`CALL_REF` instruction pair, which is all
+`$INVOKE` does) or wait for the store representation to be reconciled upstream.
+Second, this is worth raising with `wasm-acl2`: it is the difference between a
+semantics you can execute through its own API and one you can only execute through
+its test driver, and it is invisible until you try to use the API from a book.
+
 ---
 
 ## 8. Risks and open questions

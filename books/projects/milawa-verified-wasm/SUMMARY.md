@@ -78,6 +78,17 @@ once `kernel/` exists — the correspondence between the kernel program and
    `MILAWA-CONF-STEP` in a symbolic proof turns one subgoal into ~150; every hard
    proof here depends on disabling it and matching the hypothesis instead.
 
+## Two open items a reader should know about
+
+- `W3T::$INVOKE` (logic mode, the right L1 entry point) answers NIL for our module
+  on the store `W3T::$INSTANTIATE` produces, because store function records are
+  positional while `$INVOKE` reads the function's type through `%GET-FIELD`.
+  L1's entry configuration therefore has to be built directly (a frame plus
+  `REF.FUNC_ADDR`/`CALL_REF`, which is all `$INVOKE` does) or the representation
+  reconciled upstream.  Worth raising with `wasm-acl2`.
+- `W3T::GRAM/BMODULE` and `W3T::$INSTANTIATE` are `:program` mode, so the two steps
+  from bytes to a steppable store are scripted and checked rather than proved.
+
 ## What is next, in order
 
 1. Pin the instantiated store as a logic constant (instantiation is `:program`
