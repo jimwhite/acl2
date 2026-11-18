@@ -49,6 +49,22 @@ keeps ECL from thinking it can resize the stack at run time.  Level10 needs
 more than 64 MB natively, and the compiled wasm frames are bigger, so the
 default 1 MB would not get far.
 
+### In a browser
+
+`./wasm/build-web.sh` builds the same checker for a web page instead of Node,
+under `.wasm-build/web/`.  A page has about 1 MB of JavaScript/native stack, so
+the browser build uses ECL's wasm longjmp (`-fwasm-exceptions`,
+`-sSUPPORT_LONGJMP=wasm`) and `-O2`; the Node build's setjmp trampolines cost
+two JS frames per Lisp call and do not fit.  The module is linked with
+`-sMODULARIZE=1 -sINVOKE_RUN=0 -sENVIRONMENT=web,worker,node` and a MEMFS
+filesystem (no NODEFS), so the page writes the image, the events file and any
+proof files into `/real`, changes to that directory, and calls
+`callMain(['/base.wasm', '/demo.events'])`; `milawa-wasm.c` redirects absolute
+paths into `/real`, and the checker's relative proof paths resolve from there.
+
+The `gh-pages-wasm` branch ships the result as `milawa.html`, with the payload
+under `milawa/`.
+
 ## Running
 
 ```sh
