@@ -153,3 +153,48 @@
                                               (frame-with-locals (mvm-locals l0 l1 l2 l3))
                                               (list (list :label_%{%}% 1 nil
                                                           (list (list :local.get 0))))))))))))
+
+;; ---------------------------------------------------------------------------
+;; Layer 6, measured: what entering a call produces
+;; ---------------------------------------------------------------------------
+;
+; The call rule (Step/call_ref-func) is the next floor, and its output shape is
+; the one thing worth fixing before writing the lemma.  Measured, by stepping the
+; entry configuration of the artifact and printing the shape rather than the
+; values:
+;
+;   (step (INVOKE store 6 nil))
+;     = ((:FRAME_ 1 F ((:LABEL_ 1 is0 BODY))))
+;
+; with, in words:
+;
+;   * the store UNCHANGED -- a call is not a side effect on the store, it is a
+;     change of which frame is current;
+;   * the OUTER frame unchanged, and it has no locals, which is why the module's
+;     body cannot touch the host's frame;
+;   * F, the callee's frame, with exactly FOUR locals -- the four the module's
+;     step declares ($op $imm $a $b) and no parameters;
+;   * BODY, the callee's code, taken from the store's :CODE field, so it is a
+;     CONSTANT of the artifact and every instruction lemma above applies to it;
+;   * the label's arity marker 1 and the frame's 1, both from the function's
+;     result type (step returns one i32).
+;
+; So the call lemma's statement is "the entry configuration steps to a
+; frame-and-label admin around the artifact's own code", and everything above
+; this book already says what happens inside that admin.  What remains is to
+; write the right-hand side out, which means writing the callee's four locals and
+; its body as terms rather than as literals -- the body alone is two hundred
+; lines, and a lemma that quotes it would be unreadable and would have to be
+; regenerated whenever the module changed.  The helpers are the obstacle:
+
+(defun milawa-func-code (i)
+  (declare (xargs :guard t :verify-guards nil))
+  (w3t::%get-field (nth i (w3t::%get-field *milawa-verified-store* :funcs)) :code))
+
+(defun milawa-func-module (i)
+  (declare (xargs :guard t :verify-guards nil))
+  (w3t::%get-field (nth i (w3t::%get-field *milawa-verified-store* :funcs)) :module))
+
+(defun milawa-func-body (i)
+  (declare (xargs :guard t :verify-guards nil))
+  (cadddr (milawa-func-code i)))
