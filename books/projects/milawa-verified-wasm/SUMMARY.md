@@ -547,6 +547,9 @@ body's other instructions.  Nothing about it is open-ended any more.
 | `step-in-label-body-6-first` | 1,217,401 | a step inside a label, store pinned |
 | `label-body-6-general` | 487,458 | a step inside a label at an **arbitrary** store |
 | `frame-body-6-general` | 6,861,519 | a step inside a frame at an arbitrary store |
+| `step-nil-on-a-lone-relop` | 12,860 | a comparison with no operands is not stepped |
+| `step-nil-on-a-relop-with-one-value` | 17,475 | nor with one |
+| `flat-body-6-third` | 69,354 | the third position: two operands consumed |
 
 9,394,852 prover steps in **10.9 seconds**.  The largest proof in the project and
 one of the cheapest to run; the ratio is worth keeping in mind before reading a big
@@ -578,6 +581,25 @@ first.**
    about `append` and the label level runs to 48.6M steps without finishing; with it
    written as `(cons (list :const (list :i32) status) (cdr *body-6*))` the same
    statement is 487,458 steps.
+
+**The third position, and what it took.**  `wasm3/search.lisp` is new: the two
+*failure* facts the third position needs, which nothing in the tree had --
+
+```lisp
+(step (:;% z '((:relop (:i32) (:ne)))))                  = nil   ; no operands
+(step (:;% z '((:const (:i32) 1) (:relop (:i32) (:ne))))) = nil   ; one operand
+```
+
+-- because the search walks k down from the value count and hands `step` the slice
+`(take (- (+ 1 prefix) k) (nthcdr k instrs))`, so a comparison is only stepped at
+k = 0, with both operands in the slice.  Without these facts, `flat-body-6-third`
+fell into induction after 8,600 steps; with them it is 69,354 steps of ordinary
+rewriting.
+
+One hypothesis it also needed: `(unsigned-byte-p 32 status)`.  The pushed operand
+has to be a real i32 or `(:CONST (:I32) status)` is not a value at all, and ACL2
+case-splits on `(integerp status)` without it.  That is a fact about the module
+being well-typed rather than a proof trick, and it belongs in the lemma.
 
 **And the probe is what made any of this possible.**  `gen_chain.py --probe`
 computes `step` on a concrete configuration and prints the answer, so each
