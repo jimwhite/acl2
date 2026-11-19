@@ -43,6 +43,26 @@
 ;   step_pure  : instr* -> instr* option        (arithmetic, tests, consts)
 ;   step_read  : config -> instr* option        (loads, global.get, local.get)
 ;
+; AND A SHAPE THAT DOES NOT WORK, measured: the first instruction lemma was attempted
+; as "concrete instruction PREFIX, symbolic CONTINUATION" --
+;
+;   (step_pure (cons '(:const (:i32) 1) (cons '(:const (:i32) 2)
+;                 (cons '(:binop (:i32) (:add)) rest))))
+;
+; -- and it is the wrong shape, not merely a hard one: STEP_PURE's rules require the
+; instruction under reduction to be the LAST element of the list (the prefix is the
+; values already pushed), so a non-empty REST means no rule fires at all.  77946
+; prover steps went into proving something false.
+;
+; The symbolic part has to be the VALUE PREFIX, not the continuation:
+;
+;   (step_pure (append vals (list <concrete instruction>)))
+;
+; with VALS a list of (:CONST (:I32) v) entries whose v are symbolic.  And then the
+; lemmas have to be about STEP/PREFIX7 over an APPEND, because that is what the
+; rules inspect to find the split point.  That is where this work starts, and it is
+; why the layer is worth cutting here: no store appears in any of it.
+;
 ; So the layering for one instruction is
 ;
 ;   STEP_PURE lemma   (no store: symbolic values only)
