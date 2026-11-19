@@ -383,6 +383,32 @@ visible: tracing the frozen path gives exactly
 
 — one call, six steps inside, and two returns.
 
+### Bodies must be literals, not terms
+
+The next thing tried was the chain's first link, stated compactly:
+
+```lisp
+(equal (step (:;% Z ((:LABEL_ 1 nil (milawa-func-body 6)))))
+       (:;% Z ((:LABEL_ 1 nil (cons (:CONST i32 status) (cdr (milawa-func-body 6)))))))
+```
+
+i.e. "the body's first instruction reads the status global and pushes it", with the
+two-hundred-line body hidden behind the accessor.  Measured: **229,292 prover steps
+and it still stalls at the same `STEP/R-CTXT-INSTRS` question** — the rule's search
+does not bottom out, because the body is now a TERM rather than a list it can walk.
+The `no-ctxt-instrs-on-a-lone-label-general` lemma it needs does not match, and even
+with the body opaque the search has nothing to work with.
+
+Compare the same statement with the body written out as a literal: layers 1-5 all
+proved that way, cheaply.
+
+So the chain's lemmas must carry **literal** bodies.  That is not a hardship -- it is
+a generated artifact, exactly as `state.lisp` and `module.lisp` are: `harness/`
+should grow a generator that reads the module's bodies out of the pinned store and
+emits one lemma per instruction, at its static stack height, with the literal body
+it belongs to.  The `milawa-func-body` accessors stay useful for stating THAT a body
+is what we think it is (a drift check), not for hiding it inside a proof.
+
 ### The instruction library, cut at the joints
 
 The residual names the first lemma, and the object is smaller than it looks: the
