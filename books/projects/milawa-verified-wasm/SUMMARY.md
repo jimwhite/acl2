@@ -383,7 +383,89 @@ visible: tracing the frozen path gives exactly
 
 — one call, six steps inside, and two returns.
 
-### Bodies must be literals, not terms
+### How `step` descends, and the trick that unfolds it
+
+Attacking the chain's first link produced the most useful structural result of this
+stretch, and corrected a wrong assumption.
+
+**Wrong assumption.** I had assumed `step/r-ctxt-instrs` is NIL on a config whose
+instruction list is flat, so that the descent would fall through to the pure and
+read rules.  It is not.  Reading the generated semantics
+(`4_3-execution_instructions.lisp`) settles it:
+
+```
+(defun step/r-ctxt-instrs (a0)
+  ... (let* ((%t9 (step/prefix7 %t6)))          ; leading values
+        (and (< %t9 (len %t6))
+             (step/search21 %t9 0 %t9 %t6 %t9 z a0))))
+```
+
+`step/prefix7` counts the leading values, then `step/search21` walks `k` *down*
+from that count, and at each `k` it takes one instruction, wraps it in a
+context-free config and calls `step` on it.  So `step/r-ctxt-instrs` is the
+function that **finds the instruction to step next** and puts the surrounding
+values back with `append`:
+
+```
+(:;% z' (append (step/iter20 values) (append instrs' rest)))
+```
+
+That is the mechanism the whole `step` rests on, and it means an instruction lemma
+of the layer-1/layer-2 shape (values before, instruction last) is exactly what
+`step/ctxt-instrs` consumes.  The layers built earlier are therefore the right
+ingredients -- the chain does not need a separate interface.
+
+**The descent for a frame holding a label.**  With `C0 = (:;% Z ((:FRAME_ 1 F ((:LABEL_ 1 nil BODY))))`,
+one step is
+
+```
+step C0
+  step/r-pure C0            -> nil
+  step/r-read C0            -> nil
+  step/r-ctxt-instrs C0     -> nil        (frame is not a value; the inner
+                                           step on the frame itself recurses)
+  step/r-ctxt-label C0      -> nil        (the one element is a frame, not a label)
+  step/r-ctxt-handler C0    -> nil
+  step/r-ctxt-frame C0      -> fires: steps (:;% (:;% S F) ((:LABEL_ 1 nil BODY))) = C1
+    step/r-ctxt-instrs C1   -> nil        (a lone label -- no-ctxt-instrs-on-a-lone-label-general)
+    step/r-ctxt-label C1    -> fires: steps (:;% (:;% S F) BODY) = C2
+      step/r-ctxt-instrs C2 -> fires: the head instruction is global.get 3,
+                               so (step (:;% Z1 ((:GLOBAL.GET 3)))) must give the
+                               value, and the result is the value appended to BODY's tail
+```
+
+Three nested `step` calls, two inner nil-ness facts (both already proved), and one
+per-instruction fact (the value of `global.get 3`, proved in `reads.lisp`).
+
+**The trick: `:expand` cannot unfold a mutual-recursion member, a `:definition`
+instance can.**  `step`, `step/r-ctxt-instrs`, `step/r-ctxt-label`,
+`step/r-ctxt-frame` are one mutual recursion, so `:expand ((w3t::step C0))`
+unfolds `step` and then *stops dead* at `(step/r-ctxt-frame C0)` -- adding
+`:expand` for that symbol, or enabling its definition rule, changes nothing at
+all (measured: 23,319 prover steps in every variant, byte for byte).  What works
+is to instantiate the definition axiom by hand:
+
+```lisp
+:hints (("Goal" :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                                 (w3t::%a0 C0)))))
+```
+
+Measured: 496,961 prover steps with `z` a variable (stalls asking `(CONSP Z)`),
+and with the real store `(mvm-abs-z-abstract bytes sp pc clen status result)` the
+proof carries all the way to a single remaining obligation:
+
+```lisp
+(implies (< 21 (+ 27 (acl2-count f)))   ; the %OM3 measure side condition
+         (w3t::step/r-ctxt-instrs <config at C2>))
+```
+
+So the chain is now a finite, enumerated list of obligations rather than a black
+stall -- which is the first time that has been true.  The next steps are: the
+head-instruction lemma for a flat config (`step/r-ctxt-instrs` on
+`(:;% z (cons instr rest))`), and the `%size`/`acl2-count` facts that discharge
+those `(< 21 (+ 27 (acl2-count f)))` side conditions -- what `size.lisp` began.
+
+## Bodies must be literals, not terms
 
 The next thing tried was the chain's first link, stated compactly:
 
