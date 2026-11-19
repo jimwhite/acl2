@@ -234,6 +234,36 @@
                             (w3t::%a0 (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :label_%{%}% 1 nil *body-6*))))))
            :in-theory (disable w3t::step/r-ctxt-instrs))))
 
+; The label level at an arbitrary store.  The value is kept CONCRETE: with
+; it symbolic the rewriter has to reason about `append` and the same statement
+; runs to 48.6M prover steps without finishing.  487,458 steps here.
+(defthm label-body-6-general
+  (implies (equal (w3t::step/r-ctxt-instrs (list :|%;%| z *body-6*))
+                  (list (list :|%;%| z2 (cons (list :const (list :i32) status) (cdr *body-6*)))))
+           (equal (w3t::step (list :|%;%| z (list (list :label_%{%}% 1 nil *body-6*))))
+                  (list (list :|%;%| z2 (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*))))))))
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% 1 nil *body-6*))))))
+           :in-theory (disable w3t::step/r-ctxt-instrs))))
+
+; The frame level, which is where the descent starts for a call to this
+; function.  6,861,519 prover steps -- the largest proof in the project -- and
+; the last of the three bridge lemmas.
+;
+; One thing to know: `step/r-ctxt-label` must be LEFT ENABLED here.  Disabling
+; it costs the proof, because ACL2 then still has to establish that the label
+; rule applies, and cannot unfold the rule to do it.
+(defthm frame-body-6-general
+  (implies (equal (w3t::step (list :|%;%| (list :|%;%| s f-prime) (list (list :label_%{%}% 1 nil *body-6*))))
+                  (list (list :|%;%| (list :|%;%| s2 f2) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*)))))))
+           (equal (w3t::step (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 f-prime (list (list :label_%{%}% 1 nil *body-6*))))))
+                  (list (list :|%;%| (list :|%;%| s2 f) (list (list :frame_%{%}% 1 f2 (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*))))))))))
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 f-prime (list (list :label_%{%}% 1 nil *body-6*))))))))
+           :in-theory (disable w3t::step/r-ctxt-instrs))))
+
 ; WHAT ONE STEP OF A WHOLE FRAME DOES, derived rather than guessed:
 ;
 ;   (python3 ../harness/gen_chain.py --probe) gives, for a concrete store,

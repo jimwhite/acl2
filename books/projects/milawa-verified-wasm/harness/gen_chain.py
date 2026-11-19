@@ -194,6 +194,61 @@ def render():
     label += ")" * bal(label)
     assert bal(label) == 0
 
+    # -- the label level at an arbitrary store, with the value kept concrete (so the
+    # rewriter never has to reason about `append`, which is what blew the first
+    # attempt up to 48.6M steps).  487,458 prover steps.
+    VAL = "(cons (list :const (list :i32) status) (cdr *body-6*))"
+    LAB = "(list (list :label_%{%}% 1 nil *body-6*))"
+    LAB2 = "(list (list :label_%{%}% 1 nil " + VAL + "))"
+    LBLG = "(list :|%;%| z " + LAB + ")"
+    labelg = "\n".join([
+        "; The label level at an arbitrary store.  The value is kept CONCRETE: with",
+        "; it symbolic the rewriter has to reason about `append` and the same statement",
+        "; runs to 48.6M prover steps without finishing.  487,458 steps here.",
+        "(defthm label-body-6-general",
+        "  (implies (equal (w3t::step/r-ctxt-instrs (list :|%;%| z *body-6*))",
+        "                  (list (list :|%;%| z2 " + VAL + ")))",
+        "           (equal (w3t::step " + LBLG + ")",
+        "                  (list (list :|%;%| z2 " + LAB2 + "))))",
+        '  :hints (("Goal"',
+        "           :use ((:instance (:definition w3t::step/r-ctxt-label)",
+        "                            (w3t::%a0 " + LBLG + ")))",
+        "           :in-theory (disable w3t::step/r-ctxt-instrs)))",
+    ])
+    labelg += ")" * bal(labelg)
+    assert bal(labelg) == 0
+
+    # -- the frame level.  Note what is NOT disabled: disabling
+    # `step/r-ctxt-label` here costs the proof, because ACL2 then still has to
+    # establish that the label rule applies and cannot unfold it to do so.
+    ZIN = "(list :|%;%| s f-prime)"
+    LBLCFG = "(list :|%;%| " + ZIN + " " + LAB + ")"
+    LBLRES = "(list (list :|%;%| (list :|%;%| s2 f2) " + LAB2 + "))"
+    FCFG = ("(list :|%;%| (list :|%;%| s f)"
+            " (list (list :frame_%{%}% 1 f-prime " + LAB + ")))")
+    FRES = ("(list (list :|%;%| (list :|%;%| s2 f)"
+            " (list (list :frame_%{%}% 1 f2 " + LAB2 + "))))")
+    frame = "\n".join([
+        "; The frame level, which is where the descent starts for a call to this",
+        "; function.  6,861,519 prover steps -- the largest proof in the project -- and",
+        "; the last of the three bridge lemmas.",
+        ";",
+        "; One thing to know: `step/r-ctxt-label` must be LEFT ENABLED here.  Disabling",
+        "; it costs the proof, because ACL2 then still has to establish that the label",
+        "; rule applies, and cannot unfold the rule to do it.",
+        "(defthm frame-body-6-general",
+        "  (implies (equal (w3t::step " + LBLCFG + ")",
+        "                  " + LBLRES + ")",
+        "           (equal (w3t::step " + FCFG + ")",
+        "                  " + FRES + "))",
+        '  :hints (("Goal"',
+        "           :use ((:instance (:definition w3t::step/r-ctxt-frame)",
+        "                            (w3t::%a0 " + FCFG + ")))",
+        "           :in-theory (disable w3t::step/r-ctxt-instrs)))",
+    ])
+    frame += ")" * bal(frame)
+    assert bal(frame) == 0
+
     L = [
         "; L1, the opcode chain: the bottom of the descent, generated.",
         ";",
@@ -222,6 +277,10 @@ def render():
         flatg,
         "",
         label,
+        "",
+        labelg,
+        "",
+        frame,
         "",
         "; WHAT ONE STEP OF A WHOLE FRAME DOES, derived rather than guessed:",
         ";",

@@ -536,53 +536,61 @@ So the remaining work for the first link is now three named things, in order:
 through, (2) then the link itself, (3) then the same generator extended to the
 body's other instructions.  Nothing about it is open-ended any more.
 
-## The chain: the bottom two levels are proved
+## The chain: the descent is proved, level by level
 
-`wasm3/chain.lisp` (generated) now carries three lemmas, all certified:
+`wasm3/chain.lisp` (generated) now carries five lemmas, all certified:
 
-| lemma | steps | what it says |
+| lemma | prover steps | what it says |
 |---|---|---|
 | `step-flat-body-6-first` | 145,059 | the body's first instruction steps, store pinned |
-| `flat-body-6-general` | 683,415 | the same at an **arbitrary** store, with the instruction's own step as a hypothesis |
-| `step-in-label-body-6-first` | 1,217,401 | a step inside a label is a step of its body, re-wrapped |
+| `flat-body-6-general` | 683,415 | the same at an **arbitrary** store |
+| `step-in-label-body-6-first` | 1,217,401 | a step inside a label, store pinned |
+| `label-body-6-general` | 487,458 | a step inside a label at an **arbitrary** store |
+| `frame-body-6-general` | 6,861,519 | a step inside a frame at an arbitrary store |
 
-2,045,875 prover steps, **5.06 seconds** of wall clock.  The step counts are large
-and the clock is small; that gap is worth keeping in mind before reading a stall as
-slowness.
+9,394,852 prover steps in **10.9 seconds**.  The largest proof in the project and
+one of the cheapest to run; the ratio is worth keeping in mind before reading a big
+step count as slowness.
 
-**The lever that unlocked the label level** is two hint elements together, and
-neither works alone:
+Each level is an implication whose hypothesis is the level beneath it, so the ladder
+composes:
 
-```lisp
-:hints (("Goal"
-         :use (step-flat-body-6-first          ; pass the fact, do not hope it fires
-               (:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 cfg)))
-         :in-theory (disable w3t::step/r-ctxt-instrs)))   ; or ACL2 re-expands the search
+```
+instruction   (step (:;% z ((:global.get 3))))        -- head.lisp, store pinned
+    |  flat-body-6-general          (:;% z BODY)
+    |  label-body-6-general         (:;% z ((:LABEL_ 1 nil BODY)))
+    v  frame-body-6-general         (:;% (:;% s f) ((:FRAME_ 1 f' ((:LABEL_ 1 nil BODY)))))
 ```
 
-Without the `disable` the identical goal costs 288,294 steps and stalls: the
-rewriter prefers to expand `step/r-ctxt-instrs` and re-run the search rather than
-use the lemma it has.  This is the fourth time in this project that the fix was
-*withholding* a definition rule rather than adding a fact.
+**Four rules for this kind of proof, all measured, all of which cost a wrong attempt
+first.**
 
-**Why the general flat rule matters.**  Because `z` is a variable in
-`(list :|%;%| z *body-6*)`, the literal body still matches *any* store — so the
-"a cons-pattern cannot match a quoted constant" problem is avoided by keeping the
-store symbolic instead of pinning it.  That is the form the levels above need.
+1. **Pass the lower level with `:use`, do not rely on it as a rewrite rule.**  As a
+   rule it does not fire on the goal ACL2 actually builds.
+2. **Disable `step/r-ctxt-instrs`.**  Without it the identical goal costs 288,294
+   steps and stalls: the rewriter prefers to re-expand the search over using the
+   lemma it has.  (Fourth time in this project that withholding a definition rule
+   was the fix.)
+3. **Do not disable the rule the level needs to apply.**  Disabling
+   `step/r-ctxt-label` while proving the frame level costs the proof: ACL2 then
+   still has to establish that the label rule applies and cannot unfold it to do so.
+4. **Keep the pushed value concrete.**  With it symbolic the rewriter has to reason
+   about `append` and the label level runs to 48.6M steps without finishing; with it
+   written as `(cons (list :const (list :i32) status) (cdr *body-6*))` the same
+   statement is 487,458 steps.
 
-**What is left of the chain: the frame level.**  It is the same shape, and it fails
-for a real reason rather than a mysterious one: `step/r-ctxt-frame` rebuilds the
-inner store as `(:;% (cadr z) (caddr z))`, and `mvm-abs-z-abstract` is expanded
-before `reconstruct-abs-z` can reassemble it, so the inner configuration is not
-syntactically the one the label lemma is stated at.  Two ways forward, both
-concrete: state the label lemma also at the reconstruction, or state the frame link
-with the label result as a hypothesis (the pattern that just worked twice).
-
-The probe (`gen_chain.py --probe`) is what made these levels derivable at all: it
+**And the probe is what made any of this possible.**  `gen_chain.py --probe`
 computes `step` on a concrete configuration and prints the answer, so each
-right-hand side is read off the semantics instead of guessed.  Three of the four
-earlier attempts at this had the wrong configuration in the hint and no way to
-know.
+right-hand side is read off the semantics.  It also settles questions cheaply: the
+frame statement was verified TRUE by evaluation before it was proved, which is how
+the "malformed configuration" hypothesis was ruled out instead of chased.  Every
+one of the earlier attempts at these levels had a wrong configuration in a hint and
+no way to know.
+
+**What remains for L1**: instantiate this ladder at the abstract store and compose
+it with `step-call-enters-frame` (layer 6) and the two return lemmas (layer 7) into
+the 9-step theorem that matches `abs.lisp`'s clock for the frozen path.  With the
+three general bridges proved, that is instantiation bookkeeping.
 
 ## Bodies must be literals, not terms
 
