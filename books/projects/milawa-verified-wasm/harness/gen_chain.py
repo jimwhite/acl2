@@ -249,6 +249,39 @@ def render():
     frame += ")" * bal(frame)
     assert bal(frame) == 0
 
+    # -- the per-position flat lemmas.  The instruction is a LITERAL and `rest` is
+    # symbolic: that is the combination that works.  With the instruction symbolic
+    # (and val-p hypotheses) the same statement diverges past 10,489 subgoals.
+    V1 = "(list :const (list :i32) status)"
+    I2 = "(list :const (list :i32) 1)"
+    sec_cfg = "(list :|%;%| z (cons " + V1 + " (cons " + I2 + " rest)))"
+    sec_in = "(list :|%;%| z (list " + I2 + "))"
+    second = "\n".join([
+        "; The second position of the body: one value already pushed, and the",
+        "; instruction a literal.  The literal instruction is what makes this provable",
+        "; -- `step/prefix7` has to decide whether the head is a value, and with the",
+        "; instruction symbolic it cannot, which is why the general form diverges.",
+        "; 131,043 prover steps.",
+        "(defthm flat-body-6-second",
+        "  (implies (and (consp rest) (true-listp rest) (true-listp val)",
+        "                (equal (w3t::step " + sec_in + ")",
+        "                       (list (list :|%;%| z2 val))))",
+        "           (equal (w3t::step/r-ctxt-instrs " + sec_cfg + ")",
+        "                  (list (list :|%;%| z2 (cons " + V1 + " (append val rest))))))",
+        '  :hints (("Goal"',
+        "           :use ((:instance (:definition w3t::step/r-ctxt-instrs)",
+        "                            (w3t::%a0 " + sec_cfg + "))",
+        "                 (:instance (:definition w3t::step/prefix7)",
+        "                            (w3t::%s (cons " + V1 + " (cons " + I2 + " rest))))",
+        "                 (:instance (:definition w3t::step/search21)",
+        "                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)",
+        "                            (w3t::%t6 (cons " + V1 + " (cons " + I2 + " rest)))",
+        "                            (w3t::%t9 1) (w3t::z z)",
+        "                            (w3t::%a0 " + sec_cfg + ")))))",
+    ])
+    second += ")" * bal(second)
+    assert bal(second) == 0
+
     # -- THE FIRST LINK: the three general bridges composed.  This is the theorem
     # the whole chain is made of -- one step of function 6's body from the
     # configuration a call leaves behind.  593,575 prover steps, and the first
@@ -317,6 +350,8 @@ def render():
         flat,
         "",
         flatg,
+        "",
+        second,
         "",
         label,
         "",

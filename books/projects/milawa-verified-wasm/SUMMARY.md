@@ -587,17 +587,35 @@ the "malformed configuration" hypothesis was ruled out instead of chased.  Every
 one of the earlier attempts at these levels had a wrong configuration in a hint and
 no way to know.
 
-**What remains for L1**, and what is now known about it: the first link is proved,
-and the rest of the 9-step frozen path is the same shape repeated.  The obstacle
-there is that the later positions have a **prefix of pushed values** in front of the
-instruction, and the general form of that (`flat-with-one-value`, with the value and
-instruction symbolic and `(w3t::val-p v)` / `(not (w3t::val-p instr))` as
-hypotheses) **diverges** -- it ran past 10,489 subgoals and was stopped.  That
-matches the pattern this whole problem has followed: the general forms either
-diverge or explode (the general label form ran to 48.6M steps), while **concrete
-instances at the literal body prove**.  So the remaining links should be emitted by
-the generator as per-position instances with the concrete value prefix and the
-literal body suffix, which is what `gen_chain.py` is for.
+**What remains for L1**, and what is now known about it.  The frozen path has been
+walked, not guessed: `step` iterated nine times from the configuration a call leaves
+behind reaches the halted configuration, and the walk says exactly what each step
+looks like --
+
+```
+step 0..7:  ok=T  instrs = ((:FRAME_ ...))   head = :FRAME_%{%}%   store unchanged
+step 8:     ok=T  instrs = ((:CONST ...))    head = :CONST         store unchanged
+step 9:     ok=NIL                              (halted: nothing left to step)
+```
+
+-- so all eight inner steps have the *same outer shape*, the frame rule fires each
+time, and the store never changes.  That means the chain is the general frame bridge
+applied eight times, and the only thing that varies is the **flat** step inside the
+label: which instruction is next, and how many values are already pushed.
+
+The per-position flat lemma is proved for the first two positions
+(`step-flat-body-6-first`, 145,059; `flat-body-6-second`, 131,043), and its shape is
+the one that generalises: **instruction literal, `rest` symbolic**.  The general form
+with the instruction symbolic needs `step/prefix7` to decide whether the head is a
+value, which it cannot, and diverges past 10,489 subgoals.
+
+So the remaining links are generator output: one flat lemma per body position, each
+lifted by the general label and frame bridges.  One caveat found and not yet solved:
+a *fully* general label bridge (`body` a variable, not the literal) stalls, so the
+label instance should be emitted per position too, alongside its flat lemma.
+
+Then the call (layer 6, `step-call-enters-frame`) and the two return lemmas (layer 7)
+join them into the 9-step theorem that matches `abs.lisp`'s clock.
 
 Then the call (layer 6, `step-call-enters-frame`) and the two return lemmas
 (layer 7) join them into the 9-step theorem that matches `abs.lisp`'s clock.

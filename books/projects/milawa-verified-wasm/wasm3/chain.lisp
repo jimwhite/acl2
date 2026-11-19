@@ -219,6 +219,28 @@
                             (w3t::z z)
                             (w3t::%a0 (list :|%;%| z *body-6*)))))))
 
+; The second position of the body: one value already pushed, and the
+; instruction a literal.  The literal instruction is what makes this provable
+; -- `step/prefix7` has to decide whether the head is a value, and with the
+; instruction symbolic it cannot, which is why the general form diverges.
+; 131,043 prover steps.
+(defthm flat-body-6-second
+  (implies (and (consp rest) (true-listp rest) (true-listp val)
+                (equal (w3t::step (list :|%;%| z (list (list :const (list :i32) 1))))
+                       (list (list :|%;%| z2 val))))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| z (cons (list :const (list :i32) status) (cons (list :const (list :i32) 1) rest))))
+                  (list (list :|%;%| z2 (cons (list :const (list :i32) status) (append val rest))))))
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (cons (list :const (list :i32) status) (cons (list :const (list :i32) 1) rest)))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (cons (list :const (list :i32) status) (cons (list :const (list :i32) 1) rest))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (cons (list :const (list :i32) status) (cons (list :const (list :i32) 1) rest)))
+                            (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (cons (list :const (list :i32) status) (cons (list :const (list :i32) 1) rest)))))))))
+
 ; The label level: a step inside a label is a step of its body, re-wrapped.
 ; The flat lemma has to be passed with :USE rather than left to fire as a
 ; rewrite rule, and `step/r-ctxt-instrs` has to be DISABLED so that ACL2
