@@ -38,7 +38,7 @@ flowchart TB
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
-| `wasm3/context.lisp` | **layer 4**: the first context rule — a step inside a `:LABEL_` is a step of the body, re-wrapped; the composition law the library rests on |
+| `wasm3/context.lisp` | **layers 4 and 5**: the context rules — a step inside a `:LABEL_` and inside a `:FRAME_` are steps of the body, re-wrapped; the composition law the library rests on |
 | `wasm3/frames.lisp` | **layer 3**: `local.get` of all four locals with the frame symbolic — the layer every opcode's operand load goes through |
 | `wasm3/reads.lisp` | **layer 2**: `global.get` of all five globals in the abstract store — the first place the store is symbolic in a proof |
 | `wasm3/instructions.lisp` | **layer 1 of the instruction library**: ten `STEP_PURE` lemmas with symbolic values — five i32 binops, four comparisons, the zero test — stated at the static value count so the rule chain evaluates; the first place here where a symbolic state is stepped rather than evaluated |
@@ -286,6 +286,18 @@ pattern.  `wrt::%size` is `acl2-count` behind `mbe` and disabled, which is what
   prover steps, two `:expand` hints.
 - `step-in-label-local-get` — the context lemma itself: a step inside a `:LABEL_` is
   a step of the body, re-wrapped.  61,409 prover steps.
+- `no-ctxt-instrs-on-a-lone-frame` / `-label-general` — the same negative fact for a
+  frame, and generalised in the body, 458 prover steps each, which is what the
+  deeper lemmas need.
+- `step-in-frame-local-get` — **layer 5**, the nesting a call actually uses:
+  `(frame n F (label k nil body))`.  14,310 prover steps.
+
+The frame rule's bookkeeping is not symmetric and is worth having written down: the
+inner configuration it steps is `(:;% (:;% S F') instr*)` — the store with the frame
+carried by the *admin*, because that is whose locals the body reads — while the
+result carries the *outer* frame, `(:;% (:;% S' F) ((:FRAME_ n F'' instr'*)))`.  Store
+updates flow outward, frames flow inward; a lemma that swaps them is false rather
+than hard, which ACL2 will simply refute.
 
 That second one is the composition law the instruction library rests on: it is what
 lets a chain of single-instruction lemmas be lifted out of the nesting.  The other

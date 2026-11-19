@@ -88,3 +88,68 @@
                             (list :|%;%| (mvm-abs-z-locals bytes (mvm-locals l0 l1 l2 l3))
                                   (list (list :label_%{%}% 1 nil
                                               (list (list :local.get 0))))))))))
+
+;; ---------------------------------------------------------------------------
+;; The frame context rule: a step inside a :FRAME_ admin
+;; ---------------------------------------------------------------------------
+
+; A call is entered by pushing a :FRAME_ admin whose frame holds the callee's
+; locals, and the body then runs inside it.  So this is the nesting a call needs,
+; and it is deeper than the label case: (frame n F (label k nil body)).
+;
+; The rule is worth reading closely, because its bookkeeping is not symmetric:
+;
+;   * the INNER configuration it steps is (:;% (:;% S F') instr*) -- the store S
+;     together with F-prime, the frame carried by the admin, because that is the
+;     frame whose locals the body reads;
+;   * the RESULT carries the OUTER frame: (:;% (:;% S' F) ((:FRAME_ n F'' instr'*))).
+;
+; So the store updates flow outward while the frame flows inward, and a lemma
+; that gets that the wrong way round is false rather than unprovable -- which is
+; exactly the sort of thing that is cheaper to state and let ACL2 refute than to
+; reason about.
+
+; The negative fact again, now general in BODY: whichever body hangs under the
+; frame, the only run ctxt-instrs could take is the whole instruction list.
+(defthm no-ctxt-instrs-on-a-lone-frame
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z (list (list :frame_%{%}% n f body))))
+         nil)
+  :hints (("Goal" :expand ((w3t::step/r-ctxt-instrs
+                            (list :|%;%| z (list (list :frame_%{%}% n f body))))
+                           (:free (k lo hi i t9 zz a0)
+                                  (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+; And the same for the label, generalised the same way, for the same reason: the
+; two context lemmas below both need it.
+(defthm no-ctxt-instrs-on-a-lone-label-general
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z (list (list :label_%{%}% n is0 body))))
+         nil)
+  :hints (("Goal" :expand ((w3t::step/r-ctxt-instrs
+                            (list :|%;%| z (list (list :label_%{%}% n is0 body))))
+                           (:free (k lo hi i t9 zz a0)
+                                  (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+; The frame context lemma: one step inside the frame is one step of the body
+; inside its label, re-wrapped.  The store is carried through unchanged by
+; local.get, so the outer Z comes back as it went in -- which is why this
+; statement is checkable by eye.
+(defthm step-in-frame-local-get
+  (equal (w3t::step
+          (list :|%;%| (list :|%;%| store outer-frame)
+                (list (list :frame_%{%}% 1
+                            (frame-with-locals (mvm-locals l0 l1 l2 l3))
+                            (list (list :label_%{%}% 1 nil
+                                        (list (list :local.get 0))))))))
+         (list (list :|%;%| (list :|%;%| store outer-frame)
+                     (list (list :frame_%{%}% 1
+                                 (frame-with-locals (mvm-locals l0 l1 l2 l3))
+                                 (list (list :label_%{%}% 1 nil
+                                             (list l0))))))))
+  :hints (("Goal" :expand ((w3t::step
+                            (list :|%;%| (list :|%;%| store outer-frame)
+                                  (list (list :frame_%{%}% 1
+                                              (frame-with-locals (mvm-locals l0 l1 l2 l3))
+                                              (list (list :label_%{%}% 1 nil
+                                                          (list (list :local.get 0))))))))))))
