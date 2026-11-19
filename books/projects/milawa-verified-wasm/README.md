@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Twenty-seven books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Twenty-eight books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes well under a minute; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -41,6 +41,7 @@ any book in the tree has been skipped.
 | Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness | **proved** (`wasm3/memory.lisp`) |
 | The abstraction `MVM` state → spec configuration, and the clock for every path (47–101 spec steps, opcode-determined) | **proved** (`wasm3/abs.lisp`, 16 theorems by evaluation) |
 | The instruction library the chain is assembled from: seven layers, `step_pure` and `step_read` lemmas, the context rules, calls, returns | **proved** (`wasm3/instructions.lisp` … `wasm3/returns.lisp`) |
+| The body of function 6 as a literal, with its first instruction stepped — the bottom of the chain, generated | **proved** (`wasm3/chain.lisp`) |
 | A whole `step` of a one-instruction configuration, and the head rule in three forms — the general one taking the instruction's own step as a hypothesis | **proved** (`wasm3/head.lisp`) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — statement fixed and validated on all 16 paths; the descent's bottom is proved, the per-position chain lemmas are next |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
@@ -275,6 +276,12 @@ what works is an *instance* stated at each position.
 value before the instruction or an instruction after it.  A lemma without
 `(consp rest)` is therefore *false*, not merely hard -- one attempt spent 401,630
 prover steps chasing it.
+
+**When the intermediate configurations of a proof keep coming out wrong, compute
+them.**  `step` is a logic function, so on a *concrete* configuration ACL2 will
+evaluate it and print the result: that is the specification of the lemma, not a
+guess.  `python3 harness/gen_chain.py --probe` does exactly this, and it settled in
+one run what several rounds of hand-written `:definition` instances had not.
 
 **`acl2-count` of a symbol is the length of its name**, so the tempting
 `(equal (equal (acl2-count x) 0) (not (consp x)))` is false.  The one-directional

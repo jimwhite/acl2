@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (27 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (28 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -37,6 +37,7 @@ flowchart TB
 | `machine/mvm.lisp` | `MVM-STEP`/`MVM-RUN`: the ACL2 model of the module, 32-bit words, status protocol.  A stopped machine is a fixed point; spending a budget in two instalments is spending it at once; **fuel monotonicity** — once it has stopped, a larger budget changes nothing |
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
+| `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
 | `wasm3/head.lisp` | **the assembly layer**: a whole `step` of a one-instruction configuration (`step`, `step/r-read`, and the three forms of the head rule, the most general of which takes the instruction's own step as a hypothesis), the abstract store's reconstruction from its two halves, and the one piece of list arithmetic the semantics' search needs |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
 | `wasm3/returns.lisp` | **layer 7**: returning — out of the label, then out of the frame, leaving the callee's result |
@@ -535,46 +536,35 @@ So the remaining work for the first link is now three named things, in order:
 through, (2) then the link itself, (3) then the same generator extended to the
 body's other instructions.  Nothing about it is open-ended any more.
 
-## What still separates the head rule from the first link
+## What one step of a whole frame does, derived not guessed
 
-With the rules above in the theory, the first link is *nearly* mechanical, and the
-gap is now a shape mismatch rather than a capability:
+Hand-writing the intermediate configurations of the descent cost several rounds of
+wrong guesses, so the generator now asks the semantics instead.  `step` is a logic
+function, so on a *concrete* configuration ACL2 will simply compute it:
 
-```lisp
-(defthm chain-link
-  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
-                          (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract ...))
-                                      (list (list :label_%{%}% 1 nil BODY))))))
-         ...)
-  :hints (("Goal" :use ((:instance (:definition w3t::step/r-ctxt-frame) ...)))))
+```sh
+python3 harness/gen_chain.py --probe > /tmp/probe.lisp
+cd wasm3 && echo '(include-book "chain") (ld "/tmp/probe.lisp")' | ../../../../saved_acl2
 ```
 
-reaches 525,064 prover steps and stops on `(step/r-ctxt-instrs cfg)` where `cfg`
-is the FLAT configuration `(:;% zi BODY)` -- the body, as a literal.  (I first read
-the goal as `((BODY))`, one level out; recounting the parentheses, the quoted list
-is the body itself.  Worth recording because the misreading would have sent the next
-attempt looking for a nesting bug that is not there.)
+The answer, for a concrete store, `sp`/`pc`/`clen` and `status = 1`:
 
-So the descent gets all the way down to the flat configuration, and what fails there
-is that the head rule does not fire on it.  The reason is a genuine tension between
-two things this project has already found separately:
+```
+((:FRAME_ 1 <frame-record> ((:LABEL_ 1 NIL ((:CONST (:I32) 1) (:CONST (:I32) 0) (:RETURN))))))
+Z UNCHANGED: T
+```
 
-* the body has to be a **literal** for the search and the `%size` comparisons to
-  compute (that was established much earlier, and it is why `gen_chain.py` exists);
-* a rewrite rule whose left-hand side contains `(cons instr rest)` **cannot match a
-  quoted constant**, because the rewriter treats `(quote ...)` as an atom rather
-  than decomposing it into cons structure.
+which fixes the right-hand side of the link exactly: the store and frame untouched,
+the label's own stack still NIL, and the body's first instruction *replaced* by the
+value it pushed.  No guessing left in the statement.
 
-Which means the general rule and a literal body are, for this purpose,
-incompatible -- and the resolution is the one that already worked: state the flat
-step as an **instance** at each position, with the literal body written out, and
-give it the `(:definition ...)` instances the earlier 138,429-step proof used.  That
-is exactly what `gen_chain.py` is for, and it is now a known-good target rather than
-an open question.
-
-Everything else the chain needs is proved and in the library: the frame descent
-(`:definition` instance), the two nil-ness rules for a lone label and a lone frame,
-the abstract-store reconstruction, and the head rule.
+Where the link now stops: the descent gets to a configuration whose instruction list
+is one level deeper than the flat one `chain.lisp` proves about
+(`((BODY))` rather than `BODY`), so the two do not meet.  The next move is the same
+probe applied one level down -- compute `(step C1)` and `(step C2)` for the
+intermediate configurations the descent produces, and state the link at *those*
+shapes.  That is mechanical now that the tool exists, which is the difference from
+the last several attempts.
 
 ## Bodies must be literals, not terms
 
