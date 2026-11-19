@@ -39,7 +39,7 @@ flowchart TB
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/links.lisp` | **the links**: the second step of function 6's body at the flat, label and frame levels, plus `step-body-6-two`, which steps the machine twice and shows the two links genuinely compose |
 | `wasm3/frozen.lisp` | **the frozen path, end to end**: the nine steps from `mvm-abs-abstract` when the status is not 1 -- the call, the read, the comparison, the branch, the block, the read inside the block's label, the two returns -- each at the callee's store and through the frame and the two labels, composed into the exact clock: nine fuel spends the nine steps and a tenth reports the stopped configuration, which is the abstract store unchanged with the status pushed into the caller's instruction list; and the readback, `milawa-observations` of that configuration against `(mvm-step st)`, with the stack words through the append form of the stack image.  `frozen-step-check` is `abs.lisp`'s `(milawa-step-check 9 st)` clause for clause, with the state symbolic |
-| `wasm3/running.lisp` | **the running branch's shared head**: for a running status (1), the seven steps every running path takes before the dispatch -- the status test's else branch, the empty block and its label (both dissolve), the call split, and the call into `$in_code`'s frame.  `$in_code`'s body sits at the head of the new frame's label, with the rest of function 6's body after it.  Seven top-level links, each with its ctxt/label/frame wiring; the clock composition is the frozen path's and is left to the per-path proofs |
+| `wasm3/running.lisp` | **the running branch's shared head**: for a running status (1), the seven steps every running path takes before the dispatch -- the status test's else branch, the empty block and its label (both dissolve), the call split, and the call into `$in_code`'s frame.  `$in_code`'s body sits at the head of the new frame's label, with the rest of function 6's body after it.  Seven top-level links, each with its ctxt/label/frame wiring; the clock composition is the frozen path's and is left to the per-path proofs.  The first instruction of `$in_code`'s body is then stepped (`running-step-eight`), and the range facts the dispatcher needs are proved: the spec's i32 binops are `rem`s (`binop-sub-value`, `binop-mul-value`) and the comparison's value is 0/1 (`relop-ltu-value`) |
 | `wasm3/search.lisp` | the search's **failure** facts (an instruction missing its operands is not stepped) and the second body position; the book that explains why the search finds an instruction to run at k = 0 every time in this body |
 | `wasm3/size.lisp` | `%SIZE` is `acl2-count` behind an `mbe`, plus the monotonicity the context rules' measure conditions need -- the bridge every descent lemma rests on |
 | `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
@@ -968,10 +968,21 @@ through `nthcdr`, which is what made `milawa-words-of-word-list-image` go.
    from there is the dispatch: `$in_code`'s body and return (the same for all
    fourteen), the opcode test, and the per-opcode tail; the clock is already
    measured per opcode in `abs.lisp`, and the frozen path is the template for
-   the per-step wiring.  One proof-engineering fact from this book: a
-   context-chain fact stated at a symbolic `status` will not bind through a
-   bare `:use` when the configuration is at `status = 1`; specialize it with
-   `(instance ... (status 1))` first (the `....-at-1` lemmas are that).
+   the per-step wiring.  The first body instruction is stepped
+   (`running-step-eight`), which fixes the technique for the rest: under four
+   admin levels the hint-driven composition of nine one-level facts does not
+   close, so the step is proved in TWO single shots -- every instance from
+   label 3 up to frame 3, then from frame 3 up to frame 6 taking the first as a
+   hypothesis (3.5M + 30M steps, where the direct nine-fact attempt was 143M).
+   The dispatcher's range facts are also proved: the spec's i32 binops are
+   `rem`s (so `binop-sub-value` / `binop-mul-value` need `ihs`'s
+   quotient-remainder lemmas with `rem`/`truncate` disabled), and the
+   comparison is 0/1.  Two more proof-engineering facts: a context-chain fact
+   stated at a symbolic `status` will not bind through a bare `:use` when the
+   configuration is at `status = 1` -- specialize it with
+   `(instance ... (status 1))` first (the `....-at-1` lemmas are that); and when
+   the levels get deep, prefer one single-shot lemma per two admin levels over
+   composing many small ones.
 2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a "re-entry" composition rather than one long `STEPS/%FUEL`; the
    engine's `ENGINE-RESULT-IS-SPEC-RESULT` packaging (`wasm-acl2` `engine/`) is

@@ -46,7 +46,7 @@ any book in the tree has been skipped.
 | The search's failure facts: an instruction without its operands is not stepped | **proved** (`wasm3/search.lisp`) |
 | The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
 | **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — the **exact clock**, and the **readback** to `MVM-STEP`: `milawa-step-check`'s conclusion for a symbolic state | **proved** (`wasm3/frozen.lisp`) |
-| **The running branch's shared head** (`status = 1`): the seven steps every running path starts with — the status test's else branch, the empty block and its label, the call split, and the call into `$in_code`'s frame — with `$in_code`'s body at the head | **proved** (`wasm3/running.lisp`) |
+| **The running branch's shared head** (`status = 1`): the seven steps every running path starts with — the status test's else branch, the empty block and its label, the call split, and the call into `$in_code`'s frame — with `$in_code`'s body at the head, and the first instruction of that body stepped | **proved** (`wasm3/running.lisp`) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -463,6 +463,16 @@ rule.  The step-count composition is therefore one `:rule-classes nil` successor
 lemma per step plus a definition instance, used through `:use`; as a rewrite
 rule the fuel-decreasing successor would loop, which is the same lesson as
 `milawa-run-monotone`.
+
+**Composing one-level context lemmas stops working at depth.**  The steps
+inside `$in_code`'s body (`wasm3/running.lisp`) descend through frame 6, label
+6, frame 3 and label 3.  Nine one-level facts, each taking the next as a
+hypothesis, do not close by `:use` at that depth (ACL2 re-derives the guards;
+the direct attempt was 143M steps).  What works is two single-shot lemmas: one
+with every definition instance from label 3 up to frame 3, and one from frame 3
+up to frame 6 taking the first as a fact.  3.5M and 30M steps.  The general
+lesson matches the memory-correspondence one: when a proof will not close,
+change the decomposition rather than the hint.
 
 **A rewrite rule can be applied to its own right-hand side.**  The readback
 needs to shift an index onto a list -- `(nth (+ k a) b) = (nth k (nthcdr a b))`

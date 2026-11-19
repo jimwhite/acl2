@@ -49,6 +49,7 @@
 (in-package "ACL2")
 
 (include-book "frozen")
+(include-book "ihs/quotient-remainder-lemmas" :dir :system)
 
 ;; ---------------------------------------------------------------------------
 ;; Bodies at each position, and the two instructions the call becomes
@@ -513,3 +514,123 @@
                             (z2 (frozen-callee-z bytes sp pc clen 1 result)))
                  (:instance rctxt-six)
                  rstep-call-split))))
+
+
+;; ---------------------------------------------------------------------------
+;; The dispatch, first step: $in_code's body begins (global.get 1)
+;; ---------------------------------------------------------------------------
+;
+; Function 3's body is
+;
+;   (global.get 1) (const 4096) (binop sub)
+;   (global.get 2) (const 4) (binop mul) (relop lt_u)
+;
+; so its execution is five instruction steps and two dissolves (the label's
+; values, then the frame's values), under FOUR levels of admin: frame 6, label
+; 6, frame 3, label 3.  The descent lemmas of the previous sections lift one
+; admin level; at this depth the hint-driven composition of nine such facts
+; does not close, so the step is proved in two single shots: one lemma with
+; every instance from label 3 up to frame 3, and one from frame 3 up to frame
+; 6, taking the first as a hypothesis.  The two cost about 3.5M and 30M prover
+; steps; the direct nine-fact attempt was 143M.
+;
+; The first instruction's step is below.  The remaining four, and the two
+; value dissolves, follow the same two-shot template with the position's own
+; body terms; binop-sub-value and binop-mul-value are the range facts they
+; need for the intermediate values (the relop's result is 0/1 by
+; relop-ltu-value).
+
+(defun icfg (z instrs) (list :|%;%| z instrs))
+
+(defun iz3 (bytes sp pc clen result)
+  (list :|%;%| (frozen-store bytes sp pc clen 1 result) (milawa-callee-frame 3)))
+
+(defun iz6 (bytes sp pc clen result)
+  (list :|%;%| (frozen-store bytes sp pc clen 1 result) (milawa-callee-frame 6)))
+
+; The outer body with function 3's frame around a label around INSTRs.
+(defun ibody (instrs)
+  (cons (list :frame_%{%}% 1 (milawa-callee-frame 3)
+              (list (list :label_%{%}% 1 nil instrs)))
+        (cdr (nthcdr 4 *body-6*))))
+
+(defun ibody3-after-1 (pc)
+  (cons (list :const (list :i32) pc) (cdr (milawa-func-body 3))))
+
+; The range facts the dispatcher needs: the spec's i32 binops are REMs.
+(defthm rem-bounds-nat
+  (implies (and (natp x) (posp y))
+           (and (<= 0 (rem x y)) (< (rem x y) y)))
+  :hints (("Goal" :in-theory (disable rem truncate)
+           :use ((:instance rem-bounds (x x) (y y))))))
+
+(defthm binop-sub-value
+  (implies (and (unsigned-byte-p 32 a) (unsigned-byte-p 32 b))
+           (unsigned-byte-p 32 (car (w3t::$binop_ (list :i32) (list :sub) a b))))
+  :hints (("Goal" :in-theory (disable rem truncate)
+           :use ((:instance rem-bounds-nat (x (- (+ (expt 2 32) a) b)) (y (expt 2 32)))))))
+
+(defthm binop-mul-value
+  (implies (and (unsigned-byte-p 32 a) (unsigned-byte-p 32 b))
+           (unsigned-byte-p 32 (car (w3t::$binop_ (list :i32) (list :mul) a b))))
+  :hints (("Goal" :in-theory (disable rem truncate)
+           :use ((:instance rem-bounds-nat (x (* a b)) (y (expt 2 32)))))))
+
+(defthm relop-ltu-value
+  (unsigned-byte-p 32 (w3t::$relop_ (list :i32) (list :lt (list :u)) a b)))
+
+(defthm istep-read-1
+  (equal (w3t::step (icfg (iz3 bytes sp pc clen result) (list (list :global.get 1))))
+         (list (icfg (iz3 bytes sp pc clen result) (list (list :const (list :i32) pc))))))
+
+(defthm iframe3-instance
+  (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                          (list (list :frame_%{%}% 1 (milawa-callee-frame 3)
+                                      (list (list :label_%{%}% 1 nil (milawa-func-body 3)))))))
+         (list (icfg (iz6 bytes sp pc clen result)
+                     (list (list :frame_%{%}% 1 (milawa-callee-frame 3)
+                                 (list (list :label_%{%}% 1 nil (ibody3-after-1 pc))))))))
+  :hints (("Goal"
+           :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (list (list :frame_%{%}% 1 (milawa-callee-frame 3)
+                                                        (list (list :label_%{%}% 1 nil (milawa-func-body 3))))))))
+                 (:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (icfg (iz3 bytes sp pc clen result)
+                                            (list (list :label_%{%}% 1 nil (milawa-func-body 3))))))
+                 (:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg (iz3 bytes sp pc clen result) (milawa-func-body 3))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (milawa-func-body 3)))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (milawa-func-body 3)) (w3t::%t9 0)
+                            (w3t::z (iz3 bytes sp pc clen result))
+                            (w3t::%a0 (icfg (iz3 bytes sp pc clen result) (milawa-func-body 3))))
+                 istep-read-1))))
+
+(defthm running-step-eight
+  (equal (w3t::step (frozen-body-cfg bytes sp pc clen 1 result (rbody-callee)))
+         (list (frozen-body-cfg bytes sp pc clen 1 result (ibody (ibody3-after-1 pc)))))
+  :hints (("Goal"
+           :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (icfg (list :|%;%| (frozen-store bytes sp pc clen 1 result)
+                                                  *frozen-entry-frame*)
+                                            (list (list :frame_%{%}% 1 (milawa-callee-frame 6)
+                                                        (list (list :label_%{%}% 1 nil
+                                                                    (ibody (milawa-func-body 3)))))))))
+                 (:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (list (list :label_%{%}% 1 nil (ibody (milawa-func-body 3)))))))
+                 (:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (ibody (milawa-func-body 3)))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (ibody (milawa-func-body 3))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (ibody (milawa-func-body 3))) (w3t::%t9 0)
+                            (w3t::z (iz6 bytes sp pc clen result))
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (ibody (milawa-func-body 3)))))
+                 iframe3-instance))))

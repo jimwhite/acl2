@@ -72,8 +72,13 @@ symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
 paths (the status test's else branch, the empty block/label, the call split, and
-the call into `$in_code`'s frame).  Next: the dispatch -- `$in_code`'s body and
-return, the opcode test, then the per-opcode tails; then L2 and L3.
+the call into `$in_code`'s frame), plus the first instruction of `$in_code`'s
+body and the range facts the dispatcher needs (i32 binops are `rem`s;
+`relop-ltu-value`).  Next: the rest of `$in_code`'s body and its two value
+dissolves, the opcode test, then the per-opcode tails; then L2 and L3.  For a
+step under more than two admin levels, prove it in single shots of two levels
+each -- composing one-level facts by `:use` does not close at depth (143M-step
+failure; the two-shot succeeds in 3.5M + 30M).
 
 Caution worth keeping: NTH/NTHCDR shift facts must be `:rule-classes nil`.  As
 rewrite rules ACL2's arithmetic matcher binds `a = 0` and applies them to their
