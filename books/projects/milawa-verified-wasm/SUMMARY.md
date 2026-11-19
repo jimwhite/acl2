@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (23 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (24 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -38,6 +38,7 @@ flowchart TB
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
+| `wasm3/calls.lisp` | **layer 6**: the call rule — the entry configuration steps to a frame-and-label admin around the artifact's own code, and the locals land zero-initialised |
 | `wasm3/context.lisp` | **layers 4 and 5**: the context rules — a step inside a `:LABEL_` and inside a `:FRAME_` are steps of the body, re-wrapped; the composition law the library rests on |
 | `wasm3/frames.lisp` | **layer 3**: `local.get` of all four locals with the frame symbolic — the layer every opcode's operand load goes through |
 | `wasm3/reads.lisp` | **layer 2**: `global.get` of all five globals in the abstract store — the first place the store is symbolic in a proof |
@@ -302,6 +303,29 @@ than hard, which ACL2 will simply refute.
 That second one is the composition law the instruction library rests on: it is what
 lets a chain of single-instruction lemmas be lifted out of the nesting.  The other
 three context rules have the same shape; `ctxt-frame` is the one a call needs.
+
+### Layer 6: entering a call, proved
+
+`wasm3/calls.lisp` proves both halves:
+
+- `no-ctxt-instrs-on-a-call` — 37,304 prover steps.  With `(:REF.FUNC_ADDR 6)`
+  counting as a value (prefix7 = 1), the ctxt-instrs rule still does not apply to a
+  call; measured before it was proved (`ctxt-instrs` NIL, `call_ref-func` T).
+- `step-call-enters-frame` — 85,194 prover steps.  The entry configuration steps to
+
+  ```
+  (:;% Z ((:FRAME_ 1 F ((:LABEL_ 1 nil BODY)))))
+  ```
+
+  with `Z` unchanged, `F` the callee's frame with its locals zero-initialised, and
+  `BODY` the callee's code taken out of the store's `:CODE` field.  The right-hand
+  side is built by `milawa-callee-admin`, which is a *definition* rather than a
+  literal because the body is two hundred lines; it was verified against the
+  artifact by evaluation before any proof was attempted.
+
+That is the whole entry path: layers 1-3 say what the body's instructions do, 4-5
+lift a step out of the label and frame, and 6 puts the frame there in the first
+place.
 
 ### The instruction library, cut at the joints
 
