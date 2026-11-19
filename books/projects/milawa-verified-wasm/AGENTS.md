@@ -79,11 +79,22 @@ proved.  Next: the rest of `$in_code`'s body and its two value dissolves, the
 opcode test, then the per-opcode tails; then L2 and L3.  Cost note: the second body position's INNER two-shot done as one lemma
 measured ~281M prover steps; split into flat ctxt-instrs (16.5M), bridge
 (74k), label (1.85M) and frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts
-this way before adding positions; the frame lift's `%SIZE`/`acl2-count` guard
-over the symbolic store is the bit that still needs explicit instances.  For a
+this way before adding positions.  For a
 step under more than two admin levels, prove it in single shots of two levels
 each -- composing one-level facts by `:use` does not close at depth (143M-step
 failure; the two-shot succeeds in 3.5M + 30M).
+
+**Classify a body position's shape before attacking it.**  An instruction that
+is the LAST element of its body -- the relop at the end of `$in_code`,
+`((const s) (const m) (relop))` -- is stepped by the PURE rule on the body, not
+by `step/r-ctxt-instrs`: the search's k = 0 branch refuses an instruction list
+with nothing after the instruction, so a flat ctxt-instrs lemma there is FALSE.
+Its lift from the pure body step costs 74.7M with `step` enabled and does not
+close with `step` disabled.  Positions with a suffix after the instruction (the
+read, the sub, the mul) do go through the search and use the ~20M
+flat+bridge+label+frame recipe.  Val-p of an intermediate value needs
+`un-p-32-is-unsigned-byte-p` plus `subval-/mulval-/ltuval-is-a-value` with
+`$BINOP_`/`$RELOP_` disabled.
 
 Caution worth keeping: NTH/NTHCDR shift facts must be `:rule-classes nil`.  As
 rewrite rules ACL2's arithmetic matcher binds `a = 0` and applies them to their

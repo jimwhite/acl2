@@ -993,10 +993,24 @@ through `nthcdr`, which is what made `milawa-words-of-word-list-image` go.
    splits on the rational arithmetic of `(expt 2 32)`.  `running.lisp` now has
    the bridge `un-p-32-is-unsigned-byte-p` and the value facts
    `subval-/mulval-/ltuval-is-a-value`, stated with `$BINOP_`/`$RELOP_`
-   DISABLED so the intermediate values' val-p is a rewrite.  The remaining
-   position-12 (the `:LT` of the multiplied value) still splits on the
-   multiplication's range under the search guards; that is the next thing to
-   state rather than hint around.  Two more proof-engineering facts: a context-chain fact
+   DISABLED so the intermediate values' val-p is a rewrite.
+
+   Two more measured facts about the recipe.  (a) A position whose instruction
+   is the LAST element of its body -- the relop at the end of `$in_code`,
+   `((const s) (const m) (relop))` -- is stepped by the PURE rule on the body,
+   not by `step/r-ctxt-instrs`: the search's k = 0 branch refuses an
+   instruction list with nothing after the instruction, so the flat
+   ctxt-instrs lemma for that position is FALSE, and the lift starts from the
+   pure body step.  (b) The label lift from such a body step is expensive with
+   `step` enabled (the hypothesis's own LHS gets re-stepped through the pure
+   rules and their val-p guards: 74.7M steps) and does not close with `step`
+   disabled; the positions whose instruction has a suffix after it (the read,
+   the sub, the mul) do go through the search and use the ~20M
+   flat+bridge+label+frame recipe.  So classify a position's shape before
+   attacking it: the last instruction of a body needs a different recipe, not
+   a harder hint.
+
+   Two more proof-engineering facts: a context-chain fact
    stated at a symbolic `status` will not bind through a bare `:use` when the
    configuration is at `status = 1` -- specialize it with
    `(instance ... (status 1))` first (the `....-at-1` lemmas are that); and when
