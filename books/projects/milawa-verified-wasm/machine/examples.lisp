@@ -122,4 +122,3 @@
      (mvm-abortedp (mvm-run (example-init code) *example-fuel*))
      (equal (mvm-steps (example-init code) *example-fuel*) 1)
      (equal (mvm-pc (mvm-run (example-init code) *example-fuel*)) 1))))
-

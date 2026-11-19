@@ -6,6 +6,9 @@
 #   make examples         just the corpus: recorded answers vs the real .wasm
 #   make module-check     just "the pinned store still matches the .wasm"
 #   make no-skips         the litmus test: no skip-proofs, no defaxiom, anywhere
+#   make lint             parentheses and formatting, read the way ACL2 reads them
+#   make experiment FILE=... [BOOK=...] [DIR=wasm3]
+#                         run a scratch ACL2 script with a timeout and a summary
 #   make clean
 #
 # The pieces were built one at a time and each has its own Makefile; this file
@@ -29,14 +32,14 @@ PROJECT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 BOOKDIRS := milawa-lisp machine wasm3
 WASM_MARKER := ../../../.wasm-acl2/translate/gen/wasm-3.0/wasm3.cert
 
-.PHONY: all check books examples module-check no-skips complete clean help
+.PHONY: all check books examples module-check no-skips lint experiment complete clean help
 
 all: check
 
 help:
 	@sed -n '2,12p' $(PROJECT)/Makefile
 
-check: books module-check examples no-skips complete
+check: lint books module-check examples no-skips complete
 	@echo
 	@echo "===== summary ====="
 	@printf 'books certified:  %s\n' "$$(ls $(PROJECT)/*/*.cert 2>/dev/null | wc -l)"
@@ -81,6 +84,30 @@ no-skips:
 	@if sed 's/;.*//' $(PROJECT)/*/*.lisp | grep -n -i 'skip-proofs\|defaxiom'; then \
 	  echo "a book contains skip-proofs or defaxiom"; exit 1; \
 	else echo "none in $$(ls $(PROJECT)/*/*.lisp | wc -l) book(s)"; fi
+
+# Parentheses and formatting.  This counts parentheses the way ACL2's reader
+# does -- skipping `;` comments, `#| ... |#` blocks, `"..."` strings and `|...|`
+# escaped symbols -- and says so when a file is balanced for ACL2 but not for a
+# naive reader, which is what an editor reports when it ignores comment context.
+# It exists because an editor claimed `wasm3/chain.lisp` was unbalanced and the
+# file was fine: a generated file with thousands of parentheses in literals is
+# exactly the case a reader without comment context gets wrong.
+lint:
+	@echo "--- lint (parentheses the way ACL2 reads them)"
+	@python3 $(PROJECT)/harness/lint_lisp.py
+
+# Run a scratch ACL2 script against a book directory, with the timeout, working
+# directory, log path and summary all handled the same way every time.
+#
+#   make experiment FILE=/tmp/try.lsp BOOK=chain
+#   make experiment FILE=/tmp/try.lsp DIR=machine BOOK=mvm TIMEOUT=1800
+#
+# Without BOOK the script is expected to do its own include-book.
+FILE ?=
+experiment:
+	@if [ -z "$(FILE)" ]; then echo "usage: make experiment FILE=<script.lsp> [BOOK=<book>] [DIR=<dir>]"; exit 2; fi
+	@ACL2=$(abspath $(ACL2)) $(PROJECT)/harness/acl2.sh \
+	  --dir $(or $(DIR),wasm3) --book "$(BOOK)" --script "$(FILE)" --timeout $(or $(TIMEOUT),900)
 
 # Every .lisp in a book directory must have a .cert next to it.  This exists
 # because it caught a real bug: wasm3/Makefile's BOOKS line had silently lost the

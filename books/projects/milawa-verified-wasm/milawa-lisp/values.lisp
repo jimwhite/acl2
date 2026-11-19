@@ -46,7 +46,7 @@
 ;; ---------------------------------------------------------------------------
 ;; The value domain
 ;;
-;; Milawa-Lisp values are symbols, conses, and integers in [0, 2^30).
+;; Milawa-Lisp values are symbols, conses, and integers from 0 up to 2^30.
 ;; ---------------------------------------------------------------------------
 
 (defun milawa-fixnump (x)

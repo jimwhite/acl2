@@ -55,19 +55,48 @@ One command, from this directory:
 
 ```
 $ make check ACL2=/path/to/saved_acl2
+--- lint (parentheses the way ACL2 reads them)
+lint: 28 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom     (none in 26 book(s))
---- every book has a certificate           (26 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 28 book(s))
+--- every book has a certificate           (28 books, all certified)
 
 ===== summary =====
-books certified:  26
+books certified:  28
 corpus examples:  10
 ```
 
 `make help` lists the rest (`books`, `examples`, `module-check`, `no-skips`,
-`complete`, `clean`).  A full clean rebuild takes about forty seconds.
+`lint`, `experiment`, `complete`, `clean`).  A full clean rebuild takes about
+forty seconds.
+
+Two of those targets exist because of mistakes made while building this:
+
+**`make lint`** counts parentheses the way ACL2's reader does — skipping `;`
+comments, `#| ... |#` blocks, `"..."` strings and `|...|` escaped symbols — and
+says so when a file is balanced for ACL2 but not for a naive reader.  That second
+half earns its keep: an editor claimed `wasm3/chain.lisp` was unbalanced, and the
+file was perfect.  A generated file whose literals hold thousands of parentheses
+is exactly the case a reader without comment context gets wrong.  The lint run
+found the one real instance of this in the tree — a comment writing an interval as
+`[0, 2^30)`, whose bare `)` makes a comment-blind reader see one parenthesis too
+many — and it now reports zero.
+
+**`make experiment FILE=/tmp/try.lsp BOOK=chain`** runs a scratch ACL2 script with
+the working directory, timeout, log path and summary all fixed:
+
+```
+acl2: dir=wasm3 book=chain elapsed=4s timeout=900s
+acl2: Q.E.D.=1 errors=0 prover-steps=5
+acl2: log=/tmp/acl2-wasm3-smoke.log
+```
+
+`include-book` resolves against the working directory, so getting the `cd` wrong
+silently loads nothing and the error you then chase is in the wrong place; and a
+diverging proof with no timeout sits there.  Both happened repeatedly while
+building the chain, which is why this is a script and not a habit.
 
 The `complete` target is worth its own line: it checks that every `.lisp` in a book
 directory has a `.cert` beside it, and it exists because it caught a real bug —

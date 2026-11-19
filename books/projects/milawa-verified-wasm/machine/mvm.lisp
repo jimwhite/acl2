@@ -303,4 +303,3 @@
            (equal (mvm-run st m) (mvm-run st n)))
   :hints (("Goal" :use ((:instance mvm-run-add (k (- m n))))
                   :in-theory (disable mvm-run-add))))
-

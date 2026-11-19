@@ -798,6 +798,26 @@ The induction then finishes in 0.48 s.
    the whole `milawa-init` kernel, and one lemma per `defun` against
    `ACL2/logic/`.
 
+## Tooling, and the two mistakes it prevents
+
+`make check` runs six stages now: `lint`, the books, the pinned-module check, the
+corpus, the no-skips litmus, and the "every book has a certificate" check.
+
+`make lint` reads parentheses the way ACL2's reader does -- skipping `;` comments,
+`#| ... |#` blocks, `"..."` strings and `|...|` escaped symbols -- and reports when
+a file balances for ACL2 but not for a naive reader.  That distinction matters: an
+editor claimed `wasm3/chain.lisp` was unbalanced and the file was fine, because a
+generated file whose literals hold thousands of parentheses is exactly what a
+reader without comment context gets wrong.  The lint found the one real case in the
+tree -- a comment writing an interval as `[0, 2^30)`, whose bare `)` reads as an
+extra close -- and the tree is now clean of both.
+
+`make experiment FILE=... BOOK=...` runs a scratch ACL2 script with the working
+directory, timeout, log path and a one-line summary all fixed.  `include-book`
+resolves against the working directory and a wrong `cd` silently loads nothing; and
+a diverging proof with no timeout just sits.  Both happened repeatedly while
+building the chain, and the summary line makes two runs comparable.
+
 ## Reproducing
 
 ```sh

@@ -68,4 +68,3 @@
           (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
                 (list (list :global.get 4))))
          (list (list (list :const (list :i32) result)))))
-
