@@ -138,3 +138,48 @@
                             (f2 (caddr (mvm-abs-z-abstract bytes sp pc clen status result))))
                  step-in-label-body-6-second)
            :in-theory (disable w3t::step/r-ctxt-instrs))))
+
+
+; ---------------------------------------------------------------------------
+; Two steps, composed.
+; ---------------------------------------------------------------------------
+;
+; The two links are proved separately, and separately proved lemmas can be true
+; and still not *chain* -- a lesson from the vacuous `flat-body-6-second` earlier
+; in this book's history.  So this composes them: step the configuration a call
+; leaves behind, step the result, and check the answer is the one the second link
+; predicts.
+;
+; `(car (step c))` is how the semantics is driven: `step` returns the list of
+; successor configurations (it is single-valued when it returns at all), so the
+; second step is a step of the first successor.
+;
+; What it says, in words: two instructions of the exported function's body have
+; run -- the read of global 3 and the comparison of its value against 1 -- and the
+; machine is left with the comparison's result in place of those two instructions,
+; the frame and the label around it, and the store untouched.
+(defthm step-body-6-two
+  (implies (and (unsigned-byte-p 32 status)
+                (true-listp val)
+                (equal (w3t::step
+                        (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
+                              (list (list :const (list :i32) status)
+                                    (list :const (list :i32) 1)
+                                    (list :relop (list :i32) (list :ne)))))
+                       (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
+                                   val))))
+           (equal (w3t::step
+                   (car (w3t::step
+                         (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
+                               (list (list :frame_%{%}% 1
+                                           (caddr (mvm-abs-z-abstract bytes sp pc clen status result))
+                                           (list (list :label_%{%}% 1 nil *body-6*))))))))
+                  (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
+                              (list (list :frame_%{%}% 1
+                                          (caddr (mvm-abs-z-abstract bytes sp pc clen status result))
+                                          (list (list :label_%{%}% 1 nil
+                                                      (append val (nthcdr 3 *body-6*))))))))))
+  :hints (("Goal"
+           :use (step-body-6-first
+                 step-body-6-second)
+           :in-theory (disable w3t::step w3t::step/r-ctxt-instrs))))

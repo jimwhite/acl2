@@ -553,6 +553,7 @@ body's other instructions.  Nothing about it is open-ended any more.
 | `step-in-label-body-6-second` | 1,525,484 | the same inside a label |
 | `step-in-frame-body-6-second` | 5,143,242 | the same inside a frame |
 | `step-body-6-second` | 443,329 | **the second link**: two instructions of the body, verified |
+| `step-body-6-two` | 178,686 | **the two links composed**: the machine advances two steps |
 
 9,394,852 prover steps in **10.9 seconds**.  The largest proof in the project and
 one of the cheapest to run; the ratio is worth keeping in mind before reading a big
@@ -615,6 +616,21 @@ nil, by `search.lisp`'s two failure facts) and succeeds at **k = 0** with the sl
 k = 0, not k = 0 and k = 1 -- and the real lemma is the one that was misnamed
 `flat-body-6-third` (now `flat-body-6-second` in `search.lisp`), the vacuous one is
 deleted.
+
+**And the links genuinely chain.**  Separately proved lemmas can be true and still
+not compose, which is exactly what the vacuous lemma taught, so
+`step-body-6-two` steps the post-call configuration *twice* --
+`(car (step (car (step c))))` -- and checks the answer against what the second
+link predicts.  178,686 prover steps, and it needed one more rule:
+
+```lisp
+:in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+```
+
+Without it the composition ran past six minutes without finishing, because the
+rewriter tried to re-derive the steps instead of chaining the two equations it was
+handed.  With `step` disabled the proof is propositional: substitute, match, close.
+That is the fifth rule for this kind of proof, and the cheapest of them.
 
 Two lessons worth keeping: **a theorem whose hypothesis can never be satisfied is a
 bug**, and the way to catch one is to measure the inner step it assumes rather than
