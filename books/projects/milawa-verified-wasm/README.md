@@ -16,8 +16,8 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Thirty books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
-build takes well under a minute; `make check` at the top of this directory runs
+Thirty-one books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+build takes a couple of minutes; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
 
@@ -45,7 +45,8 @@ any book in the tree has been skipped.
 | A whole `step` of a one-instruction configuration, and the head rule in three forms — the general one taking the instruction's own step as a hypothesis | **proved** (`wasm3/head.lisp`) |
 | The search's failure facts: an instruction without its operands is not stepped | **proved** (`wasm3/search.lisp`) |
 | The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — two of the nine steps of the frozen path are proved and compose; the next one enters a block, which needs the general context-descent lemma |
+| **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — and the **exact clock** for symbolic state | **proved** (`wasm3/frozen.lisp`) |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — the frozen path is proved (the halted and aborted states, clock and all); the other fifteen paths, and reading the stopped store back as an `MVM` state, are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
@@ -58,15 +59,15 @@ One command, from this directory:
 ```
 $ make check ACL2=/path/to/saved_acl2
 --- lint (parentheses the way ACL2 reads them)
-lint: 28 file(s) balance the way ACL2 reads them
+lint: 31 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 30 book(s))
---- every book has a certificate           (30 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 31 book(s))
+--- every book has a certificate           (31 books, all certified)
 
 ===== summary =====
-books certified:  30
+books certified:  31
 corpus examples:  10
 ```
 
@@ -427,6 +428,41 @@ definitions are **disabled** during the region induction, with
 generalises: when an induction will not close, stop looking for the right hint
 and look for the right *statement*.
 
+**The block is a READ rule, not a context rule.**  The block step looked like
+the one that would need a general context-descent lemma, because the
+semantics has no `step/r-ctxt-block`.  It does not: `step_read/split/r-block`
+rewrites `(:BLOCK bt instrs)` into `(:LABEL_ n NIL instrs)` (with `n` the number
+of result types in the blocktype), and it is reached through `step/r-read` --
+the ordinary instruction search.  So a block is a *flat* position like any
+other: the per-position recipe applies, and a lone block proves by evaluation
+(516 prover steps).  The label the rule produces is the extra
+level the following steps have to descend through, which is a shape fact, not a
+new lemma.
+
+**A call leaves the CALLEE's frame.**  The walk's configuration and the links'
+configuration both use the pinned frame `(CADDR Z)` as the frame under the
+label.  The call actually leaves `(milawa-callee-frame 6)`, whose four
+zero-initialised locals make it a different term -- and the body reads globals
+through its frame's module, so "the frames differ" is not a detail that cancels.
+The chain that composes with the call has to be stated at the callee's store:
+`wasm3/frozen.lisp` does.  (The modules are equal, which is why the same
+`global.get` lemmas go through.)
+
+**A free variable in a lemma's LHS is fatal to composition.**  The inner-label
+steps carry `status` in their *result* but not in their *input* -- the input is
+a label around a `global.get`, and the status only appears once the read has
+happened.  As rewrite rules those lemmas have a free `status`, and their
+conclusions cannot be matched.  Binding it explicitly in the `:use` instance,
+`(status status)`, is the whole fix; without it the same goal grinds for
+minutes.
+
+**`steps/%fuel` does not unroll on a constant fuel alone.**  With an opaque
+configuration under it, ACL2 will neither evaluate it nor apply its definition
+rule.  The step-count composition is therefore one `:rule-classes nil` successor
+lemma per step plus a definition instance, used through `:use`; as a rewrite
+rule the fuel-decreasing successor would loop, which is the same lesson as
+`milawa-run-monotone`.
+
 ## Trust
 
 | Trusted | Why |
@@ -443,14 +479,17 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 ## Next steps, in order
 
-1. **The block step.**  Step 3 of the frozen path leaves
-   `(:BLOCK (:_RESULT NIL) ((:GLOBAL.GET 3) (:RETURN)))` at the head of the label
-   body, and the semantics has **no `step/r-ctxt-block`** -- blocks are stepped by
-   the general context search.  So this link needs the general context-descent
-   lemma rather than another instance of the per-position recipe.  Then the
-   `:RETURN` steps and the call join the nine steps into the L1 theorem.
-2. **L1 for the other fifteen paths**: same recipe, and the clock is already
-   measured per opcode.
+1. **The readback of the stopped store.**  The frozen path's clock and final
+   configuration are proved; what is not yet is `milawa-observations` on the
+   configuration the semantics stops on, for a symbolic memory.  The globals
+   read back immediately, but `milawa-words` decodes an index at a time while
+   `mvm-image-words` consumes four bytes a step, and making the two meet is the
+   same "index is not a shape" problem the memory correspondence already solved
+   once -- reuse that proof's shape (a step rule over the append form, the
+   recogniser disabled, forward chaining) rather than re-deriving it.
+2. **L1 for the other fifteen paths**: the same recipe as the frozen path, and
+   the clock is already measured per opcode.  The branch paths all enter a block
+   and then a call, so their links are the frozen path's plus `calls.lisp`.
 3. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a re-entry composition rather than one long `STEPS/%FUEL`.
 4. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler

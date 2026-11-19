@@ -53,7 +53,7 @@ Recommended location: **this document stays in `books/projects/milawa/`; the
 proof tree goes in a new sibling project directory, not inside Milawa's own
 book tree.**  Rationale in §6.
 
-### 0.1 Progress (2026-11-18)
+### 0.1 Progress (2026-11-19)
 
 The work has started at `books/projects/milawa-verified-wasm/`; see its `README`
 for the authoritative status, and its "What we learned" section for the ACL2 and
@@ -106,9 +106,29 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   per-step reasoning and everything after it can be.  The plan therefore pins the
   decoded module (and, next, the instantiated store) as logic constants produced
   by a scripted, checked decode.  See §3.4.
-- **Phases 3-6 are untouched.**  Nothing has been built against a WASM
-  semantics beyond decoding the artifact, so the L1/L2 risk analysis in §8 is
-  otherwise unchanged.
+- **The instruction library and the chain are built.**  `wasm3/` now has the
+  seven layers of instruction lemmas (`instructions.lisp` through
+  `returns.lisp`): `step_pure` on symbolic values, `step_read` on the abstract
+  store, `local.get` through a symbolic frame, the context rules, the call rule,
+  and both return rules.  `wasm3/chain.lisp` … `links.lisp` assemble them into
+  the first two steps of the exported function's body, at the flat, label and
+  frame levels, and prove the two links compose.
+- **The frozen path is proved end to end** (`wasm3/frozen.lisp`).  For a
+  symbolic state whose status is not 1 -- the halted and aborted states -- the
+  certified semantics takes exactly nine steps from the entry configuration to a
+  stopped one, store unchanged: the call, the read, the comparison, the branch,
+  the block, the read inside the block's label, the two returns.  Both halves of
+  the clock are theorems, so this is the symbolic form of `abs.lisp`'s
+  `(milawa-step-check 9 st)` minus the readback.  Two findings changed the plan
+  and are recorded in the project's `SUMMARY`: the block is a *read* rule
+  (`step_read/split/r-block`), not a context rule, so no general
+  context-descent lemma is needed; and a call leaves the *callee's* frame, not
+  the pinned one, so the chain that composes with the call had to be restated at
+  the callee's store.
+- **Phases 5-6 are untouched.**  Within L1, what remains is the readback of the
+  stopped store (`milawa-words` walks an index at a time, `mvm-image-words` four
+  bytes at a time -- the "index is not a shape" problem `memory.lisp` already
+  solved once) and the other fifteen paths.  L2 and L3 have not started.
 
 One correction to the plan as written: §3.1 treats "the kernel never calls a
 function installed by an event" as something to confirm by instrumentation
