@@ -137,7 +137,9 @@ it.  ACL2 will not unfold a recursive definition on symbolic arguments unless
 asked.  A hint problem, not a cost problem — so the earlier "900 s and no output"
 run was not measuring the chain either.
 
-**(b) The whole chain with `(enable w3t::step)`.**  Killed at 400 s.
+**(b) The whole chain with `(enable w3t::step)`.**  Killed at 400 s.  (One step
+*with* `step` enabled is the same 0.13 s and the same failure as (c), so enabling
+it is not the lever either.)
 
 **(c) One single step, no hints.**  The rewriter *does* expand `$INVOKE`,
 `$WITH_GLOBAL`, `%GET-FIELD`/`%PUT-FIELD`, `EXPAND` and the module's own lookups,
@@ -166,13 +168,29 @@ and the strict size lemmas are **not** on the critical path.  They are in
 behind `mbe` and disabled), because they are cheap and true and would be what an
 arbitrary-program statement needs.
 
-So the remaining blocker for a symbolic step is (a)+(b): ACL2's refusal to unfold
-`STEP`'s recursive chain on a symbolic configuration.  That is a theory-design
-problem — which rules to enable for which configuration shape — not a missing
-lemma.  The next experiment is exactly that: one instruction, one enabled
-`STEP/R-*` rule, and the recursive call replaced by an instance of a lemma proved
-at the previous instruction.  Which is the instruction-lemma library, arrived at
-from the other direction.
+So the remaining blocker for a symbolic step is (a)+(b): `STEP` is a chain of
+`(let ((r (STEP/R-X c))) (if r r (next)))`, and on a symbolic configuration ACL2
+cannot decide any `STEP/R-X`, so the proof splits on each in turn instead of
+walking the chain.  The residual goal of the single step says so exactly:
+
+```
+Subgoal 2
+(IMPLIES (W3T::STEP/R-CTXT-INSTRS <config>) ...)
+```
+
+The lever is therefore not to enable `STEP` (measured: no difference) but to
+enable **one `STEP/R-X` at a time** and feed its recursive call from the previous
+lemma.  Concretely, the recipe for one instruction is:
+
+1. state the successor as an explicit term, so nothing is invented at proof time;
+2. `:in-theory (e/d (step/r-<that-rule>) (w3t::step))` — unfold only the rule, so
+   the inner `STEP` stays symbolic and becomes the *hypothesis* rather than a thing
+   to evaluate;
+3. discharge that inner `STEP` with the lemma proved at the previous instruction,
+   by `:use`, i.e. compose the chain by hand instead of asking ACL2 to run it.
+
+That is an instruction-lemma library with the recursion factored out, and it is
+the same object the engine's E4 builds — arrived at from the other direction.
 
 The order of work that follows:
 
