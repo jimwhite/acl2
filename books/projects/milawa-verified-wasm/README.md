@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Thirty-two books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Thirty-three books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes a couple of minutes; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -47,6 +47,7 @@ any book in the tree has been skipped.
 | The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
 | **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — the **exact clock**, and the **readback** to `MVM-STEP`: `milawa-step-check`'s conclusion for a symbolic state | **proved** (`wasm3/frozen.lisp`) |
 | **The running branch's shared head** (`status = 1`): the seven steps every running path starts with — the status test's else branch, the empty block and its label, the call split, and the call into `$in_code`'s frame — with `$in_code`'s body at the head, and the first instruction of that body stepped | **proved** (`wasm3/running.lisp`) |
+| **The callee's tail**: `$in_code`'s body end to end — the sub, the read of the code length, the mul, the comparison (the last instruction, stepped by the pure rule), and the two value dissolves — returning the comparison's result into function 6's continuation, with the opcode test's two slice facts | **proved** (`wasm3/dispatch.lisp`, 51 events, 207M prover steps) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -60,15 +61,15 @@ One command, from this directory:
 ```
 $ make check ACL2=/path/to/saved_acl2
 --- lint (parentheses the way ACL2 reads them)
-lint: 32 file(s) balance the way ACL2 reads them
+lint: 33 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 32 book(s))
---- every book has a certificate           (32 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 33 book(s))
+--- every book has a certificate           (33 books, all certified)
 
 ===== summary =====
-books certified:  32
+books certified:  33
 corpus examples:  10
 ```
 
@@ -474,6 +475,42 @@ up to frame 6 taking the first as a fact.  3.5M and 30M steps.  The general
 lesson matches the memory-correspondence one: when a proof will not close,
 change the decomposition rather than the hint.
 
+**An instruction list is not a list of instruction lists.**  The body at label
+6 is frame 3 around label 3 around the callee's body, followed by the rest of
+function 6.  Writing that as `(cons (dadmin b) rest6)` puts the *one-element
+list* `(dadmin b)` where the frame instruction belongs; `dadmin` already
+returns a list and the first element is `(car (dadmin b))`.  The malformed body
+still steps -- its first element is a list, not an instruction, and the search
+just fails -- so it does not show up as an evaluation error: it shows up as
+every measure check comparing the wrong two lists, with false linear
+inequalities like `(<= (+ 22581 pc) (+ 17854 pc))` as the final goal.  Days
+went into that inequality.  `wasm3/running.lisp`'s `ibody` has the right shape;
+`dfull` in `wasm3/dispatch.lisp` is the same `(append (dadmin b) rest6)`.
+
+**`acl2-count` counts an integer by its absolute value.**  In this ACL2
+(`axioms.lisp`), `(acl2-count 5)` is 5, not 0.  A configuration's instruction
+list therefore carries the *values* of its 32-bit constants into every context
+rule's `%SIZE` guard, and a symbolic `pc` or `clen` inside a body turns the
+guard into arithmetic in `pc`: `$BINOP_` gets evaluated, `numerator` and
+`denominator` appear, and a goal like `(<= 2^32 pc)` is left over.  The fix is
+to keep each intermediate value as an opaque function term and give it a
+conditional `:type-prescription` (`integerp-dsub`, `integerp-dmul`,
+`integerp-dltu`, `integerp-testop-eqz`), so `acl2-count` charges it as
+`(integer-abs term)` on both sides of every comparison.  With that, the whole
+callee tail certifies in 207M prover steps; without it, the same lemmas do not
+close.  Measured per event: the sub's context rule 14.8M, the mul's 70.5M (the
+most expensive), the outer label-6 lifts 12-20M each, the two dissolve outs
+18.5M and 17.1M.
+
+**A body position's shape decides its recipe.**  The sub, the read and the mul
+have an instruction after them, so the search steps them and the lift is
+flat/ctxt, label, frame, label 6, frame 6.  The comparison is the *last*
+instruction of function 3's body: the search's k = 0 branch refuses an
+instruction list with nothing after it, so the body is stepped by the pure
+`r-relop` rule and the lift starts from that.  After the comparison the label's
+body is a value list and dissolves (`r-label-vals`), then the frame does
+(`r-frame-vals`).  Classify the position before choosing the lemmas.
+
 **A rewrite rule can be applied to its own right-hand side.**  The readback
 needs to shift an index onto a list -- `(nth (+ k a) b) = (nth k (nthcdr a b))`
 and `(nthcdr (+ 4 a) l) = (nthcdr 4 (nthcdr a l))` -- and as rewrite rules they
@@ -502,12 +539,16 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 ## Next steps, in order
 
 1. **L1 for the other fifteen paths.**  The frozen path is one of sixteen and
-   is proved end to end for symbolic state; the clock is already measured per
-   opcode in `abs.lisp`, and the recipe is now complete (the callee's store, the
-   frame and label levels, per-position bodies as literals, the search's
-   failures, the return rules, and the clock composition).  The branch paths
-   enter a block and then a call, so their links are the frozen path's plus
-   `calls.lisp`'s.
+   is proved end to end for symbolic state; the running branch's shared head and
+   the callee's tail (`$in_code`'s body and its two dissolves) are proved, so
+   every running path now starts from the same configuration with function 3's
+   result pushed into function 6's body.  What remains on the shared route is
+   the opcode test's lift (its two slice facts are proved; the lift is where
+   `$TESTOP_`'s value has to be kept opaque through the search) and the
+   ifelse/empty-block/empty-label chain.  Then the opcode fetch and the fourteen
+   per-opcode tails, whose clocks are already measured in `abs.lisp`.  The
+   branch paths enter a block and then a call, so their links are the frozen
+   path's plus `calls.lisp`'s.
 2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a re-entry composition rather than one long `STEPS/%FUEL`.
 3. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler

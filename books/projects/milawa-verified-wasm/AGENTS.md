@@ -62,24 +62,42 @@ certified first.  `make books` says so rather than failing obscurely.
 - **A frame record field is a dotted pair.**  `(:MODULE :%REC ...)` stores the
   module as the CDR; writing `(:MODULE (:%REC ...))` stores a one-element list
   and every lookup answers NIL.  Same for `%GET-FIELD` arguments.
+- **An instruction list is not a list of instruction lists.**  `dadmin` (like
+  `milawa-callee-admin`) returns a one-element list of instructions, so the full
+  body at label 6 is `(append (dadmin b) rest6)`, not `(cons (dadmin b) rest6)`.
+  The malformed body still steps (its first element is a list; the search
+  fails), so it surfaces as false measure inequalities, not as an error.
+- **`acl2-count` charges an integer its absolute value** in this ACL2
+  (`(acl2-count 5)` is 5).  Symbolic values in an instruction list therefore
+  enter every `%SIZE` guard, and the guard becomes arithmetic in `pc`/`clen`.
+  Keep each intermediate value opaque and give it a conditional
+  `:type-prescription` (`integerp-dsub`, `integerp-dmul`, `integerp-dltu`,
+  `integerp-testop-eqz`); then acl2-count sees `(integer-abs term)` on both
+  sides and the comparisons cancel.
 - **ACL2's `TAKE` pads**, and `acl2-count` of a symbol is its name length, so
   the tempting `(equal (acl2-count x) 0) = (not (consp x))` is false.
 
 ## Current state (2026-11-19)
 
-32 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
+33 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
 symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
 paths (the status test's else branch, the empty block/label, the call split, and
 the call into `$in_code`'s frame), plus the first instruction of `$in_code`'s
 body and the range facts the dispatcher needs (i32 binops are `rem`s;
-`relop-ltu-value`).  The dispatcher's search failure facts for `:SUB`, `:MUL` and unsigned `:LT` are
-proved.  Next: the rest of `$in_code`'s body and its two value dissolves, the
-opcode test, then the per-opcode tails; then L2 and L3.  Cost note: the second body position's INNER two-shot done as one lemma
-measured ~281M prover steps; split into flat ctxt-instrs (16.5M), bridge
-(74k), label (1.85M) and frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts
-this way before adding positions.  For a
+`relop-ltu-value`).  `wasm3/dispatch.lisp` executes the rest of `$in_code`'s
+body end to end at symbolic `pc`/`clen` — the sub, the read of global 2, the
+mul, the comparison (the last instruction: a pure body step), and the two value
+dissolves — and returns the result into function 6's continuation.  51 events,
+207M prover steps, 227.8 s.  The opcode test's two slice facts
+(`fail-lone-testop`, `deqz-slice`) are proved; the lift of the testop step is
+next (see the callee-tail section of SUMMARY.md for the obstruction and the
+suggested next attempt), then the ifelse/empty-block/empty-label chain, the
+opcode fetch, and the 14 per-opcode tails; then L2 and L3.  Cost note: the
+second body position's INNER two-shot done as one lemma measured ~281M prover
+steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
+frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
 step under more than two admin levels, prove it in single shots of two levels
 each -- composing one-level facts by `:use` does not close at depth (143M-step
 failure; the two-shot succeeds in 3.5M + 30M).
@@ -89,9 +107,8 @@ is the LAST element of its body -- the relop at the end of `$in_code`,
 `((const s) (const m) (relop))` -- is stepped by the PURE rule on the body, not
 by `step/r-ctxt-instrs`: the search's k = 0 branch refuses an instruction list
 with nothing after the instruction, so a flat ctxt-instrs lemma there is FALSE.
-Its lift from the pure body step costs 74.7M with `step` enabled and does not
-close with `step` disabled.  Positions with a suffix after the instruction (the
-read, the sub, the mul) do go through the search and use the ~20M
+Its lift starts from the pure body step.  Positions with a suffix after the
+instruction (the read, the sub, the mul) do go through the search and use the
 flat+bridge+label+frame recipe.  Val-p of an intermediate value needs
 `un-p-32-is-unsigned-byte-p` plus `subval-/mulval-/ltuval-is-a-value` with
 `$BINOP_`/`$RELOP_` disabled.

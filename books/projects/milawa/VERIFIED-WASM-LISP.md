@@ -134,10 +134,26 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   call rule, and the call enters `$in_code`'s frame.  Seven steps, proved as
   seven top-level links with the same per-step wiring as the frozen path, so
   every running path can start from `$in_code`'s body.
-- **Phases 5-6 are untouched.**  Within L1, what remains is the readback of the
-  stopped store (`milawa-words` walks an index at a time, `mvm-image-words` four
-  bytes at a time -- the "index is not a shape" problem `memory.lisp` already
-  solved once) and the other fifteen paths.  L2 and L3 have not started.
+- **The callee's tail is proved** (`wasm3/dispatch.lisp`).  At symbolic `pc` and
+  `clen`, `$in_code`'s body executes end to end: the sub, the read of global 2,
+  the mul, the comparison (the LAST instruction, so the pure `r-relop` rule, not
+  the search), and the two value dissolves (label 3, then frame 3).  Each step
+  is proved in seven parts (slice, ctxt, step, label, frame, label 6, frame 6);
+  the book ends with the comparison's result pushed into function 6's
+  continuation, which is where the opcode test starts, and includes the test's
+  two slice facts.  51 events, 207M prover steps, 227.8 s.  Two findings are
+  recorded in the project's `SUMMARY` because they cost the most: the full body
+  at label 6 must `append` the frame instruction (a `cons` of the one-element
+  admin list puts a list of instructions where an instruction belongs, and every
+  measure check then compares the wrong lists), and `acl2-count` charges an
+  integer its absolute value, so symbolic values in a body turn the context
+  rules' `%SIZE` guards into arithmetic unless the values are kept opaque with
+  conditional `:type-prescription` rules.
+- **Phases 5-6 are untouched.**  Within L1, what remains is the opcode test's
+  lift (its slice facts are proved; the `$TESTOP_` value must be kept opaque
+  through the search), the ifelse/empty-block/empty-label chain, the opcode
+  fetch, and the fourteen per-opcode tails; then L2 and L3.  The frozen path's
+  readback is done; the running paths' readback will reuse it.
 
 One correction to the plan as written: §3.1 treats "the kernel never calls a
 function installed by an event" as something to confirm by instrumentation

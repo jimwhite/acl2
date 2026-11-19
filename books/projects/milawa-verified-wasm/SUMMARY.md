@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (32 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (33 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -40,6 +40,7 @@ flowchart TB
 | `wasm3/links.lisp` | **the links**: the second step of function 6's body at the flat, label and frame levels, plus `step-body-6-two`, which steps the machine twice and shows the two links genuinely compose |
 | `wasm3/frozen.lisp` | **the frozen path, end to end**: the nine steps from `mvm-abs-abstract` when the status is not 1 -- the call, the read, the comparison, the branch, the block, the read inside the block's label, the two returns -- each at the callee's store and through the frame and the two labels, composed into the exact clock: nine fuel spends the nine steps and a tenth reports the stopped configuration, which is the abstract store unchanged with the status pushed into the caller's instruction list; and the readback, `milawa-observations` of that configuration against `(mvm-step st)`, with the stack words through the append form of the stack image.  `frozen-step-check` is `abs.lisp`'s `(milawa-step-check 9 st)` clause for clause, with the state symbolic |
 | `wasm3/running.lisp` | **the running branch's shared head**: for a running status (1), the seven steps every running path takes before the dispatch -- the status test's else branch, the empty block and its label (both dissolve), the call split, and the call into `$in_code`'s frame.  `$in_code`'s body sits at the head of the new frame's label, with the rest of function 6's body after it.  Seven top-level links, each with its ctxt/label/frame wiring; the clock composition is the frozen path's and is left to the per-path proofs.  The first instruction of `$in_code`'s body is then stepped (`running-step-eight`), and the range facts the dispatcher needs are proved: the spec's i32 binops are `rem`s (`binop-sub-value`, `binop-mul-value`) and the comparison's value is 0/1 (`relop-ltu-value`) |
+| `wasm3/dispatch.lisp` | **the callee's tail**: `$in_code`'s body end to end at symbolic `pc`/`clen` -- the sub, the read of global 2, the mul, the comparison (the LAST instruction, so stepped by the pure `r-relop` rule), and the two value dissolves (label 3, then frame 3) -- each lifted through the search, label 3, frame 3, label 6 and frame 6, ending with the comparison's result pushed into function 6's continuation.  Plus the opcode test's two slice facts (`fail-lone-testop`, `deqz-slice`).  51 events, 207,479,255 prover steps, 227.8s |
 | `wasm3/search.lisp` | the search's **failure** facts (an instruction missing its operands is not stepped) and the second body position; the book that explains why the search finds an instruction to run at k = 0 every time in this body |
 | `wasm3/size.lisp` | `%SIZE` is `acl2-count` behind an `mbe`, plus the monotonicity the context rules' measure conditions need -- the bridge every descent lemma rests on |
 | `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
@@ -958,17 +959,120 @@ trace; the fix is `:rule-classes nil` plus `:use`, and -- for the readback --
 the append form `(nth (+ i (len pre)) (append pre b)) = (nth i b)`, proved
 through `nthcdr`, which is what made `milawa-words-of-word-list-image` go.
 
+## The callee's tail: `$in_code`'s body end to end
+
+`wasm3/dispatch.lisp` executes function 3's body from the configuration
+`running.lisp` leaves, at symbolic `pc` and `clen`, and returns its result into
+function 6's continuation.  The body is
+
+```
+(global.get 1) (const 4096) (binop sub)
+(global.get 2) (const 4)  (binop mul) (relop lt_u)
+```
+
+so five instruction steps and two dissolves, under four admin levels (frame 6,
+label 6, frame 3, label 3).  Each step is proved in the same seven parts, and
+every part is a separate lemma:
+
+| part | statement |
+|---|---|
+| `slice` | the instruction's own step on the exact slice the search hands it |
+| `ctxt` | `step/r-ctxt-instrs` of the body, with the search's instances and failures |
+| `step` | the bridge from the context rule to `step` |
+| `label` | the same step inside label 3 |
+| `frame` | the same step inside frame 3 (the ctxt-frame rule's inner config) |
+| `body6` | the same step inside label 6 (the search's k = 0 slice) |
+| `label6` | the same step inside label 6's label |
+| `outer` | the same step inside frame 6 |
+
+The shapes by position, which is the classification to do first:
+
+| # | instruction | shape | body after |
+|---|---|---|---|
+| 2 | `(binop sub)` | search, k = 2, 1, 0; the k = 1 slice fails with one operand | two values and the rest |
+| 3 | `(global.get 2)` | search, k = 1 only (the read needs no operands) | one more value |
+| 4 | `(binop mul)` | search, k = 3, 2, 1; the leading sub value is skipped | the two operands consumed |
+| 5 | `(relop lt_u)` | **pure**: the last instruction; the search's k = 0 refuses an empty rest | one value |
+| -- | label 3 | `r-label-vals`: the body is a value list | -- |
+| -- | frame 3 | `r-frame-vals`: one value, the frame's arity | -- |
+
+The comparison is the case the earlier recipe did not cover: the flat
+`step/r-ctxt-instrs` lemma for it is **false**, because the search refuses a
+slice that is the whole instruction list, so the body is stepped by
+`step_pure/r-relop` directly.  Its lift starts from that pure body step.  The
+two dissolves are `step_pure/r-label-vals` and `step_pure/r-frame-vals`, each
+then lifted through label 6 and frame 6 like any other step.
+
+**The two mistakes that cost the most, both now in the traps list.**  The full
+body at label 6 must be `(append (dadmin b) rest6)`, not `(cons (dadmin b)
+rest6)`: `dadmin` returns a one-element *list* of instructions, and consing it
+puts a list where the frame instruction belongs.  The malformed body still
+steps (the search simply fails), but every context rule's measure then compares
+the wrong lists, and the proof ends on false linear inequalities such as
+`(<= (+ 22581 pc) (+ 17854 pc))`.  And `acl2-count` in this ACL2 charges an
+integer its absolute value, so a symbolic `pc`/`clen` inside an instruction
+list turns every `%SIZE` guard into arithmetic: `$BINOP_` is evaluated,
+`numerator`/`denominator` terms appear, and the goal becomes `(<= 2^32 pc)`.
+The fix is to keep the intermediate values as opaque terms with conditional
+`:type-prescription` rules (`integerp-dsub`, `integerp-dmul`, `integerp-dltu`,
+`integerp-testop-eqz`), so acl2-count sees `(integer-abs term)` on both sides
+of each comparison.
+
+**Measured costs** (prover steps, from `dispatch.cert.out`; 51 events, 207.5M
+total, 227.8 s):
+
+| event | steps |
+|---|---|
+| `dctxt-sub` | 14,808,852 |
+| `dbody6-sub` | 11,920,649 |
+| `douter-sub` | 2,150,669 |
+| `dctxt-read` | 621,865 |
+| `dbody6-read` | 16,253,650 |
+| `dctxt-mul` | 70,519,188 |
+| `dbody6-mul` | 19,514,795 |
+| `dframe-ltu` | 5,256,128 |
+| `douter-ltu` | 3,818,939 |
+| `douter-label-dissolve` | 18,519,443 |
+| `douter-frame-dissolve` | 17,080,791 |
+
+The mul's context rule is the expensive one: three search positions, each with
+its failure facts, and the value in the body.  The two dissolve `outer` lifts
+are expensive for the opposite reason: the frame-6 measure has to see through
+the whole body's 39-instruction continuation.  Neither blocks anything; the
+book certifies in under four minutes.
+
+**Where the opcode test stands.**  The two slice facts are proved
+(`fail-lone-testop`, 12,895 steps; `deqz-slice`, 13,916).  The lift of the
+testop step is not: at a symbolic value the search's k = 1 test runs against a
+concrete instruction list, ACL2 rewrites the `(step ...)` test rather than
+using the fact, and evaluating `$TESTOP_` splits the goal into its 0 and 1
+branches.  The two ways tried were keeping `$TESTOP_` opaque (the search then
+cannot reduce its guards) and stating the slice facts in the search's exact
+cons/quote shape (the fact still does not fire on the re-evaluated test).  The
+next attempt should state the k = 1 test and the k = 0 slice step as explicit
+hypotheses of the context lemma, with `step` and `acl2-count` disabled and the
+size test as a hypothesis, so the definition instance has nothing left to
+prove; the same pattern applies to the second ifelse's `if-false` step.
+
 ## What is next, in order
 
 1. **L1 for the running paths.**  The shared head is proved: `wasm3/running.lisp`
    takes a running status (1) through the seven steps every running path takes
    -- the status test's else branch, the empty block and its label (both
    dissolve), the call split, and the call into `$in_code`'s frame -- leaving
-   `$in_code`'s body at the head of the new frame's label.  What each path adds
-   from there is the dispatch: `$in_code`'s body and return (the same for all
-   fourteen), the opcode test, and the per-opcode tail; the clock is already
-   measured per opcode in `abs.lisp`, and the frozen path is the template for
-   the per-step wiring.  The first body instruction is stepped
+   `$in_code`'s body at the head of the new frame's label.  The callee's tail is
+   now proved too: `wasm3/dispatch.lisp` executes `$in_code`'s body end to end
+   (the sub, the read, the mul, the pure comparison, and the two dissolves) and
+   returns the result into function 6's continuation, at symbolic `pc`/`clen`,
+   in 207M prover steps.  What remains on the shared route is the lift of the
+   opcode test (its two slice facts are proved; see the callee-tail section for
+   where the lift stands) and the ifelse/empty-block/empty-label chain.  Then
+   the opcode fetch and the fourteen per-opcode tails; the clock is already
+   measured per opcode in `abs.lisp`.  The callee tail's seven-part recipe is
+   the template (slice, ctxt, step, label, frame, body6, label6, outer), and
+   the two measured facts below -- the last instruction is a pure body step,
+   the values must stay opaque for acl2-count -- are part of it.  The frozen
+   path is the template for the per-step wiring.  The first body instruction is stepped
    (`running-step-eight`), which fixes the technique for the rest: under four
    admin levels the hint-driven composition of nine one-level facts does not
    close, so the step is proved in TWO single shots -- every instance from
