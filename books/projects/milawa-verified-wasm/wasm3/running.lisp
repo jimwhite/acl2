@@ -579,6 +579,31 @@
 (defthm relop-ltu-value
   (unsigned-byte-p 32 (w3t::$relop_ (list :i32) (list :lt (list :u)) a b)))
 
+; The bridge the dispatcher's val-p goals need.  VAL-P of a constant unfolds to
+; UN-P, and UN-P's bound is (<= i 2^n - 1) where UNSIGNED-BYTE-P's is
+; (< i 2^n); proving the equivalence by unfolding them splits on the rational
+; arithmetic of (expt 2 32).  Stating it once, and keeping the spec's own
+; operation symbols ($BINOP_, $RELOP_) DISABLED while the range facts fire, is
+; what makes val-p of an intermediate value a rewrite rather than a grind.
+(defthm un-p-32-is-unsigned-byte-p
+  (equal (w3t::un-p i 32) (unsigned-byte-p 32 i))
+  :hints (("Goal" :in-theory (enable w3t::un-p unsigned-byte-p))))
+
+(defthm subval-is-a-value
+  (implies (and (unsigned-byte-p 32 a) (unsigned-byte-p 32 b))
+           (w3t::un-p (car (w3t::$binop_ (list :i32) (list :sub) a b)) 32))
+  :hints (("Goal" :in-theory (disable w3t::$binop_))))
+
+(defthm mulval-is-a-value
+  (implies (and (unsigned-byte-p 32 a) (unsigned-byte-p 32 b))
+           (w3t::un-p (car (w3t::$binop_ (list :i32) (list :mul) a b)) 32))
+  :hints (("Goal" :in-theory (disable w3t::$binop_))))
+
+(defthm ltuval-is-a-value
+  (w3t::un-p (w3t::$relop_ (list :i32) (list :lt (list :u)) a b) 32)
+  :hints (("Goal" :in-theory (disable w3t::$relop_))))
+
+
 (defthm istep-read-1
   (equal (w3t::step (icfg (iz3 bytes sp pc clen result) (list (list :global.get 1))))
          (list (icfg (iz3 bytes sp pc clen result) (list (list :const (list :i32) pc))))))

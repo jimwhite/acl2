@@ -987,9 +987,16 @@ through `nthcdr`, which is what made `milawa-words-of-word-list-image` go.
    ctxt-instrs fact), 74k (the bridge from ctxt-instrs to step), 1.85M (the
    label) and 2.0M (the frame) -- about 20M, a 14x cut.  The remaining work is
    composing those four at depth: the frame lift's guard over the symbolic
-   store still needs explicit instances (the `acl2-count` size comparisons in
-   the `%SIZE` guards are where the scratch stopped), and that is the pattern
-   the rest of the body should follow.  Two more proof-engineering facts: a context-chain fact
+   store still needs explicit instances.  The val-p side is now solved: VAL-P
+   of a constant unfolds to UN-P, whose bound is `(<= i 2^n - 1)` where
+   UNSIGNED-BYTE-P's is `(< i 2^n)`, and proving that equivalence by unfolding
+   splits on the rational arithmetic of `(expt 2 32)`.  `running.lisp` now has
+   the bridge `un-p-32-is-unsigned-byte-p` and the value facts
+   `subval-/mulval-/ltuval-is-a-value`, stated with `$BINOP_`/`$RELOP_`
+   DISABLED so the intermediate values' val-p is a rewrite.  The remaining
+   position-12 (the `:LT` of the multiplied value) still splits on the
+   multiplication's range under the search guards; that is the next thing to
+   state rather than hint around.  Two more proof-engineering facts: a context-chain fact
    stated at a symbolic `status` will not bind through a bare `:use` when the
    configuration is at `status = 1` -- specialize it with
    `(instance ... (status 1))` first (the `....-at-1` lemmas are that); and when
