@@ -980,11 +980,16 @@ through `nthcdr`, which is what made `milawa-words-of-word-list-image` go.
    comparison is 0/1; the search's failure facts for the dispatcher's own
    operators (`:SUB`, `:MUL`, unsigned `:LT`) are proved too.  The second body
    position (the `:SUB`) is the same template with the search's k = 2 and k = 1
-   slices added, and it proved in a scratch at ~340M steps -- the size-guard
-   arithmetic over the symbolic store, repeated for every failed slice.  That
-   is the open question for the rest of the dispatch: pay ~6 minutes of
-   certification per position, or find a cheaper decomposition for the k > 0
-   failures first.  Two more proof-engineering facts: a context-chain fact
+   slices added.  Measured, and this is the useful part: done as ONE two-shot
+   it costs ~281M steps, because the label/frame lift has to re-derive the
+   body's step (the rule-ordering failures on the body) rather than being
+   handed it.  Split into four lemmas, the same position costs 16.5M (the flat
+   ctxt-instrs fact), 74k (the bridge from ctxt-instrs to step), 1.85M (the
+   label) and 2.0M (the frame) -- about 20M, a 14x cut.  The remaining work is
+   composing those four at depth: the frame lift's guard over the symbolic
+   store still needs explicit instances (the `acl2-count` size comparisons in
+   the `%SIZE` guards are where the scratch stopped), and that is the pattern
+   the rest of the body should follow.  Two more proof-engineering facts: a context-chain fact
    stated at a symbolic `status` will not bind through a bare `:use` when the
    configuration is at `status = 1` -- specialize it with
    `(instance ... (status 1))` first (the `....-at-1` lemmas are that); and when

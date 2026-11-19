@@ -76,11 +76,11 @@ the call into `$in_code`'s frame), plus the first instruction of `$in_code`'s
 body and the range facts the dispatcher needs (i32 binops are `rem`s;
 `relop-ltu-value`).  The dispatcher's search failure facts for `:SUB`, `:MUL` and unsigned `:LT` are
 proved.  Next: the rest of `$in_code`'s body and its two value dissolves, the
-opcode test, then the per-opcode tails; then L2 and L3.  Cost note: the second
-body position's inner two-shot (the search's k = 2 and k = 1 slices) measured
-~340M prover steps / ~6 min in a scratch, so decide the build-time budget
-before adding positions -- the k > 0 failure handling is the place to
-optimize.  For a
+opcode test, then the per-opcode tails; then L2 and L3.  Cost note: the second body position's INNER two-shot done as one lemma
+measured ~281M prover steps; split into flat ctxt-instrs (16.5M), bridge
+(74k), label (1.85M) and frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts
+this way before adding positions; the frame lift's `%SIZE`/`acl2-count` guard
+over the symbolic store is the bit that still needs explicit instances.  For a
 step under more than two admin levels, prove it in single shots of two levels
 each -- composing one-level facts by `:use` does not close at depth (143M-step
 failure; the two-shot succeeds in 3.5M + 30M).
