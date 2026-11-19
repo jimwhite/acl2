@@ -250,6 +250,36 @@ rather than evaluating it, because evaluating it needs `(STEP <inner config>)`, 
 the inner configuration carries the symbolic store, so `STEP/SEARCH21`'s walk down
 the instruction list cannot bottom out.
 
+### Layer 4, and the lever it needs
+
+The context rules are where the proof first reasons about *nesting*: a step inside a
+`:LABEL_` or `:FRAME_` admin is a step of the whole configuration.  Measured, on the
+smallest such statement — "stepping a config whose only element is a `:LABEL_`
+wrapping one `local.get` is stepping the body and re-wrapping it":
+
+- ACL2 leaves the goal as `(IMPLIES (W3T::STEP/R-CTXT-INSTRS <config>) ...)` and
+  gives up in 215 prover steps;
+- `:in-theory (enable w3t::step/r-ctxt-instrs w3t::step/prefix7
+  w3t::step/search21)` changes nothing — the *same* 215 steps.
+
+The reason, from `:pe`: these functions carry
+
+```lisp
+(declare (xargs :ruler-extenders :all
+                :measure (wrt::%om3 (wrt::%size (nth 2 %a0)) (1+ (wrt::%size (list %a0))) 0)))
+```
+
+`:ruler-extenders :all` plus a `%SIZE`-based measure means the rewriter will not
+open the definition unless the measure provably decreases at each unfolding — so
+`enable` is the wrong lever entirely, and no amount of it helps.
+
+The lever is **`:expand`**: force one unfolding of the rule function for the specific
+term, let its concrete guards reduce (they are about a concrete instruction list),
+and repeat for the search function beneath it.  `wrt::%size` is `acl2-count` behind
+`mbe` and disabled, which is what `size.lisp` supplies.  So layer 4 is a cascade of
+`:expand` hints, one per level of nesting — mechanical, but with no shortcut, and
+worth writing the first one carefully because the rest follow its shape.
+
 ### The instruction library, cut at the joints
 
 The residual names the first lemma, and the object is smaller than it looks: the
