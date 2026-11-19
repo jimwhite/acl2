@@ -199,6 +199,41 @@
                             (w3t::z (mvm-abs-z-abstract bytes sp pc clen status result))
                             (w3t::%a0 (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) *body-6*)))))))
 
+; The same law at an arbitrary store, with the instruction's own step taken
+; as a hypothesis.  This is the one that composes: because `z` is a
+; variable, the literal body in the left-hand side matches ANY store, so no
+; lemma about the store is needed.  683,415 prover steps.
+(defthm flat-body-6-general
+  (implies (and (true-listp val)
+                (consp (cdr *body-6*))
+                (equal (w3t::step (list :|%;%| z (list (list :global.get 3))))
+                       (list (list :|%;%| z2 val))))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| z *body-6*))
+                  (list (list :|%;%| z2 (append val (cdr *body-6*))))))
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z *body-6*)))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 *body-6*) (w3t::%t9 0)
+                            (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z *body-6*)))))))
+
+; The label level: a step inside a label is a step of its body, re-wrapped.
+; The flat lemma has to be passed with :USE rather than left to fire as a
+; rewrite rule, and `step/r-ctxt-instrs` has to be DISABLED so that ACL2
+; applies the lemma instead of expanding the search again.  Both are load-
+; bearing: without the disable the same goal costs 288,294 steps and stalls.
+; 1,217,401 prover steps.
+(defthm step-in-label-body-6-first
+  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :label_%{%}% 1 nil *body-6*))))
+         (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*)))))))
+  :hints (("Goal"
+           :use (step-flat-body-6-first
+                 (:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :label_%{%}% 1 nil *body-6*))))))
+           :in-theory (disable w3t::step/r-ctxt-instrs))))
+
 ; WHAT ONE STEP OF A WHOLE FRAME DOES, derived rather than guessed:
 ;
 ;   (python3 ../harness/gen_chain.py --probe) gives, for a concrete store,

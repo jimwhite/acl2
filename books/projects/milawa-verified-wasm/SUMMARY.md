@@ -536,53 +536,53 @@ So the remaining work for the first link is now three named things, in order:
 through, (2) then the link itself, (3) then the same generator extended to the
 body's other instructions.  Nothing about it is open-ended any more.
 
-## What one step of a whole frame does, derived not guessed
+## The chain: the bottom two levels are proved
 
-Hand-writing the intermediate configurations of the descent cost several rounds of
-wrong guesses, so the generator now asks the semantics instead.  `step` is a logic
-function, so on a *concrete* configuration ACL2 will simply compute it:
+`wasm3/chain.lisp` (generated) now carries three lemmas, all certified:
 
-```sh
-python3 harness/gen_chain.py --probe > /tmp/probe.lisp
-cd wasm3 && echo '(include-book "chain") (ld "/tmp/probe.lisp")' | ../../../../saved_acl2
+| lemma | steps | what it says |
+|---|---|---|
+| `step-flat-body-6-first` | 145,059 | the body's first instruction steps, store pinned |
+| `flat-body-6-general` | 683,415 | the same at an **arbitrary** store, with the instruction's own step as a hypothesis |
+| `step-in-label-body-6-first` | 1,217,401 | a step inside a label is a step of its body, re-wrapped |
+
+2,045,875 prover steps, **5.06 seconds** of wall clock.  The step counts are large
+and the clock is small; that gap is worth keeping in mind before reading a stall as
+slowness.
+
+**The lever that unlocked the label level** is two hint elements together, and
+neither works alone:
+
+```lisp
+:hints (("Goal"
+         :use (step-flat-body-6-first          ; pass the fact, do not hope it fires
+               (:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 cfg)))
+         :in-theory (disable w3t::step/r-ctxt-instrs)))   ; or ACL2 re-expands the search
 ```
 
-The answer, for a concrete store, `sp`/`pc`/`clen` and `status = 1`:
+Without the `disable` the identical goal costs 288,294 steps and stalls: the
+rewriter prefers to expand `step/r-ctxt-instrs` and re-run the search rather than
+use the lemma it has.  This is the fourth time in this project that the fix was
+*withholding* a definition rule rather than adding a fact.
 
-```
-((:FRAME_ 1 <frame-record> ((:LABEL_ 1 NIL ((:CONST (:I32) 1) (:CONST (:I32) 0) (:RETURN))))))
-Z UNCHANGED: T
-```
+**Why the general flat rule matters.**  Because `z` is a variable in
+`(list :|%;%| z *body-6*)`, the literal body still matches *any* store — so the
+"a cons-pattern cannot match a quoted constant" problem is avoided by keeping the
+store symbolic instead of pinning it.  That is the form the levels above need.
 
-which fixes the right-hand side of the link exactly: the store and frame untouched,
-the label's own stack still NIL, and the body's first instruction *replaced* by the
-value it pushed.  No guessing left in the statement.
+**What is left of the chain: the frame level.**  It is the same shape, and it fails
+for a real reason rather than a mysterious one: `step/r-ctxt-frame` rebuilds the
+inner store as `(:;% (cadr z) (caddr z))`, and `mvm-abs-z-abstract` is expanded
+before `reconstruct-abs-z` can reassemble it, so the inner configuration is not
+syntactically the one the label lemma is stated at.  Two ways forward, both
+concrete: state the label lemma also at the reconstruction, or state the frame link
+with the label result as a hypothesis (the pattern that just worked twice).
 
-The intermediate levels, probed the same way, are consistent with that:
-
-```
-C1 = (:;% zi ((:LABEL_ 1 NIL BODY)))   ->  ((:LABEL_ 1 NIL (<value> . <rest-of-body>)))
-C2 = (:;% zi BODY)                     ->  (<value> . <rest-of-body>),  z unchanged
-```
-
-so the three levels compose, and `chain.lisp` proves the bottom one.  What is *not*
-yet done is the label level on top of it: that lemma reaches 288,294 prover steps
-and stalls on an obligation
-
-```
-(step/r-ctxt-instrs (:;% . CTXT))
-```
-
--- note the dotted pair.  That is not a well-formed configuration, so the obligation
-is unprovable, which means the equality I stated does not hold in every case: some
-instantiation of the free variables makes the descent get stuck, and the concrete
-probe does not show it because concrete values never hit that case.  So the next
-move is not another hint but a **case analysis on what makes the descent stick** --
-most likely a degenerate store or frame -- and a hypothesis excluding it.
-
-This is the most precise the diagnosis has ever been, and it is worth writing down
-that the last four attempts all failed on the same obligation while I described it
-differently each time.
+The probe (`gen_chain.py --probe`) is what made these levels derivable at all: it
+computes `step` on a concrete configuration and prints the answer, so each
+right-hand side is read off the semantics instead of guessed.  Three of the four
+earlier attempts at this had the wrong configuration in the hint and no way to
+know.
 
 ## Bodies must be literals, not terms
 
