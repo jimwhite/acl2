@@ -128,6 +128,12 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   context-descent lemma is needed; and a call leaves the *callee's* frame, not
   the pinned one, so the chain that composes with the call had to be restated at
   the callee's store.
+- **The running branch's shared head is proved** (`wasm3/running.lisp`).  When
+  the status is 1 the status test takes the else branch, whose body is NIL; the
+  empty block and label dissolve, `(:CALL 3)` splits through the read layer's
+  call rule, and the call enters `$in_code`'s frame.  Seven steps, proved as
+  seven top-level links with the same per-step wiring as the frozen path, so
+  every running path can start from `$in_code`'s body.
 - **Phases 5-6 are untouched.**  Within L1, what remains is the readback of the
   stopped store (`milawa-words` walks an index at a time, `mvm-image-words` four
   bytes at a time -- the "index is not a shape" problem `memory.lisp` already

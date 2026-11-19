@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (31 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (32 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -39,6 +39,7 @@ flowchart TB
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/links.lisp` | **the links**: the second step of function 6's body at the flat, label and frame levels, plus `step-body-6-two`, which steps the machine twice and shows the two links genuinely compose |
 | `wasm3/frozen.lisp` | **the frozen path, end to end**: the nine steps from `mvm-abs-abstract` when the status is not 1 -- the call, the read, the comparison, the branch, the block, the read inside the block's label, the two returns -- each at the callee's store and through the frame and the two labels, composed into the exact clock: nine fuel spends the nine steps and a tenth reports the stopped configuration, which is the abstract store unchanged with the status pushed into the caller's instruction list; and the readback, `milawa-observations` of that configuration against `(mvm-step st)`, with the stack words through the append form of the stack image.  `frozen-step-check` is `abs.lisp`'s `(milawa-step-check 9 st)` clause for clause, with the state symbolic |
+| `wasm3/running.lisp` | **the running branch's shared head**: for a running status (1), the seven steps every running path takes before the dispatch -- the status test's else branch, the empty block and its label (both dissolve), the call split, and the call into `$in_code`'s frame.  `$in_code`'s body sits at the head of the new frame's label, with the rest of function 6's body after it.  Seven top-level links, each with its ctxt/label/frame wiring; the clock composition is the frozen path's and is left to the per-path proofs |
 | `wasm3/search.lisp` | the search's **failure** facts (an instruction missing its operands is not stepped) and the second body position; the book that explains why the search finds an instruction to run at k = 0 every time in this body |
 | `wasm3/size.lisp` | `%SIZE` is `acl2-count` behind an `mbe`, plus the monotonicity the context rules' measure conditions need -- the bridge every descent lemma rests on |
 | `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
@@ -959,24 +960,18 @@ through `nthcdr`, which is what made `milawa-words-of-word-list-image` go.
 
 ## What is next, in order
 
-1. **L1 for the other fifteen paths.**  The frozen path is one of sixteen and
-   is proved from the entry configuration to `MILAWA-OBSERVATIONS`, for a
-   symbolic state; the clock is already measured per opcode in `abs.lisp`, and
-   the recipe is complete: the callee's store, the frame and label levels,
-   per-position bodies as literals, the search's failures, the return rules,
-   the clock composition, and the readback's append-form route.  The branch
-   paths enter a block and then a call, so their links are the frozen path's
-   plus `calls.lisp`'s.
-
-   `make walk --value 1` gives the running branch's first steps, and they are
-   a shape the frozen path does not have: after the three status-test steps the
-   `:IFELSE` takes the ELSE branch, whose body is NIL, so step 4 makes an empty
-   `(:LABEL_ 0 NIL NIL)`, step 5 dissolves it, step 6 splits `(:CALL 3)` into
-   `(:REF.FUNC_ADDR 3)` and `(:CALL_REF ...)`, and step 7 enters function 3's
-   frame.  Every one of the fourteen running paths starts this way, so this
-   five-step prefix (the three frozen steps with value 0, the empty block and
-   its dissolution, the call split and its entry) is the shared head to prove
-   before the per-opcode dispatch.
+1. **L1 for the running paths.**  The shared head is proved: `wasm3/running.lisp`
+   takes a running status (1) through the seven steps every running path takes
+   -- the status test's else branch, the empty block and its label (both
+   dissolve), the call split, and the call into `$in_code`'s frame -- leaving
+   `$in_code`'s body at the head of the new frame's label.  What each path adds
+   from there is the dispatch: `$in_code`'s body and return (the same for all
+   fourteen), the opcode test, and the per-opcode tail; the clock is already
+   measured per opcode in `abs.lisp`, and the frozen path is the template for
+   the per-step wiring.  One proof-engineering fact from this book: a
+   context-chain fact stated at a symbolic `status` will not bind through a
+   bare `:use` when the configuration is at `status = 1`; specialize it with
+   `(instance ... (status 1))` first (the `....-at-1` lemmas are that).
 2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a "re-entry" composition rather than one long `STEPS/%FUEL`; the
    engine's `ENGINE-RESULT-IS-SPEC-RESULT` packaging (`wasm-acl2` `engine/`) is

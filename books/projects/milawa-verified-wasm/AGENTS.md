@@ -67,15 +67,17 @@ certified first.  `make books` says so rather than failing obscurely.
 
 ## Current state (2026-11-19)
 
-31 books, all certified.  The frozen path (`status ≠ 1`) is proved end to end
-for symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, and the
-readback.  `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
-clause with the state symbolic -- one of the sixteen paths, done.  Next, in
-order: the other fifteen paths (their links are the frozen path's plus the call
-rule), L2, L3, then the kernel.
+32 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
+symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
+readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
+clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
+paths (the status test's else branch, the empty block/label, the call split, and
+the call into `$in_code`'s frame).  Next: the dispatch -- `$in_code`'s body and
+return, the opcode test, then the per-opcode tails; then L2 and L3.
 
 Caution worth keeping: NTH/NTHCDR shift facts must be `:rule-classes nil`.  As
 rewrite rules ACL2's arithmetic matcher binds `a = 0` and applies them to their
 own right-hand sides (measured with `:brr`).  For the readback, state the index
 against the append form instead: `(nth (+ i (len pre)) (append pre b)) =
-(nth i b)`.
+(nth i b)`.  And a context-chain fact at a symbolic `status` must be
+specialized (`(instance ... (status 1))`) before a bare `:use` will bind it.
