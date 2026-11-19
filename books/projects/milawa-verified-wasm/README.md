@@ -16,9 +16,10 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Seven books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean build
-takes about ten seconds.  Nothing in the tree is expensive any more: the one
-event that used to cost ten minutes is gone (see "What we learned" for why).
+Twenty-seven books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+build takes well under a minute; `make check` at the top of this directory runs
+every book, the example corpus, and the two policy checks, and refuses to pass if
+any book in the tree has been skipped.
 
 | Piece | State |
 |---|---|
@@ -39,7 +40,9 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | The certified semantics executes the artifact: entry config is a call to function 6, `STEP` applies and is single-valued | **proved** (`wasm3/l1.lisp`) |
 | Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness | **proved** (`wasm3/memory.lisp`) |
 | The abstraction `MVM` state → spec configuration, and the clock for every path (47–101 spec steps, opcode-determined) | **proved** (`wasm3/abs.lisp`, 16 theorems by evaluation) |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — statement fixed and validated on all 16 paths; the symbolic execution is next |
+| The instruction library the chain is assembled from: seven layers, `step_pure` and `step_read` lemmas, the context rules, calls, returns | **proved** (`wasm3/instructions.lisp` … `wasm3/returns.lisp`) |
+| A whole `step` of a one-instruction configuration, and the head rule in three forms — the general one taking the instruction's own step as a hypothesis | **proved** (`wasm3/head.lisp`) |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — statement fixed and validated on all 16 paths; the descent's bottom is proved, the per-position chain lemmas are next |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
@@ -248,6 +251,35 @@ about the original `m`.  The fix is an induction-hint function,
 
 **Keep the step symbolic.**  `milawa-step` has twenty branches.  Expanding it
 during a symbolic proof turned a single subgoal into ~150, none nearer to done.
+
+**`:expand` cannot unfold a member of a mutual recursion; a `:definition`
+instance can.**  The certified semantics' `step`, `step/r-ctxt-instrs`,
+`step/r-ctxt-label` and `step/r-ctxt-frame` are one clique, so `:expand
+((w3t::step cfg))` unfolds `step` and stops dead at `(step/r-ctxt-frame cfg)`.
+Adding `:expand` for that symbol, or enabling its definition rule, changes
+*nothing* -- 23,319 prover steps in every variant, byte for byte.  What works is
+to instantiate the axiom by hand:
+
+```lisp
+:use ((:instance (:definition w3t::step/r-ctxt-frame) (w3t::%a0 cfg)))
+```
+
+**A rewrite rule whose left-hand side contains `(cons x y)` cannot match a quoted
+constant.**  This is a real tension, not a bug: the semantics' search only
+computes when the instruction list is a *literal*, and the rewriter treats
+`(quote ...)` as an atom rather than decomposing it into cons structure.  So a
+general rule about `(cons instr rest)` and a literal body are incompatible, and
+what works is an *instance* stated at each position.
+
+**The semantics' search refuses a lone instruction.**  `step/search21` requires a
+value before the instruction or an instruction after it.  A lemma without
+`(consp rest)` is therefore *false*, not merely hard -- one attempt spent 401,630
+prover steps chasing it.
+
+**`acl2-count` of a symbol is the length of its name**, so the tempting
+`(equal (equal (acl2-count x) 0) (not (consp x)))` is false.  The one-directional
+form `(implies (consp x) (< 0 (acl2-count x)))` as a `:linear` rule is what
+discharges the measure obligations, in 381 steps.
 Disabling `milawa-step`, `milawa-apply-*` and (in the relational book)
 `milawa-conf-step` is what made every hard proof go through.
 
@@ -356,14 +388,21 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 ## Next steps, in order
 
-1. **Port the loop to WASM.**  L1: one dispatch iteration of the module is one
-   `MILAWA-STEP`.  L2: instantiate the run-level theorem from `wasm-acl2`'s
-   `engine/`.  This needs `wasm-acl2` pinned.  `milawa-runs-halt` and
-   `milawa-runs-step` are already stated in the shape `W3T::STEP` has, which is
-   what the refinement cases match against.
-2. **`kernel/`.**  One lemma per `defun` of `milawa-init`, generated with
-   `make-event` from the ACL2 bodies.
-3. **The phase-0 experiments from the design document**, which are still open:
+1. **The chain, one position at a time.**  L1 for a whole program is a composition
+   of one-instruction steps; `wasm3/head.lisp` proves the bottom of that descent
+   and the per-position instance lemmas are what remains.  They must be
+   *instances* with the literal body written out (see "What we learned" on quoted
+   constants), and the intermediate configurations have to be read out of failed
+   goals rather than written down in advance.  Then join them with the call and
+   return lemmas into the 9-step theorem that matches the measured clock for the
+   frozen path.
+2. **L1, symbolic**, for the other fifteen paths: the clock is known per opcode,
+   so these are the same shape as the frozen one.
+3. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
+   theorem is a re-entry composition rather than one long `STEPS/%FUEL`.
+4. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
+   untrusted.
+5. **The phase-0 experiments from the design document**, which are still open:
    instrument `+` for its maximum value (does anything exceed `2^30`?) and
    `ftbl` (does the checker ever call a function installed by a `DEFINE`
    event?).  The second one underwrites the whole "no JIT" argument.

@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (25 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (27 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -37,9 +37,9 @@ flowchart TB
 | `machine/mvm.lisp` | `MVM-STEP`/`MVM-RUN`: the ACL2 model of the module, 32-bit words, status protocol.  A stopped machine is a fixed point; spending a budget in two instalments is spending it at once; **fuel monotonicity** — once it has stopped, a larger budget changes nothing |
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
+| `wasm3/head.lisp` | **the assembly layer**: a whole `step` of a one-instruction configuration (`step`, `step/r-read`, and the three forms of the head rule, the most general of which takes the instruction's own step as a hypothesis), the abstract store's reconstruction from its two halves, and the one piece of list arithmetic the semantics' search needs |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
 | `wasm3/returns.lisp` | **layer 7**: returning — out of the label, then out of the frame, leaving the callee's result |
-| `wasm3/calls.lisp` | **layer 6**: the call rule — the entry configuration steps to a frame-and-label admin around the artifact's own code, and the locals land zero-initialised |
 | `wasm3/calls.lisp` | **layer 6**: the call rule — the entry configuration steps to a frame-and-label admin around the artifact's own code, with the locals zero-initialised |
 | `wasm3/context.lisp` | **layers 4 and 5**: the context rules — a step inside a `:LABEL_` and inside a `:FRAME_` are steps of the body, re-wrapped; the composition law the library rests on |
 | `wasm3/frames.lisp` | **layer 3**: `local.get` of all four locals with the frame symbolic — the layer every opcode's operand load goes through |
@@ -465,47 +465,6 @@ head-instruction lemma for a flat config (`step/r-ctxt-instrs` on
 `(:;% z (cons instr rest))`), and the `%size`/`acl2-count` facts that discharge
 those `(< 21 (+ 27 (acl2-count f)))` side conditions -- what `size.lisp` began.
 
-## What still separates the head rule from the first link
-
-With the rules above in the theory, the first link is *nearly* mechanical, and the
-gap is now a shape mismatch rather than a capability:
-
-```lisp
-(defthm chain-link
-  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
-                          (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract ...))
-                                      (list (list :label_%{%}% 1 nil BODY))))))
-         ...)
-  :hints (("Goal" :use ((:instance (:definition w3t::step/r-ctxt-frame) ...)))))
-```
-
-reaches 525,064 prover steps and stops on `(step/r-ctxt-instrs cfg)` where `cfg`
-is the FLAT configuration `(:;% zi BODY)` -- the body, as a literal.  (I first read
-the goal as `((BODY))`, one level out; recounting the parentheses, the quoted list
-is the body itself.  Worth recording because the misreading would have sent the next
-attempt looking for a nesting bug that is not there.)
-
-So the descent gets all the way down to the flat configuration, and what fails there
-is that the head rule does not fire on it.  The reason is a genuine tension between
-two things this project has already found separately:
-
-* the body has to be a **literal** for the search and the `%size` comparisons to
-  compute (that was established much earlier, and it is why `gen_chain.py` exists);
-* a rewrite rule whose left-hand side contains `(cons instr rest)` **cannot match a
-  quoted constant**, because the rewriter treats `(quote ...)` as an atom rather
-  than decomposing it into cons structure.
-
-Which means the general rule and a literal body are, for this purpose,
-incompatible -- and the resolution is the one that already worked: state the flat
-step as an **instance** at each position, with the literal body written out, and
-give it the `(:definition ...)` instances the earlier 138,429-step proof used.  That
-is exactly what `gen_chain.py` is for, and it is now a known-good target rather than
-an open question.
-
-Everything else the chain needs is proved and in the library: the frame descent
-(`:definition` instance), the two nil-ness rules for a lone label and a lone frame,
-the abstract-store reconstruction, and the head rule.
-
 ## The head rule: the load-bearing lemma of the chain
 
 `wasm3/head.lisp` is new and it holds the lemma the whole chain is built on --
@@ -575,6 +534,47 @@ So the remaining work for the first link is now three named things, in order:
 (1) the `acl2-count`/`%size` step that makes the search's measure comparison go
 through, (2) then the link itself, (3) then the same generator extended to the
 body's other instructions.  Nothing about it is open-ended any more.
+
+## What still separates the head rule from the first link
+
+With the rules above in the theory, the first link is *nearly* mechanical, and the
+gap is now a shape mismatch rather than a capability:
+
+```lisp
+(defthm chain-link
+  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
+                          (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract ...))
+                                      (list (list :label_%{%}% 1 nil BODY))))))
+         ...)
+  :hints (("Goal" :use ((:instance (:definition w3t::step/r-ctxt-frame) ...)))))
+```
+
+reaches 525,064 prover steps and stops on `(step/r-ctxt-instrs cfg)` where `cfg`
+is the FLAT configuration `(:;% zi BODY)` -- the body, as a literal.  (I first read
+the goal as `((BODY))`, one level out; recounting the parentheses, the quoted list
+is the body itself.  Worth recording because the misreading would have sent the next
+attempt looking for a nesting bug that is not there.)
+
+So the descent gets all the way down to the flat configuration, and what fails there
+is that the head rule does not fire on it.  The reason is a genuine tension between
+two things this project has already found separately:
+
+* the body has to be a **literal** for the search and the `%size` comparisons to
+  compute (that was established much earlier, and it is why `gen_chain.py` exists);
+* a rewrite rule whose left-hand side contains `(cons instr rest)` **cannot match a
+  quoted constant**, because the rewriter treats `(quote ...)` as an atom rather
+  than decomposing it into cons structure.
+
+Which means the general rule and a literal body are, for this purpose,
+incompatible -- and the resolution is the one that already worked: state the flat
+step as an **instance** at each position, with the literal body written out, and
+give it the `(:definition ...)` instances the earlier 138,429-step proof used.  That
+is exactly what `gen_chain.py` is for, and it is now a known-good target rather than
+an open question.
+
+Everything else the chain needs is proved and in the library: the frame descent
+(`:definition` instance), the two nil-ness rules for a lone label and a lone frame,
+the abstract-store reconstruction, and the head rule.
 
 ## Bodies must be literals, not terms
 
@@ -730,16 +730,27 @@ The induction then finishes in 0.48 s.
 
 ## What is next, in order
 
-1. **L1, symbolic**: the sixteen paths of `abs.lisp` generalised to symbolic
-   state.  The clock is already known per opcode, so the shape is seven
-   independent lemmas plus the frozen-status and off-the-end cases.
-2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
+1. **The chain, one position at a time.**  `gen_chain.py` now has a known-good
+   target: for each position of function 6's body, an instance lemma of the shape
+   that already proved at 138,429 steps (literal body written out, `:definition`
+   instances for `step/r-ctxt-instrs` and `step/search21`), because a rewrite rule
+   with `(cons instr rest)` cannot match the quoted literal the search needs.  The
+   intermediate configurations must be *read out of failed goals* rather than
+   written down in advance -- guessing them has cost several rounds.  Then join
+   them with `step-call-enters-frame` (layer 6) and the two return lemmas
+   (layer 7) into the 9-step theorem that matches `abs.lisp`'s clock for the
+   frozen path.
+2. **L1, symbolic**: the sixteen paths of `abs.lisp` generalised to symbolic
+   state.  The clock is already known per opcode, and `head.lisp` has removed the
+   bottom of the descent (the head instruction) from this problem, so the shape is
+   the per-opcode position lemmas plus the frozen-status and off-the-end cases.
+3. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a "re-entry" composition rather than one long `STEPS/%FUEL`; the
    engine's `ENGINE-RESULT-IS-SPEC-RESULT` packaging (`wasm-acl2` `engine/`) is
    the reference, not a drop-in.
-3. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
+4. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
    untrusted — L3 is what makes that acceptable.
-4. Conses, symbols, environments and the heap in the module and the model; then
+5. Conses, symbols, environments and the heap in the module and the model; then
    the whole `milawa-init` kernel, and one lemma per `defun` against
    `ACL2/logic/`.
 
