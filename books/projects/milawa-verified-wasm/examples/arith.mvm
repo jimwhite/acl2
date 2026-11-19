@@ -1,0 +1,18 @@
+; (+ 20 (- 3 1))
+;
+; two arithmetic instructions in a row: SUB then ADD.
+;
+; Run it on the artifact:   node harness/run.js wasm/milawa-verified.wasm <words>
+; Run the corpus:           python3 harness/examples.py --check
+;
+; WORDS is the program as MVM instruction words (see wasm/milawa-verified.wat).
+; EXPECT is RECORDED from the artifact by `harness/examples.py --record` and never
+; written by hand; machine/examples.lisp then PROVES the model agrees with it.  So
+; the file is the meeting point of a test and a proof, which is the point.
+;
+; Words are given with the immediates inline (CONST k, IFZ k, JMP k take the next
+; word), so the listing above and the words below line up instruction by
+; instruction.
+
+words: 1 3  1 1  3  1 20  2  0
+expect: halted result=22 steps=6 pc=9

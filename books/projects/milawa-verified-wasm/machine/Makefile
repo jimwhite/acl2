@@ -7,7 +7,7 @@
 
 ACL2 ?= ../../../../saved_acl2
 CERT_PL ?= ../../../build/cert.pl
-BOOKS ?= mvm mvm-tests top
+BOOKS ?= mvm mvm-tests examples top
 
 all: cert
 

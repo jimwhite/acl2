@@ -1,0 +1,19 @@
+; (halt)
+;
+; HALT with nothing to halt with.  The result would have to be the top of the
+; stack, and there is no top: an abort, not a result of zero.
+;
+; Run it on the artifact:   node harness/run.js wasm/milawa-verified.wasm <words>
+; Run the corpus:           python3 harness/examples.py --check
+;
+; WORDS is the program as MVM instruction words (see wasm/milawa-verified.wat).
+; EXPECT is RECORDED from the artifact by `harness/examples.py --record` and never
+; written by hand; machine/examples.lisp then PROVES the model agrees with it.  So
+; the file is the meeting point of a test and a proof, which is the point.
+;
+; Words are given with the immediates inline (CONST k, IFZ k, JMP k take the next
+; word), so the listing above and the words below line up instruction by
+; instruction.
+
+words: 0
+expect: aborted steps=1 pc=1

@@ -1,0 +1,20 @@
+; JMP to word 4, skipping CONST 999; result 7
+;
+; JMP skips the words it jumps over, so the 999 is never pushed and 7 is the
+; result.  The only example that uses JMP on its own rather than as the tail of an
+; if/else.
+;
+; Run it on the artifact:   node harness/run.js wasm/milawa-verified.wasm <words>
+; Run the corpus:           python3 harness/examples.py --check
+;
+; WORDS is the program as MVM instruction words (see wasm/milawa-verified.wat).
+; EXPECT is RECORDED from the artifact by `harness/examples.py --record` and never
+; written by hand; machine/examples.lisp then PROVES the model agrees with it.  So
+; the file is the meeting point of a test and a proof, which is the point.
+;
+; Words are given with the immediates inline (CONST k, IFZ k, JMP k take the next
+; word), so the listing above and the words below line up instruction by
+; instruction.
+
+words: 6 4  1 999  1 7  0
+expect: halted result=7 steps=3 pc=7

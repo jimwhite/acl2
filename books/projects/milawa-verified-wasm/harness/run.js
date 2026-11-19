@@ -62,12 +62,19 @@ async function main() {
 
   console.log(disassemble(words).join('\n'));
   const names = { 0: 'halted', 1: 'running', 2: 'aborted' };
+  // The PC is reported as a word index, which is the only form the model uses;
+  // the byte address is the module's business (4096 + 4*index).
+  const pcWord = (m.pc() - codeBase) / 4;
   if (status === 0) {
-    console.log(`=> halted after ${steps} steps with ${m.result()}`);
+    // The result is reported UNSIGNED.  The module's values are 32-bit words (what
+    // i32.load and i32.store move), and the model's MVM-RESULT is the same word, so
+    // >>> 0 here is what makes the two sides comparable: (- 0 1) is 4294967295, not
+    // -1, and only i32.lt_s ever reads one of these words as signed.
+    console.log(`=> halted after ${steps} steps with ${m.result() >>> 0} (pc=${pcWord})`);
     process.exit(0);
   }
   if (status === 2) {
-    console.log(`=> aborted after ${steps} steps`);
+    console.log(`=> aborted after ${steps} steps (pc=${pcWord})`);
     process.exit(1);
   }
   console.log(`=> still ${names[status] || status} after ${steps} steps`);

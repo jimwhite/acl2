@@ -34,6 +34,7 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | `MVM-STEP` — ACL2 model of the module, 32-bit words, status protocol, fixed points | **proved** (`machine/mvm.lisp`) |
 | `milawa-verified.wat` — the module: one step per call, runnable in Node | **done** (milestones: `wasm/`) |
 | `MVM` model vs the module, on a spread of programs and every abort case | **tested** (`machine/mvm-tests.lisp`, Node recording) |
+| **The example corpus**: ten programs with their answers, each recorded from the artifact and proved about the model | **done** (`examples/`, `machine/examples.lisp`) |
 | The artifact decodes in the certified semantics; the module is pinned as a logic constant; `W3T::MODULE-P` of it is proved | **proved** (`wasm3/`) |
 | The certified semantics executes the artifact: entry config is a call to function 6, `STEP` applies and is single-valued | **proved** (`wasm3/l1.lisp`) |
 | Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness | **proved** (`wasm3/memory.lisp`) |
@@ -43,6 +44,33 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
+
+## The example corpus
+
+`examples/*.mvm` is the honest lower-level stand-in for a Milawa events file: a
+program and the answer it must give, one file each.  Each file's `expect:` line is
+**recorded from the artifact** — `python3 harness/examples.py --record` runs
+`wasm/milawa-verified.wasm` in Node — and `machine/examples.lisp` then **proves**
+the model gives the same answer.  `python3 harness/examples.py --check` is what a
+build runs.
+
+```
+$ python3 harness/examples.py --check
+ok   if-lt-true.mvm: halted result=10 steps=6 pc=10
+...
+10 example(s) agree with the artifact
+```
+
+So a passing corpus is two claims, deliberately kept apart: *the artifact does X*
+(a test, through a host we do not trust) and *the model does X* (a proof, by
+evaluation).  The claim that joins them — agreement for all inputs — is L1 and is
+open; when it lands, these files become its regression suite, and until then they
+are the thing to point at when the question is "does any of this run yet".
+
+Two of the ten are there to catch plausible mistakes rather than to show variety:
+`sub-wraps` (`(- 0 1)` = `#xFFFFFFFF`, which the harness must report unsigned
+because JS exports an `i32`) and `lt-signed` (`#xFFFFFFFF` is the largest unsigned
+word but *less than* zero under `i32.lt_s`).
 
 ## Why this shape
 

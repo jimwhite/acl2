@@ -1,0 +1,21 @@
+; (< -1 0)   =>   1
+;
+; the only example that distinguishes i32.lt_s from an unsigned compare: -1 is
+; #xFFFFFFFF, the LARGEST unsigned word, yet it is less than 0 signed.  -1 is
+; pushed first and 0 second, so the stack is (0 -1): b = 0 is on top, a = -1 below,
+; and LT answers 1.  An unsigned compare here would answer 0.
+;
+; Run it on the artifact:   node harness/run.js wasm/milawa-verified.wasm <words>
+; Run the corpus:           python3 harness/examples.py --check
+;
+; WORDS is the program as MVM instruction words (see wasm/milawa-verified.wat).
+; EXPECT is RECORDED from the artifact by `harness/examples.py --record` and never
+; written by hand; machine/examples.lisp then PROVES the model agrees with it.  So
+; the file is the meeting point of a test and a proof, which is the point.
+;
+; Words are given with the immediates inline (CONST k, IFZ k, JMP k take the next
+; word), so the listing above and the words below line up instruction by
+; instruction.
+
+words: 1 4294967295  1 0  4  0
+expect: halted result=1 steps=4 pc=6

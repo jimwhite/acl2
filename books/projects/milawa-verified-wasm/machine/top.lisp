@@ -10,3 +10,4 @@
 
 (include-book "mvm")
 (include-book "mvm-tests")
+(include-book "examples")
