@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (19 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (20 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -38,6 +38,7 @@ flowchart TB
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
+| `wasm3/instructions.lisp` | **layer 1 of the instruction library**: ten `STEP_PURE` lemmas with symbolic values — five i32 binops, four comparisons, the zero test — stated at the static value count so the rule chain evaluates; the first place here where a symbolic state is stepped rather than evaluated |
 | `wasm3/symbolic.lisp` | the abstraction a *symbolic* proof wants: the same store with the memory bytes a variable, the two lookups proved (field lookup on symbolic leaves, and the memory reading back as given), and the layering the instruction library follows |
 | `wasm3/abs.lisp` | the abstraction itself: `MVM` state → entry configuration of a call to the exported `STEP`, through the spec's own `$WITH_MEM`/`$WITH_GLOBAL`, and the inverse observations. **Sixteen theorems, one per path through the module** — every opcode, every abort, both frozen statuses — each giving the exact clock and the fact that what the semantics stopped on reads back as `MVM-STEP` |
 | `wasm3/l1.lisp` | the certified semantics executes the artifact: entry configuration is a call to function 6 with no arguments, `STEP` applies and is single-valued, three steps apply, one step enters the frame |
@@ -260,7 +261,7 @@ step_read : config -> instr* option     loads, global.get, local.get
 So for one instruction the chain is
 
 ```
-STEP_PURE lemma   (symbolic values only, no store)
+STEP_PURE lemma   (symbolic values only, no store)   <- DONE, wasm3/instructions.lisp
   -> STEP_READ lemma   (one store read at a concrete place)
     -> ctxt-label / ctxt-frame lemma   (one level of nesting)
       -> ctxt-instrs lemma             (the split point)
@@ -268,7 +269,25 @@ STEP_PURE lemma   (symbolic values only, no store)
 ```
 
 each proved with **only its own rule enabled**, its recursive call discharged by
-the lemma beneath it.  Then C2 per opcode is a chain of those — ~50 to 100 links,
+the lemma beneath it.
+
+The first layer is proved: `wasm3/instructions.lisp` has ten lemmas — the five i32
+binops and the four comparisons the module uses, plus the zero test — each about a
+configuration with **symbolic values** and the value count at its static length:
+
+```lisp
+(defthm step-pure-binop-add
+  (equal (step_pure (list (:const i32 c1) (:const i32 c2) (:binop i32 add)))
+         (list (list (:const i32 (car ($BINOP_ i32 add c1 c2)))))))
+```
+
+3.7 s for the book; 3,788 prover steps for the first lemma.  The right-hand sides
+are the spec's own operations, so nothing about 32-bit wrapping or signedness is
+assumed — the lemmas conclude whatever the certified semantics concludes.  Two
+shape facts worth having written down: `$BINOP_` returns a *list* (it can trap) so
+the rule takes `(car ...)`, while `$RELOP_` and `$TESTOP_` return the value
+directly; and `div_u` needs the trap not to fire, which is exactly the rule's own
+guard.  Then C2 per opcode is a chain of those — ~50 to 100 links,
 exactly the clock in the table above, writable because the clock does not depend on
 the values.
 
