@@ -89,7 +89,7 @@ def render():
     FR = "(milawa-callee-frame 6)"
     C0 = ("(list :|%;%| " + Z + " (list (list :frame_%{%}% 1 " + FR
           + " (list (list :label_%{%}% 1 nil *body-6*)))))")
-    ZIN = ("(list :|%;%| (car (mvm-abs-z-abstract bytes sp pc clen status result)) "
+    ZIN = ("(list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) "
            + FR + ")")
     C2 = "(list :|%;%| " + ZIN + " *body-6*)"
     RHS = ("(list (list :|%;%| " + Z

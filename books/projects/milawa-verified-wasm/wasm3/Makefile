@@ -7,7 +7,7 @@
 
 ACL2 ?= ../../../../saved_acl2
 CERT_PL ?= ../../../build/cert.pl
-BOOKS ?= bytes module state decode l1 memory abs size symbolic instructions reads frames context calls returns
+BOOKS ?= bytes module state decode l1 memory abs size symbolic instructions reads frames context calls returns head
 
 all: cert
 

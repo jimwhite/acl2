@@ -465,6 +465,53 @@ head-instruction lemma for a flat config (`step/r-ctxt-instrs` on
 `(:;% z (cons instr rest))`), and the `%size`/`acl2-count` facts that discharge
 those `(< 21 (+ 27 (acl2-count f)))` side conditions -- what `size.lisp` began.
 
+## The head rule: the load-bearing lemma of the chain
+
+`wasm3/head.lisp` is new and it holds the lemma the whole chain is built on --
+stepping the *first* instruction of a flat configuration:
+
+```lisp
+(defthm ctxt-instrs-steps-the-head
+  (implies (and (consp rest)
+                (true-listp rest)
+                (equal (w3t::step (list :|%;%| z (list (list :global.get 3))))
+                       (list (list :|%;%| z
+                                   (list (list :const (list :i32)
+                                               (milawa-global 3 z)))))))
+           (equal (w3t::step/r-ctxt-instrs
+                   (list :|%;%| z (cons (list :global.get 3) rest)))
+                  (list (list :|%;%| z
+                              (cons (list :const (list :i32) (milawa-global 3 z))
+                                    rest))))))
+```
+
+302,816 prover steps.  `Z` is symbolic, so every position of every body is an
+instance of it; the one-instruction step it needs is a *hypothesis*, which is what
+makes a symbolic store possible at all (without it the search's inner step cannot
+be reduced, because the answer would have to be phrased in the spec's record
+structure).
+
+Three things had to be discovered to get there, and each of them was a wrong
+belief first:
+
+1. **The search refuses a lone instruction.**  `step/search21` requires
+   `(or (not (equal val-star nil)) (not (equal instr-1-star nil)))` -- a value
+   before the instruction or an instruction after it.  A statement without
+   `(consp rest)` is *false*, not merely hard, which is why the first attempt
+   burned 401,630 prover steps chasing it.
+2. **`acl2-count` of a cons is positive, and that is the only arithmetic needed.**
+   `(defthm acl2-count-positive-when-consp (implies (consp x) (< 0 (acl2-count x)))
+   :rule-classes :linear)` -- 381 prover steps, and it closed the measure
+   comparison the search makes.
+3. **The natural companion of that rule is FALSE.**  `(equal (equal (acl2-count x) 0)
+   (not (consp x)))` does not hold in ACL2, because a symbol counts by the length
+   of its name.  Stating it wasted a round; the one-directional linear rule is the
+   right thing.
+
+Also proved here, and needed to discharge the hypothesis above: `step` and
+`step/r-read` on a one-instruction configuration over the abstract store, giving
+the parameter `STATUS` back (21,668 and 21,597 steps).
+
 **Where the first link actually stops now.**  Driving the whole thing through
 `gen_chain.py` with the frame pinned to `(milawa-callee-frame 6)` and the inner
 context pinned to `(list :|%;%| (car (mvm-abs-z-abstract ...)) (milawa-callee-frame 6))`
