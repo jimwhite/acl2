@@ -45,6 +45,37 @@ event that used to cost ten minutes is gone (see "What we learned" for why).
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
+## Building
+
+One command, from this directory:
+
+```
+$ make check ACL2=/path/to/saved_acl2
+--- milawa-lisp / machine / wasm3          (books, in dependency order)
+--- artifact vs pinned module              (module.lisp, state.lisp: up to date)
+--- example corpus (artifact)              (10 example(s) agree with the artifact)
+--- litmus: no skip-proofs, no defaxiom     (none in 26 book(s))
+--- every book has a certificate           (26 books, all certified)
+
+===== summary =====
+books certified:  26
+corpus examples:  10
+```
+
+`make help` lists the rest (`books`, `examples`, `module-check`, `no-skips`,
+`complete`, `clean`).  A full clean rebuild takes about forty seconds.
+
+The `complete` target is worth its own line: it checks that every `.lisp` in a book
+directory has a `.cert` beside it, and it exists because it caught a real bug —
+`wasm3/Makefile`'s `BOOKS` line had silently lost the three newest books to a bad
+string replacement, so a fresh checkout certified 23 of 26 and nothing complained. A
+count of certificates cannot tell "all of them" from "the ones we remembered to
+list".
+
+`node` is needed only for the corpus, which runs the real `.wasm`; the books do not
+need it.  The `wasm3/` books need the pinned `wasm-acl2` tree's 26 generated books
+certified first, and `make books` says so rather than failing obscurely.
+
 ## The example corpus
 
 `examples/*.mvm` is the honest lower-level stand-in for a Milawa events file: a
