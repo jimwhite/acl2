@@ -264,6 +264,35 @@
                             (w3t::%a0 (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 f-prime (list (list :label_%{%}% 1 nil *body-6*))))))))
            :in-theory (disable w3t::step/r-ctxt-instrs))))
 
+; ---------------------------------------------------------------------
+; THE FIRST LINK.
+;
+; One step of function 6's body, from the configuration a call to it leaves
+; behind: a frame holding a label holding the body.  Result: the body's first
+; instruction replaced by the value it pushed, with the store, the frame and
+; the label's own stack untouched.
+;
+; This is just the three bridges instantiated at the abstract store, which is
+; why it went through first time: each level arrives as a hypothesis rather
+; than as something to be rediscovered.  `step/r-ctxt-instrs` is disabled so
+; the flat bridge is used instead of the search being re-expanded; the label
+; and frame rules are LEFT ENABLED, because `step` still has to reach them.
+(defthm step-body-6-first
+  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract bytes sp pc clen status result)) (list (list :label_%{%}% 1 nil *body-6*))))))
+         (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract bytes sp pc clen status result)) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*)))))))))
+  :hints (("Goal"
+           :use ((:instance frame-body-6-general
+                            (s (cadr (mvm-abs-z-abstract bytes sp pc clen status result))) (f (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))
+                            (f-prime (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))
+                            (s2 (cadr (mvm-abs-z-abstract bytes sp pc clen status result))) (f2 (caddr (mvm-abs-z-abstract bytes sp pc clen status result))))
+                 (:instance label-body-6-general
+                            (z (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))) (z2 (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))))
+                 (:instance flat-body-6-general
+                            (z (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))) (z2 (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result))))
+                            (val (list (list :const (list :i32) status))))
+                 step-of-global-get-3)
+           :in-theory (disable w3t::step/r-ctxt-instrs))))
+
 ; WHAT ONE STEP OF A WHOLE FRAME DOES, derived rather than guessed:
 ;
 ;   (python3 ../harness/gen_chain.py --probe) gives, for a concrete store,

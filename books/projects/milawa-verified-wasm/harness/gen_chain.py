@@ -249,6 +249,48 @@ def render():
     frame += ")" * bal(frame)
     assert bal(frame) == 0
 
+    # -- THE FIRST LINK: the three general bridges composed.  This is the theorem
+    # the whole chain is made of -- one step of function 6's body from the
+    # configuration a call leaves behind.  593,575 prover steps, and the first
+    # attempt, because the ladder supplies each level as a hypothesis.
+    ZI2 = "(list :|%;%| (cadr " + Z + ") " + "(caddr " + Z + "))"
+    C0 = ("(list :|%;%| " + Z + " (list (list :frame_%{%}% 1 (caddr " + Z + ")"
+          " (list (list :label_%{%}% 1 nil *body-6*)))))")
+    RES = ("(list (list :|%;%| " + Z + " (list (list :frame_%{%}% 1 (caddr " + Z + ")"
+           " (list (list :label_%{%}% 1 nil " + VAL + "))))))")
+    link = "\n".join([
+        "; ---------------------------------------------------------------------",
+        "; THE FIRST LINK.",
+        ";",
+        "; One step of function 6's body, from the configuration a call to it leaves",
+        "; behind: a frame holding a label holding the body.  Result: the body's first",
+        "; instruction replaced by the value it pushed, with the store, the frame and",
+        "; the label's own stack untouched.",
+        ";",
+        "; This is just the three bridges instantiated at the abstract store, which is",
+        "; why it went through first time: each level arrives as a hypothesis rather",
+        "; than as something to be rediscovered.  `step/r-ctxt-instrs` is disabled so",
+        "; the flat bridge is used instead of the search being re-expanded; the label",
+        "; and frame rules are LEFT ENABLED, because `step` still has to reach them.",
+        "(defthm step-body-6-first",
+        "  (equal (w3t::step " + C0 + ")",
+        "         " + RES + ")",
+        '  :hints (("Goal"',
+        "           :use ((:instance frame-body-6-general",
+        "                            (s (cadr " + Z + ")) (f (caddr " + Z + "))",
+        "                            (f-prime (caddr " + Z + "))",
+        "                            (s2 (cadr " + Z + ")) (f2 (caddr " + Z + ")))",
+        "                 (:instance label-body-6-general",
+        "                            (z " + ZI2 + ") (z2 " + ZI2 + "))",
+        "                 (:instance flat-body-6-general",
+        "                            (z " + ZI2 + ") (z2 " + ZI2 + ")",
+        "                            (val (list (list :const (list :i32) status))))",
+        "                 step-of-global-get-3)",
+        "           :in-theory (disable w3t::step/r-ctxt-instrs)))",
+    ])
+    link += ")" * bal(link)
+    assert bal(link) == 0
+
     L = [
         "; L1, the opcode chain: the bottom of the descent, generated.",
         ";",
@@ -281,6 +323,8 @@ def render():
         labelg,
         "",
         frame,
+        "",
+        link,
         "",
         "; WHAT ONE STEP OF A WHOLE FRAME DOES, derived rather than guessed:",
         ";",
