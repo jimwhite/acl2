@@ -1190,3 +1190,109 @@
        (equal (milawa-global (frozen-z bytes sp pc clen status result) 2) clen)
        (equal (milawa-global (frozen-z bytes sp pc clen status result) 3) status)
        (equal (milawa-global (frozen-z bytes sp pc clen status result) 4) result)))
+
+;; ---------------------------------------------------------------------------
+;; The readback, the other half: the machinery for the stack words
+;; ---------------------------------------------------------------------------
+;
+; The remaining clause of MILAWA-OBSERVATIONS is
+;
+;   (milawa-words Z 0 (len stack)) = (revappend stack nil)
+;
+; and the route to it is the one MEMORY.LISP took for the word-list image:
+; work with the APPEND form of the image, not with an index into it.  The
+; lemmas below are that machinery, all proved.  What they add up to is:
+;
+;   * a read at a prefix boundary -- (nth (+ i (len pre)) (append pre b))
+;     is (nth i b) -- proved through NTHCDR, not by unfolding NTH at a
+;     symbolic index (doing the latter diverges: NTH's definition recurses
+;     on the index);
+;   * the byte sum the abstract word reader computes is the word --
+;     (loghead 8 w), (loghead 8 (logtail 8 w)), ... with weights 256^i --
+;     via LOGAPP, the byte decoder of memory.lisp, and the round trip
+;     MVM-BYTES-TO-WORD-OF-WORD-TO-BYTES;
+;   * and MILAWA-WORD-AT-OF-IMAGE, which is the per-word read:
+;     at offset (len pre), the abstract reader on
+;     (append pre (mvm-word-to-bytes w) rest) is w.
+;
+; WHAT IS NOT HERE is the induction that puts these together over a word
+; list: MILAWA-WORDS-OF-WORD-LIST-IMAGE.  Its step needs the hypothesis at
+; the SHIFTED prefix (append pre (word-to-bytes (car ws))), so the induction
+; scheme has to shift the prefix with the list (see BRIDGE-INDUCT below), and
+; the remaining work is getting that scheme's hypotheses to line up with the
+; append associativity and the (len ...) arithmetic.  The state of that
+; attempt is recorded in SUMMARY.md, "the readback of the stopped store".
+
+(defthm loghead-8-when-byte
+  (implies (and (integerp b) (<= 0 b) (< b 256))
+           (equal (loghead 8 b) b))
+  :hints (("Goal" :in-theory (disable loghead)
+           :use ((:instance loghead-identity (size 8) (i b))))))
+(defthm logapp-four-bytes
+  (implies (mvm-bytes-p (list b0 b1 b2 b3))
+           (equal (mvm-bytes4-to-word b0 b1 b2 b3)
+                  (+ b0 (* 256 b1) (* 65536 b2) (* 16777216 b3))))
+  :hints (("Goal" :in-theory (e/d (mvm-bytes4-to-word logapp expt2) (loghead)))))
+(defthm sum-of-bytes-is-word
+  (implies (unsigned-byte-p 32 w)
+           (equal (+ (loghead 8 w) (* 256 (loghead 8 (logtail 8 w)))
+                     (* 65536 (loghead 8 (logtail 16 w)))
+                     (* 16777216 (loghead 8 (logtail 24 w))))
+                  w))
+  :hints (("Goal"
+           :in-theory (disable loghead logtail logapp)
+           :use ((:instance logapp-four-bytes
+                            (b0 (loghead 8 w))
+                            (b1 (loghead 8 (logtail 8 w)))
+                            (b2 (loghead 8 (logtail 16 w)))
+                            (b3 (loghead 8 (logtail 24 w))))
+                 (:instance mvm-bytes-to-word-of-word-to-bytes (w w))))))
+; The three NTH/NTHCDR facts are :RULE-CLASSES NIL on purpose.  As rewrite
+; rules they are exactly the kind that loops here: ACL2's arithmetic matcher
+; can bind a = 0 and apply a rule about (+ 4 a) to its own right-hand side.
+; They are used through :USE, one instance at a time.
+(defthm nth-is-car-of-nthcdr
+  (equal (nth n l) (car (nthcdr n l)))
+  :rule-classes nil)
+(defthm nthcdr-of-plus
+  (implies (and (natp a) (natp b))
+           (equal (nthcdr (+ a b) l) (nthcdr b (nthcdr a l))))
+  :rule-classes nil
+  :hints (("Goal" :induct (nthcdr a l))))
+(defthm nthcdr-of-len-of-append
+  (implies (true-listp a)
+           (equal (nthcdr (len a) (append a b)) b))
+  :hints (("Goal" :induct (len a))))
+(defthm nth-of-append-len
+  (implies (and (true-listp a) (natp i))
+           (equal (nth (+ i (len a)) (append a b)) (nth i b)))
+  :rule-classes nil
+  :hints (("Goal"
+           :in-theory (disable nth)
+           :use ((:instance nth-is-car-of-nthcdr (l (append a b)))
+                 (:instance nth-is-car-of-nthcdr (l b))
+                 (:instance nthcdr-of-plus (a (len a)) (b i) (l (append a b)))
+                 nthcdr-of-len-of-append))))
+(defthm milawa-word-at-of-image
+  (implies (and (unsigned-byte-p 32 w) (true-listp pre))
+           (equal (milawa-word-at
+                   (frozen-z (append pre (append (mvm-word-to-bytes w) rest))
+                             sp pc clen status result)
+                   (len pre))
+                  w))
+  :hints (("Goal"
+           :in-theory (disable nth)
+           :use ((:instance nth-of-append-len (a pre) (b (append (mvm-word-to-bytes w) rest)) (i 0))
+                 (:instance nth-of-append-len (a pre) (b (append (mvm-word-to-bytes w) rest)) (i 1))
+                 (:instance nth-of-append-len (a pre) (b (append (mvm-word-to-bytes w) rest)) (i 2))
+                 (:instance nth-of-append-len (a pre) (b (append (mvm-word-to-bytes w) rest)) (i 3))
+                 (:instance sum-of-bytes-is-word (w w))))))
+
+; The induction the remaining bridge needs: the prefix grows by one word's bytes
+; exactly as the word list shrinks, and (len pre) is returned in the base case
+; only to keep PRE from being an irrelevant formal.
+(defun bridge-induct (pre ws)
+  (declare (xargs :measure (len ws)))
+  (if (consp ws)
+      (bridge-induct (append pre (mvm-word-to-bytes (car ws))) (cdr ws))
+    (len pre)))

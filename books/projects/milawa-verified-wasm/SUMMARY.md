@@ -953,22 +953,29 @@ rule the fuel-decreasing successor would loop, which is the same lesson as
 
 1. **The readback of the stopped store.**  The frozen path's clock and final
    configuration are proved, and the five GLOBALS read back by evaluation
-   (`frozen-globals-read-back`).  The sixth clause -- the stack words -- is
-   open, and the obstruction is now measured rather than guessed.
-   `milawa-words` walks the memory an index at a time (`(nth a b)`,
-   `(nth (+ 1 a) b)`, ...) while `mvm-image-words` consumes four bytes a step
-   (`car`/`cadr`/`caddr`/`cadddr`, then `cddddr`).  The bridge needs a shift
-   rule `(nth (+ k a) b) = (nth k (nthcdr a b))`; stated as a rewrite rule it
-   does not terminate, and `:brr` gives the reason: ACL2's arithmetic matcher
-   binds `a = 0` and applies the rule to its own right-hand side, turning
-   `(nthcdr 4 X)` into `(nthcdr 4 (nthcdr 0 X))` forever (an 8-line repro is in
-   the run that found it).  Writing the shift with `cddddr` on the right avoids
-   that self-match for the four-byte step, but the per-byte shifts need the
-   same treatment.  The shape that should work is `memory.lisp`'s: a step rule
-   about the append form of the image, the byte-level recogniser disabled, and
-   forward chaining -- i.e. prove the readback about
-   `(append (mvm-stack-image stack) rest)` and let the region lemmas do the
-   work, rather than fighting `nth`/`nthcdr`.  When it lands,
+   (`frozen-globals-read-back`).  The stack words are in progress, and the
+   machinery for them is proved in `wasm3/frozen.lisp`:
+
+   - `nth-of-append-len`: `(nth (+ i (len pre)) (append pre b)) = (nth i b)`,
+     proved through NTHCDR rather than by unfolding NTH at a symbolic index
+     (NTH's definition recurses on the index, so the direct route diverges);
+   - `sum-of-bytes-is-word`: the byte sum `MILAWA-WORD-AT` computes --
+     `(loghead 8 w)`, `(loghead 8 (logtail 8 w))`, ... with weights `256^i` --
+     is `w` for a 32-bit word, through `logapp` and the round trip
+     `MVM-BYTES-TO-WORD-OF-WORD-TO-BYTES`;
+   - `milawa-word-at-of-image`: the per-word read -- at offset `(len pre)`, the
+     abstract reader on `(append pre (mvm-word-to-bytes w) rest)` is `w`.
+
+   What remains is the induction that puts them together over a word list.
+   Its step needs the hypothesis at the SHIFTED prefix
+   `(append pre (mvm-word-to-bytes (car ws)))`, so the induction scheme must
+   shift the prefix with the list (`bridge-induct` in the book is that
+   scheme); the work left is making the scheme's hypotheses line up with the
+   append associativity and the `(len ...)` arithmetic.  One hazard to keep in
+   mind: the NTH/NTHCDR shift facts are `:rule-classes nil` on purpose.  As
+   rewrite rules they loop, because ACL2's arithmetic matcher binds `a = 0` and
+   applies a rule about `(+ 4 a)` to its own right-hand side (measured with
+   `:brr`; an eight-line repro is what found it).  When this lands,
    `frozen-path-ten` plus that bridge is `milawa-step-check` for every
    non-running status, the first path of the sixteen.
 2. **L1 for the other fifteen paths.**  The frozen path is one of sixteen; each

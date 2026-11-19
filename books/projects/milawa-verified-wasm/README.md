@@ -481,14 +481,15 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 1. **The readback of the stopped store.**  The frozen path's clock and final
    configuration are proved, and the five globals read back
-   (`frozen-globals-read-back`).  The stack words do not yet: `milawa-words`
-   decodes an index at a time while `mvm-image-words` consumes four bytes a
-   step, and the shift rule that joins them loops as a rewrite rule -- ACL2's
-   arithmetic matcher binds `a = 0` and applies it to its own right-hand side
-   (measured with `:brr`).  The shape that should work is the memory
-   correspondence's: state the readback over `(append (mvm-stack-image stack)
-   rest)`, use a step rule about the append form, disable the byte recogniser,
-   and let forward chaining supply its facts.
+   (`frozen-globals-read-back`).  The stack words are in progress: the machinery
+   is proved in `wasm3/frozen.lisp` -- the read at a prefix boundary
+   (`nth-of-append-len`), the byte sum (`sum-of-bytes-is-word`), and the
+   per-word read (`milawa-word-at-of-image`) -- and what remains is the
+   induction over a word list, whose step needs its hypothesis at the shifted
+   prefix (`bridge-induct` is that scheme).  The NTH/NTHCDR shift facts are
+   `:rule-classes nil` on purpose: as rewrite rules they loop, because ACL2's
+   arithmetic matcher binds `a = 0` and applies them to their own right-hand
+   sides (measured with `:brr`).
 2. **L1 for the other fifteen paths**: the same recipe as the frozen path, and
    the clock is already measured per opcode.  The branch paths all enter a block
    and then a call, so their links are the frozen path's plus `calls.lisp`.
