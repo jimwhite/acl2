@@ -465,6 +465,29 @@ head-instruction lemma for a flat config (`step/r-ctxt-instrs` on
 `(:;% z (cons instr rest))`), and the `%size`/`acl2-count` facts that discharge
 those `(< 21 (+ 27 (acl2-count f)))` side conditions -- what `size.lisp` began.
 
+**Where the first link actually stops now.**  Driving the whole thing through
+`gen_chain.py` with the frame pinned to `(milawa-callee-frame 6)` and the inner
+context pinned to `(list :|%;%| (car (mvm-abs-z-abstract ...)) (milawa-callee-frame 6))`
+moved the stall one level *up*: the obligation is now
+
+```lisp
+(w3t::step/r-ctxt-instrs (:;% Z ((:FRAME_ 1 F ((:LABEL_ 1 nil BODY))))))
+```
+
+with a *concrete* frame `F`, where `Z` is a variable it proves in 19 steps.  The
+reason is `%SIZE`: at `k = 0` the search wraps the frame itself and asks whether
+`(%SIZE (nth 2 (list :;% z instr-star)))` is less than `(%SIZE (nth 2 a0))`, and
+with `instr-star` produced as `(take 1 (nthcdr 0 instrs))` the two are equal in
+value but not syntactically equal -- so ACL2 has to do arithmetic on
+`acl2-count`s to see that the strict inequality fails.  That is precisely
+`acl2-count-of-take` and `acl2-count-of-nthcdr`, which `size.lisp` already has;
+what is missing is the obligation being stated in a shape those rules fire on.
+
+So the remaining work for the first link is now three named things, in order:
+(1) the `acl2-count`/`%size` step that makes the search's measure comparison go
+through, (2) then the link itself, (3) then the same generator extended to the
+body's other instructions.  Nothing about it is open-ended any more.
+
 ## Bodies must be literals, not terms
 
 The next thing tried was the chain's first link, stated compactly:
