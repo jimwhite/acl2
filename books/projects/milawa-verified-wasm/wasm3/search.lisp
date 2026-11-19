@@ -76,7 +76,17 @@
                                                            (list :relop (list :i32) (list :ne))))))))))
 
 ; ---------------------------------------------------------------------------
-; The third position of function 6's body.
+; The second position of function 6's body, which the search reaches at k = 0.
+;
+; At this position the instruction list is `(v1 v2 (:relop ...) rest)` and
+; `step/prefix7` answers 2 -- because a `(:CONST ...)` reads as a value whether
+; it is a pushed operand or an instruction that has not run yet.  The search
+; then tries k = 2 (a lone comparison, nil), k = 1 (one operand, nil) and
+; succeeds at k = 0, where the slice is the three elements `(v1 v2 (:relop))`
+; and the leading values are empty.  So the first two positions of this body
+; are k = 0 and k = 0, not k = 0 and k = 1 -- a fact only the walk made
+; visible, and the reason an earlier `flat-body-6-second` in chain.lisp was
+; vacuous: it assumed the step happened at k = 1 on a lone comparison.
 ; ---------------------------------------------------------------------------
 
 ; The instruction's list at that point: the status the first instruction read,
@@ -90,7 +100,7 @@
 ; The search tries k = 2, then k = 1 (both nil, by the two facts above), and
 ; succeeds at k = 0 with the whole slice `(v1 v2 i3)`; the leading values are
 ; empty, so the search appends the instruction's result to `rest`.
-(defthm flat-body-6-third
+(defthm flat-body-6-second
   (implies (and (consp rest)
                 (true-listp rest)
                 (true-listp val)

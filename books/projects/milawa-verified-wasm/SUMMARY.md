@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (28 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (30 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -549,7 +549,10 @@ body's other instructions.  Nothing about it is open-ended any more.
 | `frame-body-6-general` | 6,861,519 | a step inside a frame at an arbitrary store |
 | `step-nil-on-a-lone-relop` | 12,860 | a comparison with no operands is not stepped |
 | `step-nil-on-a-relop-with-one-value` | 17,475 | nor with one |
-| `flat-body-6-third` | 69,354 | the third position: two operands consumed |
+| `flat-body-6-second` | 69,354 | the second position: two operands consumed |
+| `step-in-label-body-6-second` | 1,525,484 | the same inside a label |
+| `step-in-frame-body-6-second` | 5,143,242 | the same inside a frame |
+| `step-body-6-second` | 443,329 | **the second link**: two instructions of the body, verified |
 
 9,394,852 prover steps in **10.9 seconds**.  The largest proof in the project and
 one of the cheapest to run; the ratio is worth keeping in mind before reading a big
@@ -581,6 +584,41 @@ first.**
    about `append` and the label level runs to 48.6M steps without finishing; with it
    written as `(cons (list :const (list :i32) status) (cdr *body-6*))` the same
    statement is 487,458 steps.
+
+## Two consecutive links, and a lemma that was quietly useless
+
+`wasm3/links.lisp` is new and it carries the **second link**: one more step of
+function 6's body from the configuration the first link leaves behind.  Together
+with `step-body-6-first` the chain now advances two instructions --
+`(:GLOBAL.GET 3)` and the comparison's two operands -- with the store, the frame
+and the label carried through.  Same recipe at each position, proved twice:
+
+```
+flat   -- which instruction runs, and what the search hands to `step`   (search.lisp)
+label  -- the same step inside a label, re-wrapped                      1,525,484
+frame  -- the same step inside a frame, re-wrapped                     5,143,242
+link   -- the three composed                                              443,329
+```
+
+**The lemma that was quietly useless.**  An earlier `flat-body-6-second` stated the
+second position with the inner step `(step (:;% z '((:const (:i32) 1))))`.  That
+inner step is NIL -- a slice of one instruction with nothing before or after it is
+refused by the search -- so the implication was **vacuously true**: it proved, and
+it could never be applied.  A vacuous theorem is worse than a missing one, because
+it looks like progress and stays in the tree.
+
+What found it: `make walk --full` showed `step/prefix7` answers **2** at the second
+position, because a `(:CONST ...)` reads as a value whether it is a pushed operand
+or an instruction that has not run yet.  The search then tries k = 2, k = 1 (both
+nil, by `search.lisp`'s two failure facts) and succeeds at **k = 0** with the slice
+`(v1 v2 (:relop ...))`.  So the first two positions of this body are k = 0 and
+k = 0, not k = 0 and k = 1 -- and the real lemma is the one that was misnamed
+`flat-body-6-third` (now `flat-body-6-second` in `search.lisp`), the vacuous one is
+deleted.
+
+Two lessons worth keeping: **a theorem whose hypothesis can never be satisfied is a
+bug**, and the way to catch one is to measure the inner step it assumes rather than
+admiring that it proved.
 
 **The third position, and what it took.**  `wasm3/search.lisp` is new: the two
 *failure* facts the third position needs, which nothing in the tree had --
