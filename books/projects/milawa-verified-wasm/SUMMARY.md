@@ -479,15 +479,28 @@ gap is now a shape mismatch rather than a capability:
   :hints (("Goal" :use ((:instance (:definition w3t::step/r-ctxt-frame) ...)))))
 ```
 
-reaches 525,064 prover steps and stops on `(step/r-ctxt-instrs cfg)` where `cfg`'s
-instruction list is `((BODY))` -- a list whose single element is the body.  That is
-one level of nesting away from what the lemma writes, which means the intermediate
-configuration my hand-written `:definition` instance describes is not the one the
-descent actually produces.  Guessing those nested configurations by hand has now
-cost several rounds; the fix is to stop guessing and *derive* them: prove the
-descent as a chain of one-step lemmas (`(equal (step C0) (step C1))`, then
-`(equal (step C1) (step C2))`, ...) and let each `C(i+1)` be read out of a failed
-goal rather than written down in advance.  That is the generator's next job.
+reaches 525,064 prover steps and stops on `(step/r-ctxt-instrs cfg)` where `cfg`
+is the FLAT configuration `(:;% zi BODY)` -- the body, as a literal.  (I first read
+the goal as `((BODY))`, one level out; recounting the parentheses, the quoted list
+is the body itself.  Worth recording because the misreading would have sent the next
+attempt looking for a nesting bug that is not there.)
+
+So the descent gets all the way down to the flat configuration, and what fails there
+is that the head rule does not fire on it.  The reason is a genuine tension between
+two things this project has already found separately:
+
+* the body has to be a **literal** for the search and the `%size` comparisons to
+  compute (that was established much earlier, and it is why `gen_chain.py` exists);
+* a rewrite rule whose left-hand side contains `(cons instr rest)` **cannot match a
+  quoted constant**, because the rewriter treats `(quote ...)` as an atom rather
+  than decomposing it into cons structure.
+
+Which means the general rule and a literal body are, for this purpose,
+incompatible -- and the resolution is the one that already worked: state the flat
+step as an **instance** at each position, with the literal body written out, and
+give it the `(:definition ...)` instances the earlier 138,429-step proof used.  That
+is exactly what `gen_chain.py` is for, and it is now a known-good target rather than
+an open question.
 
 Everything else the chain needs is proved and in the library: the frame descent
 (`:definition` instance), the two nil-ness rules for a lone label and a lone frame,
