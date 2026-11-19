@@ -967,6 +967,16 @@ through `nthcdr`, which is what made `milawa-words-of-word-list-image` go.
    the clock composition, and the readback's append-form route.  The branch
    paths enter a block and then a call, so their links are the frozen path's
    plus `calls.lisp`'s.
+
+   `make walk --value 1` gives the running branch's first steps, and they are
+   a shape the frozen path does not have: after the three status-test steps the
+   `:IFELSE` takes the ELSE branch, whose body is NIL, so step 4 makes an empty
+   `(:LABEL_ 0 NIL NIL)`, step 5 dissolves it, step 6 splits `(:CALL 3)` into
+   `(:REF.FUNC_ADDR 3)` and `(:CALL_REF ...)`, and step 7 enters function 3's
+   frame.  Every one of the fourteen running paths starts this way, so this
+   five-step prefix (the three frozen steps with value 0, the empty block and
+   its dissolution, the call split and its entry) is the shared head to prove
+   before the per-opcode dispatch.
 2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a "re-entry" composition rather than one long `STEPS/%FUEL`; the
    engine's `ENGINE-RESULT-IS-SPEC-RESULT` packaging (`wasm-acl2` `engine/`) is
