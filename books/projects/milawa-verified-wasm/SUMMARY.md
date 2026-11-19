@@ -402,7 +402,13 @@ with the body opaque the search has nothing to work with.
 Compare the same statement with the body written out as a literal: layers 1-5 all
 proved that way, cheaply.
 
-So the chain's lemmas must carry **literal** bodies.  That is not a hardship -- it is
+So the chain's lemmas must carry **literal** bodies.  (And having built the
+generator — `harness/gen_chain.py`, which lifts function 6's body out of
+`state.lisp` — the first literal-body link *still* stalls at the same
+`STEP/R-CTXT-INSTRS` question.  So the literal is necessary and not yet sufficient:
+what is missing is a way to tell ACL2 that the rule does not apply, and
+`no-ctxt-instrs-on-a-lone-label-general` is not matching the term ACL2 produces.
+That is the next thing to fix, and it is narrow: one rewrite rule's LHS.)  That is not a hardship -- it is
 a generated artifact, exactly as `state.lisp` and `module.lisp` are: `harness/`
 should grow a generator that reads the module's bodies out of the pinned store and
 emits one lemma per instruction, at its static stack height, with the literal body
