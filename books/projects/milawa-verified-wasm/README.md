@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Twenty-eight books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Thirty books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes well under a minute; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -43,7 +43,9 @@ any book in the tree has been skipped.
 | The instruction library the chain is assembled from: seven layers, `step_pure` and `step_read` lemmas, the context rules, calls, returns | **proved** (`wasm3/instructions.lisp` … `wasm3/returns.lisp`) |
 | The body of function 6 as a literal, with its first instruction stepped — the bottom of the chain, generated | **proved** (`wasm3/chain.lisp`) |
 | A whole `step` of a one-instruction configuration, and the head rule in three forms — the general one taking the instruction's own step as a hypothesis | **proved** (`wasm3/head.lisp`) |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — statement fixed and validated on all 16 paths; the descent's bottom is proved, the per-position chain lemmas are next |
+| The search's failure facts: an instruction without its operands is not stepped | **proved** (`wasm3/search.lisp`) |
+| The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — two of the nine steps of the frozen path are proved and compose; the next one enters a block, which needs the general context-descent lemma |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
@@ -60,11 +62,11 @@ lint: 28 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 28 book(s))
---- every book has a certificate           (28 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 30 book(s))
+--- every book has a certificate           (30 books, all certified)
 
 ===== summary =====
-books certified:  28
+books certified:  30
 corpus examples:  10
 ```
 
@@ -441,16 +443,14 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 ## Next steps, in order
 
-1. **The chain, one position at a time.**  L1 for a whole program is a composition
-   of one-instruction steps; `wasm3/head.lisp` proves the bottom of that descent
-   and the per-position instance lemmas are what remains.  They must be
-   *instances* with the literal body written out (see "What we learned" on quoted
-   constants), and the intermediate configurations have to be read out of failed
-   goals rather than written down in advance.  Then join them with the call and
-   return lemmas into the 9-step theorem that matches the measured clock for the
-   frozen path.
-2. **L1, symbolic**, for the other fifteen paths: the clock is known per opcode,
-   so these are the same shape as the frozen one.
+1. **The block step.**  Step 3 of the frozen path leaves
+   `(:BLOCK (:_RESULT NIL) ((:GLOBAL.GET 3) (:RETURN)))` at the head of the label
+   body, and the semantics has **no `step/r-ctxt-block`** -- blocks are stepped by
+   the general context search.  So this link needs the general context-descent
+   lemma rather than another instance of the per-position recipe.  Then the
+   `:RETURN` steps and the call join the nine steps into the L1 theorem.
+2. **L1 for the other fifteen paths**: same recipe, and the clock is already
+   measured per opcode.
 3. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a re-entry composition rather than one long `STEPS/%FUEL`.
 4. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler

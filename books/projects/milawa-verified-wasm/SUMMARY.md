@@ -37,6 +37,9 @@ flowchart TB
 | `machine/mvm.lisp` | `MVM-STEP`/`MVM-RUN`: the ACL2 model of the module, 32-bit words, status protocol.  A stopped machine is a fixed point; spending a budget in two instalments is spending it at once; **fuel monotonicity** — once it has stopped, a larger budget changes nothing |
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
+| `wasm3/links.lisp` | **the links**: the second step of function 6's body at the flat, label and frame levels, plus `step-body-6-two`, which steps the machine twice and shows the two links genuinely compose |
+| `wasm3/search.lisp` | the search's **failure** facts (an instruction missing its operands is not stepped) and the second body position; the book that explains why the search finds an instruction to run at k = 0 every time in this body |
+| `wasm3/size.lisp` | `%SIZE` is `acl2-count` behind an `mbe`, plus the monotonicity the context rules' measure conditions need -- the bridge every descent lemma rests on |
 | `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
 | `wasm3/head.lisp` | **the assembly layer**: a whole `step` of a one-instruction configuration (`step`, `step/r-read`, and the three forms of the head rule, the most general of which takes the instruction's own step as a hypothesis), the abstract store's reconstruction from its two halves, and the one piece of list arithmetic the semantics' search needs |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
@@ -49,6 +52,7 @@ flowchart TB
 | `wasm3/symbolic.lisp` | the abstraction a *symbolic* proof wants: the same store with the memory bytes a variable, the two lookups proved (field lookup on symbolic leaves, and the memory reading back as given), and the layering the instruction library follows |
 | `wasm3/abs.lisp` | the abstraction itself: `MVM` state → entry configuration of a call to the exported `STEP`, through the spec's own `$WITH_MEM`/`$WITH_GLOBAL`, and the inverse observations. **Sixteen theorems, one per path through the module** — every opcode, every abort, both frozen statuses — each giving the exact clock and the fact that what the semantics stopped on reads back as `MVM-STEP` |
 | `wasm3/l1.lisp` | the certified semantics executes the artifact: entry configuration is a call to function 6 with no arguments, `STEP` applies and is single-valued, three steps apply, one step enters the frame |
+| `wasm3/bytes.lisp`, `module.lisp`, `state.lisp` | **generated** from the `.wasm`: the memory image, the module record, and the pinned store and frame.  Scripted rather than proved, because decode and instantiate are `:program` mode |
 | `wasm3/decode.lisp` | the artifact decodes completely and instantiates with no externs (scripted, since the decoder and the instantiator are `:program` mode); the module is pinned as a logic constant; its shape, export names, and the fact that `STEP` is function 6 are theorems |
 
 ## The example corpus
@@ -878,34 +882,37 @@ The induction then finishes in 0.48 s.
 
 ## What is next, in order
 
-1. **The chain, one position at a time.**  `gen_chain.py` now has a known-good
-   target: for each position of function 6's body, an instance lemma of the shape
-   that already proved at 138,429 steps (literal body written out, `:definition`
-   instances for `step/r-ctxt-instrs` and `step/search21`), because a rewrite rule
-   with `(cons instr rest)` cannot match the quoted literal the search needs.  The
-   intermediate configurations must be *read out of failed goals* rather than
-   written down in advance -- guessing them has cost several rounds.  Then join
-   them with `step-call-enters-frame` (layer 6) and the two return lemmas
-   (layer 7) into the 9-step theorem that matches `abs.lisp`'s clock for the
-   frozen path.
-2. **L1, symbolic**: the sixteen paths of `abs.lisp` generalised to symbolic
-   state.  The clock is already known per opcode, and `head.lisp` has removed the
-   bottom of the descent (the head instruction) from this problem, so the shape is
-   the per-opcode position lemmas plus the frozen-status and off-the-end cases.
+1. **The block step, and it is the first one that is not routine.**  The walk says
+   step 3 of the frozen path leaves `(:BLOCK (:_RESULT NIL) ((:GLOBAL.GET 3) (:RETURN)))`
+   at the head of the label body -- the `:IFELSE` rewrote itself into a block.  There
+   is **no `step/r-ctxt-block`** in the semantics: blocks are stepped by the general
+   context search, so this needs the *general context-descent lemma*, the same law
+   that timed out at 400 s early in this project.  What is different now is that the
+   tools exist to attack it: `make walk` for the shapes, `search.lisp`'s failure
+   facts for the slices the search rejects, and the five-rule recipe for composing
+   whatever comes out.  Then the `:RETURN` steps (`returns.lisp`, layer 7) and the
+   call (`step-call-enters-frame`, layer 6) join all nine steps to `abs.lisp`'s
+   entry configuration.
+2. **L1 for the other fifteen paths.**  The frozen path is one of sixteen; each has
+   its own body positions, and the clock is already measured per opcode in
+   `abs.lisp`.  The recipe is the same, so this is volume rather than research --
+   except where a path enters a block, which is item 1's question again.
 3. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a "re-entry" composition rather than one long `STEPS/%FUEL`; the
    engine's `ENGINE-RESULT-IS-SPEC-RESULT` packaging (`wasm-acl2` `engine/`) is
    the reference, not a drop-in.
 4. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
-   untrusted — L3 is what makes that acceptable.
+   untrusted -- L3 is what makes that acceptable.
 5. Conses, symbols, environments and the heap in the module and the model; then
    the whole `milawa-init` kernel, and one lemma per `defun` against
    `ACL2/logic/`.
 
-## Tooling, and the two mistakes it prevents
+## Tooling: three tools, each from a mistake
 
 `make check` runs six stages now: `lint`, the books, the pinned-module check, the
-corpus, the no-skips litmus, and the "every book has a certificate" check.
+corpus, the no-skips litmus, and the "every book has a certificate" check.  Beyond
+it there are three scripts, each of which exists because the same error kept
+happening: `make lint`, `make experiment` and `make walk`.
 
 `make lint` reads parentheses the way ACL2's reader does -- skipping `;` comments,
 `#| ... |#` blocks, `"..."` strings and `|...|` escaped symbols -- and reports when
@@ -922,12 +929,33 @@ resolves against the working directory and a wrong `cd` silently loads nothing; 
 a diverging proof with no timeout just sits.  Both happened repeatedly while
 building the chain, and the summary line makes two runs comparable.
 
+### `make walk`, and the two lemmas it caught
+
+`make walk` iterates `step` from the configuration a call leaves behind and prints
+the shape of each step; `--full` prints whole instruction lists.  It is the tool
+that made the chain tractable, and it is also the tool that catches a *vacuous*
+lemma: a statement whose hypothesis can never hold is TRUE, provable, and inert, so
+it looks like progress and stays in the tree.  Two of these were caught here --
+
+* `flat-body-6-second` originally assumed the second position is stepped with the
+  slice `((:const (:i32) 1))`.  The walk measured `step/prefix7` = 2 there, because
+  a `(:CONST ...)` reads as a value whether it is a pushed operand or an instruction
+  that has not run, so the step happens at k = 0 with `(v1 v2 (:relop ...))`.  The
+  old lemma could never apply, and it is deleted.
+* the general `flat-with-one-value` form (value and instruction both symbolic) does
+  not prove and diverges; the walk shows why, because `step/prefix7` cannot decide
+  a symbolic head.
+
+The discipline that follows: **before believing a per-position lemma, walk the
+position and check the inner step the lemma assumes**.  Admiring that it proved is
+how a vacuous lemma survives.
+
 ## Reproducing
 
 ```sh
 make -C books/projects/milawa-verified-wasm/milawa-lisp ACL2=$ACL2   # 7 books, seconds
-make -C books/projects/milawa-verified-wasm/machine     ACL2=$ACL2   # 3 books, seconds
-make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # 7 books, needs the pin
+make -C books/projects/milawa-verified-wasm/machine     ACL2=$ACL2   # 4 books, seconds
+make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # 19 books, needs the pin
 ```
 
 The `wasm3/` books depend on `wasm-acl2`, pinned at `7f96c89` and cloned (not
