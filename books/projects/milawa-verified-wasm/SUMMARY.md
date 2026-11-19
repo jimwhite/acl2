@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (22 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (23 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -38,6 +38,7 @@ flowchart TB
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
+| `wasm3/context.lisp` | **layer 4**: the first context rule — a step inside a `:LABEL_` is a step of the body, re-wrapped; the composition law the library rests on |
 | `wasm3/frames.lisp` | **layer 3**: `local.get` of all four locals with the frame symbolic — the layer every opcode's operand load goes through |
 | `wasm3/reads.lisp` | **layer 2**: `global.get` of all five globals in the abstract store — the first place the store is symbolic in a proof |
 | `wasm3/instructions.lisp` | **layer 1 of the instruction library**: ten `STEP_PURE` lemmas with symbolic values — five i32 binops, four comparisons, the zero test — stated at the static value count so the rule chain evaluates; the first place here where a symbolic state is stepped rather than evaluated |
@@ -250,7 +251,7 @@ rather than evaluating it, because evaluating it needs `(STEP <inner config>)`, 
 the inner configuration carries the symbolic store, so `STEP/SEARCH21`'s walk down
 the instruction list cannot bottom out.
 
-### Layer 4, and the lever it needs
+### Layer 4: the context rules
 
 The context rules are where the proof first reasons about *nesting*: a step inside a
 `:LABEL_` or `:FRAME_` admin is a step of the whole configuration.  Measured, on the
@@ -274,11 +275,21 @@ open the definition unless the measure provably decreases at each unfolding — 
 `enable` is the wrong lever entirely, and no amount of it helps.
 
 The lever is **`:expand`**: force one unfolding of the rule function for the specific
-term, let its concrete guards reduce (they are about a concrete instruction list),
-and repeat for the search function beneath it.  `wrt::%size` is `acl2-count` behind
-`mbe` and disabled, which is what `size.lisp` supplies.  So layer 4 is a cascade of
-`:expand` hints, one per level of nesting — mechanical, but with no shortcut, and
-worth writing the first one carefully because the rest follow its shape.
+term, let its concrete guards reduce, and expand the level beneath it with a `:free`
+pattern.  `wrt::%size` is `acl2-count` behind `mbe` and disabled, which is what
+`size.lisp` supplies.
+
+**It works.**  `wasm3/context.lisp` proves two lemmas:
+
+- `no-ctxt-instrs-on-a-lone-label` — the *negative* fact that has to come first: on
+  a configuration whose only element is a label, `ctxt-instrs` does not apply.  242
+  prover steps, two `:expand` hints.
+- `step-in-label-local-get` — the context lemma itself: a step inside a `:LABEL_` is
+  a step of the body, re-wrapped.  61,409 prover steps.
+
+That second one is the composition law the instruction library rests on: it is what
+lets a chain of single-instruction lemmas be lifted out of the nesting.  The other
+three context rules have the same shape; `ctxt-frame` is the one a call needs.
 
 ### The instruction library, cut at the joints
 
