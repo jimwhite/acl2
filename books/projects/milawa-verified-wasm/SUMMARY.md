@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (24 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (25 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -38,6 +38,7 @@ flowchart TB
 | `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
+| `wasm3/returns.lisp` | **layer 7**: returning — out of the label, then out of the frame, leaving the callee's result |
 | `wasm3/calls.lisp` | **layer 6**: the call rule — the entry configuration steps to a frame-and-label admin around the artifact's own code, and the locals land zero-initialised |
 | `wasm3/calls.lisp` | **layer 6**: the call rule — the entry configuration steps to a frame-and-label admin around the artifact's own code, with the locals zero-initialised |
 | `wasm3/context.lisp` | **layers 4 and 5**: the context rules — a step inside a `:LABEL_` and inside a `:FRAME_` are steps of the body, re-wrapped; the composition law the library rests on |
@@ -327,6 +328,30 @@ three context rules have the same shape; `ctxt-frame` is the one a call needs.
 That is the whole entry path: layers 1-3 say what the body's instructions do, 4-5
 lift a step out of the label and frame, and 6 puts the frame there in the first
 place.
+
+### Layer 7: returning, proved
+
+`wasm3/returns.lisp`.  Both return rules are in `STEP_PURE`, because both
+manipulations happen inside the *instruction list* -- the frame and label are
+admins that appear in it, so unwrapping them needs no store at all.  Traced on the
+shape a call produces:
+
+```
+((:FRAME_ 1 F ((:LABEL_ 1 nil ((:CONST 1) (:RETURN))))))   start
+((:FRAME_ 1 F ((:CONST 1) (:RETURN))))                     label gone
+((:CONST 1))                                               frame and return gone
+```
+
+- `step-pure-return-out-of-label` — the label is dropped, body kept whole.
+- `step-pure-return-out-of-frame` — frame and `:RETURN` both go, leaving the
+  callee's result.  The frame's arity is pinned to 1, which is the module's own
+  arity (`step` returns one i32).
+
+Three hypotheses emerged one at a time from ACL2's checkpoints rather than from
+reading the rule: the label's type field is a `true-listp`, and the returned value
+is `(unsigned-byte-p 32 x)` — which is *exactly* the rule's own guard,
+`(and (integerp x) (<= 0 x) (<= x 4294967295))`, and also exactly what an i32
+constant is.
 
 ### The instruction library, cut at the joints
 
