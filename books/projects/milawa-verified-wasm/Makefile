@@ -9,6 +9,7 @@
 #   make lint             parentheses and formatting, read the way ACL2 reads them
 #   make experiment FILE=... [BOOK=...] [DIR=wasm3]
 #                         run a scratch ACL2 script with a timeout and a summary
+#   make walk             ask the semantics what each step of the frozen path is
 #   make clean
 #
 # The pieces were built one at a time and each has its own Makefile; this file
@@ -32,7 +33,7 @@ PROJECT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 BOOKDIRS := milawa-lisp machine wasm3
 WASM_MARKER := ../../../.wasm-acl2/translate/gen/wasm-3.0/wasm3.cert
 
-.PHONY: all check books examples module-check no-skips lint experiment complete clean help
+.PHONY: all check books examples module-check no-skips lint experiment walk complete clean help
 
 all: check
 
@@ -108,6 +109,16 @@ experiment:
 	@if [ -z "$(FILE)" ]; then echo "usage: make experiment FILE=<script.lsp> [BOOK=<book>] [DIR=<dir>]"; exit 2; fi
 	@ACL2=$(abspath $(ACL2)) $(PROJECT)/harness/acl2.sh \
 	  --dir $(or $(DIR),wasm3) --book "$(BOOK)" --script "$(FILE)" --timeout $(or $(TIMEOUT),900)
+
+# Ask the semantics what the next few steps are.  `step` is a logic function, so
+# on a concrete configuration ACL2 will just compute it: this prints the shape of
+# every step from the configuration a call leaves behind, which is the
+# specification of each chain lemma rather than a guess.  STEPS=12 to go further,
+# VALUE=1 to run a different branch.
+STEPS ?= 9
+VALUE ?= 3
+walk:
+	@python3 $(PROJECT)/harness/walk.py --steps $(STEPS) --value $(VALUE)
 
 # Every .lisp in a book directory must have a .cert next to it.  This exists
 # because it caught a real bug: wasm3/Makefile's BOOKS line had silently lost the

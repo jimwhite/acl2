@@ -69,8 +69,25 @@ corpus examples:  10
 ```
 
 `make help` lists the rest (`books`, `examples`, `module-check`, `no-skips`,
-`lint`, `experiment`, `complete`, `clean`).  A full clean rebuild takes about
-forty seconds.
+`lint`, `experiment`, `walk`, `complete`, `clean`).  A full clean rebuild takes
+about forty seconds.
+
+**`make walk`** asks the semantics what the next steps actually are:
+
+```
+$ make walk
+STEP 0: ok=T len-instrs=1 head=:FRAME_%{%}% zdiff=NIL
+STEP 1: ok=T len-instrs=1 head=:FRAME_%{%}% zdiff=NIL
+...
+STEP 8: ok=T len-instrs=1 head=:CONST zdiff=NIL
+STEP 9: ok=NIL len-instrs=0 head=NIL zdiff=T
+```
+
+`step` is a logic function, so on a concrete configuration ACL2 will simply
+compute it -- which makes the shape of the next step a fact to read off rather than
+guess.  `--full` prints each instruction list, `VALUE=1` runs a different branch.
+This is the tool that unblocked the opcode chain: several attempts failed with a
+hand-written configuration in a hint and no way to know it was wrong.
 
 Two of those targets exist because of mistakes made while building this:
 

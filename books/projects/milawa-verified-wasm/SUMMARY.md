@@ -587,10 +587,38 @@ the "malformed configuration" hypothesis was ruled out instead of chased.  Every
 one of the earlier attempts at these levels had a wrong configuration in a hint and
 no way to know.
 
-**What remains for L1**, and what is now known about it.  The frozen path has been
-walked, not guessed: `step` iterated nine times from the configuration a call leaves
-behind reaches the halted configuration, and the walk says exactly what each step
-looks like --
+**What remains for L1**, and what the walk now says about it.  `make walk` iterates
+`step` from the configuration a call leaves behind and prints the shape of each
+step; `make walk --full` prints the whole instruction list, from which the
+instruction sequence and the stack shape at each step can be read off:
+
+```
+step 0:  body head  (:GLOBAL.GET 3) (:CONST (:I32) 1) (:RELOP ...) ...   is0 = NIL
+step 1:  body head  (:CONST (:I32) status) (:CONST (:I32) 1) (:RELOP ...)  <- value pushed
+step 2:  body head  (:CONST (:I32) result) (:IFELSE ...)                   <- operands consumed
+step 3:  body head  (:BLOCK_%{%}% (:_RESULT ...) ((:GLOBAL.GET 3) (:RETURN)))
+step 4:  body head  (:LABEL_%{%}% ... (:GLOBAL.GET 3) (:RETURN) ...)
+step 8:  head :CONST           -- the frame is gone
+step 9:  stuck                 -- halted
+```
+
+Two things this settles, both of which change the plan:
+
+1. **The first three steps are flat lemmas** -- one instruction, then one value
+   pushed, then two values consumed -- and two of those are already proved
+   (`step-flat-body-6-first`, `flat-body-6-second`).  The pattern is a per-position
+   lemma with the values and the instruction as literals and `rest` symbolic.
+2. **From step 3 the instruction list is no longer a flat body.**  Executing the
+   `:IFELSE` introduces a `:BLOCK_`, and then a nested `:LABEL_`, so the remaining
+   steps are *not* more flat lemmas: they are the block rule and the return rule,
+   which is what layers 4-7 of the instruction library were built for.  Composing
+   those into the chain is a different piece of work from the flat positions, and
+   this is the first time that has been clear.
+
+So the order for L1 is: the remaining flat positions (mechanical, generator
+output), then the block and return steps using `returns.lisp`'s lemmas, then the
+call (layer 6) to join the post-call configuration to the entry configuration
+`abs.lisp` describes.
 
 ```
 step 0..7:  ok=T  instrs = ((:FRAME_ ...))   head = :FRAME_%{%}%   store unchanged
