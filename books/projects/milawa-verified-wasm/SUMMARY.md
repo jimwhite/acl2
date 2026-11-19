@@ -558,13 +558,31 @@ which fixes the right-hand side of the link exactly: the store and frame untouch
 the label's own stack still NIL, and the body's first instruction *replaced* by the
 value it pushed.  No guessing left in the statement.
 
-Where the link now stops: the descent gets to a configuration whose instruction list
-is one level deeper than the flat one `chain.lisp` proves about
-(`((BODY))` rather than `BODY`), so the two do not meet.  The next move is the same
-probe applied one level down -- compute `(step C1)` and `(step C2)` for the
-intermediate configurations the descent produces, and state the link at *those*
-shapes.  That is mechanical now that the tool exists, which is the difference from
-the last several attempts.
+The intermediate levels, probed the same way, are consistent with that:
+
+```
+C1 = (:;% zi ((:LABEL_ 1 NIL BODY)))   ->  ((:LABEL_ 1 NIL (<value> . <rest-of-body>)))
+C2 = (:;% zi BODY)                     ->  (<value> . <rest-of-body>),  z unchanged
+```
+
+so the three levels compose, and `chain.lisp` proves the bottom one.  What is *not*
+yet done is the label level on top of it: that lemma reaches 288,294 prover steps
+and stalls on an obligation
+
+```
+(step/r-ctxt-instrs (:;% . CTXT))
+```
+
+-- note the dotted pair.  That is not a well-formed configuration, so the obligation
+is unprovable, which means the equality I stated does not hold in every case: some
+instantiation of the free variables makes the descent get stuck, and the concrete
+probe does not show it because concrete values never hit that case.  So the next
+move is not another hint but a **case analysis on what makes the descent stick** --
+most likely a degenerate store or frame -- and a hypothesis excluding it.
+
+This is the most precise the diagnosis has ever been, and it is worth writing down
+that the last four attempts all failed on the same obligation while I described it
+differently each time.
 
 ## Bodies must be literals, not terms
 
