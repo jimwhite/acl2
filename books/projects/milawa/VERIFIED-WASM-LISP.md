@@ -113,13 +113,16 @@ for the authoritative status, and its "What we learned" section for the ACL2 and
   and both return rules.  `wasm3/chain.lisp` … `links.lisp` assemble them into
   the first two steps of the exported function's body, at the flat, label and
   frame levels, and prove the two links compose.
-- **The frozen path is proved end to end** (`wasm3/frozen.lisp`).  For a
-  symbolic state whose status is not 1 -- the halted and aborted states -- the
-  certified semantics takes exactly nine steps from the entry configuration to a
-  stopped one, store unchanged: the call, the read, the comparison, the branch,
-  the block, the read inside the block's label, the two returns.  Both halves of
-  the clock are theorems, so this is the symbolic form of `abs.lisp`'s
-  `(milawa-step-check 9 st)` minus the readback.  Two findings changed the plan
+- **The frozen path is done end to end** (`wasm3/frozen.lisp`).  For a symbolic
+  state whose status is not 1 -- the halted and aborted states -- the certified
+  semantics takes exactly nine steps from the entry configuration to a stopped
+  one, store unchanged: the call, the read, the comparison, the branch, the
+  block, the read inside the block's label, the two returns.  Both halves of the
+  clock are theorems, and the readback is `milawa-observations` of the stopped
+  configuration against `(mvm-step st)` -- the stack words go through the append
+  form of the stack image, not through an index.  `frozen-step-check` is
+  `abs.lisp`'s `(milawa-step-check 9 st)` clause for clause with the state
+  symbolic: one of the sixteen paths, and the first.  Two findings changed the plan
   and are recorded in the project's `SUMMARY`: the block is a *read* rule
   (`step_read/split/r-block`), not a context rule, so no general
   context-descent lemma is needed; and a call leaves the *callee's* frame, not

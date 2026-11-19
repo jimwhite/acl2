@@ -1169,7 +1169,7 @@
                  relop-ne-of-status-and-1))))
 
 ;; ---------------------------------------------------------------------------
-;; The readback, halfway: the globals
+;; The readback, the globals
 ;; ---------------------------------------------------------------------------
 
 ; L1's conclusion is MILAWA-OBSERVATIONS on the configuration the semantics
@@ -1177,13 +1177,11 @@
 ; read back by evaluation: the store's :GLOBALS list was built by MILAWA-SET-GLOBALS
 ; from SP PC CLEN STATUS RESULT, and MILAWA-GLOBAL reaches them through the
 ; pinned frame's module vector.  The sixth clause -- the stack words -- is the
-; one that is not here; see the note in SUMMARY.md, "the readback of the stopped
-; store": MILAWA-WORDS walks the memory an index at a time and MVM-IMAGE-WORDS
-; consumes four bytes a step, and relating the two by rewrite rules runs into
-; ACL2's arithmetic matcher (a rule about (NTHCDR (+ 4 A) L) is applied to its
-; own right-hand side with A bound to 0).  That is a statement problem of the
-; same kind MEMORY.LISP solved for the word-list image, and it is the next
-; piece, not a missing fact.
+; harder one and is completed below: MILAWA-WORDS walks the memory an index at
+; a time and MVM-IMAGE-WORDS consumes four bytes a step, so it is proved
+; against the APPEND form of the stack image rather than by shifting an index
+; (the shift rules loop as rewrite rules: ACL2's arithmetic matcher binds
+; A = 0 and applies them to their own right-hand sides).
 (defthm frozen-globals-read-back
   (and (equal (milawa-global (frozen-z bytes sp pc clen status result) 0) sp)
        (equal (milawa-global (frozen-z bytes sp pc clen status result) 1) pc)
@@ -1215,13 +1213,13 @@
 ;     at offset (len pre), the abstract reader on
 ;     (append pre (mvm-word-to-bytes w) rest) is w.
 ;
-; WHAT IS NOT HERE is the induction that puts these together over a word
-; list: MILAWA-WORDS-OF-WORD-LIST-IMAGE.  Its step needs the hypothesis at
-; the SHIFTED prefix (append pre (word-to-bytes (car ws))), so the induction
-; scheme has to shift the prefix with the list (see BRIDGE-INDUCT below), and
-; the remaining work is getting that scheme's hypotheses to line up with the
-; append associativity and the (len ...) arithmetic.  The state of that
-; attempt is recorded in SUMMARY.md, "the readback of the stopped store".
+; and then the induction that puts them together over a word list,
+; MILAWA-WORDS-OF-WORD-LIST-IMAGE, whose step needs the hypothesis at the
+; SHIFTED prefix (append pre (word-to-bytes (car ws))) -- so the induction
+; scheme shifts the prefix with the list (BRIDGE-INDUCT below), and the step
+; is closed by the two append facts below it.  FROZEN-MEMORY-CLAUSE instantiates
+; that at the stack image, and FROZEN-STEP-CHECK is the whole readback:
+; MILAWA-OBSERVATIONS of the stopped configuration against (MVM-STEP st).
 
 (defthm loghead-8-when-byte
   (implies (and (integerp b) (<= 0 b) (< b 256))
@@ -1288,7 +1286,7 @@
                  (:instance nth-of-append-len (a pre) (b (append (mvm-word-to-bytes w) rest)) (i 3))
                  (:instance sum-of-bytes-is-word (w w))))))
 
-; The induction the remaining bridge needs: the prefix grows by one word's bytes
+; The induction the word-list bridge uses: the prefix grows by one word's bytes
 ; exactly as the word list shrinks, and (len pre) is returned in the base case
 ; only to keep PRE from being an irrelevant formal.
 (defun bridge-induct (pre ws)
@@ -1296,3 +1294,108 @@
   (if (consp ws)
       (bridge-induct (append pre (mvm-word-to-bytes (car ws))) (cdr ws))
     (len pre)))
+
+;; ---------------------------------------------------------------------------
+;; The readback, completed: the stack words and MILAWA-OBSERVATIONS
+;; ---------------------------------------------------------------------------
+
+(defthm len-of-append-frozen
+  (equal (len (append a b)) (+ (len a) (len b)))
+  :hints (("Goal" :induct (len a))))
+
+(defthm assoc-of-append-frozen
+  (equal (append (append a b) c) (append a (append b c)))
+  :hints (("Goal" :induct (len a))))
+
+(defthm len-of-word-to-bytes
+  (equal (len (mvm-word-to-bytes w)) 4))
+
+(defthm true-listp-of-append-frozen
+  (implies (true-listp b) (true-listp (append a b))))
+
+; The induction over the word list.  The step is the per-word read for the
+; head, the hypothesis for the tail at the shifted prefix, and
+; MVM-IMAGE-WORDS-OF-APPEND-WORD for the right-hand side; the two append facts
+; above are what let the shifted prefix line up.  The recogniser and the
+; byte-level decoders stay DISABLED, as in memory.lisp: unfolding them brings
+; loghead/logtail into the goal and ACL2 splits on the arithmetic.
+(defthm milawa-words-of-word-list-image
+  (implies (and (mvm-word-list-p ws) (true-listp pre))
+           (equal (milawa-words (frozen-z (append pre (mvm-word-list-to-bytes ws))
+                                          sp pc clen status result)
+                                (len pre) (len ws))
+                  (mvm-image-words (mvm-word-list-to-bytes ws) (len ws))))
+  :hints (("Goal"
+           :induct (bridge-induct pre ws)
+           :in-theory (e/d (mvm-word-list-to-bytes)
+                           (mvm-word-list-p mvm-image-words mvm-word-to-bytes
+                            mvm-bytes-to-word mvm-bytes4-to-word
+                            frozen-z frozen-store mvm-abs-z-abstract
+                            milawa-set-globals store-with-memory mem-record-of)))))
+
+; The sixth clause of MILAWA-OBSERVATIONS, at the stack image.
+(defthm frozen-memory-clause
+  (implies (mvm-word-list-p stack)
+           (equal (milawa-words (frozen-z (mvm-stack-image stack)
+                                          sp pc clen status result)
+                                *mvm-stack-base* (len stack))
+                  (revappend stack nil)))
+  :hints (("Goal"
+           :in-theory (disable milawa-words-of-word-list-image mvm-image-of-stack)
+           :use ((:instance milawa-words-of-word-list-image
+                            (pre nil)
+                            (ws (revappend stack nil)))
+                 (:instance mvm-image-of-stack (stack stack))
+                 (:instance mvm-word-list-p-of-revappend-nil (x stack))))))
+
+; A stopped machine is a fixed point, at the level of MVM-STEP and a status.
+(defthm mvm-step-when-not-running
+  (implies (and (equal (mvm-status st) status) (not (equal status 1)))
+           (equal (mvm-step st) st)))
+
+;; ---------------------------------------------------------------------------
+;; THE FROZEN PATH'S CHECK: the symbolic form of abs.lisp's milawa-step-check
+;; ---------------------------------------------------------------------------
+;
+; Nine fuel spends the nine steps, a tenth reports the stopped configuration,
+; and reading that configuration back gives (MVM-STEP st): the five globals
+; from the readback, the stack words from FROZEN-MEMORY-CLAUSE, and the store
+; unchanged.  The state is symbolic; the hypotheses are the abstraction's
+; definitions of SP, PC, CLEN, STATUS and RESULT from the state, plus the
+; frozen branch's guard.  This is the first of the sixteen paths of abs.lisp
+; with a symbolic state, and it matches that book's CHECK form clause for
+; clause.
+(defthm frozen-step-check
+  (implies (and (unsigned-byte-p 32 status)
+                (not (equal status 1))
+                (mvm-word-list-p (mvm-stack st))
+                (equal sp (* 4 (len (mvm-stack st))))
+                (equal pc (+ *mvm-code-base* (* 4 (mvm-pc st))))
+                (equal clen (len (mvm-code st)))
+                (equal status (mvm-status st))
+                (equal result (mvm-result st)))
+           (and (null (w3t::steps/%fuel 9 (mvm-abs-abstract (mvm-stack-image (mvm-stack st))
+                                                            sp pc clen status result)))
+                (let ((r (w3t::steps/%fuel 10 (mvm-abs-abstract (mvm-stack-image (mvm-stack st))
+                                                                sp pc clen status result))))
+                  (and (consp r)
+                       (null (w3t::step (car r)))
+                       (milawa-observations (cadr (car r)) (mvm-step st))))))
+  :hints (("Goal"
+           :in-theory (disable w3t::step w3t::steps/%fuel
+                               mvm-step mvm-status mvm-pc mvm-stack mvm-result
+                               mvm-code mvm-runningp
+                               mvm-abs-abstract
+                               frozen-z frozen-store mvm-abs-z-abstract
+                               milawa-set-globals store-with-memory mem-record-of)
+           :use ((:instance frozen-path-ten
+                            (bytes (mvm-stack-image (mvm-stack st))))
+                 (:instance frozen-path-nine
+                            (bytes (mvm-stack-image (mvm-stack st))))
+                 (:instance frozen-globals-read-back
+                            (bytes (mvm-stack-image (mvm-stack st))))
+                 (:instance frozen-memory-clause
+                            (stack (mvm-stack st)))
+                 (:instance frozen-step-stuck
+                            (bytes (mvm-stack-image (mvm-stack st))))
+                 (:instance mvm-step-when-not-running (st st))))))

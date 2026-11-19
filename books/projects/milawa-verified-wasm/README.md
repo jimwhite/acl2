@@ -45,8 +45,8 @@ any book in the tree has been skipped.
 | A whole `step` of a one-instruction configuration, and the head rule in three forms — the general one taking the instruction's own step as a hypothesis | **proved** (`wasm3/head.lisp`) |
 | The search's failure facts: an instruction without its operands is not stepped | **proved** (`wasm3/search.lisp`) |
 | The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
-| **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — and the **exact clock** for symbolic state | **proved** (`wasm3/frozen.lisp`) |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — the frozen path is proved (the halted and aborted states, clock and all); the other fifteen paths are open; of the readback, the globals are proved and the stack words are not |
+| **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — the **exact clock**, and the **readback** to `MVM-STEP`: `milawa-step-check`'s conclusion for a symbolic state | **proved** (`wasm3/frozen.lisp`) |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
@@ -463,6 +463,17 @@ lemma per step plus a definition instance, used through `:use`; as a rewrite
 rule the fuel-decreasing successor would loop, which is the same lesson as
 `milawa-run-monotone`.
 
+**A rewrite rule can be applied to its own right-hand side.**  The readback
+needs to shift an index onto a list -- `(nth (+ k a) b) = (nth k (nthcdr a b))`
+and `(nthcdr (+ 4 a) l) = (nthcdr 4 (nthcdr a l))` -- and as rewrite rules they
+do not terminate.  `:brr` showed the mechanism: ACL2's arithmetic matcher binds
+`a = 0` and applies the rule to the constant `4` on its own right-hand side, so
+`(nthcdr 4 X)` becomes `(nthcdr 4 (nthcdr 0 X))` and grows (an eight-line repro
+confirmed it).  Keep such facts `:rule-classes nil` and use them through `:use`,
+and where an index must meet a list, change the statement to the append form:
+`(nth (+ i (len pre)) (append pre b)) = (nth i b)` proved through `nthcdr`, which
+is what let the stack-words readback close.
+
 ## Trust
 
 | Trusted | Why |
@@ -479,25 +490,18 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 ## Next steps, in order
 
-1. **The readback of the stopped store.**  The frozen path's clock and final
-   configuration are proved, and the five globals read back
-   (`frozen-globals-read-back`).  The stack words are in progress: the machinery
-   is proved in `wasm3/frozen.lisp` -- the read at a prefix boundary
-   (`nth-of-append-len`), the byte sum (`sum-of-bytes-is-word`), and the
-   per-word read (`milawa-word-at-of-image`) -- and what remains is the
-   induction over a word list, whose step needs its hypothesis at the shifted
-   prefix (`bridge-induct` is that scheme).  The NTH/NTHCDR shift facts are
-   `:rule-classes nil` on purpose: as rewrite rules they loop, because ACL2's
-   arithmetic matcher binds `a = 0` and applies them to their own right-hand
-   sides (measured with `:brr`).
-2. **L1 for the other fifteen paths**: the same recipe as the frozen path, and
-   the clock is already measured per opcode.  The branch paths all enter a block
-   and then a call, so their links are the frozen path's plus `calls.lisp`.
-3. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
+1. **L1 for the other fifteen paths.**  The frozen path is one of sixteen and
+   is proved end to end for symbolic state; the clock is already measured per
+   opcode in `abs.lisp`, and the recipe is now complete (the callee's store, the
+   frame and label levels, per-position bodies as literals, the search's
+   failures, the return rules, and the clock composition).  The branch paths
+   enter a block and then a call, so their links are the frozen path's plus
+   `calls.lisp`'s.
+2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run
    theorem is a re-entry composition rather than one long `STEPS/%FUEL`.
-4. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
+3. **L3**: `MVM` running compiled code refines `MILAWA-EVAL`, with the compiler
    untrusted.
-5. **The phase-0 experiments from the design document**, which are still open:
+4. **The phase-0 experiments from the design document**, which are still open:
    instrument `+` for its maximum value (does anything exceed `2^30`?) and
    `ftbl` (does the checker ever call a function installed by a `DEFINE`
    event?).  The second one underwrites the whole "no JIT" argument.
