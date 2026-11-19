@@ -78,18 +78,30 @@ rm -f "$driver"
 
 qed=$(grep -c 'Q\.E\.D\.' "$LOG" 2>/dev/null) || true
 errs=$(grep -c 'ACL2 Error' "$LOG" 2>/dev/null) || true
+# TWO FAILURES THAT DO NOT SAY "ACL2 Error".  A HARD ACL2 ERROR (the rewrite
+# call-depth limit, for example) aborts the event but the summary used to count
+# the run as clean, and a script truncated at EOF makes ACL2 exit with status 0
+# and no ACL2 Error at all -- measured, and both were mistaken for progress.
+raw=$(grep -c 'HARD ACL2 ERROR\|Unexpected end of file\|ABORTING from raw Lisp' "$LOG" 2>/dev/null) || true
 qed=${qed:-0}
 errs=${errs:-0}
+raw=${raw:-0}
 steps=$(grep -o 'Prover steps counted:  *[0-9]*' "$LOG" 2>/dev/null |
         sed 's/.*  *//' | awk '{ s += $1 } END { print s + 0 }')
 
 echo "acl2: dir=$DIR book=${BOOK:-none} elapsed=${elapsed}s timeout=${TIMEOUT}s"
-echo "acl2: Q.E.D.=$qed errors=$errs prover-steps=$steps"
+echo "acl2: Q.E.D.=$qed errors=$errs raw-errors=$raw prover-steps=$steps"
 echo "acl2: log=$LOG"
 
 if [ "$status" -eq 124 ]; then
   echo "acl2: TIMED OUT after ${TIMEOUT}s -- the proof was still running"
   exit 124
+fi
+
+if [ "$raw" -ne 0 ]; then
+  # A HARD ACL2 ERROR or a raw Lisp abort: show where it happened.
+  grep -m 3 -A 3 'HARD ACL2 ERROR\|Unexpected end of file\|ABORTING from raw Lisp' "$LOG" | head -20
+  exit 1
 fi
 
 if [ "$errs" -ne 0 ]; then

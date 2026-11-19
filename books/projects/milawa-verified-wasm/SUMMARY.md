@@ -1017,7 +1017,13 @@ tree -- a comment writing an interval as `[0, 2^30)`, whose bare `)` reads as an
 extra close -- and the tree is now clean of both.
 
 `make experiment FILE=... BOOK=...` runs a scratch ACL2 script with the working
-directory, timeout, log path and a one-line summary all fixed.  `include-book`
+directory, timeout, log path and a one-line summary all fixed.
+
+The summary now also counts **raw errors**: a `HARD ACL2 ERROR` (the rewrite
+call-depth limit, say) and a script truncated at end-of-file both leave logs
+with no `ACL2 Error`, so a run that had proved nothing once read
+`Q.E.D.=61 errors=0`.  `raw-errors` is printed and nonzero makes the runner
+fail.  That is the third tool added because of a mistake.  `include-book`
 resolves against the working directory and a wrong `cd` silently loads nothing; and
 a diverging proof with no timeout just sits.  Both happened repeatedly while
 building the chain, and the summary line makes two runs comparable.

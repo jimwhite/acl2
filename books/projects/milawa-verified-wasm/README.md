@@ -110,7 +110,7 @@ the working directory, timeout, log path and summary all fixed:
 
 ```
 acl2: dir=wasm3 book=chain elapsed=4s timeout=900s
-acl2: Q.E.D.=1 errors=0 prover-steps=5
+acl2: Q.E.D.=1 errors=0 raw-errors=0 prover-steps=5
 acl2: log=/tmp/acl2-wasm3-smoke.log
 ```
 
