@@ -353,6 +353,36 @@ is `(unsigned-byte-p 32 x)` — which is *exactly* the rule's own guard,
 `(and (integerp x) (<= 0 x) (<= x 4294967295))`, and also exactly what an i32
 constant is.
 
+### Why the library stays per-instruction
+
+The obvious next move after layers 4-7 is to generalise the context laws: "if the
+body steps to `inner`, the label steps to `inner` re-wrapped", with the body a
+variable.  Measured: **400 s, killed**.  The reason is the same one that shaped the
+whole library: the context rule has to *find* the split point in the instruction
+list (`STEP/PREFIX7`, then `STEP/SEARCH21` walking k down), and with a symbolic body
+that search cannot bottom out — so the rule cannot be shown to apply.
+
+That is not a setback, it settles a design question.  Since the module's bodies are
+**constants of the artifact**, every lemma the chain needs can be stated about a
+concrete instruction list with symbolic *values*, which is exactly the shape layers
+1-3 use and the shape that works.  A general law would be elegant and is not needed:
+the chain is over `(milawa-func-body i)`, and `i` is fixed.
+
+So the opcode theorems are built by specialising, and the work is mechanical: one
+lemma per *instruction of the module's body*, at its static stack height, plus the
+context wrapper from layers 4-7.  The measured clock per opcode (9 for a frozen
+status, up to 101 for SUB) is the number of links in that chain, and it is now
+visible: tracing the frozen path gives exactly
+
+```
+9: ((:FRAME_ 1 F ((:LABEL_ 1 is0 BODY))))     after the call
+8..2: the same shape, stepping inside the label
+1: ((:CONST i32 0) (:RETURN))                 inside the frame
+0: ((:CONST i32 0))                           the value, frame gone
+```
+
+— one call, six steps inside, and two returns.
+
 ### The instruction library, cut at the joints
 
 The residual names the first lemma, and the object is smaller than it looks: the
