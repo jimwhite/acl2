@@ -465,6 +465,34 @@ head-instruction lemma for a flat config (`step/r-ctxt-instrs` on
 `(:;% z (cons instr rest))`), and the `%size`/`acl2-count` facts that discharge
 those `(< 21 (+ 27 (acl2-count f)))` side conditions -- what `size.lisp` began.
 
+## What still separates the head rule from the first link
+
+With the rules above in the theory, the first link is *nearly* mechanical, and the
+gap is now a shape mismatch rather than a capability:
+
+```lisp
+(defthm chain-link
+  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result)
+                          (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract ...))
+                                      (list (list :label_%{%}% 1 nil BODY))))))
+         ...)
+  :hints (("Goal" :use ((:instance (:definition w3t::step/r-ctxt-frame) ...)))))
+```
+
+reaches 525,064 prover steps and stops on `(step/r-ctxt-instrs cfg)` where `cfg`'s
+instruction list is `((BODY))` -- a list whose single element is the body.  That is
+one level of nesting away from what the lemma writes, which means the intermediate
+configuration my hand-written `:definition` instance describes is not the one the
+descent actually produces.  Guessing those nested configurations by hand has now
+cost several rounds; the fix is to stop guessing and *derive* them: prove the
+descent as a chain of one-step lemmas (`(equal (step C0) (step C1))`, then
+`(equal (step C1) (step C2))`, ...) and let each `C(i+1)` be read out of a failed
+goal rather than written down in advance.  That is the generator's next job.
+
+Everything else the chain needs is proved and in the library: the frame descent
+(`:definition` instance), the two nil-ness rules for a lone label and a lone frame,
+the abstract-store reconstruction, and the head rule.
+
 ## The head rule: the load-bearing lemma of the chain
 
 `wasm3/head.lisp` is new and it holds the lemma the whole chain is built on --

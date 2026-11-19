@@ -49,6 +49,15 @@
 
 (include-book "returns")
 
+; The abstract store is a `(:;% store frame)` pair, and the descent through a frame
+; rebuilds that pair from its two halves.  So the two forms have to be known equal
+; or the rules above cannot be applied to what the descent produces.  28,231 prover
+; steps.
+(defthm reconstruct-abs-z
+  (equal (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result))
+                     (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))
+         (mvm-abs-z-abstract bytes sp pc clen status result)))
+
 ; The read rule on its own, which is the second thing `step` tries.
 (defthm step-r-read-of-global-get-3
   (equal (w3t::step/r-read
@@ -140,6 +149,38 @@
                               (cons (list :const (list :i32)
                                           (milawa-global 3 z))
                                     rest)))))
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (cons (list :global.get 3) rest))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (cons (list :global.get 3) rest))
+                            (w3t::%t9 0)
+                            (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (cons (list :global.get 3) rest))))))))
+
+; And the most useful form of all: the instruction's own step left as a
+; hypothesis, with the value it produces a separate variable.  This one composes
+; with `step-of-global-get-3` above by rewriting -- the store and the value both
+; come out of that lemma -- and it is the form the chain uses.
+;
+; It is worth saying why this had to be the shape.  The rule above writes the value
+; as `(milawa-global 3 z)`, which is the honest abstraction, but `milawa-global`
+; does not index the store the way the program does: the store's `:globals` field
+; carries the module's five globals at indices 5..9, so `(milawa-global 3 z)` is
+; not `STATUS` and a lemma saying it is is simply false (probed: 9,571 prover
+; steps and a NIL goal).  Taking the value as a variable avoids the question
+; entirely.
+(defthm ctxt-instrs-steps-the-head-generic
+  (implies (and (consp rest)
+                (true-listp rest)
+                (true-listp val)
+                (equal (w3t::step
+                        (list :|%;%| z (list (list :global.get 3))))
+                       (list (list :|%;%| z2 val))))
+           (equal (w3t::step/r-ctxt-instrs
+                   (list :|%;%| z (cons (list :global.get 3) rest)))
+                  (list (list :|%;%| z2 (append val rest)))))
   :hints (("Goal"
            :use ((:instance (:definition w3t::step/r-ctxt-instrs)
                             (w3t::%a0 (list :|%;%| z (cons (list :global.get 3) rest))))
