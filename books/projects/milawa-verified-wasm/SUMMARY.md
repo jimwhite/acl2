@@ -587,10 +587,20 @@ the "malformed configuration" hypothesis was ruled out instead of chased.  Every
 one of the earlier attempts at these levels had a wrong configuration in a hint and
 no way to know.
 
-**What remains for L1**: instantiate this ladder at the abstract store and compose
-it with `step-call-enters-frame` (layer 6) and the two return lemmas (layer 7) into
-the 9-step theorem that matches `abs.lisp`'s clock for the frozen path.  With the
-three general bridges proved, that is instantiation bookkeeping.
+**What remains for L1**, and what is now known about it: the first link is proved,
+and the rest of the 9-step frozen path is the same shape repeated.  The obstacle
+there is that the later positions have a **prefix of pushed values** in front of the
+instruction, and the general form of that (`flat-with-one-value`, with the value and
+instruction symbolic and `(w3t::val-p v)` / `(not (w3t::val-p instr))` as
+hypotheses) **diverges** -- it ran past 10,489 subgoals and was stopped.  That
+matches the pattern this whole problem has followed: the general forms either
+diverge or explode (the general label form ran to 48.6M steps), while **concrete
+instances at the literal body prove**.  So the remaining links should be emitted by
+the generator as per-position instances with the concrete value prefix and the
+literal body suffix, which is what `gen_chain.py` is for.
+
+Then the call (layer 6, `step-call-enters-frame`) and the two return lemmas
+(layer 7) join them into the 9-step theorem that matches `abs.lisp`'s clock.
 
 ## Bodies must be literals, not terms
 
