@@ -1,0 +1,78 @@
+# Agent notes: milawa-verified-wasm
+
+A verified Lisp runtime for Milawa, in ACL2, targeting WebAssembly.  The plan is
+`../milawa/VERIFIED-WASM-LISP.md`; this file is the short operational memory for
+anyone (human or agent) working here.
+
+## Where the truth lives
+
+- **`README.md`** — authoritative status, one row per piece, build commands, and
+  the "What we learned" list.  Update it when a row changes.
+- **`SUMMARY.md`** — the long-form memory: every finding, with the measurements
+  that established it.  New findings go here with their prover-step counts.
+- **`../milawa/VERIFIED-WASM-LISP.md` §0.1** — phase-level progress; it defers to
+  the two files above for detail.
+
+## Building
+
+```
+make check ACL2=/workspaces/acl2/saved_acl2    # lint, books, module pin, corpus, no-skips, completeness
+make -C wasm3 ACL2=...                         # the wasm3 books only (needs the pinned .wasm-acl2)
+make experiment FILE=/tmp/try.lsp BOOK=chain    # scratch ACL2 with dir/timeout/log fixed
+make walk                                       # what the semantics does next, from the post-call config
+make lint                                       # parens the way ACL2 reads them
+```
+
+The wasm3 books depend on the pinned `wasm-acl2` clone at
+`/workspaces/acl2/.wasm-acl2` (commit `7f96c89`); its 26 generated books must be
+certified first.  `make books` says so rather than failing obscurely.
+
+## House rules
+
+- No `skip-proofs`, no `defaxiom`; `make check` fails on either.
+- `wasm3/bytes.lisp`, `module.lisp`, `state.lisp` and `chain.lisp` are
+  **generated**.  Regenerate with `wasm/build.sh` + `make -C wasm3 bytes module`
+  or `harness/gen_chain.py`; never hand-edit.
+- Measured prover-step counts in comments are part of the record.  Take them from
+  the book's `.cert.out`, and correct a stale number rather than leaving it.
+
+## Traps found the hard way (details in SUMMARY.md)
+
+- **The search only computes on literals.**  A rewrite rule whose LHS contains
+  `(cons x y)` cannot match a quoted constant, so a general rule about an
+  instruction list and a literal body are incompatible.  State the instance at
+  the exact per-position shape.
+- **`:expand` cannot unfold a member of a mutual recursion** (`step`,
+  `step/r-ctxt-instrs`, `step/r-ctxt-label`, `step/r-ctxt-frame`).  Use an
+  explicit `(:instance (:definition sym) (arg ...))`.
+- **A `defconst` cannot go in a `disable` list** (theory error: it is not a
+  rule); helper `defun`s can, and disabling them is how a composed chain keeps
+  its terms syntactically stable.
+- **A free variable in a lemma's LHS does not compose.**  The inner-label steps
+  carry `status` only in their result; as rewrite rules they cannot match.
+  Bind it explicitly in the `:use` instance: `(status status)`.
+- **A call leaves the callee's frame** (`(milawa-callee-frame 6)`), not the
+  pinned `(caddr z)` the walk uses; the body reads globals through its own
+  frame's module.
+- **The block is a READ rule** (`step_read/split/r-block`), not a context rule;
+  no general context-descent lemma is needed.
+- **`steps/%fuel` does not unroll on a constant fuel over an opaque config.**
+  Compose the clock with a `:rule-classes nil` successor lemma per step plus a
+  definition instance; as a rewrite rule the fuel-decreasing successor loops.
+- **A frame record field is a dotted pair.**  `(:MODULE :%REC ...)` stores the
+  module as the CDR; writing `(:MODULE (:%REC ...))` stores a one-element list
+  and every lookup answers NIL.  Same for `%GET-FIELD` arguments.
+- **ACL2's `TAKE` pads**, and `acl2-count` of a symbol is its name length, so
+  the tempting `(equal (acl2-count x) 0) = (not (consp x))` is false.
+
+## Current state (2026-11-19)
+
+31 books, all certified.  The frozen path (`status ≠ 1`) is proved end to end
+for symbolic state in `wasm3/frozen.lisp`: nine steps and the exact clock.  Of
+the readback, the five globals are proved (`frozen-globals-read-back`) and the
+stack words are not: `milawa-words` (index at a time) must meet
+`mvm-image-words` (four bytes at a time), and the shift rule between them loops
+as a rewrite rule (ACL2's arithmetic matcher binds `a = 0`; measured with
+`:brr`).  Use `memory.lisp`'s shape — a step rule over the append form of the
+image, recogniser disabled, forward chaining.  Then the other fifteen paths, L2
+and L3.

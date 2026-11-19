@@ -1167,3 +1167,26 @@
                  (:instance frozen-step-seventh)
                  (:instance frozen-step-eighth)
                  relop-ne-of-status-and-1))))
+
+;; ---------------------------------------------------------------------------
+;; The readback, halfway: the globals
+;; ---------------------------------------------------------------------------
+
+; L1's conclusion is MILAWA-OBSERVATIONS on the configuration the semantics
+; stops on.  This path leaves the abstract store unchanged, so the five globals
+; read back by evaluation: the store's :GLOBALS list was built by MILAWA-SET-GLOBALS
+; from SP PC CLEN STATUS RESULT, and MILAWA-GLOBAL reaches them through the
+; pinned frame's module vector.  The sixth clause -- the stack words -- is the
+; one that is not here; see the note in SUMMARY.md, "the readback of the stopped
+; store": MILAWA-WORDS walks the memory an index at a time and MVM-IMAGE-WORDS
+; consumes four bytes a step, and relating the two by rewrite rules runs into
+; ACL2's arithmetic matcher (a rule about (NTHCDR (+ 4 A) L) is applied to its
+; own right-hand side with A bound to 0).  That is a statement problem of the
+; same kind MEMORY.LISP solved for the word-list image, and it is the next
+; piece, not a missing fact.
+(defthm frozen-globals-read-back
+  (and (equal (milawa-global (frozen-z bytes sp pc clen status result) 0) sp)
+       (equal (milawa-global (frozen-z bytes sp pc clen status result) 1) pc)
+       (equal (milawa-global (frozen-z bytes sp pc clen status result) 2) clen)
+       (equal (milawa-global (frozen-z bytes sp pc clen status result) 3) status)
+       (equal (milawa-global (frozen-z bytes sp pc clen status result) 4) result)))

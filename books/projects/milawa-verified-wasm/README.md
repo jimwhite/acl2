@@ -46,7 +46,7 @@ any book in the tree has been skipped.
 | The search's failure facts: an instruction without its operands is not stepped | **proved** (`wasm3/search.lisp`) |
 | The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
 | **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — and the **exact clock** for symbolic state | **proved** (`wasm3/frozen.lisp`) |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — the frozen path is proved (the halted and aborted states, clock and all); the other fifteen paths, and reading the stopped store back as an `MVM` state, are open |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — the frozen path is proved (the halted and aborted states, clock and all); the other fifteen paths are open; of the readback, the globals are proved and the stack words are not |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
@@ -480,13 +480,15 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 ## Next steps, in order
 
 1. **The readback of the stopped store.**  The frozen path's clock and final
-   configuration are proved; what is not yet is `milawa-observations` on the
-   configuration the semantics stops on, for a symbolic memory.  The globals
-   read back immediately, but `milawa-words` decodes an index at a time while
-   `mvm-image-words` consumes four bytes a step, and making the two meet is the
-   same "index is not a shape" problem the memory correspondence already solved
-   once -- reuse that proof's shape (a step rule over the append form, the
-   recogniser disabled, forward chaining) rather than re-deriving it.
+   configuration are proved, and the five globals read back
+   (`frozen-globals-read-back`).  The stack words do not yet: `milawa-words`
+   decodes an index at a time while `mvm-image-words` consumes four bytes a
+   step, and the shift rule that joins them loops as a rewrite rule -- ACL2's
+   arithmetic matcher binds `a = 0` and applies it to its own right-hand side
+   (measured with `:brr`).  The shape that should work is the memory
+   correspondence's: state the readback over `(append (mvm-stack-image stack)
+   rest)`, use a step rule about the append form, disable the byte recogniser,
+   and let forward chaining supply its facts.
 2. **L1 for the other fifteen paths**: the same recipe as the frozen path, and
    the clock is already measured per opcode.  The branch paths all enter a block
    and then a call, so their links are the frozen path's plus `calls.lisp`.

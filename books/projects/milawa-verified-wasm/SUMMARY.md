@@ -913,7 +913,11 @@ one piece left (see below).  The steps, in order, and how each is proved:
 
 The composition is `frozen-path-ten` (`(steps/%fuel 10 ...)` is the stopped
 configuration) and `frozen-path-nine` (`(steps/%fuel 9 ...)` is NIL): the two
-halves of the exact clock.  Two things about it are worth carrying forward.
+halves of the exact clock.  Of the readback that would complete the path's
+`milawa-step-check`, the five globals are proved
+(`frozen-globals-read-back`); the stack words are the open piece, and its
+obstruction is measured in "What is next" below.  Two things about the path are
+worth carrying forward.
 
 **The block is a read rule and the context lemma was not needed.**  The plan
 said the block step needed the general context-descent lemma because there is no
@@ -948,15 +952,25 @@ rule the fuel-decreasing successor would loop, which is the same lesson as
 ## What is next, in order
 
 1. **The readback of the stopped store.**  The frozen path's clock and final
-   configuration are proved; `milawa-observations` on that configuration, for a
-   symbolic memory, is not.  The globals read back by evaluation, but
-   `milawa-words` walks the memory an index at a time while `mvm-image-words`
-   consumes four bytes a step, and making the two meet is the same "index is not
-   a shape" problem `memory.lisp` already solved once: reuse the shape of that
-   proof (a step rule over the append form, the recogniser disabled, forward
-   chaining) rather than re-deriving it.  When it lands, `frozen-path-ten` plus
-   that bridge is `milawa-step-check` for every non-running status, the first
-   path of the sixteen.
+   configuration are proved, and the five GLOBALS read back by evaluation
+   (`frozen-globals-read-back`).  The sixth clause -- the stack words -- is
+   open, and the obstruction is now measured rather than guessed.
+   `milawa-words` walks the memory an index at a time (`(nth a b)`,
+   `(nth (+ 1 a) b)`, ...) while `mvm-image-words` consumes four bytes a step
+   (`car`/`cadr`/`caddr`/`cadddr`, then `cddddr`).  The bridge needs a shift
+   rule `(nth (+ k a) b) = (nth k (nthcdr a b))`; stated as a rewrite rule it
+   does not terminate, and `:brr` gives the reason: ACL2's arithmetic matcher
+   binds `a = 0` and applies the rule to its own right-hand side, turning
+   `(nthcdr 4 X)` into `(nthcdr 4 (nthcdr 0 X))` forever (an 8-line repro is in
+   the run that found it).  Writing the shift with `cddddr` on the right avoids
+   that self-match for the four-byte step, but the per-byte shifts need the
+   same treatment.  The shape that should work is `memory.lisp`'s: a step rule
+   about the append form of the image, the byte-level recogniser disabled, and
+   forward chaining -- i.e. prove the readback about
+   `(append (mvm-stack-image stack) rest)` and let the region lemmas do the
+   work, rather than fighting `nth`/`nthcdr`.  When it lands,
+   `frozen-path-ten` plus that bridge is `milawa-step-check` for every
+   non-running status, the first path of the sixteen.
 2. **L1 for the other fifteen paths.**  The frozen path is one of sixteen; each
    has its own body positions, and the clock is already measured per opcode in
    `abs.lisp`.  The recipe is the same -- the callee's store, the frame and the
