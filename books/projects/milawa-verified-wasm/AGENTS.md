@@ -110,10 +110,36 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   sides and the comparisons cancel.
 - **ACL2's `TAKE` pads**, and `acl2-count` of a symbol is its name length, so
   the tempting `(equal (acl2-count x) 0) = (not (consp x))` is false.
+- **FLOOR and MOD have a rational normal form.**  Unfolding them turns the same
+  identity into `numerator`/`denominator` spellings, and the arithmetic stops
+  closing (`le-int-of-le-bytes` at symbolic `k` failed this way).  Keep them
+  abstract and use `ihs/quotient-remainder-lemmas`' `mod-x-i*j-of-positives` and
+  `floor-floor-integer`; `numerics.lisp` is the worked example.
+- **A recursive function whose body calls FLOOR or MOD does not unfold by its
+  definition rule in a theory where they are disabled** (measured on
+  `%LE-BYTES`: the same goal proves with `(enable %le-bytes)` and stalls with
+  the definition enabled but floor/mod disabled).  Give the concrete
+  unfoldings explicitly with `:expand`; that does unfold.
+- **A rule whose LHS contains `ICFG` never matches.**  The `icfg` call is
+  unfolded before the rewrite rule is tried, so the goal term is
+  `(LIST :%;% ...)` by then.  State standalone lift facts (`...-slice-gen`,
+  `ctxt-...-fails`) in constructor form; the `:use`-based lifts work with
+  `icfg` only because both sides of the `:use` formula are normalized together.
+- **A slice whose only rule is late in the dispatcher needs a context-failure
+  fact.**  `step` tries `step/r-ctxt-instrs` before `step/r-local.set`; the
+  search refuses a slice that consumes the whole instruction list (its splice
+  guard needs a val or an instruction after the slice), and proving that
+  refusal (`ctxt-local-set-slice-fails`) is what lets the slice reach the late
+  rule.
+- **State label/frame lifts over a generic store-and-frame pair `Z`.**  Written
+  out as `(iz6 ...)`, the pair is normalized to a `LIST*` form by the label
+  rule's own measure test and the inner step stops matching the lift's LHS.
+  The generic local.set context lift is 37k prover steps; the spelled-out one
+  is 1.17M.
 
-## Current state (2026-11-19)
+## Current state (2026-11-20)
 
-33 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
+35 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
 symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
@@ -126,12 +152,17 @@ mul, the comparison (the last instruction: a pure body step), and the two value
 dissolves — and returns the result into function 6's continuation, and it
 proves, under the in-code hypothesis (the comparison is 1), the opcode test,
 the second ifelse, the empty-block/empty-label chains, and the opcode fetch's
-first instruction (`global.get 1`).  78 measured events, 213M prover steps,
-~207 s.  The in-code hypothesis is what makes the testop's value the concrete 0
-and the lists concrete; at a symbolic value the search's measure guards do not
-close.  Next: the load and `local.set 0` (they touch memory and the frame), the
-second `global.get 1`, the opcode test, and the 14 per-opcode tails; then L2
-and L3.  Cost note: the
+first instruction (`global.get 1`).  78 measured events, 213.9M prover steps,
+210 s.  `wasm3/numerics.lisp` proves the spec's four-byte encode/decode round
+trip against the image (25k steps); `wasm3/load.lisp` then executes the opcode
+`i32.load` (the read rule, with the in-bounds hypothesis) and `local.set 0`
+(the first write, carrying the frame update through generic-pair lifts), 15
+events and 8.49M steps.  The in-code hypothesis is what makes the testop's value
+the concrete 0 and the lists concrete; at a symbolic value the search's measure
+guards do not close.  Next: the rest of the fetch — the second `global.get 1`,
+`(const 4)`, the add, `global.set 1` (a store write), `local.get 0`,
+`(const 0)`, the eq comparison and the dispatch ifelse — then the 14 per-opcode
+tails, then L2 and L3.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a

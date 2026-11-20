@@ -53,7 +53,7 @@ Recommended location: **this document stays in `books/projects/milawa/`; the
 proof tree goes in a new sibling project directory, not inside Milawa's own
 book tree.**  Rationale in §6.
 
-### 0.1 Progress (2026-11-19)
+### 0.1 Progress (2026-11-20)
 
 The work has started at `books/projects/milawa-verified-wasm/`; see its `README`
 for the authoritative status, and its "What we learned" section for the ACL2 and
@@ -150,8 +150,14 @@ already uses that package.  In terms of the phases below:
   SUMMARY records both that obstruction and the tail-definition mistake that
   first made the equalities reduce to NIL.  The opcode fetch has started: its
   first instruction (`global.get 1`) is proved, with the bodies as cons chains
-  over a literal defconst tail.  78 measured events, 213M prover steps,
-  207 s.  Two findings are
+  over a literal defconst tail.  78 measured events, 213.9M prover steps,
+  210 s.  The opcode load and the first frame write are proved too: the
+  numeric bridge (`wasm3/numerics.lisp`) proves both directions of the spec's
+  four-byte encode/decode round trip, the `i32.load` is a read whose guard is
+  that round trip, and `local.set 0` is the first write, storing the opcode in
+  the callee frame's local 0 (`wasm3/load.lisp`, 15 events, 8.49M steps).  The
+  write's lifts are stated over a generic store-and-frame pair, which is what
+  keeps them matchable through the label rule.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every
@@ -159,10 +165,10 @@ already uses that package.  In terms of the phases below:
   integer its absolute value, so symbolic values in a body turn the context
   rules' `%SIZE` guards into arithmetic unless the values are kept opaque with
   conditional `:type-prescription` rules.
-- **Phases 5-6 are untouched.**  Within L1, what remains is the opcode test's
-  lift (its slice facts are proved; the `$TESTOP_` value must be kept opaque
-  through the search), the ifelse/empty-block/empty-label chain, the opcode
-  fetch, and the fourteen per-opcode tails; then L2 and L3.  The frozen path's
+- **Phases 5-6 are untouched.**  Within L1, what remains is the rest of the
+  opcode fetch (the second `global.get 1`, the `(const 4)`/add/`global.set 1`
+  write of pc, `local.get 0`, `(const 0)`, the eq comparison and the dispatch
+  ifelse) and the fourteen per-opcode tails; then L2 and L3.  The frozen path's
   readback is done; the running paths' readback will reuse it.
 
 One correction to the plan as written: §3.1 treats "the kernel never calls a

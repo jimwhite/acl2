@@ -39,6 +39,7 @@ any book in the tree has been skipped.
 | The artifact decodes in the certified semantics; the module is pinned as a logic constant; `W3T::MODULE-P` of it is proved | **proved** (`wasm3/`) |
 | The certified semantics executes the artifact: entry config is a call to function 6, `STEP` applies and is single-valued | **proved** (`wasm3/l1.lisp`) |
 | Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness, and **the i-th word of an image** (`(take 4 (nthcdr (* 4 i) image)) = the word's bytes`) | **proved** (`wasm3/memory.lisp`) |
+| The numeric bridge between the spec's little-endian bytes and the image: `(mvm-word-to-bytes w) = ($le-bytes 4 w)`, `($le-int ($le-bytes 4 w)) = w mod 2^32`, and **both directions of `$nbytes_`/`$inv_nbytes_` at i32** — the load rule's guard and its value | **proved** (`wasm3/numerics.lisp`, 12 measured events, 25k prover steps) |
 | The abstraction `MVM` state → spec configuration, and the clock for every path (47–101 spec steps, opcode-determined) | **proved** (`wasm3/abs.lisp`, 16 theorems by evaluation) |
 | The instruction library the chain is assembled from: seven layers, `step_pure` and `step_read` lemmas, the context rules, calls, returns | **proved** (`wasm3/instructions.lisp` … `wasm3/returns.lisp`) |
 | The body of function 6 as a literal, with its first instruction stepped — the bottom of the chain, generated | **proved** (`wasm3/chain.lisp`) |
@@ -47,7 +48,8 @@ any book in the tree has been skipped.
 | The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
 | **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — the **exact clock**, and the **readback** to `MVM-STEP`: `milawa-step-check`'s conclusion for a symbolic state | **proved** (`wasm3/frozen.lisp`) |
 | **The running branch's shared head** (`status = 1`): the seven steps every running path starts with — the status test's else branch, the empty block and its label, the call split, and the call into `$in_code`'s frame — with `$in_code`'s body at the head, and the first instruction of that body stepped | **proved** (`wasm3/running.lisp`) |
-| **The callee's tail and the in-code dispatch**: `$in_code`'s body end to end — the sub, the read of the code length, the mul, the comparison (the last instruction, stepped by the pure rule), and the two value dissolves — then, under the in-code hypothesis (the comparison is 1, so the testop's value is the concrete 0), the opcode test, the second ifelse, and the empty block/label dissolve, and the first instruction of the opcode fetch (`global.get 1`) | **proved** (`wasm3/dispatch.lisp`, 78 measured events, 213M prover steps) |
+| **The callee's tail and the in-code dispatch**: `$in_code`'s body end to end — the sub, the read of the code length, the mul, the comparison (the last instruction, stepped by the pure rule), and the two value dissolves — then, under the in-code hypothesis (the comparison is 1, so the testop's value is the concrete 0), the opcode test, the second ifelse, and the empty block/label dissolve, and the first instruction of the opcode fetch (`global.get 1`) | **proved** (`wasm3/dispatch.lisp`, 78 measured events, 214M prover steps) |
+| **The opcode fetch and the first frame write**: the `i32.load` of the opcode — a read whose guard is the numeric round trip, with the in-bounds hypothesis that rules out the TRAP branch — then `local.set 0`, the first write, storing the opcode in the callee frame's local 0; both lifted to function 6's frame at symbolic `pc`/`clen`/`bytes`/opcode | **proved** (`wasm3/load.lisp`, 15 measured events, 8.49M prover steps) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -61,12 +63,12 @@ One command, from this directory:
 ```
 $ make check ACL2=/path/to/saved_acl2
 --- lint (parentheses the way ACL2 reads them)
-lint: 33 file(s) balance the way ACL2 reads them
+lint: 35 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 33 book(s))
---- every book has a certificate           (33 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 35 book(s))
+--- every book has a certificate           (35 books, all certified)
 
 ===== summary =====
 books certified:  33

@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (33 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (35 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -40,7 +40,9 @@ flowchart TB
 | `wasm3/links.lisp` | **the links**: the second step of function 6's body at the flat, label and frame levels, plus `step-body-6-two`, which steps the machine twice and shows the two links genuinely compose |
 | `wasm3/frozen.lisp` | **the frozen path, end to end**: the nine steps from `mvm-abs-abstract` when the status is not 1 -- the call, the read, the comparison, the branch, the block, the read inside the block's label, the two returns -- each at the callee's store and through the frame and the two labels, composed into the exact clock: nine fuel spends the nine steps and a tenth reports the stopped configuration, which is the abstract store unchanged with the status pushed into the caller's instruction list; and the readback, `milawa-observations` of that configuration against `(mvm-step st)`, with the stack words through the append form of the stack image.  `frozen-step-check` is `abs.lisp`'s `(milawa-step-check 9 st)` clause for clause, with the state symbolic |
 | `wasm3/running.lisp` | **the running branch's shared head**: for a running status (1), the seven steps every running path takes before the dispatch -- the status test's else branch, the empty block and its label (both dissolve), the call split, and the call into `$in_code`'s frame.  `$in_code`'s body sits at the head of the new frame's label, with the rest of function 6's body after it.  Seven top-level links, each with its ctxt/label/frame wiring; the clock composition is the frozen path's and is left to the per-path proofs.  The first instruction of `$in_code`'s body is then stepped (`running-step-eight`), and the range facts the dispatcher needs are proved: the spec's i32 binops are `rem`s (`binop-sub-value`, `binop-mul-value`) and the comparison's value is 0/1 (`relop-ltu-value`) |
-| `wasm3/dispatch.lisp` | **the callee's tail**: `$in_code`'s body end to end at symbolic `pc`/`clen` -- the sub, the read of global 2, the mul, the comparison (the LAST instruction, so stepped by the pure `r-relop` rule), and the two value dissolves (label 3, then frame 3) -- each lifted through the search, label 3, frame 3, label 6 and frame 6, ending with the comparison's result pushed into function 6's continuation.  Plus the opcode test's two slice facts (`fail-lone-testop`, `deqz-slice`).  51 events, 207,479,255 prover steps, 227.8s |
+| `wasm3/dispatch.lisp` | **the callee's tail and the in-code dispatch**: `$in_code`'s body end to end at symbolic `pc`/`clen` -- the sub, the read of global 2, the mul, the comparison (the LAST instruction, so stepped by the pure `r-relop` rule), and the two value dissolves (label 3, then frame 3) -- each lifted through the search, label 3, frame 3, label 6 and frame 6, ending with the comparison's result pushed into function 6's continuation.  Then, under the in-code hypothesis (the comparison is 1, so the testop's value is the concrete 0): the opcode test, the second ifelse, the empty block/label dissolve, and the opcode fetch's first instruction (`global.get 1`).  78 events, 213,919,714 prover steps, 210.0s |
+| `wasm3/numerics.lisp` | **the numeric bridge**: the spec's little-endian byte functions against the image.  `(mvm-word-to-bytes w) = ($le-bytes 4 w)` (loghead/logtail to mod/floor, nested floors flattened), `($le-int ($le-bytes 4 w)) = w mod 2^32`, `%u` on a 32-bit word, and both directions of `$nbytes_`/`$inv_nbytes_` at i32 (the load rule's value and its guard).  12 measured events, 25,359 prover steps |
+| `wasm3/load.lisp` | **the opcode fetch and the first frame write**: the `i32.load` of the opcode (the READ rule `Step_read/load-num-val`, whose guard is the numeric round trip and whose in-bounds hypothesis `(<= (+ pc 4) (len bytes))` is what rules out the TRAP branch), then `local.set 0` (the WRITE rule `Step/r-local.set`, storing the opcode in the callee frame's local 0), both lifted through the context rules, label 6 and frame 6.  The local.set chain is stated over a generic store-and-frame pair `z`, which is what keeps the label/frame lifts cheap and matchable.  15 events, 8,493,949 prover steps, 10.8s |
 | `wasm3/search.lisp` | the search's **failure** facts (an instruction missing its operands is not stepped) and the second body position; the book that explains why the search finds an instruction to run at k = 0 every time in this body |
 | `wasm3/size.lisp` | `%SIZE` is `acl2-count` behind an `mbe`, plus the monotonicity the context rules' measure conditions need -- the bridge every descent lemma rests on |
 | `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
@@ -1077,10 +1079,55 @@ last element is load-bearing: a body whose tail is a symbol has the same
 acl2-count as the slice, so the search's size test fails and the step falls
 through.  `ft-bridge` (4 steps) ties the previous section's
 `(dvl-after-ifelse nil)` to the first fetch body; the next positions use the
-same bridge pattern.  The remaining fetch instructions are the load, the
-`local.set 0`, and the second `global.get 1`; the load and the local.set touch
-the memory and the frame, so they need the memory correspondence and the frame
-update carried through the context rules.
+same bridge pattern.
+
+**The load and the first frame write are proved** (`wasm3/load.lisp`).  The
+opcode's `i32.load` is a READ: `Step_read/load-num-val` computes the value
+`C = ($inv_nbytes_ i32 (take 4 (nthcdr pc bytes)))` and checks
+`($nbytes_ i32 C) = (take 4 ...)`, so the proof needs both directions of the
+spec's encode/decode round trip at four bytes -- `wasm3/numerics.lisp`, 25k
+steps: `(mvm-word-to-bytes w) = ($le-bytes 4 w)` via loghead/logtail to
+mod/floor with the nested floors flattened by `floor-floor-integer`, then
+`($le-int ($le-bytes 4 w)) = w mod 2^32` by three instances of
+`mod-x-i*j-of-positives`, `%u` on a 32-bit word, and the `$nbytes_` /
+`$inv_nbytes_` corollaries.  The load's slice is then the rule's own step
+(29.5k); its context lift is the expensive one (4.95M: the k = 1 lone-load
+failure plus the search's measure checks over the whole symbolic body), and the
+label and frame lifts are 926k and 1.86M.  The in-bounds hypothesis
+`(<= (+ pc 4) (len bytes))` is not decoration: without it the out-of-bounds
+`Step_read/load-num-oob` branch is a legitimate step to `((:TRAP))`.
+
+The `local.set 0` is the first WRITE: `Step/r-local.set` stores the value in
+the callee frame's locals (`$with_local`), so the resulting configuration's
+store-and-frame pair changes.  The chain is 0.62M steps total, and stating it
+over a *generic* pair `z` is what makes it cheap: the context lift is 37k
+generically against 1.17M when the pair is written out as `(iz6 ...)`.
+
+Three traps surfaced here, all worth knowing before the next position.
+
+1. **A slice that only a late rule can step reaches `step/r-ctxt-instrs`
+   first, and the search refuses it.**  For a slice `[C, local.set]` the search
+   at k = 0 would take the whole instruction list as the slice and splice
+   nothing after it; its guard `(or val-star instr_1-star)` is false, so the
+   context rule fails.  Proving that failure is a separate fact
+   (`ctxt-local-set-slice-fails`, 191k) stated with the config in constructor
+   form; only then does the slice's own step reach `step/r-local.set`.
+
+2. **State lift facts with the config as `(LIST :%;% ...)`, not as `(ICFG
+   ...)`.**  ACL2 unfolds `icfg` before trying rules, so a rewrite rule whose
+   LHS contains `icfg` never matches the goal term; the dispatch book's lifts
+   work because their `:use` instances are normalized on both sides, but a
+   standalone rule (and `dlocal-set-slice-gen`) must be written out.
+
+3. **Keep the store-and-frame pair a variable over the label and frame
+   lifts.**  Written out as `(iz6 ...)`, the pair is normalized to a `LIST*`
+   form by the label rule's own measure test, and the inner step no longer
+   matches the lift's LHS; with a variable `z` the inner config matches
+   syntactically.  The frame lift instantiates `z` once, at the callee frame.
+
+The fetch continues at the second `global.get 1` (pc), then `(const 4)`, the
+add, `(global.set 1)` -- a store write -- then `(local.get 0)`, `(const 0)`,
+the eq comparison and the dispatch ifelse.
 
 The first attempts failed for an unrelated reason that looked like an ACL2
 anomaly.  **The bodies after the testop and after the ifelse have different
@@ -1103,14 +1150,18 @@ when an equality "mysteriously" reduces to a hypothesis, compare the two tails.
    -- the status test's else branch, the empty block and its label (both
    dissolve), the call split, and the call into `$in_code`'s frame -- leaving
    `$in_code`'s body at the head of the new frame's label.  The callee's tail is
-   now proved too: `wasm3/dispatch.lisp` executes `$in_code`'s body end to end
+   proved too: `wasm3/dispatch.lisp` executes `$in_code`'s body end to end
    (the sub, the read, the mul, the pure comparison, and the two dissolves) and
    returns the result into function 6's continuation, at symbolic `pc`/`clen`,
-   in 207M prover steps.  What remains on the shared route is the lift of the
-   opcode test (its two slice facts are proved; see the callee-tail section for
-   where the lift stands) and the ifelse/empty-block/empty-label chain.  Then
-   the opcode fetch and the fourteen per-opcode tails; the clock is already
-   measured per opcode in `abs.lisp`.  The callee tail's seven-part recipe is
+   in 214M prover steps, including the opcode test, the second ifelse, the
+   empty block/label dissolve and the first fetch instruction.  `wasm3/load.lisp`
+   then executes the opcode load and `local.set 0` (8.5M steps), leaving the
+   module in function 6's frame with the opcode in local 0.  What remains on
+   the shared route is the rest of the fetch: the second `global.get 1`, the
+   `(const 4)` / add / `global.set 1` write of pc, then `local.get 0`,
+   `(const 0)`, the eq comparison and the dispatch ifelse, and after that the
+   fourteen per-opcode tails; the clock is already measured per opcode in
+   `abs.lisp`.  The callee tail's seven-part recipe is
    the template (slice, ctxt, step, label, frame, body6, label6, outer), and
    the two measured facts below -- the last instruction is a pure body step,
    the values must stay opaque for acl2-count -- are part of it.  The frozen
