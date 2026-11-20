@@ -171,8 +171,8 @@ already uses that package.  In terms of the phases below:
   abort after them.  The CONST test's block/label positions are proved, and so
   is the halt branch's first call split (:CALL 2 -> (:REF.FUNC_ADDR 2) + the
   call_ref type), at the callee pair, and the ADD/SUB/LT test's whole OR-chain
-  and its ifelse in both cases -- 151 events, 383.8M steps.  Next are the
-  OR-chain's block/label positions, the IFZ and JMP tests and the abort call,
+  its ifelse in both cases, and the block/label positions of both branches --
+  165 events, 488.4M steps.  Next are the IFZ and JMP tests and the abort call,
   and then the five opcode bodies -- the hard part, because every body calls the
   module's runtime functions ($depth, $pop, $push, $in_code, $abort), so each
   needs those callees' body and return facts.  Two findings are
