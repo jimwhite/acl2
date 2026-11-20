@@ -672,3 +672,55 @@
 (defthm dlabel6-ifelse-op-false (implies (not (equal w 0)) (equal (w3t::step (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (deq w)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))) (list (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :block (cadr *d-ifelse*) (cadddr *d-ifelse*)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (deq w)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))) dstep-ifelse-op-false))))
 
 (defthm douter-ifelse-op-false (implies (not (equal w 0)) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (deq w)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :block (cadr *d-ifelse*) (cadddr *d-ifelse*)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs w3t::$local w3t::$sof w3t::$fof w3t::$with_global frozen-store dadd w3t::$binop_) :use ((:instance (:definition w3t::step/r-ctxt-frame) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (deq w)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))) (:instance dlabel6-ifelse-op-false (z (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))))))))
+
+;; ---------------------------------------------------------------------------
+;; The taken branch's block: a BLOCK around the branch, then a LABEL
+;; ---------------------------------------------------------------------------
+
+; The ifelse leaves a (:BLOCK (:_RESULT NIL) INSTR-STAR).  The block's step is
+; the read rule Step_read/block: it turns the block into
+; (:LABEL_%{%}% N NIL (append values INSTR-STAR)) with N the block type's result
+; count (0 here) and the values captured before the block (none here).  The two
+; block bodies the dispatch produces are the halt instructions (the then
+; branch) and NIL (the else branch); both slices are 504 steps.
+;
+; For the ELSE branch the block becomes the empty label (:LABEL 0 NIL NIL),
+; whose own step is the pure rule Step_pure/label-vals with an empty match: its
+; payload is NIL, so step/r-pure returns the configuration with an empty
+; instruction list.  The search's splice then appends the rest of the dispatch,
+; which is how the fall-through reaches the next opcode test.  (%RULE is a
+; transparent macro in the ACL2 build -- it expands to its result -- which is
+; why a rule's payload is what the step functions pattern-match.)
+;
+; Next: lift these two steps through the context/label/frame recipe, then take
+; the halt branch (its label's first instruction is (:CALL 2), the depth call).
+
+(defconst *d-ifelse* '(:IFELSE (:_RESULT NIL)
+           ((:CALL 2)
+            (:TESTOP (:I32) (:EQZ))
+            (:IFELSE (:_RESULT NIL)
+                     ((:CALL 4) (:RETURN))
+                     NIL)
+            (:CALL 1)
+            (:GLOBAL.SET 4)
+            (:CONST (:I32) 0)
+            (:GLOBAL.SET 3)
+            (:CONST (:I32) 0)
+            (:RETURN))
+           NIL))
+
+(defthm dblock-halt-slice
+  (equal (w3t::step (list :|%;%| z
+                          (list (list :block (cadr *d-ifelse*)
+                                      (caddr *d-ifelse*)))))
+         (list (list :|%;%| z
+                     (list (list :label_%{%}% 0 nil
+                                 (caddr *d-ifelse*)))))))
+
+(defthm dblock-empty-slice
+  (equal (w3t::step (list :|%;%| z
+                          (list (list :block (cadr *d-ifelse*)
+                                      (cadddr *d-ifelse*)))))
+         (list (list :|%;%| z
+                     (list (list :label_%{%}% 0 nil
+                                 (cadddr *d-ifelse*)))))))

@@ -163,10 +163,11 @@ already uses that package.  In terms of the phases below:
   step), writes pc back with `global.set 1`, reads the saved opcode with
   `local.get 0`, tests it against zero with `relop eq`, and takes the dispatch
   ifelse in both cases -- the halt branch for opcode 0, the fall-through to the
-  next test otherwise (50 events, 70.1M steps).  The module has seven opcodes
-  plus the unknown-opcode abort; next are the block/label step that exposes a
-  taken branch and the per-opcode bodies, each calling the module's runtime
-  functions ($depth, $pop, $push, $in_code, $abort).  Two findings are
+  next test otherwise -- and proves the block slices that expose a taken branch
+  (52 events, 70.1M steps).  The module has seven opcodes plus the
+  unknown-opcode abort (HALT, CONST, ADD/SUB/LT, IFZ, JMP); next are the
+  block/label lifts and then the per-opcode bodies, each calling the module's
+  runtime functions ($depth, $pop, $push, $in_code, $abort).  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every
