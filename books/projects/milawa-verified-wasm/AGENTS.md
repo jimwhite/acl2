@@ -127,6 +127,19 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   `icfg` only because both sides of the `:use` formula are normalized together.
   Measured on the add's context lift: 8.9M steps and a waterfall failure in
   `icfg` form, 349k steps and Q.E.D. in constructor form.
+- **A spelled-out pair blocks its facts.**  The frame rule builds its inner pair
+  as `(%;% ($sof ...) ($fof ...))`; a fact stated at `(dcallee-pair ...)` cannot
+  match once the pair's arguments unfold.  Prove a bridge rewriting the spelled
+  pair to the helper and DISABLE `dcallee-pair` and the accessors, leaving
+  `step` enabled: the bridge then fires before the pair unfolds, the label fact
+  matches the whole step, and the step is 218 prover steps (418k and a stall on
+  `step/r-ctxt-instrs` without the disable).  `pair-spelled-is-dcallee` is the
+  worked example in `abort.lisp`.
+- **A frame rule's wrapper is provable once, parameterized.**  Hand it the inner
+  step at the SAME variable pair the rule builds, plus the size guard, and
+  instantiate it per position: `dstep-frame-abort-param` (40k steps) is the
+  worked example; the first attempt with raw variables diverged because the
+  pure-rule searches ran on symbolic instruction lists.
 - **A call never reduces by plain evaluation.**  The step dispatcher reaches
   `step/r-ctxt-instrs` and stalls on the read rule's symbolic guard.  Use
   running.lisp's `no-ctxt-instrs-on-call-3` template: state the context rule's

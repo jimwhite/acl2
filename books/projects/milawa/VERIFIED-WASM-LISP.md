@@ -178,13 +178,13 @@ already uses that package.  In terms of the phases below:
   The false path reaches (call 4), the unknown-opcode abort.  The halt branch's
   first call is then taken through its split, entry into $depth's frame and
   wasm-label lift (halt: 5 events, 2.0M steps).  The unknown-opcode abort is
-  started (abort: 6 events, 2.46M steps): the (:CALL 4) split, the entry into
-  $abort's frame, and the split/entry label lifts; the entry's frame lift is the
-  open step (the nested label's inner pair is spelled out).  Next are that frame
-  lift, $abort's implicit returns, and the rest of the five opcode bodies -- the
-  hard part, because every body calls the module's runtime functions ($depth,
-  $pop, $push, $in_code, $abort), so each needs those callees' body and return
-  facts.  Two findings are
+  carried through the call entry and the frame lift (abort: 14 events, 3.29M
+  steps): the frame rule's parameterized wrapper, the pair bridge from the
+  spelled ($sof/$fof) pair to the helper, and the label fact.  Next are
+  $abort's status write and implicit returns, and then the rest of the five
+  opcode bodies -- the hard part, because every body calls the module's runtime
+  functions ($depth, $pop, $push, $in_code, $abort), so each needs those
+  callees' body and return facts.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every
