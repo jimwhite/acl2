@@ -187,3 +187,50 @@
                   :use ((:instance (:definition w3t::step/r-ctxt-frame)
                                    (w3t::%a0 (list :|%;%| (list :|%;%| s f)
                                                    (list (list :frame_%{%}% 1 fp *abort-label-cfg*)))))))))
+
+;; ---------------------------------------------------------------------------
+;; The frame lift's inner step: the pair bridge
+;; ---------------------------------------------------------------------------
+
+; The frame rule builds the inner pair as (%;% ($sof ...) ($fof ...)) with the
+; accessors spelled out, while the facts are stated at (dcallee-pair ...).  The
+; bridge rewrites the spelled pair to the helper -- and with dcallee-pair AND
+; the accessors DISABLED the bridge fires before the pair's arguments unfold,
+; after which the label fact (dlabel-abort-entry) matches the whole step and
+; the label step at the spelled pair is 218 steps (without the disable the
+; step's dispatcher unfolds first and stalls on r-ctxt-instrs).
+
+(defthm pair-spelled-is-dcallee
+  (equal (list :|%;%|
+               (w3t::$sof
+                (w3t::$with_global
+                 (list :|%;%| (frozen-store bytes sp pc clen 1 result)
+                       (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0
+                                                      (list :const (list :i32) w))))
+                 1 (list :const (list :i32) (dadd pc))))
+               (w3t::$fof
+                (w3t::$with_global
+                 (list :|%;%| (frozen-store bytes sp pc clen 1 result)
+                       (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0
+                                                      (list :const (list :i32) w))))
+                 1 (list :const (list :i32) (dadd pc)))))
+         (dcallee-pair bytes sp pc clen result w))
+  :hints (("Goal" :in-theory (enable dcallee-pair))))
+
+(defthm dlabel-abort-entry-inzp
+  (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) *abort-label-cfg*))
+         (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) *abort-label-cfg2*)))
+  :hints (("Goal" :in-theory (disable dcallee-pair w3t::$sof w3t::$fof w3t::$with_global frozen-store w3t::$with_local iz6 dadd w3t::$binop_))))
+
+;; ---------------------------------------------------------------------------
+;; The frame lift, closed
+;; ---------------------------------------------------------------------------
+
+; The abstract frame lift: the frame rule's wrapper (dstep-frame-abort-param)
+; instantiated at s = ($sof the updated store), f = *frozen-entry-frame*,
+; fp = ($fof the updated store), with the inner label step discharged by the
+; pair bridge + dlabel-abort-entry.  This is the step that takes the abort's
+; call from the split's frame config to the entry's (the callee's frame inside
+; the caller's label), and it was the open step.  689k prover steps.
+
+(defthm dframe-abort-entry-abstract (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *abort-label-cfg*)))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *abort-label-cfg2*))))) :hints (("Goal" :in-theory (disable dcallee-pair w3t::$sof w3t::$fof w3t::$with_global frozen-store w3t::$with_local iz6 dadd w3t::$binop_) :use ((:instance dstep-frame-abort-param (s (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (f *frozen-entry-frame*) (fp (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))) (:instance dlabel-abort-entry-inzp)))))
