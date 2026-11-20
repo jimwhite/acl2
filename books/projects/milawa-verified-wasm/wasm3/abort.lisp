@@ -151,3 +151,39 @@
   (equal (w3t::step/r-ctxt-instrs
           (list :|%;%| z (list (list :frame_%{%}% 1 fp *abort-label-cfg*))))
          nil))
+
+;; ---------------------------------------------------------------------------
+;; The frame-rule wrapper, parameterized
+;; ---------------------------------------------------------------------------
+
+; The frame rule's wrapper is provable once, with the inner label step handed in
+; as a hypothesis at the SAME variable pair (%;% s fp) the frame rule builds.
+; The size guard is given as a hypothesis too; with the instruction lists
+; concrete (the abort label) it is arithmetic.  This is the wrapper the open
+; frame lift needs: instantiate s/fp with the callee pair's store and frame and
+; discharge the inner-step hypothesis with the label step at that pair (the
+; remaining piece -- dlabel-abort-entry-inzp -- is where the nesting bites).
+
+(defconst *abort-label-cfg2*
+  (list (list :label_%{%}% 1 nil (milawa-callee-admin 4))))
+
+(defthm dstep-frame-abort-param
+  (implies (and (equal (w3t::step
+                        (list :|%;%| (list :|%;%| s fp)
+                              *abort-label-cfg*))
+                       (list (list :|%;%| (list :|%;%| s fp)
+                                   *abort-label-cfg2*)))
+                (< (w3t::%size *abort-label-cfg*)
+                   (w3t::%size (list (list :frame_%{%}% 1 fp *abort-label-cfg*)))))
+           (equal (w3t::step
+                   (list :|%;%| (list :|%;%| s f)
+                         (list (list :frame_%{%}% 1 fp *abort-label-cfg*))))
+                  (list (list :|%;%| (list :|%;%| s f)
+                              (list (list :frame_%{%}% 1 fp *abort-label-cfg2*))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+                  :expand ((w3t::step
+                            (list :|%;%| (list :|%;%| s f)
+                                  (list (list :frame_%{%}% 1 fp *abort-label-cfg*)))))
+                  :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                                   (w3t::%a0 (list :|%;%| (list :|%;%| s f)
+                                                   (list (list :frame_%{%}% 1 fp *abort-label-cfg*)))))))))
