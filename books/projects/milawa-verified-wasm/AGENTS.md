@@ -198,9 +198,12 @@ the ADD/SUB/LT OR-chain, the IFZ and JMP tests (`fetch.lisp`,
 `dispatch-tests.lisp`), the HALT branch's first call (`halt.lisp`), and the
 unknown-opcode abort through its closed frame lift and its callee's body
 -- the status write and the frame descent into function 4 (`abort.lisp`,
-22 events, 4.83M steps).  The abort's step back out -- the caller's label lift
+23 events, 5.33M steps).  The abort's step back out -- the caller's label lift
 over the callee frame, then the implicit label-vals/frame-vals returns -- is
-the open piece; the bridge-vs-spelling tension there is recorded in the traps.  Cost note: the
+the open piece; the bridge-vs-spelling tension there is recorded in the traps.
+The callee frame descent is restated at the helper pair (499k) so the way out
+does not need the forward bridge; the label lift over it still does not rewrite
+its inner-step fact, the same term-spelling class.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
