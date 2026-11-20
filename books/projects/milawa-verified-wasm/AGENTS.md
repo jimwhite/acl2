@@ -27,12 +27,25 @@ The wasm3 books depend on the pinned `wasm-acl2` clone at
 `/workspaces/acl2/.wasm-acl2` (commit `7f96c89`); its 26 generated books must be
 certified first.  `make books` says so rather than failing obscurely.
 
+**The package is `MILAWA-WASM`.**  Every book starts
+`(in-package "MILAWA-WASM")`.  The `defpkg` is in `package.lsp` at the project
+root -- not in a book, because a `defpkg` is not an embedded event form -- and
+each directory's `cert.acl2` loads it before certification.  The harness prepends
+the same two forms (`(ld "../package.lsp")`, `(in-package "MILAWA-WASM")`) to
+every scratch script, so new scratch files can use the project's names
+unqualified.  A session that includes a book by hand must load `package.lsp`
+first.  Names from included system books that ACL2 does not export are imported
+in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
+`acl2::` (`acl2::rem-bounds`, `acl2::loghead-identity`); after changing
+`package.lsp`, every certificate must be rebuilt.
+
 ## House rules
 
 - No `skip-proofs`, no `defaxiom`; `make check` fails on either.
 - `wasm3/bytes.lisp`, `module.lisp`, `state.lisp` and `chain.lisp` are
-  **generated**.  Regenerate with `wasm/build.sh` + `make -C wasm3 bytes module`
-  or `harness/gen_chain.py`; never hand-edit.
+  **generated**, as is `machine/examples.lisp`.  Regenerate with `wasm/build.sh`
+  + `make -C wasm3 bytes module`, `harness/gen_chain.py`, or
+  `harness/examples.py --gen-lisp`; never hand-edit.
 - Measured prover-step counts in comments are part of the record.  Take them from
   the book's `.cert.out`, and correct a stale number rather than leaving it.
 

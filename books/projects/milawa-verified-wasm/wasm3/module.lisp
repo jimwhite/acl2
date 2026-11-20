@@ -15,7 +15,7 @@
 ; Everything below the constant is quoteworthy: the module is a ground term, so
 ; W3T::STEP, W3T::MODULE-P and the field accessors can all be reasoned about.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-verified-module*
   '(:MODULE ((:TYPE (:REC ((:SUB ((:FINAL))

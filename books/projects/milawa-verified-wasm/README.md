@@ -75,7 +75,27 @@ corpus examples:  10
 
 `make help` lists the rest (`books`, `examples`, `module-check`, `no-skips`,
 `lint`, `experiment`, `walk`, `complete`, `clean`).  A full clean rebuild takes
-about forty seconds.
+a few minutes; the dispatch book alone is about three and a half.
+
+**The books are in their own package.**  Every book in `milawa-lisp/`,
+`machine/` and `wasm3/` is in `MILAWA-WASM`, so the functions and theorems this
+project defines cannot collide with another book's.  The package is defined in
+`package.lsp` -- a `defpkg` is not an embedded event form, so it cannot live in
+a book -- and each directory's `cert.acl2` loads it before certification.  To
+include a book by hand in a session, load the package first:
+
+```lisp
+(ld "package.lsp")
+(include-book "wasm3/frozen")
+```
+
+`make experiment` and `make walk` do this for you.  The name is
+project-specific rather than `MILAWA` because the sibling Milawa ACL2 tree
+(`../milawa/ACL2/package.lsp`) already defines a `MILAWA` package with a
+different import list.  A system-book name that ACL2 does not export must be
+imported explicitly (`expt2`, `logapp`, `loghead`, `logtail` from the `ihs`
+books) or used with its package prefix (`acl2::rem-bounds`,
+`acl2::loghead-identity`).
 
 **`make walk`** asks the semantics what the next steps actually are:
 

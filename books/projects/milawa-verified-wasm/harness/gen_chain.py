@@ -96,7 +96,7 @@ def probe_text(body):
             | ../../../../saved_acl2
     """
     return "\n".join([
-        '(in-package "ACL2")',
+        '(in-package "MILAWA-WASM")',
         "(defconst *pz* (mvm-abs-z-abstract (list 0 1 2 3) 4000 4200 100 1 0))",
         "(defconst *pb* '" + body + ")",
         "(defconst *pc0*",
@@ -318,7 +318,7 @@ def render():
         "; general rules in head.lisp cannot be used at this position.  An instance is",
         "; what works.",
         "",
-        '(in-package "ACL2")',
+        '(in-package "MILAWA-WASM")',
         "",
         '(include-book "head")',
         "",

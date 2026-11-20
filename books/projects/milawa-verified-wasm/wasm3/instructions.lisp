@@ -43,7 +43,7 @@
 ; semantics says (that (- 1 2) is #xFFFFFFFF, that i32.lt_s reads the sign) is what
 ; these lemmas conclude.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "symbolic")
 

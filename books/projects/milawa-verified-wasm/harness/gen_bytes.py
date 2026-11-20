@@ -28,7 +28,7 @@ out.write_text(f"""; The bytes of ../wasm/milawa-verified.wasm, as a literal lis
 ;
 ; {len(bs)} bytes, sha256 {hashlib.sha256(bs).hexdigest()}
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-verified-wasm-bytes*
   '({body}))

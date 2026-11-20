@@ -46,7 +46,7 @@
 ; rstep-call-entry-3-at-1 specializes it first.  The same pattern applies to any
 ; status-general fact a running path composes.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "frozen")
 (include-book "ihs/quotient-remainder-lemmas" :dir :system)
@@ -562,7 +562,7 @@
   (implies (and (natp x) (posp y))
            (and (<= 0 (rem x y)) (< (rem x y) y)))
   :hints (("Goal" :in-theory (disable rem truncate)
-           :use ((:instance rem-bounds (x x) (y y))))))
+           :use ((:instance acl2::rem-bounds (x x) (y y))))))
 
 (defthm binop-sub-value
   (implies (and (unsigned-byte-p 32 a) (unsigned-byte-p 32 b))

@@ -37,7 +37,7 @@
 ; symbolic, in the abstract store with symbolic globals: the value read is whatever
 ; the frame holds, with no constraint on what that is.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "reads")
 

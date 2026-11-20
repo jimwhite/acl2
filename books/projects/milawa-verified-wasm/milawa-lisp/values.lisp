@@ -38,7 +38,7 @@
 ; Every function here is total.  Primitives that can fail return a tagged
 ; result (see MILAWA-OK / MILAWA-ABORT) rather than a bare value.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-integer-bound*
   (expt 2 30))

@@ -28,7 +28,7 @@
 ;   STEP is LOGIC mode and returns the LIST of successor configurations, so a step
 ;   exists exactly when that list is non-empty.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "/workspaces/acl2/.wasm-acl2/translate/gen/wasm-3.0/wasm3")
 (include-book "state")

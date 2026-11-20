@@ -123,7 +123,7 @@ HEADER = """\
 ; regression suite, and until then they are the honest lower-level stand-in for a
 ; Milawa events file.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "mvm")
 

@@ -8,7 +8,7 @@
 ; books (machine/, wasm/) build on it and are not written yet; see
 ; ../README.md for what is and is not proved.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "values")
 (include-book "eval")

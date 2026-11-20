@@ -85,7 +85,7 @@
 ; CONST with the immediate off the end is *cheaper* than a good CONST (55 < 67)
 ; because it aborts before pushing.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "/workspaces/acl2/.wasm-acl2/translate/gen/wasm-3.0/wasm3")
 (include-book "state")

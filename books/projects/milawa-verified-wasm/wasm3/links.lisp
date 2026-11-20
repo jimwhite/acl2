@@ -24,7 +24,7 @@
 ; search.  Do NOT disable the rule the level has to apply -- disabling
 ; `step/r-ctxt-label` while proving a frame level costs the proof.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "search")
 (include-book "chain")

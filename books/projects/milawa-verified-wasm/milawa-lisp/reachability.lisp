@@ -35,7 +35,7 @@
 ; hands ACL2 exactly the halt/step induction that a refinement proof wants.
 ; (The DEFINDUCTIVE version is in the history at commit 4814380c1b.)
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "metatheory")
 

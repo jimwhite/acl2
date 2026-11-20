@@ -43,7 +43,7 @@
 ; The outcome is (:MILAWA-OK . value) or (:MILAWA-ABORT . reason).  Running out
 ; of fuel is an abort, so the loop is total and no partiality enters the logic.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "values")
 

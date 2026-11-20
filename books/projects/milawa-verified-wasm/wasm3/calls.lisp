@@ -27,7 +27,7 @@
 ;   (step/prefix7 instrs) = 1     (step/r-ctxt-instrs cfg) = NIL
 ;   (step/r-call_ref-func cfg) = T (step cfg) has length 1
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "context")
 

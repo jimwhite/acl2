@@ -21,7 +21,7 @@
 ; regression suite, and until then they are the honest lower-level stand-in for a
 ; Milawa events file.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "mvm")
 
@@ -122,3 +122,4 @@
      (mvm-abortedp (mvm-run (example-init code) *example-fuel*))
      (equal (mvm-steps (example-init code) *example-fuel*) 1)
      (equal (mvm-pc (mvm-run (example-init code) *example-fuel*)) 1))))
+

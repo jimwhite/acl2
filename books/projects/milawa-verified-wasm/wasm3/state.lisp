@@ -13,7 +13,7 @@
 ; Regenerate with `make -C wasm3 module`; `module-check` fails if the artifact and
 ; these constants have drifted apart.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-verified-store*
   '(:%REC

@@ -30,7 +30,7 @@
 ; for addressing, CODE-LEN for the bounds checks, STATUS for the frozen test, and
 ; RESULT for the observation that ends a run.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "instructions")
 

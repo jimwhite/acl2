@@ -9,7 +9,7 @@
 ; general statement (the evaluator computes the function) is the subject of
 ; the machine/refinement books, not of this one.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "eval")
 (include-book "programs")

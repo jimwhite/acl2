@@ -1,2 +1,5 @@
 # The module is a build artifact of the .wat beside it; `wasm/build.sh` makes it.
 *.wasm
+
+# Python bytecode from the harness (regenerated on every run).
+__pycache__/

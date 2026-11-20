@@ -18,7 +18,7 @@
 ;
 ; and the numbers in the comments are the step counts Node reported.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "mvm")
 

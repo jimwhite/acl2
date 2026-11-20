@@ -36,7 +36,7 @@
 ; as terms is what lets the measure checks compare two spellings of the same
 ; list instead of two numbers.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "running")
 

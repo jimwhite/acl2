@@ -40,7 +40,7 @@ HEADER = """; The decoded module, as a logic constant.
 ; Everything below the constant is quoteworthy: the module is a ground term, so
 ; W3T::STEP, W3T::MODULE-P and the field accessors can all be reasoned about.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-verified-module*
   '{module})
@@ -86,7 +86,7 @@ STATE_HEADER = """; The instantiated store and frame, as logic constants.
 ; Regenerate with `make -C wasm3 module`; `module-check` fails if the artifact and
 ; these constants have drifted apart.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-verified-store*
   '{store})

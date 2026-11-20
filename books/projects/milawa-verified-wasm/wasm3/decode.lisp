@@ -34,7 +34,7 @@
 ; question, not a proof question); or accept the script and say so in the trust
 ; table.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 ; The pinned tree, by absolute path: the one place to edit if the pin moves, or if
 ; the clone lives somewhere else.  (ADD-INCLUDE-BOOK-DIR would be tidier, but

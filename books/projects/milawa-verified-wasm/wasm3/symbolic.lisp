@@ -75,7 +75,7 @@
 ; the lemma below it.  That is the plan; this book only fixes the abstraction it
 ; will be stated over.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "/workspaces/acl2/.wasm-acl2/translate/gen/wasm-3.0/wasm3")
 (include-book "state")

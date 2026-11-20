@@ -57,7 +57,10 @@ book tree.**  Rationale in §6.
 
 The work has started at `books/projects/milawa-verified-wasm/`; see its `README`
 for the authoritative status, and its "What we learned" section for the ACL2 and
-`definductive` findings.  In terms of the phases below:
+`definductive` findings.  Every book there is in the project's own
+`MILAWA-WASM` package, so its names cannot collide with another book's; the
+name is project-specific rather than `MILAWA` because the Milawa ACL2 tree
+already uses that package.  In terms of the phases below:
 
 - **Phase 1 (the spec) is largely done.**  `MILAWA-EVAL` exists as a total,
   fuelled machine (`MILAWA-STEP` plus the one-tail-call loop `MILAWA-RUN`) in

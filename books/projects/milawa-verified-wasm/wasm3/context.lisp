@@ -43,7 +43,7 @@
 ; for the rule that would otherwise fire, then expand STEP once and let the
 ; rewrite rule kill that branch.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "frames")
 (include-book "size")

@@ -60,6 +60,11 @@ fi
 # The driver: include the book, then the script (or stdin), then leave.
 driver=$(mktemp)
 {
+  # The project's books are in the MILAWA-WASM package, whose defpkg is not an
+  # embedded event form and so lives in package.lsp, loaded before any book (the
+  # same file each directory's cert.acl2 loads for certification).
+  echo "(ld \"../package.lsp\")"
+  echo "(in-package \"MILAWA-WASM\")"
   [ -n "$BOOK" ] && echo "(include-book \"$BOOK\")"
   if [ -n "$SCRIPT" ]; then
     cat "$SCRIPT"

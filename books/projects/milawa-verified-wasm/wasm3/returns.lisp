@@ -22,7 +22,7 @@
 ; what survives -- which is why the two lemmas below are stated with the value
 ; SYMBOLIC and nothing else in the instruction list.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "calls")
 

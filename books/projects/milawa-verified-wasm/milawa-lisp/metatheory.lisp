@@ -25,7 +25,7 @@
 ;
 ;   * MILAWA-- stays inside the value domain.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "eval")
 (include-book "programs")

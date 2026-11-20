@@ -29,7 +29,7 @@
 ; it fires because `rest` is non-empty and hence the slice is a strict prefix.
 ; That is why every lemma in this file carries `(consp rest)`.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "head")
 

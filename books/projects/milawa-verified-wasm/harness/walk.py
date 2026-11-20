@@ -44,7 +44,7 @@ def func_body(index):
 
 def script(body, steps, full, value):
     L = [
-        '(in-package "ACL2")',
+        '(in-package "MILAWA-WASM")',
         f"(defconst *pz* (mvm-abs-z-abstract (list 0 1 2 3) 4000 4200 100 {value} 0))",
         "(defconst *pb* '" + body + ")",
         "(defconst *c0* (list :|%;%| *pz*",

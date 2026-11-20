@@ -8,7 +8,7 @@
 ;
 ; 540 bytes, sha256 641f7153b74b58d4c500ae70addfeda87649905073d5cc383e103f72bb62f51c
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-verified-wasm-bytes*
   '(   0 97 115 109 1 0 0 0 1 9 2 96

@@ -21,7 +21,7 @@
 ;   * the module's values are unsigned 32-bit words, because that is what i32
 ;     load/store moves, so a word is four bytes and no more.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 ; IH S (the integer hardware library in books/ihs) supplies the bit-vector
 ; lemmas; with plain MOD/FLOOR the round trip below is provable in principle but

@@ -49,7 +49,7 @@
 ; second position of the inner label is not an instruction of the outer body at
 ; all -- it is a one-instruction configuration in its own right.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "links")
 
@@ -1225,7 +1225,7 @@
   (implies (and (integerp b) (<= 0 b) (< b 256))
            (equal (loghead 8 b) b))
   :hints (("Goal" :in-theory (disable loghead)
-           :use ((:instance loghead-identity (size 8) (i b))))))
+           :use ((:instance acl2::loghead-identity (size 8) (i b))))))
 (defthm logapp-four-bytes
   (implies (mvm-bytes-p (list b0 b1 b2 b3))
            (equal (mvm-bytes4-to-word b0 b1 b2 b3)

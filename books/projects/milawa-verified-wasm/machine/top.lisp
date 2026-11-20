@@ -6,7 +6,7 @@
 
 ; Load everything in this directory.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "mvm")
 (include-book "mvm-tests")

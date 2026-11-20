@@ -13,7 +13,7 @@
 ; The functions below are transcribed verbatim from milawa-init in
 ; books/projects/milawa/milawa2.lsp.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (defconst *milawa-demo-program*
   '(;; (not (x) (if x nil t))

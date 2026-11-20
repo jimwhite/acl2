@@ -12,7 +12,7 @@
 ; general rules in head.lisp cannot be used at this position.  An instance is
 ; what works.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "head")
 

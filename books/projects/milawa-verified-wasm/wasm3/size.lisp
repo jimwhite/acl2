@@ -44,7 +44,7 @@
 ; than the list" is FALSE without a length hypothesis.  The same shape of trap as
 ; TAKE-LEN-OF-APPEND in memory.lisp.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "/workspaces/acl2/.wasm-acl2/translate/gen/wasm-3.0/wasm3")
 

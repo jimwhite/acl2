@@ -1194,4 +1194,18 @@ so a community certification run never has to find it.  The 26 books of the WASM
 and certified (~5 min); `make -C translate check-il SPEC=3.0` re-derives that IL
 from the spec sources through Nix and reports it reproducible.
 
+**The namespace is `MILAWA-WASM`.**  Every book in the three directories starts
+`(in-package "MILAWA-WASM")`, so the project's function and theorem names cannot
+collide with another book's.  A `defpkg` is not an embedded event form, so the
+definition lives in `package.lsp` at the project root and each directory's
+`cert.acl2` loads it before certification (the `powerlists/` convention); a
+session that includes a book by hand must load `package.lsp` first, and the
+harness does it automatically for scratch scripts.  The name is project-specific
+rather than `MILAWA` because `../milawa/ACL2/package.lsp` already defines a
+`MILAWA` package with a different import list.  The import list is
+`*acl2-exports*` plus `*common-lisp-symbols-from-main-lisp-package*`, with
+`expt2`, `logapp`, `loghead` and `logtail` added from the `ihs` books (they are
+documented there but not exported by ACL2); other system-book names are written
+with `acl2::` (`rem-bounds`, `loghead-identity`).
+
 Design and plan: [`../milawa/VERIFIED-WASM-LISP.md`](../milawa/VERIFIED-WASM-LISP.md).

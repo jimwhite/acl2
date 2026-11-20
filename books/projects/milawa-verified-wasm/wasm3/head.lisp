@@ -45,7 +45,7 @@
 ; program rather than about the spec's representation.  Measured: 21,597 prover
 ; steps for the `step/r-read` form, 21,668 for the whole `step`.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 (include-book "returns")
 

@@ -29,7 +29,7 @@
 ; honestly costs three small functions and means the model does not quietly
 ; assume bignums the module does not have.
 
-(in-package "ACL2")
+(in-package "MILAWA-WASM")
 
 ;; ---------------------------------------------------------------------------
 ;; 32-bit arithmetic, as the module has it
