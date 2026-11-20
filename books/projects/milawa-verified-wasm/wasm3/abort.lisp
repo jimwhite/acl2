@@ -363,24 +363,6 @@
 ; helper descent as the inner step: 28.6M prover steps (the guards and the
 ; label rule's measure over the full store dominate).
 
-(defthm dcallee-pair-shape
-  (and (consp (dcallee-pair bytes sp pc clen result w))
-       (equal (car (dcallee-pair bytes sp pc clen result w)) :|%;%|)
-       (true-listp (cdr (dcallee-pair bytes sp pc clen result w)))
-       (equal (len (cdr (dcallee-pair bytes sp pc clen result w))) 2)
-       (equal (cadr (dcallee-pair bytes sp pc clen result w))
-              (w3t::$sof (w3t::$with_global
-                          (list :|%;%| (frozen-store bytes sp pc clen 1 result)
-                                (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0
-                                                               (list :const (list :i32) w))))
-                          1 (list :const (list :i32) (dadd pc)))))
-       (equal (caddr (dcallee-pair bytes sp pc clen result w))
-              (w3t::$fof (w3t::$with_global
-                          (list :|%;%| (frozen-store bytes sp pc clen 1 result)
-                                (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0
-                                                               (list :const (list :i32) w))))
-                          1 (list :const (list :i32) (dadd pc)))))))
-
 (defthm dlabel-abort-callee-helper (equal (w3t::step (list :|%;%| (dcallee-pair bytes sp pc clen result w) (list (list :label_%{%}% 1 nil (list (list :frame_%{%}% 1 (milawa-callee-frame 4) (list (list :label_%{%}% 1 nil *abort-body*)))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (milawa-callee-frame 4)) 3 (list :const (list :i32) 2))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :label_%{%}% 1 nil (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (milawa-callee-frame 4)) 3 (list :const (list :i32) 2))) (list (list :label_%{%}% 1 nil *abort-body-after*))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dcallee-pair milawa-callee-frame))))
 
 ;; ---------------------------------------------------------------------------
@@ -394,13 +376,6 @@
 ; is a two-element true list), and the outer step is unfolded by handing in the
 ; STEP DEFINITION INSTANCE as a :use -- the :expand of the step does not fire
 ; once the config's arguments have been rewritten.
-
-(defthm with-global-shape
-  (and (consp (w3t::$with_global z x v))
-       (equal (car (w3t::$with_global z x v)) :|%;%|)
-       (true-listp (cdr (w3t::$with_global z x v)))
-       (equal (len (cdr (w3t::$with_global z x v))) 2))
-  :hints (("Goal" :in-theory (enable w3t::$with_global))))
 
 (defthm dlabel-abort-callee (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :label_%{%}% 1 nil (list (list :frame_%{%}% 1 (milawa-callee-frame 4) (list (list :label_%{%}% 1 nil *abort-body*)))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (milawa-callee-frame 4)) 3 (list :const (list :i32) 2))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :label_%{%}% 1 nil (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (milawa-callee-frame 4)) 3 (list :const (list :i32) 2))) (list (list :label_%{%}% 1 nil *abort-body-after*))))))))) :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dcallee-pair pair-spelled-is-dcallee w3t::$sof w3t::$fof w3t::$store w3t::$frame w3t::$with_global frozen-store w3t::$with_local iz6 dadd w3t::$binop_ milawa-callee-frame) :expand ((w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :label_%{%}% 1 nil (list (list :frame_%{%}% 1 (milawa-callee-frame 4) (list (list :label_%{%}% 1 nil *abort-body*))))))))) :use ((:instance (:definition w3t::step) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :label_%{%}% 1 nil (list (list :frame_%{%}% 1 (milawa-callee-frame 4) (list (list :label_%{%}% 1 nil *abort-body*))))))))) (:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :label_%{%}% 1 nil (list (list :frame_%{%}% 1 (milawa-callee-frame 4) (list (list :label_%{%}% 1 nil *abort-body*))))))))) dframe-abort-callee))))
 

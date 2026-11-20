@@ -215,7 +215,7 @@ dret-label-vals-in-top / dret-frame-vals-in-top (10.4M/1.07M/19.6k/43) peel
 the nesting with the state frame, the outer frame's locals and the inner
 frame's locals independent; their instantiations at the abort store are
 direct rewrites (2.7k/2.2k/1.7k/1.3k), and the path ends at the stuck host
-config.  Next: the halt branch's $depth call inside the wasm label.  Cost note: the
+config.  The halt branch's $depth call entry is now closed through the label-1 and frame-6 lifts (halt.lisp, 29 events, 12.9M steps), and the shape facts live there; abort stays at 38 events/42.4M.  Next: $depth's body.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
