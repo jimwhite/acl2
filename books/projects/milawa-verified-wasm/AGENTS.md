@@ -198,7 +198,7 @@ the ADD/SUB/LT OR-chain, the IFZ and JMP tests (`fetch.lisp`,
 `dispatch-tests.lisp`), the HALT branch's first call (`halt.lisp`), and the
 unknown-opcode abort through its closed frame lift and its callee's body
 -- the status write and the frame descent into function 4 (`abort.lisp`,
-32 events, 43.2M steps).  The abort's step back out -- the caller's label lift
+40 events, 54.7M steps).  The abort's step back out -- the caller's label lift
 over the callee frame, then the implicit label-vals/frame-vals returns -- is
 the open piece; the bridge-vs-spelling tension there is recorded in the traps.
 The callee frame descent is restated at the helper pair (499k) so the way out
@@ -210,9 +210,12 @@ arguments are rewritten) with the store's shape as a fact (with-global-shape).
 The outer frame lift is CLOSED (the parameterized wrapper with the inner
 result's pair shape, 52k; applied at the concrete store/frame, 8.9M), and the
 implicit value-returns are proved (label-vals 125, frame-vals 912, the
-callee-frame-around-a-value wrapper 19.6k).  Next: compose those through the
-caller's label and frame 6 (the first cut at the caller's label over the
-callee frame does not rewrite the inner step), then the host return.  Cost note: the
+callee-frame-around-a-value wrapper 19.6k).  This is CLOSED: dret-label-vals-in-frame / dret-frame-vals-in-label /
+dret-label-vals-in-top / dret-frame-vals-in-top (10.4M/1.07M/19.6k/43) peel
+the nesting with the state frame, the outer frame's locals and the inner
+frame's locals independent; their instantiations at the abort store are
+direct rewrites (2.7k/2.2k/1.7k/1.3k), and the path ends at the stuck host
+config.  Next: the halt branch's $depth call inside the wasm label.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
