@@ -175,10 +175,12 @@ already uses that package.  In terms of the phases below:
   (fetch: 111 events, 211.1M steps), and the last three dispatch tests -- the
   ADD/SUB/LT OR-chain, the IFZ test and the JMP test, each through both branch
   entries and block/label positions (dispatch-tests: 114 events, 559.6M steps).
-  The false path reaches (call 4), the unknown-opcode abort.  Next are that
-  abort call and then the five opcode bodies -- the hard part, because every
-  body calls the module's runtime functions ($depth, $pop, $push, $in_code,
-  $abort), so each needs those callees' body and return facts.  Two findings are
+  The false path reaches (call 4), the unknown-opcode abort.  The halt branch's
+  first call is then taken through its split, entry into $depth's frame and
+  wasm-label lift (halt: 5 events, 2.0M steps).  Next are the abort call and the
+  rest of the five opcode bodies -- the hard part, because every body calls the
+  module's runtime functions ($depth, $pop, $push, $in_code, $abort), so each
+  needs those callees' body and return facts.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every

@@ -52,6 +52,7 @@ any book in the tree has been skipped.
 | **The opcode fetch and the first frame write**: the `i32.load` of the opcode — a read whose guard is the numeric round trip, with the in-bounds hypothesis that rules out the TRAP branch — then `local.set 0`, the first write, storing the opcode in the callee frame's local 0; both lifted to function 6's frame at symbolic `pc`/`clen`/`bytes`/opcode | **proved** (`wasm3/load.lisp`, 15 measured events, 8.49M prover steps) |
 | **The next fetch instructions and the first two dispatch tests**: the second `global.get 1` (pc, through the updated frame); the add `pc + 4`; the `global.set 1` write of pc; `local.get 0`; the opcode test `(relop eq)` against zero and its ifelse in both cases; the block step; then the CONST test (`local.get 0`, `(const 1)`, `relop eq`) and its ifelse and block/label positions; generic ifelse fail/slice facts for every test; and the halt branch's first call split (`(:CALL 2)` = `(:REF.FUNC_ADDR 2)` + the call_ref type, at the callee pair) | **proved** (`wasm3/fetch.lisp`, 111 measured events, 211.1M prover steps) |
 | **The last three dispatch tests**: the ADD/SUB/LT test's whole OR-chain (`eq 2`, `eq 3`, `or`, `eq 4`, `or`) and its ifelse (opcode 2/3/4 vs the rest); the IFZ test (`const 5`) and the JMP test (`const 6`), each through its local.get, equality, ifelse (both cases) and block/label positions; the false path now reaches `(call 4)`, the unknown-opcode abort | **proved** (`wasm3/dispatch-tests.lisp`, 114 measured events, 559.6M prover steps) |
+| **The halt branch's first call**: `(:CALL 2)` splits to `(:REF.FUNC_ADDR 2)` + the call_ref type, the entry pushes `$depth`'s frame (via the context rule's failure fact), and both steps are lifted inside the HALT block's wasm label | **proved** (`wasm3/halt.lisp`, 5 measured events, 2.0M prover steps) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -65,12 +66,12 @@ One command, from this directory:
 ```
 $ make check ACL2=/path/to/saved_acl2
 --- lint (parentheses the way ACL2 reads them)
-lint: 37 file(s) balance the way ACL2 reads them
+lint: 38 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 37 book(s))
---- every book has a certificate           (37 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 38 book(s))
+--- every book has a certificate           (38 books, all certified)
 
 ===== summary =====
 books certified:  33

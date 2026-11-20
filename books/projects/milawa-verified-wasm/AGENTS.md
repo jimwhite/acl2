@@ -127,6 +127,18 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   `icfg` only because both sides of the `:use` formula are normalized together.
   Measured on the add's context lift: 8.9M steps and a waterfall failure in
   `icfg` form, 349k steps and Q.E.D. in constructor form.
+- **A call never reduces by plain evaluation.**  The step dispatcher reaches
+  `step/r-ctxt-instrs` and stalls on the read rule's symbolic guard.  Use
+  running.lisp's `no-ctxt-instrs-on-call-3` template: state the context rule's
+  failure on the `(ref.func_addr + call_ref)` pair with an `:expand` of the
+  context rule and a `:free` expansion of `search21`, then the entry is the
+  step with that fact `:used` and `step` `:expanded`.  The call must be at the
+  CALLEE pair -- the type lookup goes through the frame's module.
+- **Inside a wasm label the inner step is a context step.**  With `step`
+  enabled the label rule's body unfolds the inner step to
+  `step/r-ctxt-instrs`, so the label lift must hand it the CONTEXT fact
+  (`dctxt-call2`), not the step fact; with `step` disabled the outer step
+  cannot unfold to the label rule at all.
 - **A slice whose only rule is late in the dispatcher needs a context-failure
   fact.**  `step` tries `step/r-ctxt-instrs` before `step/r-local.set`; the
   search refuses a slice that consumes the whole instruction list (its splice
