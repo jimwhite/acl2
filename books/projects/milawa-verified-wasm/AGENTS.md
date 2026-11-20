@@ -215,7 +215,31 @@ dret-label-vals-in-top / dret-frame-vals-in-top (10.4M/1.07M/19.6k/43) peel
 the nesting with the state frame, the outer frame's locals and the inner
 frame's locals independent; their instantiations at the abort store are
 direct rewrites (2.7k/2.2k/1.7k/1.3k), and the path ends at the stuck host
-config.  The halt branch's $depth call entry is now closed through the label-1 and frame-6 lifts (halt.lisp, 29 events, 12.9M steps), and the shape facts live there; abort stays at 38 events/42.4M.  Next: $depth's body.  The (global.get 0) read is closed end to end
+config.  The halt branch's $depth call entry is now closed through the label-1 and frame-6 lifts (halt.lisp, 29 events, 12.9M steps), and the shape facts live there; abort stays at 38 events/42.4M.  The $depth call is now closed end to end: its (global.get 0) read, its div
+step (whose value-range fact needed arithmetic/mod-gcd's division facts and
+the :nonlinearp hint), and both implicit-return dissolves (label-vals and
+frame-vals), each lifted through the halt-body context, label 0, label 1 and
+frame 6.  halt.lisp is at 73 events, 54.6M steps.  Three lessons from the
+return chains: (1) a hint helper that passes an empty :in-theory makes the
+theory NIL and silently disables every rule -- the div's s141-nil fact
+"failed" for exactly this; (2) the chain hypothesis should be the val-p
+alone, not (and (un-p ...) (val-p ...)) -- the conjunction's clausification
+loses the tautology with the instance's equality; (3) the label-vals result's
+instruction list is the label's body, not a list containing it.
+
+OPEN: the eqz testop's context step (dteq-ctxt).  Its search has a value
+prefix (prefix7 = 1), and every attempt ends with the ctxt-instrs definition
+instance showing (search21 0 0 0 BODY 0 ...) even when a dteq-prefix7 fact
+(prefix7 = 1) is available and prefix7 is disabled; the k = 1 branch's step
+failure is fail-lone-testop and the k = 0 slice step is dteq-slice (both
+proven).  match13-one-const is proven for the prefix check.  The next thing
+to inspect is why the instance's %T9 becomes 0: possibly the definition
+instance is being created through a different path than :use (the expected
+one is (:instance (:definition w3t::step/r-ctxt-instrs) (%a0 HC))).  After
+that: the ifelse (with the depth-nonzero condition), $pop, the writes, and
+function 6's return.
+
+Earlier notes, kept because the read chain is the template:
 (halt.lisp, 2.2M steps for its 10-fact chain: dgread-slice/-ctxt/-step/
 -label, dhread-frame at the OUTER pair, dhread-ctxt/-label/-labelctxt/
 -label6/-outer).  The div step that follows is BLOCKED, and the reason is
