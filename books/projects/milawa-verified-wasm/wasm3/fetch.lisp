@@ -400,3 +400,124 @@
 (defthm dlabel6-local-get-gen (implies (equal (w3t::$local z 0) (list (list :const (list :i32) w))) (equal (w3t::step (list :|%;%| z (list (list :label_%{%}% 1 nil (cdr (cdr (cdr (cdr (cdr *ft2*))))))))) (list (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% 1 nil (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))) dstep-local-get-gen))))
 
 (defthm douter-local-get (implies (equal (w3t::$local (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) 0) (list (list :const (list :i32) w))) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs w3t::$local w3t::$sof w3t::$fof w3t::$with_global frozen-store dadd w3t::$binop_) :use ((:instance (:definition w3t::step/r-ctxt-frame) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))) (:instance dlabel6-local-get-gen (z (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))))))))
+
+;; ---------------------------------------------------------------------------
+;; The opcode test: (local.get 0) (const 0) (relop eq)
+;; ---------------------------------------------------------------------------
+
+; The dispatch test computes the opcode against zero.  The relop is a pure
+; instruction; the (const 0) is already a value, so both leading consts and the
+; relop are one step (deq-slice).  The search's k = 2 and k = 1 slices (the lone
+; relop and one operand) must be unsteppable; as with the add, keep the facts in
+; constructor form (the icfg form of fail-relop-eq-one is 286k steps, the
+; constructor form 35k).  (deq w) is 1 when w is 0 and 0 otherwise, so the next
+; step, the ifelse, is where the per-opcode case analysis begins.
+
+(defun deq (w) (w3t::$relop_ (list :i32) (list :eq) w 0))
+
+(defthm relop-eq-value
+  (unsigned-byte-p 32 (deq w)))
+
+(defthm integerp-deq
+  (integerp (deq w))
+  :rule-classes :type-prescription)
+
+(defthm deq-slice
+  (implies (unsigned-byte-p 32 w)
+           (equal (w3t::step (list :|%;%| z
+                                   (list (list :const (list :i32) w)
+                                         (list :const (list :i32) 0)
+                                         (list :relop (list :i32) (list :eq)))))
+                  (list (list :|%;%| z (list (list :const (list :i32) (deq w))))))))
+
+(defthm fail-lone-relop-eq
+  (equal (w3t::step (list :|%;%| z (list (list :relop (list :i32) (list :eq))))) nil)
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list (list :relop (list :i32) (list :eq))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list (list :relop (list :i32) (list :eq))))
+                            (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (list :relop (list :i32) (list :eq))))))))))
+
+(defthm fail-relop-eq-one
+  (implies (unsigned-byte-p 32 c)
+           (equal (w3t::step (list :|%;%| z (list (list :const (list :i32) c)
+                                           (list :relop (list :i32) (list :eq)))))
+                  nil))
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list (list :const (list :i32) c)
+                                                   (list :relop (list :i32) (list :eq))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (list (list :const (list :i32) c)
+                                          (list :relop (list :i32) (list :eq)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (list (list :const (list :i32) c)
+                                           (list :relop (list :i32) (list :eq))))
+                            (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (list :const (list :i32) c)
+                                                   (list :relop (list :i32) (list :eq))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (list (list :const (list :i32) c)
+                                           (list :relop (list :i32) (list :eq))))
+                            (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (list :const (list :i32) c)
+                                                   (list :relop (list :i32) (list :eq))))))
+                 (:instance fail-lone-relop-eq (z z))))))
+
+
+(defthm dctxt-relop-eq
+  (implies (unsigned-byte-p 32 w)
+           (equal (w3t::step/r-ctxt-instrs
+                   (list :|%;%| z
+                         (cons (list :const (list :i32) w)
+                               (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))
+                  (list (list :|%;%| z
+                              (cons (list :const (list :i32) (deq w))
+                                    (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs deq)
+                  :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                                   (w3t::%a0 (list :|%;%| z
+                                                   (cons (list :const (list :i32) w)
+                                                         (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))
+                        (:instance (:definition w3t::step/prefix7)
+                                   (w3t::%s (cons (list :const (list :i32) w)
+                                                  (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))
+                        (:instance (:definition w3t::step/search21)
+                                   (w3t::%k 2) (w3t::%lo 0) (w3t::%hi 2)
+                                   (w3t::%t6 (cons (list :const (list :i32) w)
+                                                   (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))
+                                   (w3t::%t9 2) (w3t::z z)
+                                   (w3t::%a0 (list :|%;%| z
+                                                   (cons (list :const (list :i32) w)
+                                                         (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))
+                        (:instance (:definition w3t::step/search21)
+                                   (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 2)
+                                   (w3t::%t6 (cons (list :const (list :i32) w)
+                                                   (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))
+                                   (w3t::%t9 2) (w3t::z z)
+                                   (w3t::%a0 (list :|%;%| z
+                                                   (cons (list :const (list :i32) w)
+                                                         (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))
+                        (:instance (:definition w3t::step/search21)
+                                   (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 2)
+                                   (w3t::%t6 (cons (list :const (list :i32) w)
+                                                   (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))
+                                   (w3t::%t9 2) (w3t::z z)
+                                   (w3t::%a0 (list :|%;%| z
+                                                   (cons (list :const (list :i32) w)
+                                                         (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))
+                        deq-slice
+                        (:instance fail-lone-relop-eq (z z))
+                        (:instance fail-relop-eq-one (z z) (c 0))))))
+
+
+(defthm dstep-relop-eq-gen (implies (unsigned-byte-p 32 w) (equal (w3t::step (list :|%;%| z (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))) (list (list :|%;%| z (cons (list :const (list :i32) (deq w)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))) :hints (("Goal" :use (dctxt-relop-eq) :expand ((w3t::step (list :|%;%| z (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))
+
+(defthm dlabel6-relop-eq-gen (implies (unsigned-byte-p 32 w) (equal (w3t::step (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))) (list (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (deq w)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))) dstep-relop-eq-gen))))
+
+(defthm douter-relop-eq (implies (unsigned-byte-p 32 w) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (deq w)) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs w3t::$local w3t::$sof w3t::$fof w3t::$with_global frozen-store dadd w3t::$binop_) :use ((:instance (:definition w3t::step/r-ctxt-frame) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) w) (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))) (:instance dlabel6-relop-eq-gen (z (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))))))))

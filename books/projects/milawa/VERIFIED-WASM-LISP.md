@@ -160,8 +160,9 @@ already uses that package.  In terms of the phases below:
   keeps them matchable through the label rule.  `wasm3/fetch.lisp` then reads
   global 1 again (pc) through the updated frame, does the `pc + 4` add (the
   `(const 4)` is already a value, so the add consumes both constants in one
-  step), writes pc back with `global.set 1`, and reads the saved opcode with
-  `local.get 0` (30 events, 15.6M steps).  Two findings are
+  step), writes pc back with `global.set 1`, reads the saved opcode with
+  `local.get 0`, and tests it against zero with `relop eq` (39 events, 16.9M
+  steps).  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every
