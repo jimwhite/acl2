@@ -234,3 +234,115 @@
 ; the caller's label), and it was the open step.  689k prover steps.
 
 (defthm dframe-abort-entry-abstract (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *abort-label-cfg*)))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *abort-label-cfg2*))))) :hints (("Goal" :in-theory (disable dcallee-pair w3t::$sof w3t::$fof w3t::$with_global frozen-store w3t::$with_local iz6 dadd w3t::$binop_) :use ((:instance dstep-frame-abort-param (s (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (f *frozen-entry-frame*) (fp (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))) (:instance dlabel-abort-entry-inzp)))))
+
+;; ---------------------------------------------------------------------------
+;; The callee's body: the status write, and the descent into function 4
+;; ---------------------------------------------------------------------------
+
+; Function 4's body is ((const 2) (global.set 3) (const 2)): the value 2, the
+; status write (wasm global 3, store global 8), then the implicit result.  The
+; body step is the local.set recipe: the lone global.set 3 fails
+; (fail-lone-global-set-3), the context search refuses the two-instruction
+; slice (ctxt-global-set3-slice-fails), and the slice is $WITH_GLOBAL
+; (dglobal-set3-slice).  The body's context/step/label lifts are generic in
+; the pair; the frame rule's wrapper for these bodies is parameterized with
+; the inner step at the same variable pair, and the application at the callee
+; pair (s = the store, f = the caller's frame 6, fp = function 4's frame) is
+; 6,877 steps.  This is the abort's descent into the callee; the step back OUT
+; (the caller's label lift over the callee frame, then the implicit returns)
+; is next and needs the accessors-off spelling treatment.
+
+(defthm fail-lone-global-set-3
+  (equal (w3t::step (list :|%;%| z (list '(:global.set 3)))) nil)
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list '(:global.set 3)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list '(:global.set 3)))
+                            (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list '(:global.set 3)))))))))
+
+(defthm ctxt-global-set3-slice-fails
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z
+                (list (list :const (list :i32) 2) '(:global.set 3))))
+         nil)
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z
+                                            (list (list :const (list :i32) 2) '(:global.set 3)))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (list (list :const (list :i32) 2) '(:global.set 3))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (list (list :const (list :i32) 2) '(:global.set 3)))
+                            (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z
+                                            (list (list :const (list :i32) 2) '(:global.set 3)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (list (list :const (list :i32) 2) '(:global.set 3)))
+                            (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z
+                                            (list (list :const (list :i32) 2) '(:global.set 3)))))
+                 (:instance fail-lone-global-set-3 (z z))))))
+
+(defthm dglobal-set3-slice
+  (equal (w3t::step (list :|%;%| z
+                          (list (list :const (list :i32) 2)
+                                '(:global.set 3))))
+         (list (list :|%;%| (w3t::$with_global z 3 (list :const (list :i32) 2))
+                     nil))))
+
+(defconst *abort-body*
+  (list (list :const (list :i32) 2)
+        '(:global.set 3)
+        (list :const (list :i32) 2)))
+
+(defconst *abort-body-after*
+  (list (list :const (list :i32) 2)))
+
+(defthm dctxt-abort-body
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z *abort-body*))
+         (list (list :|%;%| (w3t::$with_global z 3 (list :const (list :i32) 2))
+                     *abort-body-after*)))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+                  :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                                   (w3t::%a0 (list :|%;%| z *abort-body*)))
+                        (:instance (:definition w3t::step/prefix7)
+                                   (w3t::%s *abort-body*))
+                        (:instance (:definition w3t::step/search21)
+                                   (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                                   (w3t::%t6 *abort-body*) (w3t::%t9 1)
+                                   (w3t::z z)
+                                   (w3t::%a0 (list :|%;%| z *abort-body*)))
+                        (:instance (:definition w3t::step/search21)
+                                   (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1)
+                                   (w3t::%t6 *abort-body*) (w3t::%t9 1)
+                                   (w3t::z z)
+                                   (w3t::%a0 (list :|%;%| z *abort-body*)))
+                        dglobal-set3-slice
+                        (:instance fail-lone-global-set-3 (z z))))))
+
+(defthm dstep-abort-body
+  (equal (w3t::step (list :|%;%| z *abort-body*))
+         (list (list :|%;%| (w3t::$with_global z 3 (list :const (list :i32) 2))
+                     *abort-body-after*)))
+  :hints (("Goal" :in-theory (disable)
+                  :use (dctxt-abort-body)
+                  :expand ((w3t::step (list :|%;%| z *abort-body*))))))
+
+(defthm dlabel-abort-body-gen
+  (equal (w3t::step (list :|%;%| z (list (list :label_%{%}% 1 nil *abort-body*))))
+         (list (list :|%;%| (w3t::$with_global z 3 (list :const (list :i32) 2))
+                     (list (list :label_%{%}% 1 nil *abort-body-after*)))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+                  :use ((:instance (:definition w3t::step/r-ctxt-label)
+                                   (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% 1 nil *abort-body*)))))
+                        dctxt-abort-body))))
+
+(defthm dstep-frame-abort-body-param (implies (and (equal (w3t::step (list :|%;%| (list :|%;%| s fp) (list (list :label_%{%}% 1 nil *abort-body*)))) (list (list :|%;%| (w3t::$with_global (list :|%;%| s fp) 3 (list :const (list :i32) 2)) (list (list :label_%{%}% 1 nil *abort-body-after*))))) (< (w3t::%size (list (list :label_%{%}% 1 nil *abort-body*))) (w3t::%size (list (list :frame_%{%}% 1 fp (list (list :label_%{%}% 1 nil *abort-body*))))))) (equal (w3t::step (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 fp (list (list :label_%{%}% 1 nil *abort-body*)))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| s fp) 3 (list :const (list :i32) 2))) f) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| s fp) 3 (list :const (list :i32) 2))) (list (list :label_%{%}% 1 nil *abort-body-after*)))))))) :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs) :expand ((w3t::step (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 fp (list (list :label_%{%}% 1 nil *abort-body*))))))) :use ((:instance (:definition w3t::step/r-ctxt-frame) (w3t::%a0 (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 fp (list (list :label_%{%}% 1 nil *abort-body*))))))) (:instance dlabel-abort-body-gen (z (list :|%;%| s fp)))))))
+
+(defthm dframe-abort-callee (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :frame_%{%}% 1 (milawa-callee-frame 4) (list (list :label_%{%}% 1 nil *abort-body*)))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (milawa-callee-frame 4)) 3 (list :const (list :i32) 2))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (milawa-callee-frame 4)) 3 (list :const (list :i32) 2))) (list (list :label_%{%}% 1 nil *abort-body-after*))))))) :hints (("Goal" :use ((:instance dstep-frame-abort-body-param (s (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (f (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (fp (milawa-callee-frame 4))) (:instance dlabel-abort-body-gen (z (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (milawa-callee-frame 4))))))))
