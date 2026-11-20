@@ -452,3 +452,35 @@
 
 (defthm dw-outer (implies (w3t::val-p (list :const (list :i32) (w3t::$truncz (* 1/4 sp)))) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :frame_%{%}% 1 (milawa-callee-frame 2) (list (list :const (list :i32) (w3t::$truncz (* 1/4 sp))))) (cdr (caddr *d-ifelse*)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))) (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (w3t::$truncz (* 1/4 sp))) (cdr (caddr *d-ifelse*)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))))) :hints (("Goal" :in-theory (disable w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 dcallee-pair dh-pair-spelled dadd) :use (dw-label6 (:instance dstep-frame-outer-gen (s (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (f *frozen-entry-frame*) (fp (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (b (cons (list :label_%{%}% 0 nil (cons (list :frame_%{%}% 1 (milawa-callee-frame 2) (list (list :const (list :i32) (w3t::$truncz (* 1/4 sp))))) (cdr (caddr *d-ifelse*)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))) (b2 (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (w3t::$truncz (* 1/4 sp))) (cdr (caddr *d-ifelse*)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))) (zp (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))))))))))
 
+
+;; ---------------------------------------------------------------------------
+;; $depth's value on the stack, and the eqz test (first steps)
+;; ---------------------------------------------------------------------------
+;
+; After the two dissolves the halt body is ((const V) SUF) with V =
+; ($truncz (* 1/4 sp)) and SUF starting with (:TESTOP (:I32) (:EQZ)).  The
+; testop consumes the value and pushes ($testop_ (:i32) (:eqz) V).
+;
+; dteq-slice is the pure testop rule on the slice (no val-p hypothesis is
+; needed: the pure rule matches the const by shape).  dteq-s141 is the
+; return-label pure rule's search being nil on this body.
+;
+; OPEN: the context step at the halt body (dteq-ctxt).  Its search has a
+; value prefix (prefix7 = 1), so the k = 1 attempt's match13 on the prefix
+; needs val-p of the const; with val-p kept opaque (to stop the
+; un-p/numerator-denominator unfolding) ACL2 still case-splits on it, and the
+; false branch's search is (search21 0 0 0 BODY 1 ...), whose evaluation is
+; the open piece.  match13-one-const is the fact that should decide the
+; k = 1 premise: (match13 ((const v))) = ((((const v)))) under val-p.  Next:
+; feed it (and the corresponding k = 1 step failure, fail-lone-testop) to the
+; context proof so the search reduces without case-splitting.
+
+(defthm match13-one-const
+  (implies (w3t::val-p (list :const (list :i32) v))
+           (equal (w3t::step/match13 (list (list :const (list :i32) v)))
+                  (list (list (list (list :const (list :i32) v)))))))
+
+
+(defthm dteq-slice (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :const (list :i32) (w3t::$truncz (* 1/4 sp))) (list :testop (list :i32) (list :eqz))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc)))) (w3t::$fof (w3t::$with_global (list :|%;%| (frozen-store bytes sp pc clen 1 result) (w3t::$frame (w3t::$with_local (iz6 bytes sp pc clen result) 0 (list :const (list :i32) w)))) 1 (list :const (list :i32) (dadd pc))))) (list (list :const (list :i32) (w3t::$testop_ (list :i32) (list :eqz) (w3t::$truncz (* 1/4 sp)))))))) :hints (("Goal" :in-theory (disable w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 dcallee-pair dadd w3t::$binop_))))
+
+(defthm dteq-s141 (implies (w3t::val-p (list :const (list :i32) (w3t::$truncz (* 1/4 sp)))) (equal (w3t::step_pure/search141 9 9 9 (cons (list :const (list :i32) (w3t::$truncz (* 1/4 sp))) (cons (list :testop (list :i32) (list :eqz)) (cddr (cdr (caddr *d-ifelse*)))))) nil)) :hints (("Goal" :in-theory (disable w3t::val-p val-p-dconst w3t::num_-p w3t::in-p w3t::un-p w3t::$truncz truncate) :use ((:instance (:definition w3t::step_pure/search141) (w3t::%k 9) (w3t::%lo 9) (w3t::%hi 9) (w3t::%t130 (cons (list :const (list :i32) (w3t::$truncz (* 1/4 sp))) (cons (list :testop (list :i32) (list :eqz)) (cddr (cdr (caddr *d-ifelse*)))))))))))
