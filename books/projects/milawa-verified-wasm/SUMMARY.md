@@ -24,7 +24,7 @@ flowchart TB
     M -- "L3: VM refines the interpreter" --> E
 ```
 
-## What is proved (38 books, no `skip-proofs`, no `defaxiom`)
+## What is proved (39 books, no `skip-proofs`, no `defaxiom`)
 
 | Book | Content |
 |---|---|
@@ -46,6 +46,7 @@ flowchart TB
 | `wasm3/fetch.lisp` | **the next fetch instructions and the first two tests**: the second `global.get 1` (pc), the add, the `global.set 1` write of pc, `local.get 0`, the opcode test and its ifelse, the block step, the CONST test and its branches, the generic ifelse facts, and the halt branch's first call split.  111 events, 211,114,150 prover steps, 175.2s |
 | `wasm3/dispatch-tests.lisp` | **the last three dispatch tests**: the ADD/SUB/LT OR-chain position by position and its ifelse (opcode 2/3/4 vs the rest), then the IFZ test (`const 5`, ifelse at *ft2* 28) and the JMP test (`const 6`, ifelse at 32), each with both branch entries and the block/label positions.  The false path now reaches `(call 4)`, the unknown-opcode abort.  Split from fetch to keep the fetch certificate under three minutes.  114 events, 559,642,678 prover steps, 561.4s |
 | `wasm3/halt.lisp` | **the halt branch's first call**: (:CALL 2) -> (:REF.FUNC_ADDR 2) + *t3*, the call entry into function 2's frame (the step needs the context rule's failure fact, running.lisp's no-ctxt template), and both steps lifted inside the HALT block's wasm label.  The inner step inside the label is a CONTEXT step, so the label lift hands it dctxt-call2, not the step fact.  5 events, 2,021,101 prover steps, 5.9s |
+| `wasm3/abort.lisp` | **the unknown-opcode abort**: (:CALL 4) -> (:REF.FUNC_ADDR 4) + *t3*, the call entry into function 4's frame (its body sets status := 2 and yields 2), and the split's and entry's lifts through the caller's admin label.  Function 4's return is implicit (the body ends with a value; Step_pure/label-vals and frame-vals carry it out).  The entry's FRAME lift is open: the frame rule's inner label step is at the spelled-out pair ($sof/$fof of the $with_global term), so the fact at (dcallee-pair ...) does not match and the dispatcher stalls on step/r-ctxt-instrs; stating the label fact at the spelled-out pair is the next attempt.  6 events, 2,461,713 prover steps, 6.2s |
 | `wasm3/search.lisp` | the search's **failure** facts (an instruction missing its operands is not stepped) and the second body position; the book that explains why the search finds an instruction to run at k = 0 every time in this body |
 | `wasm3/size.lisp` | `%SIZE` is `acl2-count` behind an `mbe`, plus the monotonicity the context rules' measure conditions need -- the bridge every descent lemma rests on |
 | `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
