@@ -270,3 +270,78 @@
                                   (mvm-image-words-of-mvm-word-list-to-bytes mvm-word-list-p))
                   :use ((:instance mvm-image-words-of-mvm-word-list-to-bytes
                                    (ws (revappend stack nil)))))))
+
+;; ---------------------------------------------------------------------------
+;; Reading the i-th word out of an image
+;; ---------------------------------------------------------------------------
+;
+; The i32.load positions in the dispatcher read four bytes at a symbolic byte
+; address and need the WORD those bytes spell.  With the image of a word list,
+; the i-th word is at byte offset 4i, and this is the decomposition the memory
+; book's earlier note left open:
+;
+;   (take 4 (nthcdr (* 4 i) (mvm-word-list-to-bytes ws)))
+;     = (mvm-word-to-bytes (nth i ws))               for i < (len ws)
+;
+; The induction is on (i, ws) together (IMAGE-IND), NOT on (nthcdr i ws); the
+; book's note records that the wrong scheme spent 387 s and 56 GB.  The byte
+; constructors stay disabled so the arithmetic never opens into LOGHEAD; the
+; append/nthcdr arithmetic is done by the four small lemmas, and BYTES-SUCC4
+; states the succ step at the index (* 4 i) -- the shape the induction actually
+; produces.  Total: 1.42M prover steps, of which BYTES-SUCC4 is 1.41M (the
+; arithmetic :USE instance is the expensive part; the extraction itself is
+; 1,843).
+
+(defun len-ind (a) (if (consp a) (len-ind (cdr a)) t))
+(defthm nthcdr-of-append-len
+  (implies (and (true-listp a) (natp b))
+           (equal (nthcdr (+ (len a) b) (append a c))
+                  (nthcdr b c)))
+  :hints (("Goal" :induct (len-ind a))))
+
+(defun nthcdr-ind (n l)
+  (if (or (zp n) (atom l)) t (nthcdr-ind (1- n) (cdr l))))
+(defthm nthcdr-of-len
+  (implies (and (true-listp l) (natp n) (<= (len l) n))
+           (equal (nthcdr n l) nil))
+  :hints (("Goal" :induct (nthcdr-ind n l))))
+
+(defthm nthcdr-of-append-four
+  (implies (natp b)
+           (equal (nthcdr (+ 4 b) (append (mvm-word-to-bytes w) c))
+                  (nthcdr b c)))
+  :hints (("Goal" :use ((:instance nthcdr-of-append-len
+                                   (a (mvm-word-to-bytes w)) (b b) (c c))))))
+
+(defun take-ind (n a)
+  (if (or (zp n) (atom a)) t (take-ind (1- n) (cdr a))))
+(defthm take-of-append
+  (implies (and (natp n) (true-listp a) (<= n (len a)))
+           (equal (take n (append a b)) (take n a)))
+  :hints (("Goal" :induct (take-ind n a))))
+
+(defthm take-four-of-word-bytes
+  (equal (take 4 (mvm-word-to-bytes w))
+         (mvm-word-to-bytes w)))
+
+(defthm bytes-succ4
+  (implies (and (integerp i) (< 0 i))
+           (equal (take 4 (nthcdr (* 4 i) (append (mvm-word-to-bytes w) bs)))
+                  (take 4 (nthcdr (* 4 (1- i)) bs))))
+  :hints (("Goal" :use ((:instance nthcdr-of-append-four (b (* 4 (1- i))) (c bs))))))
+
+(defun image-ind (i ws)
+  (if (or (zp i) (atom ws))
+      t
+    (image-ind (1- i) (cdr ws))))
+
+(defthm image-word-at
+  (implies (and (natp i) (< i (len ws)))
+           (equal (take 4 (nthcdr (* 4 i) (mvm-word-list-to-bytes ws)))
+                  (mvm-word-to-bytes (nth i ws))))
+  :hints (("Goal" :induct (image-ind i ws)
+                  :in-theory (e/d (mvm-word-list-to-bytes
+                                   mvm-word-to-bytes-length)
+                                  (loghead logtail logapp
+                                   mvm-word-to-bytes mvm-bytes-to-word
+                                   mvm-bytes4-to-word)))))

@@ -45,7 +45,7 @@ flowchart TB
 | `wasm3/size.lisp` | `%SIZE` is `acl2-count` behind an `mbe`, plus the monotonicity the context rules' measure conditions need -- the bridge every descent lemma rests on |
 | `wasm3/chain.lisp` | **generated, the bottom of the chain**: the body of function 6 as a literal, and its first instruction stepped — `step/r-ctxt-instrs` of `(:;% z BODY)` giving the value followed by the rest of the body.  A rewrite rule cannot match a literal, so this is an instance, and the generator emits it |
 | `wasm3/head.lisp` | **the assembly layer**: a whole `step` of a one-instruction configuration (`step`, `step/r-read`, and the three forms of the head rule, the most general of which takes the instruction's own step as a hypothesis), the abstract store's reconstruction from its two halves, and the one piece of list arithmetic the semantics' search needs |
-| `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, and the disjointness invariant |
+| `wasm3/memory.lisp` | the L1 memory correspondence: an MVM state's image in the module's memory (32-bit little-endian words, stack below 4096, code above), with the round trip `bytes-to-word (word-to-bytes w) = w` for 32-bit words **and at region level — decoding a word list's image gives the word list back** — image lengths, the disjointness invariant, and **the i-th word of an image**: `(take 4 (nthcdr (* 4 i) image))` is the i-th word's bytes for `i < len` (`image-word-at`) |
 | `wasm3/returns.lisp` | **layer 7**: returning — out of the label, then out of the frame, leaving the callee's result |
 | `wasm3/calls.lisp` | **layer 6**: the call rule — the entry configuration steps to a frame-and-label admin around the artifact's own code, with the locals zero-initialised |
 | `wasm3/context.lisp` | **layers 4 and 5**: the context rules — a step inside a `:LABEL_` and inside a `:FRAME_` are steps of the body, re-wrapped; the composition law the library rests on |
@@ -893,6 +893,15 @@ What closes it is all three together: a decoder that consumes four bytes a step
 append form, and the recogniser plus the byte-level definitions **disabled** so
 that forward-chaining supplies the recogniser's facts without ever unfolding it.
 The induction then finishes in 0.48 s.
+
+**The indexed word extraction is proved too** (`image-word-at`, 1,843 steps):
+for `i < (len ws)`, `(take 4 (nthcdr (* 4 i) (mvm-word-list-to-bytes ws)))` is
+`(mvm-word-to-bytes (nth i ws))` -- the lemma the i32.load positions need.  The
+absolute-index induction this book's note warns about is avoided by inducting
+lexicographically on `(i, ws)` together (`image-ind`) and stating the succ step
+at the index `(* 4 i)` (`bytes-succ4`); that step's arithmetic `:use` instance
+costs 1.41M steps, which is the price of the index rewrite, and the extraction
+itself is 1,843.  The small append/nthcdr/take lemmas are 3,900 together.
 
 ## The frozen path: nine steps, end to end
 

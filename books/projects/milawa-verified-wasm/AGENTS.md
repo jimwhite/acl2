@@ -91,6 +91,11 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   the wrong tail makes the equality false, ACL2 reduces it to NIL, and the
   leftover goal looks like the negation of a hypothesis -- a wrong conclusion,
   not a prover anomaly.
+- **An indexed image decomposition needs a lexicographic induction.**  For
+  `(take 4 (nthcdr (* 4 i) (image ws)))`, induct on `(i, ws)` together and state
+  the succ step at the index `(* 4 i)`; the absolute-index rewrite
+  `4i = 4 + 4(i-1)` as a rewrite rule either fails to match or folds back (call
+  depth).  `image-word-at` in `memory.lisp` is the worked example.
 - **A body ending in a symbolic tail has the same acl2-count as its slice.**
   `acl2-count` of a symbol is 0, so a body written as a cons chain ending in a
   defconst symbol can tie the size test at the last position; the search then

@@ -38,7 +38,7 @@ any book in the tree has been skipped.
 | **The example corpus**: ten programs with their answers, each recorded from the artifact and proved about the model | **done** (`examples/`, `machine/examples.lisp`) |
 | The artifact decodes in the certified semantics; the module is pinned as a logic constant; `W3T::MODULE-P` of it is proved | **proved** (`wasm3/`) |
 | The certified semantics executes the artifact: entry config is a call to function 6, `STEP` applies and is single-valued | **proved** (`wasm3/l1.lisp`) |
-| Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness | **proved** (`wasm3/memory.lisp`) |
+| Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness, and **the i-th word of an image** (`(take 4 (nthcdr (* 4 i) image)) = the word's bytes`) | **proved** (`wasm3/memory.lisp`) |
 | The abstraction `MVM` state → spec configuration, and the clock for every path (47–101 spec steps, opcode-determined) | **proved** (`wasm3/abs.lisp`, 16 theorems by evaluation) |
 | The instruction library the chain is assembled from: seven layers, `step_pure` and `step_read` lemmas, the context rules, calls, returns | **proved** (`wasm3/instructions.lisp` … `wasm3/returns.lisp`) |
 | The body of function 6 as a literal, with its first instruction stepped — the bottom of the chain, generated | **proved** (`wasm3/chain.lisp`) |
