@@ -125,6 +125,8 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   `(LIST :%;% ...)` by then.  State standalone lift facts (`...-slice-gen`,
   `ctxt-...-fails`) in constructor form; the `:use`-based lifts work with
   `icfg` only because both sides of the `:use` formula are normalized together.
+  Measured on the add's context lift: 8.9M steps and a waterfall failure in
+  `icfg` form, 349k steps and Q.E.D. in constructor form.
 - **A slice whose only rule is late in the dispatcher needs a context-failure
   fact.**  `step` tries `step/r-ctxt-instrs` before `step/r-local.set`; the
   search refuses a slice that consumes the whole instruction list (its splice
@@ -139,7 +141,7 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
 
 ## Current state (2026-11-20)
 
-35 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
+36 books, all certified (the fetch book now includes the global.set and local.get chains).  The frozen path (`status ≠ 1`) is done end to end for
 symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
