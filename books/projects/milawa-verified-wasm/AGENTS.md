@@ -227,7 +227,7 @@ alone, not (and (un-p ...) (val-p ...)) -- the conjunction's clausification
 loses the tautology with the instance's equality; (3) the label-vals result's
 instruction list is the label's body, not a list containing it.
 
-OPEN: the eqz testop's context step (dteq-ctxt).  Its search has a value
+THE EQZ TESTOP IS CLOSED (by composing the dispatcher's phases: step_pure nil, step_read/split nil, and the context step as separate facts through the step/r-pure/r-read definition instances; dstep-phases-gen makes that a 2k-step generic bridge).  THE IFELSE IS CLOSED: proved at the literal-0 body and bridged to the actual body (TEQ = 0) in 10k steps; the empty block and label then dissolve, each through the full frame-6 stack.  A KEY GENERATION LESSON: 'emit' wraps step facts in (list ...); do not pass it an already-wrapped (list config) -- the double wrapping made the wrapper's conclusion miss the goal and cost hours.  Also: a frame's instruction list being bigger than its body (acl2-count-of-frame-gt-body) and %size-is-acl2-count discharge the frame rule's size premises generically; and a rewrite rule with a hypothesis over a free variable must be instantiated with that variable bound.  Its search has a value
 prefix (prefix7 = 1), and every attempt ends with the ctxt-instrs definition
 instance showing (search21 0 0 0 BODY 0 ...) even when a dteq-prefix7 fact
 (prefix7 = 1) is available and prefix7 is disabled; the k = 1 branch's step
