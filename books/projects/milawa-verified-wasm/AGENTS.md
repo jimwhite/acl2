@@ -206,7 +206,14 @@ does not need the forward bridge; the pair shape/components are stated as
 facts (dcallee-pair-shape, 232k) because the opaque pair computes nothing; and
 the caller's label lift over the callee frame is proved (28.6M).  The outer
 frame lift over that label is open: with step disabled the :expand of the
-outer frame step does not fire on the rewritten config.  Cost note: the
+outer frame step does not fire; with step enabled the guards cascade shape
+facts for the OPAQUE store ($with_global: consp, car :%;%, true-listp cdr,
+len cdr = 2 -- with-global-shape, 4k) and the residual still does not close
+(1.6M).  The opaque-store strategy that bought the pair bridge now costs a
+shape fact per guard; the next attempt should either state this outer lift at
+the helper pair too (no bridge needed) with a compact store record, or use the
+concrete store record (accessors enabled) for this one step and accept the
+spelling work.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
