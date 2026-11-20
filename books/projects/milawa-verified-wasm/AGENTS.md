@@ -135,6 +135,12 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   matches the whole step, and the step is 218 prover steps (418k and a stall on
   `step/r-ctxt-instrs` without the disable).  `pair-spelled-is-dcallee` is the
   worked example in `abort.lisp`.
+- **A parameterized label wrapper must take a CONCRETE body.**  With the
+  label's instruction list a variable, `step_pure`'s matchers and
+  `search127` run on it and the proof diverges past 300 s.  State the label
+  lift at the concrete body (or provide the pure failure as a fact at that
+  body); the frame wrapper's variable form worked because the frame rule's
+  guards are on the instruction lists, not the body's interior.
 - **A frame rule's wrapper is provable once, parameterized.**  Hand it the inner
   step at the SAME variable pair the rule builds, plus the size guard, and
   instantiate it per position: `dstep-frame-abort-param` (40k steps) is the
@@ -166,7 +172,7 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
 
 ## Current state (2026-11-20)
 
-36 books, all certified (the fetch book now includes the global.set and local.get chains).  The frozen path (`status ≠ 1`) is done end to end for
+39 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
 symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
@@ -186,10 +192,11 @@ trip against the image (25k steps); `wasm3/load.lisp` then executes the opcode
 (the first write, carrying the frame update through generic-pair lifts), 15
 events and 8.49M steps.  The in-code hypothesis is what makes the testop's value
 the concrete 0 and the lists concrete; at a symbolic value the search's measure
-guards do not close.  Next: the rest of the fetch — the second `global.get 1`,
-`(const 4)`, the add, `global.set 1` (a store write), `local.get 0`,
-`(const 0)`, the eq comparison and the dispatch ifelse — then the 14 per-opcode
-tails, then L2 and L3.  Cost note: the
+guards do not close.  The dispatch's five tests and the first two branch starts are now proved (see
+README/SUMMARY): the shared fetch through the opcode test, the CONST test,
+the ADD/SUB/LT OR-chain, the IFZ and JMP tests (`fetch.lisp`,
+`dispatch-tests.lisp`), the HALT branch's first call (`halt.lisp`), and the
+unknown-opcode abort through its closed frame lift (`abort.lisp`).  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
