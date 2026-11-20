@@ -148,8 +148,10 @@ already uses that package.  In terms of the phases below:
   fetch.  The in-code hypothesis is what makes the testop's value concrete; at
   a symbolic value the search's measure guards do not close, and the project's
   SUMMARY records both that obstruction and the tail-definition mistake that
-  first made the equalities reduce to NIL.  90 events, 212M prover steps,
-  212 s.  Two findings are
+  first made the equalities reduce to NIL.  The opcode fetch has started: its
+  first instruction (`global.get 1`) is proved, with the bodies as cons chains
+  over a literal defconst tail.  78 measured events, 213M prover steps,
+  207 s.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every

@@ -91,6 +91,11 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   the wrong tail makes the equality false, ACL2 reduces it to NIL, and the
   leftover goal looks like the negation of a hypothesis -- a wrong conclusion,
   not a prover anomaly.
+- **A body ending in a symbolic tail has the same acl2-count as its slice.**
+  `acl2-count` of a symbol is 0, so a body written as a cons chain ending in a
+  defconst symbol can tie the size test at the last position; the search then
+  fails and the step falls through.  Cons one concrete instruction *after* the
+  one being stepped, and let the defconst be the tail after that.
 - **`acl2-count` charges an integer its absolute value** in this ACL2
   (`(acl2-count 5)` is 5).  Symbolic values in an instruction list therefore
   enter every `%SIZE` guard, and the guard becomes arithmetic in `pc`/`clen`.
@@ -115,12 +120,13 @@ body end to end at symbolic `pc`/`clen` — the sub, the read of global 2, the
 mul, the comparison (the last instruction: a pure body step), and the two value
 dissolves — and returns the result into function 6's continuation, and it
 proves, under the in-code hypothesis (the comparison is 1), the opcode test,
-the second ifelse, and the empty-block/empty-label chains, ending at the opcode
-fetch.  90 events, 212M prover steps, ~212 s.  The in-code hypothesis is what
-makes the testop's value the concrete 0 and the lists concrete; at a symbolic
-value the search's measure guards do not close.  Next: the opcode fetch
-(`global.get 1`, the load, `local.set 0`) and the opcode test, then the 14
-per-opcode tails; then L2 and L3.  Cost note: the
+the second ifelse, the empty-block/empty-label chains, and the opcode fetch's
+first instruction (`global.get 1`).  78 measured events, 213M prover steps,
+~207 s.  The in-code hypothesis is what makes the testop's value the concrete 0
+and the lists concrete; at a symbolic value the search's measure guards do not
+close.  Next: the load and `local.set 0` (they touch memory and the frame), the
+second `global.get 1`, the opcode test, and the 14 per-opcode tails; then L2
+and L3.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a

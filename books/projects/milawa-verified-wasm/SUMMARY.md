@@ -1058,6 +1058,21 @@ residual goals measured were `(<= (+ 9003 x) (+ 11 x))`, `(<= 2^32 clen)`, and
 a bare `NIL`).  Since the running path is in code, the concrete-value route is
 the one L1 needs.
 
+**The opcode fetch has started.**  Its first instruction, `(global.get 1)`,
+reads the program counter and pushes it: the slice fact (20,714 steps), the
+context rule (412k), and the label-6 and frame-6 lifts (361k, 485k).  The
+bodies here are *cons chains with a symbolic tail* -- the instructions a step
+must see are consed concretely, the rest is a defconst whose value is the
+literal tail, and one concrete instruction follows the one being stepped.  That
+last element is load-bearing: a body whose tail is a symbol has the same
+acl2-count as the slice, so the search's size test fails and the step falls
+through.  `ft-bridge` (4 steps) ties the previous section's
+`(dvl-after-ifelse nil)` to the first fetch body; the next positions use the
+same bridge pattern.  The remaining fetch instructions are the load, the
+`local.set 0`, and the second `global.get 1`; the load and the local.set touch
+the memory and the frame, so they need the memory correspondence and the frame
+update carried through the context rules.
+
 The first attempts failed for an unrelated reason that looked like an ACL2
 anomaly.  **The bodies after the testop and after the ifelse have different
 tails.**  At the label the body is `(dvl (dbody4 pc clen))` =
