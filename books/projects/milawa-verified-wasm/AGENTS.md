@@ -198,7 +198,7 @@ the ADD/SUB/LT OR-chain, the IFZ and JMP tests (`fetch.lisp`,
 `dispatch-tests.lisp`), the HALT branch's first call (`halt.lisp`), and the
 unknown-opcode abort through its closed frame lift and its callee's body
 -- the status write and the frame descent into function 4 (`abort.lisp`,
-27 events, 34.2M steps).  The abort's step back out -- the caller's label lift
+32 events, 43.2M steps).  The abort's step back out -- the caller's label lift
 over the callee frame, then the implicit label-vals/frame-vals returns -- is
 the open piece; the bridge-vs-spelling tension there is recorded in the traps.
 The callee frame descent is restated at the helper pair (499k) so the way out
@@ -207,10 +207,12 @@ facts (dcallee-pair-shape, 232k) because the opaque pair computes nothing; and
 the caller's label lift over the callee frame is proved (28.6M).  The same label lift is proved at the SPELLED pair (36k) by handing in the STEP
 DEFINITION INSTANCE as a :use (the :expand does not fire once the config's
 arguments are rewritten) with the store's shape as a fact (with-global-shape).
-The outer frame lift over that label is open, narrowed to the frame rule's
-inner-step case: the first parameterized wrapper cut still explores the inner
-step (119k).  Next: refine that wrapper (the inner step as a hypothesis at the
-same variable pair, as dstep-frame-abort-body-param does).  Cost note: the
+The outer frame lift is CLOSED (the parameterized wrapper with the inner
+result's pair shape, 52k; applied at the concrete store/frame, 8.9M), and the
+implicit value-returns are proved (label-vals 125, frame-vals 912, the
+callee-frame-around-a-value wrapper 19.6k).  Next: compose those through the
+caller's label and frame 6 (the first cut at the caller's label over the
+callee frame does not rewrite the inner step), then the host return.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
