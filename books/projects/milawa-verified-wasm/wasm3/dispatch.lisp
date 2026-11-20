@@ -14,10 +14,15 @@
 ; This book executes it: the sub, the read of the code length, the mul, the
 ; comparison (which is the LAST instruction of the body and so is stepped by the
 ; pure rule on the body, not by the search), and the two value dissolves that
-; return the comparison's result to function 6.  It stops with function 3's
-; result pushed into the rest of function 6's body, which is the configuration
-; the opcode test starts from; the test's two slice facts (the lone testop does
-; not step, and the value-plus-testop slice does) are proved at the end.
+; return the comparison's result to function 6.  It then takes the running
+; path's in-code case (the comparison is 1): the opcode test pushes the
+; concrete 0, the second ifelse takes its ELSE branch, and the empty block and
+; label dissolve, leaving the opcode fetch at the head of function 6's label.
+; The in-code hypothesis is what makes the testop's value concrete; at a
+; symbolic value the search's measure guards do not close (SUMMARY.md records
+; why).  The test's two slice facts are at the end of the earlier section, and
+; their literal cons/quote corollaries -- the shapes the search actually
+; produces -- are the first lemmas of the opcode-test section.
 ;
 ; EVERY STEP HAS THE SAME SEVEN PART PROOF, and the parts are separate lemmas so
 ; that each is a small rewrite problem rather than one deep one:
@@ -87,6 +92,10 @@
   (append (dframe3 b) (cdr (nthcdr 4 *body-6*))))
 (defun dvl (b)
   (append b (cdr (nthcdr 4 *body-6*))))
+(defun dvl-after-testop (b)
+  (append b (cddr (nthcdr 4 *body-6*))))
+(defun dvl-after-ifelse (b)
+  (append b (cdddr (nthcdr 4 *body-6*))))
 
 (defun dcfg (bytes sp pc clen result b)
   (frozen-body-cfg bytes sp pc clen 1 result (dfull b)))
@@ -644,121 +653,259 @@
          (list (icfg z (list (dconst (deqz pc clen)))))))
 
 ;; ---------------------------------------------------------------------------
-;; The empty block and label after the second ifelse
+;; The opcode test and the second ifelse (the in-code case)
 ;; ---------------------------------------------------------------------------
 ;
-; The dispatch's second ifelse, when its condition is 0, wraps its ELSE branch
-; (NIL in the artifact) in a block; the block becomes a label 0, and the label
-; dissolves.  These three steps are at label 6 with the rest of function 6's
-; body after them, and their instruction lists are CONCRETE (the condition value
-; is not part of them), so the search's measure tests compute and the standard
-; per-step recipe goes through.  The step before them -- the testop, whose value
-; is the symbolic comparison -- and the ifelse itself are the pieces still to
-; prove; these chains start from the configuration the ifelse leaves.
+; The running path is the in-code case: $in_code's comparison is 1 (the two
+; sides of the lt_u are pc - 4096 and 4 * clen, and pc is in range).  Under that
+; hypothesis the testop's value is the CONCRETE 0 and the ifelse takes its
+; ELSE branch, so the instruction lists are concrete at every step and the
+; standard recipe goes through.  The hypothesis is what makes this provable:
+; at a symbolic value the search's measure guards compare sizes of lists
+; containing the value, and the definition instance's false branches do not
+; close (see SUMMARY.md).
+;
+; The chain ends where the dispatch's opcode fetch begins.  Measured: the
+; testop chain is 1.09M prover steps (the context rule 101k, the label and
+; frame lifts 320k and 485k), the ifelse chain 1.05M, and the block/label
+; chain 2.41M.
+
+(defthm fail-lone-testop-cons
+  (equal (w3t::step (list :|%;%| z '((:TESTOP (:I32) (:EQZ))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :use ((:instance fail-lone-testop (z z))))))
+
+(defthm testop-slice-one
+  (equal (w3t::step (list :|%;%| z
+                          (cons (list :const '(:i32) 1) '((:TESTOP (:I32) (:EQZ))))))
+         (list (list :|%;%| z (list (list :const '(:i32) 0))))))
+
+(defthm dsearch21-eqz
+  (implies (equal (dltu (dsub pc) (dmul clen)) 1)
+           (equal (w3t::step/search21 1 0 1
+                                       (dvl (dbody4 pc clen)) 1
+                                       (iz6 bytes sp pc clen result)
+                                       (icfg (iz6 bytes sp pc clen result)
+                                             (dvl (dbody4 pc clen))))
+                  (list (list :|%;%| (iz6 bytes sp pc clen result)
+                              (dvl-after-testop (list (dconst 0)))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs
+                                      dsub dmul dltu deqz)
+           :use ((:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (dvl (dbody4 pc clen))) (w3t::%t9 1)
+                            (w3t::z (iz6 bytes sp pc clen result))
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (dvl (dbody4 pc clen)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (dvl (dbody4 pc clen))) (w3t::%t9 1)
+                            (w3t::z (iz6 bytes sp pc clen result))
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (dvl (dbody4 pc clen)))))
+                 (:instance fail-lone-testop-cons (z (iz6 bytes sp pc clen result)))
+                 (:instance testop-slice-one (z (iz6 bytes sp pc clen result)))))))
+
+(defthm dctxt-eqz
+  (implies (equal (dltu (dsub pc) (dmul clen)) 1)
+           (equal (w3t::step/r-ctxt-instrs
+                   (icfg (iz6 bytes sp pc clen result) (dvl (dbody4 pc clen))))
+                  (list (icfg (iz6 bytes sp pc clen result)
+                              (dvl-after-testop (list (dconst 0)))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs
+                                      dsub dmul dltu deqz)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (dvl (dbody4 pc clen)))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (dvl (dbody4 pc clen))))
+                 dsearch21-eqz))))
+
+(defthm dstep-eqz
+  (implies (equal (dltu (dsub pc) (dmul clen)) 1)
+           (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                                   (dvl (dbody4 pc clen))))
+                  (list (icfg (iz6 bytes sp pc clen result)
+                              (dvl-after-testop (list (dconst 0)))))))
+  :hints (("Goal" :in-theory (disable dsub dmul dltu deqz)
+           :use (dctxt-eqz)
+           :expand ((w3t::step (icfg (iz6 bytes sp pc clen result)
+                                     (dvl (dbody4 pc clen))))))))
+
+(defthm dlabel6-eqz
+  (implies (equal (dltu (dsub pc) (dmul clen)) 1)
+           (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                                   (list (list :label_%{%}% 1 nil (dvl (dbody4 pc clen))))))
+                  (list (icfg (iz6 bytes sp pc clen result)
+                              (list (list :label_%{%}% 1 nil
+                                          (dvl-after-testop (list (dconst 0)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs
+                                      dsub dmul dltu deqz)
+           :use ((:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (list (list :label_%{%}% 1 nil
+                                                        (dvl (dbody4 pc clen)))))))
+                 dstep-eqz))))
+
+(defthm douter-eqz
+  (implies (equal (dltu (dsub pc) (dmul clen)) 1)
+           (equal (w3t::step (frozen-body-cfg bytes sp pc clen 1 result
+                                              (dvl (dbody4 pc clen))))
+                  (list (frozen-body-cfg bytes sp pc clen 1 result
+                                         (dvl-after-testop (list (dconst 0)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs
+                                      dsub dmul dltu deqz)
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (list :|%;%| (frozen-z bytes sp pc clen 1 result)
+                                            (list (list :frame_%{%}% 1 (milawa-callee-frame 6)
+                                                        (list (list :label_%{%}% 1 nil
+                                                                    (dvl (dbody4 pc clen)))))))))
+                 (:instance dlabel6-eqz)))))
+
+
+;; ---------------------------------------------------------------------------
+;; The block and label the second ifelse leaves (the in-code case)
+;; ---------------------------------------------------------------------------
+;
+; The ifelse's ELSE branch is NIL, so the block is empty; the block becomes a
+; label 0 and the label dissolves, leaving the rest of function 6's body (the
+; opcode fetch) at the head of the label.  These bodies are concrete, so the
+; search's measure tests compute.  NOTE the tails: after the testop the rest is
+; (cddr (nthcdr 4 *body-6*)), and after the ifelse it is
+; (cdddr (nthcdr 4 *body-6*)); appending the whole rest6 instead would state
+; lemmas about a body that never occurs.
+
+(defthm fail-lone-ifelse
+  (equal (w3t::step (icfg z (list (list :ifelse (list :_result nil)
+                                        (list (list :call 4) (list :return)) nil))))
+         nil)
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg z (list (list :ifelse (list :_result nil)
+                                                             (list (list :call 4) (list :return)) nil)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list (list :ifelse (list :_result nil)
+                                                  (list (list :call 4) (list :return)) nil)))
+                            (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (icfg z (list (list :ifelse (list :_result nil)
+                                                            (list (list :call 4) (list :return)) nil)))))))))
+
+(defthm fail-lone-ifelse-cons (equal (w3t::step (list :|%;%| z '((:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL)))) nil) :hints (("Goal" :in-theory (disable w3t::step) :use ((:instance fail-lone-ifelse (z z))))))
+
+(defthm difelse-slice-0 (equal (w3t::step (list :|%;%| z (cons (list :const '(:i32) 0) '((:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL))))) (list (list :|%;%| z (list '(:BLOCK (:_RESULT NIL) NIL))))))
+
+(defthm dctxt-ifelse (equal (w3t::step/r-ctxt-instrs (icfg (iz6 bytes sp pc clen result) (dvl-after-testop (list (dconst 0))))) (list (icfg (iz6 bytes sp pc clen result) (dvl-after-ifelse (list '(:BLOCK (:_RESULT NIL) NIL)))))) :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (dvl-after-testop (list (dconst 0)))))) (:instance (:definition w3t::step/prefix7) (w3t::%s (dvl-after-testop (list (dconst 0))))) (:instance (:definition w3t::step/search21) (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1) (w3t::%t6 (dvl-after-testop (list (dconst 0)))) (w3t::%t9 1) (w3t::z (iz6 bytes sp pc clen result)) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (dvl-after-testop (list (dconst 0)))))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1) (w3t::%t6 (dvl-after-testop (list (dconst 0)))) (w3t::%t9 1) (w3t::z (iz6 bytes sp pc clen result)) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (dvl-after-testop (list (dconst 0)))))) (:instance fail-lone-ifelse-cons (z (iz6 bytes sp pc clen result))) (:instance difelse-slice-0 (z (iz6 bytes sp pc clen result)))))))
+
+(defthm dstep-ifelse (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (dvl-after-testop (list (dconst 0))))) (list (icfg (iz6 bytes sp pc clen result) (dvl-after-ifelse (list '(:BLOCK (:_RESULT NIL) NIL)))))) :hints (("Goal" :in-theory (disable dsub dmul dltu deqz) :use (dctxt-ifelse) :expand ((w3t::step (icfg (iz6 bytes sp pc clen result) (dvl-after-testop (list (dconst 0)))))))))
+
+(defthm dlabel6-ifelse (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (dvl-after-testop (list (dconst 0))))))) (list (icfg (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (dvl-after-ifelse (list '(:BLOCK (:_RESULT NIL) NIL)))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (dvl-after-testop (list (dconst 0)))))))) dstep-ifelse))))
+
+(defthm douter-ifelse (equal (w3t::step (frozen-body-cfg bytes sp pc clen 1 result (dvl-after-testop (list (dconst 0))))) (list (frozen-body-cfg bytes sp pc clen 1 result (dvl-after-ifelse (list '(:BLOCK (:_RESULT NIL) NIL)))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-frame) (w3t::%a0 (list :|%;%| (frozen-z bytes sp pc clen 1 result) (list (list :frame_%{%}% 1 (milawa-callee-frame 6) (list (list :label_%{%}% 1 nil (dvl-after-testop (list (dconst 0)))))))))) (:instance dlabel6-ifelse)))))
 
 (defthm dctxt-block
   (equal (w3t::step/r-ctxt-instrs
-          (icfg (iz6 bytes sp pc clen result) (dvl (list (list :block (list :_result nil) nil)))))
+          (icfg (iz6 bytes sp pc clen result) (dvl-after-ifelse (list (list :block (list :_result nil) nil)))))
          (list (icfg (iz6 bytes sp pc clen result)
-                     (dvl (list (list :label_%{%}% 0 nil nil))))))
+                     (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))
   :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dsub dmul dltu deqz)
            :use ((:instance (:definition w3t::step/r-ctxt-instrs)
                             (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (dvl (list (list :block (list :_result nil) nil))))))
+                                            (dvl-after-ifelse (list (list :block (list :_result nil) nil))))))
                  (:instance (:definition w3t::step/prefix7)
-                            (w3t::%s (dvl (list (list :block (list :_result nil) nil)))))
+                            (w3t::%s (dvl-after-ifelse (list (list :block (list :_result nil) nil)))))
                  (:instance (:definition w3t::step/search21)
                             (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
-                            (w3t::%t6 (dvl (list (list :block (list :_result nil) nil)))) (w3t::%t9 0)
+                            (w3t::%t6 (dvl-after-ifelse (list (list :block (list :_result nil) nil)))) (w3t::%t9 0)
                             (w3t::z (iz6 bytes sp pc clen result))
                             (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (dvl (list (list :block (list :_result nil) nil))))))
+                                            (dvl-after-ifelse (list (list :block (list :_result nil) nil))))))
                  (:instance rstep-empty-block (z (iz6 bytes sp pc clen result)))))))
 
 (defthm dstep-block
   (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
-                          (dvl (list (list :block (list :_result nil) nil)))))
+                          (dvl-after-ifelse (list (list :block (list :_result nil) nil)))))
          (list (icfg (iz6 bytes sp pc clen result)
-                     (dvl (list (list :label_%{%}% 0 nil nil))))))
+                     (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))
   :hints (("Goal" :in-theory (disable dsub dmul dltu deqz)
            :use (dctxt-block)
            :expand ((w3t::step (icfg (iz6 bytes sp pc clen result)
-                                     (dvl (list (list :block (list :_result nil) nil)))))))))
+                                     (dvl-after-ifelse (list (list :block (list :_result nil) nil)))))))))
 
 (defthm dlabel6-block
   (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
                           (list (list :label_%{%}% 1 nil
-                                      (dvl (list (list :block (list :_result nil) nil)))))))
+                                      (dvl-after-ifelse (list (list :block (list :_result nil) nil)))))))
          (list (icfg (iz6 bytes sp pc clen result)
                      (list (list :label_%{%}% 1 nil
-                                 (dvl (list (list :label_%{%}% 0 nil nil))))))))
+                                 (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))))
   :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz)
            :use ((:instance (:definition w3t::step/r-ctxt-label)
                             (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
                                             (list (list :label_%{%}% 1 nil
-                                                        (dvl (list (list :block (list :_result nil) nil))))))))
+                                                        (dvl-after-ifelse (list (list :block (list :_result nil) nil))))))))
                  dstep-block))))
 
 (defthm douter-block
   (equal (w3t::step (frozen-body-cfg bytes sp pc clen 1 result
-                                     (dvl (list (list :block (list :_result nil) nil)))))
+                                     (dvl-after-ifelse (list (list :block (list :_result nil) nil)))))
          (list (frozen-body-cfg bytes sp pc clen 1 result
-                                (dvl (list (list :label_%{%}% 0 nil nil))))))
+                                (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))
   :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz)
            :use ((:instance (:definition w3t::step/r-ctxt-frame)
                             (w3t::%a0 (list :|%;%| (frozen-z bytes sp pc clen 1 result)
                                             (list (list :frame_%{%}% 1 (milawa-callee-frame 6)
                                                         (list (list :label_%{%}% 1 nil
-                                                                    (dvl (list (list :block (list :_result nil) nil))))))))))
+                                                                    (dvl-after-ifelse (list (list :block (list :_result nil) nil))))))))))
                  (:instance dlabel6-block)))))
 
 (defthm dctxt-elabel
   (equal (w3t::step/r-ctxt-instrs
-          (icfg (iz6 bytes sp pc clen result) (dvl (list (list :label_%{%}% 0 nil nil)))))
+          (icfg (iz6 bytes sp pc clen result) (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil)))))
          (list (icfg (iz6 bytes sp pc clen result)
-                     (dvl nil))))
+                     (dvl-after-ifelse nil))))
   :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dsub dmul dltu deqz)
            :use ((:instance (:definition w3t::step/r-ctxt-instrs)
                             (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (dvl (list (list :label_%{%}% 0 nil nil))))))
+                                            (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))
                  (:instance (:definition w3t::step/prefix7)
-                            (w3t::%s (dvl (list (list :label_%{%}% 0 nil nil)))))
+                            (w3t::%s (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil)))))
                  (:instance (:definition w3t::step/search21)
                             (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
-                            (w3t::%t6 (dvl (list (list :label_%{%}% 0 nil nil)))) (w3t::%t9 0)
+                            (w3t::%t6 (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil)))) (w3t::%t9 0)
                             (w3t::z (iz6 bytes sp pc clen result))
                             (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (dvl (list (list :label_%{%}% 0 nil nil))))))
+                                            (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))
                  (:instance rstep-empty-label (z (iz6 bytes sp pc clen result)))))))
 
 (defthm dstep-elabel
-  (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (dvl (list (list :label_%{%}% 0 nil nil)))))
-         (list (icfg (iz6 bytes sp pc clen result) (dvl nil))))
+  (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil)))))
+         (list (icfg (iz6 bytes sp pc clen result) (dvl-after-ifelse nil))))
   :hints (("Goal" :in-theory (disable dsub dmul dltu deqz)
            :use (dctxt-elabel)
            :expand ((w3t::step (icfg (iz6 bytes sp pc clen result)
-                                     (dvl (list (list :label_%{%}% 0 nil nil)))))))))
+                                     (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil)))))))))
 
 (defthm dlabel6-elabel
   (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
-                          (list (list :label_%{%}% 1 nil (dvl (list (list :label_%{%}% 0 nil nil)))))))
+                          (list (list :label_%{%}% 1 nil (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil)))))))
          (list (icfg (iz6 bytes sp pc clen result)
-                     (list (list :label_%{%}% 1 nil (dvl nil))))))
+                     (list (list :label_%{%}% 1 nil (dvl-after-ifelse nil))))))
   :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz)
            :use ((:instance (:definition w3t::step/r-ctxt-label)
                             (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
                                             (list (list :label_%{%}% 1 nil
-                                                        (dvl (list (list :label_%{%}% 0 nil nil))))))))
+                                                        (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))))
                  dstep-elabel))))
 
 (defthm douter-elabel
   (equal (w3t::step (frozen-body-cfg bytes sp pc clen 1 result
-                                     (dvl (list (list :label_%{%}% 0 nil nil)))))
-         (list (frozen-body-cfg bytes sp pc clen 1 result (dvl nil))))
+                                     (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil)))))
+         (list (frozen-body-cfg bytes sp pc clen 1 result (dvl-after-ifelse nil))))
   :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz)
            :use ((:instance (:definition w3t::step/r-ctxt-frame)
                             (w3t::%a0 (list :|%;%| (frozen-z bytes sp pc clen 1 result)
                                             (list (list :frame_%{%}% 1 (milawa-callee-frame 6)
                                                         (list (list :label_%{%}% 1 nil
-                                                                    (dvl (list (list :label_%{%}% 0 nil nil))))))))))
+                                                                    (dvl-after-ifelse (list (list :label_%{%}% 0 nil nil))))))))))
                  (:instance dlabel6-elabel)))))

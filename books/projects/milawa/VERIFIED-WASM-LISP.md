@@ -142,12 +142,14 @@ already uses that package.  In terms of the phases below:
   the mul, the comparison (the LAST instruction, so the pure `r-relop` rule, not
   the search), and the two value dissolves (label 3, then frame 3).  Each step
   is proved in seven parts (slice, ctxt, step, label, frame, label 6, frame 6);
-  the book ends with the comparison's result pushed into function 6's
-  continuation, which is where the opcode test starts; it includes the test's
-  two slice facts and the empty-block/empty-label chains after the second
-  ifelse (their bodies are concrete, so the standard recipe goes through).  The
-  testop and ifelse lifts themselves are the remaining gap on this route; the
-  project's SUMMARY records the obstruction precisely.  51 events, 207M prover steps, 227.8 s.  Two findings are
+  the book then takes the running path's in-code case -- the comparison is 1,
+  so the testop's value is the concrete 0 -- and proves the opcode test, the
+  second ifelse, and the empty-block/empty-label dissolve, ending at the opcode
+  fetch.  The in-code hypothesis is what makes the testop's value concrete; at
+  a symbolic value the search's measure guards do not close, and the project's
+  SUMMARY records both that obstruction and the tail-definition mistake that
+  first made the equalities reduce to NIL.  90 events, 212M prover steps,
+  212 s.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every

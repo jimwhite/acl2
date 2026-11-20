@@ -47,7 +47,7 @@ any book in the tree has been skipped.
 | The chain: two instructions of the exported function's body, level by level, and the two links **composed** | **proved** (`wasm3/chain.lisp`, `wasm3/links.lisp`) |
 | **The frozen path** (`status ≠ 1`): all nine steps end to end — the call, the branch, the block, the read inside the block's label, the two returns — the **exact clock**, and the **readback** to `MVM-STEP`: `milawa-step-check`'s conclusion for a symbolic state | **proved** (`wasm3/frozen.lisp`) |
 | **The running branch's shared head** (`status = 1`): the seven steps every running path starts with — the status test's else branch, the empty block and its label, the call split, and the call into `$in_code`'s frame — with `$in_code`'s body at the head, and the first instruction of that body stepped | **proved** (`wasm3/running.lisp`) |
-| **The callee's tail**: `$in_code`'s body end to end — the sub, the read of the code length, the mul, the comparison (the last instruction, stepped by the pure rule), and the two value dissolves — returning the comparison's result into function 6's continuation, with the opcode test's two slice facts and the empty-block/empty-label chains after the second ifelse (the testop and ifelse lifts are the remaining gap) | **proved** (`wasm3/dispatch.lisp`, 59 events, 210M prover steps) |
+| **The callee's tail and the in-code dispatch**: `$in_code`'s body end to end — the sub, the read of the code length, the mul, the comparison (the last instruction, stepped by the pure rule), and the two value dissolves — and then, under the in-code hypothesis (the comparison is 1, so the testop's value is the concrete 0), the opcode test, the second ifelse, and the empty block/label dissolve, ending at the opcode fetch | **proved** (`wasm3/dispatch.lisp`, 90 events, 212M prover steps) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -560,13 +560,13 @@ and — once `kernel/` exists — the correspondence between the kernel program 
 
 1. **L1 for the other fifteen paths.**  The frozen path is one of sixteen and
    is proved end to end for symbolic state; the running branch's shared head and
-   the callee's tail (`$in_code`'s body and its two dissolves) are proved, so
-   every running path now starts from the same configuration with function 3's
-   result pushed into function 6's body.  What remains on the shared route is
-   the opcode test's lift (its two slice facts are proved; the lift is where
-   `$TESTOP_`'s value has to be kept opaque through the search) and the
-   ifelse/empty-block/empty-label chain.  Then the opcode fetch and the fourteen
-   per-opcode tails, whose clocks are already measured in `abs.lisp`.  The
+   the callee's tail (`$in_code`'s body and its two dissolves) and, in the
+   in-code case, the opcode test, the second ifelse, and the empty block/label
+   dissolve are proved, so every in-code running path now starts at the opcode
+   fetch in function 6's body.  What remains on the shared route is the
+   out-of-code case (the comparison is 0, so the ifelse aborts through
+   `$abort`) and then the opcode fetch and the fourteen per-opcode tails, whose
+   clocks are already measured in `abs.lisp`.  The
    branch paths enter a block and then a call, so their links are the frozen
    path's plus `calls.lisp`'s.
 2. **L2**: the run level.  Each machine step is a fresh `$INVOKE`, so the run

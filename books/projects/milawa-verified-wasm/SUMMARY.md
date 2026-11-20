@@ -1041,33 +1041,36 @@ are expensive for the opposite reason: the frame-6 measure has to see through
 the whole body's 39-instruction continuation.  Neither blocks anything; the
 book certifies in under four minutes.
 
-**Where the opcode test stands.**  Three pieces are proved.  The two slice
-facts (`fail-lone-testop`, 12,895 steps; `deqz-slice`, 13,916), and their
-literal cons/quote corollaries (`fail-lone-testop-cons`, 21 steps;
-`deqz-slice-cons`, 245) -- the corollaries matter because a rule whose LHS
-contains `(dconst ...)` never matches the search's evaluated slice, while the
-literal-shaped fact does.  And the empty-block/empty-label chains after the
-second ifelse: their instruction lists are concrete (the ifelse's condition
-value is not in them), so the search's measure tests compute and the standard
-seven-part recipe goes through in 2.4M steps.
+**Where the opcode test stands.**  The in-code route is proved.  The running
+path is the in-code case: the comparison's value is 1 (pc - 4096 is below the
+code length), so `$TESTOP_` of it is the concrete 0.  Under the hypothesis
+`(equal (dltu (dsub pc) (dmul clen)) 1)` the instruction lists are concrete at
+every step and the standard recipe goes through: the search computation
+(`dsearch21-eqz`, 141k steps), the context rule (101k), label 6 (320k), frame 6
+(485k); then the second ifelse (the concrete slice fact, 125; context 186k;
+label 6 320k; frame 6 484k); then the empty block and label (2.4M).  The chain
+ends where the opcode fetch begins.
 
-The lift of the testop step is not proved.  The search computation itself is
-right: with a *small* continuation and a variable store it proves in 23k
-steps, and with the real continuation the only failures are the `step/search21`
-measure guards.  The guards compare `%SIZE` of the slice with `%SIZE` of the
-whole body; the whole is the evaluated 40-instruction list, so a size rule
-stated over `(dvl (dbody4 pc clen))` never matches.  Stating the rules over the
-*literal* body works (they prove in 463 and 1025 steps as `:linear` rules,
-with `(integerp (dltu ...))` relieved by a new `integerp-dltu-op`
-type-prescription and `integer-abs-nonneg`), but inside the search's
-definition instance the size test's *false* branch is generated with its own
-negation as the final goal, and ACL2 does not use the size fact there: the
-residual goals seen were `(<= (+ 9003 x) (+ 11 x))`, `(<= 2^32 clen)` (the
-third conjunct of an `unsigned-byte-p` hypothesis being proved), and a bare
-`NIL`.  The next attempt should avoid the `step/search21` definition for this
-position: prove a specialized context lemma for a value-plus-testop body, or
-hand-compute the two `search21` steps as a rewrite rule stated at the literal
-slice terms, rather than driving the generic definition's measure tests.
+This avoids the symbolic-value obstruction rather than solving it: at a
+symbolic value the search's measure guards compare `%size` of lists containing
+the value, and the definition instance's false branches do not close (the
+residual goals measured were `(<= (+ 9003 x) (+ 11 x))`, `(<= 2^32 clen)`, and
+a bare `NIL`).  Since the running path is in code, the concrete-value route is
+the one L1 needs.
+
+The first attempts failed for an unrelated reason that looked like an ACL2
+anomaly.  **The bodies after the testop and after the ifelse have different
+tails.**  At the label the body is `(dvl (dbody4 pc clen))` =
+`[C_ltu, TESTOP, IFELSE, ...]`; after the testop it is
+`(dvl-after-testop ...)` = append to `(cddr (nthcdr 4 *body-6*))` (the
+instructions after the testop); after the ifelse it is
+`(dvl-after-ifelse ...)` = append to `(cdddr (nthcdr 4 *body-6*))`.  Stating a
+conclusion with the full `rest6` makes the equality false; ACL2 simplifies it
+to NIL and leaves the *hypothesis's negation* as the goal, which reads like a
+prover anomaly and is a wrong conclusion.  The block/label lemmas in the book
+originally used the full `rest6` for exactly this reason and were vacuous; they
+now use the post-ifelse tail.  The same lesson as the body-constructor one:
+when an equality "mysteriously" reduces to a hypothesis, compare the two tails.
 
 ## What is next, in order
 
