@@ -215,7 +215,23 @@ dret-label-vals-in-top / dret-frame-vals-in-top (10.4M/1.07M/19.6k/43) peel
 the nesting with the state frame, the outer frame's locals and the inner
 frame's locals independent; their instantiations at the abort store are
 direct rewrites (2.7k/2.2k/1.7k/1.3k), and the path ends at the stuck host
-config.  The halt branch's $depth call entry is now closed through the label-1 and frame-6 lifts (halt.lisp, 29 events, 12.9M steps), and the shape facts live there; abort stays at 38 events/42.4M.  Next: $depth's body.  Cost note: the
+config.  The halt branch's $depth call entry is now closed through the label-1 and frame-6 lifts (halt.lisp, 29 events, 12.9M steps), and the shape facts live there; abort stays at 38 events/42.4M.  Next: $depth's body.  The (global.get 0) read is closed end to end
+(halt.lisp, 2.2M steps for its 10-fact chain: dgread-slice/-ctxt/-step/
+-label, dhread-frame at the OUTER pair, dhread-ctxt/-label/-labelctxt/
+-label6/-outer).  The div step that follows is BLOCKED, and the reason is
+precise: the halt block's label body ends in (:RETURN), so the pure
+dispatcher tries Step_pure/return-label, whose step_pure/search141 walks
+the body and needs val-p of the (:CONST (:I32) ($truncz (* 1/4 sp)))
+inside the callee frame; that reduces to the truncate/numerator-denominator
+arithmetic and stalls.  The fix is a value-range fact for the div value
+(divval-is-a-value: un-p ($truncz (* 1/4 a)) 32 from un-p a 32); the
+arithmetic alone proves standalone with :nonlinearp t and
+acl2::rational-implies2 (divval-bound, 301 steps), but the full un-p
+statement splits into a denominator-not-1 branch needing
+nonnegative-integer-quotient bounds.  Prove that bound (or a
+nonnegative-integer-quotient <= rational lemma) and then the div chain
+(dhdiv-* mirrors dhread-* with the value in the normal form
+($truncz (* 1/4 sp))).  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
