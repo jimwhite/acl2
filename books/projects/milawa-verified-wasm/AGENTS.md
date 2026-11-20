@@ -198,22 +198,19 @@ the ADD/SUB/LT OR-chain, the IFZ and JMP tests (`fetch.lisp`,
 `dispatch-tests.lisp`), the HALT branch's first call (`halt.lisp`), and the
 unknown-opcode abort through its closed frame lift and its callee's body
 -- the status write and the frame descent into function 4 (`abort.lisp`,
-25 events, 34.1M steps).  The abort's step back out -- the caller's label lift
+27 events, 34.2M steps).  The abort's step back out -- the caller's label lift
 over the callee frame, then the implicit label-vals/frame-vals returns -- is
 the open piece; the bridge-vs-spelling tension there is recorded in the traps.
 The callee frame descent is restated at the helper pair (499k) so the way out
 does not need the forward bridge; the pair shape/components are stated as
 facts (dcallee-pair-shape, 232k) because the opaque pair computes nothing; and
-the caller's label lift over the callee frame is proved (28.6M).  The outer
-frame lift over that label is open: with step disabled the :expand of the
-outer frame step does not fire; with step enabled the guards cascade shape
-facts for the OPAQUE store ($with_global: consp, car :%;%, true-listp cdr,
-len cdr = 2 -- with-global-shape, 4k) and the residual still does not close
-(1.6M).  The opaque-store strategy that bought the pair bridge now costs a
-shape fact per guard; the next attempt should either state this outer lift at
-the helper pair too (no bridge needed) with a compact store record, or use the
-concrete store record (accessors enabled) for this one step and accept the
-spelling work.  Cost note: the
+the caller's label lift over the callee frame is proved (28.6M).  The same label lift is proved at the SPELLED pair (36k) by handing in the STEP
+DEFINITION INSTANCE as a :use (the :expand does not fire once the config's
+arguments are rewritten) with the store's shape as a fact (with-global-shape).
+The outer frame lift over that label is open, narrowed to the frame rule's
+inner-step case: the first parameterized wrapper cut still explores the inner
+step (119k).  Next: refine that wrapper (the inner step as a hypothesis at the
+same variable pair, as dstep-frame-abort-body-param does).  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a
