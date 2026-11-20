@@ -118,3 +118,36 @@
 ; this is the open step.
 
 (defthm dlabel-abort-entry (equal (w3t::step (list :|%;%| (dcallee-pair bytes sp pc clen result w) (list (list :label_%{%}% 1 nil (list (list :ref.func_addr 4) *t3*))))) (list (list :|%;%| (dcallee-pair bytes sp pc clen result w) (list (list :label_%{%}% 1 nil (milawa-callee-admin 4)))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dcallee-pair dadd w3t::$binop_) :use ((:instance w3t::step/r-ctxt-label (w3t::%a0 (list :|%;%| (dcallee-pair bytes sp pc clen result w) (list (list :label_%{%}% 1 nil (list (list :ref.func_addr 4) *t3*)))))) dcall4-entry))))
+
+;; ---------------------------------------------------------------------------
+;; The abort frame's pure and context behavior, isolated
+;; ---------------------------------------------------------------------------
+
+; The frame lift that remains open is decided by the STEP dispatcher's first
+; three branches on the outer frame config and on the inner label config.  With
+; the abort label's instruction list written as a constant, all four facts are
+; immediate: the pure dispatcher returns nil on the lone label and on the lone
+; frame (the label's body is an instruction list, not values), and the context
+; search refuses both lone-list splices.  With these as rewrite rules the
+; dispatcher reaches the frame rule; what still does not close is the frame
+; rule's own body, whose inner-step case is described in AGENTS.md.
+
+(defconst *abort-label-cfg*
+  (list (list :label_%{%}% 1 nil (list (list :ref.func_addr 4) *t3*))))
+
+(defthm rctxt-abort-label-nil
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| (list :|%;%| s fp) *abort-label-cfg*))
+         nil))
+
+(defthm step-pure-abort-label-nil
+  (equal (w3t::step_pure *abort-label-cfg*) nil))
+
+(defthm step-pure-abort-frame-nil
+  (equal (w3t::step_pure (list (list :frame_%{%}% 1 fp *abort-label-cfg*)))
+         nil))
+
+(defthm rctxt-abort-frame-nil
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z (list (list :frame_%{%}% 1 fp *abort-label-cfg*))))
+         nil))
