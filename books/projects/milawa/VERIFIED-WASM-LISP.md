@@ -164,10 +164,14 @@ already uses that package.  In terms of the phases below:
   `local.get 0`, tests it against zero with `relop eq`, and takes the dispatch
   ifelse in both cases -- the halt branch for opcode 0, the fall-through to the
   next test otherwise -- and proves the block slices that expose a taken branch
-  (52 events, 70.1M steps).  The module has seven opcodes plus the
-  unknown-opcode abort (HALT, CONST, ADD/SUB/LT, IFZ, JMP); next are the
-  block/label lifts and then the per-opcode bodies, each calling the module's
-  runtime functions ($depth, $pop, $push, $in_code, $abort).  Two findings are
+  (52 events, 70.1M steps).  The second opcode test and its ifelse are then
+  proved too, with generic ifelse fail/slice facts for every test (87 events,
+  131.3M steps).  The dispatch's test ifelses are at `*ft2*` indices 8 (HALT),
+  12 (CONST), 24 (ADD/SUB/LT), 28 (IFZ) and 32 (JMP), with the unknown-opcode
+  abort after them.  Next are the block/label positions of each test's
+  branches and then the five opcode bodies -- the hard part, because every body
+  calls the module's runtime functions ($depth, $pop, $push, $in_code,
+  $abort), so each needs those callees' body and return facts.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every
