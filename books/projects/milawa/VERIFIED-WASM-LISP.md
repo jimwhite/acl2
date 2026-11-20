@@ -143,8 +143,11 @@ already uses that package.  In terms of the phases below:
   the search), and the two value dissolves (label 3, then frame 3).  Each step
   is proved in seven parts (slice, ctxt, step, label, frame, label 6, frame 6);
   the book ends with the comparison's result pushed into function 6's
-  continuation, which is where the opcode test starts, and includes the test's
-  two slice facts.  51 events, 207M prover steps, 227.8 s.  Two findings are
+  continuation, which is where the opcode test starts; it includes the test's
+  two slice facts and the empty-block/empty-label chains after the second
+  ifelse (their bodies are concrete, so the standard recipe goes through).  The
+  testop and ifelse lifts themselves are the remaining gap on this route; the
+  project's SUMMARY records the obstruction precisely.  51 events, 207M prover steps, 227.8 s.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every

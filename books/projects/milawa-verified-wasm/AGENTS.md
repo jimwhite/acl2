@@ -80,6 +80,11 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   body at label 6 is `(append (dadmin b) rest6)`, not `(cons (dadmin b) rest6)`.
   The malformed body still steps (its first element is a list; the search
   fails), so it surfaces as false measure inequalities, not as an error.
+- **Hand-written literal instructions must spell the keyword exactly.**  The
+  semantics' testop instruction is `(:TESTOP (:I32) (:EQZ))`; a scratch file
+  wrote `:TESTTOP` and every `:use` fact silently failed to match (the printed
+  goals looked identical at a glance).  Prefer `(list :testop (list :i32)
+  (list :eqz))` or copy the keyword from a walk output.
 - **`acl2-count` charges an integer its absolute value** in this ACL2
   (`(acl2-count 5)` is 5).  Symbolic values in an instruction list therefore
   enter every `%SIZE` guard, and the guard becomes arithmetic in `pc`/`clen`.
@@ -102,12 +107,15 @@ body and the range facts the dispatcher needs (i32 binops are `rem`s;
 `relop-ltu-value`).  `wasm3/dispatch.lisp` executes the rest of `$in_code`'s
 body end to end at symbolic `pc`/`clen` — the sub, the read of global 2, the
 mul, the comparison (the last instruction: a pure body step), and the two value
-dissolves — and returns the result into function 6's continuation.  51 events,
-207M prover steps, 227.8 s.  The opcode test's two slice facts
-(`fail-lone-testop`, `deqz-slice`) are proved; the lift of the testop step is
-next (see the callee-tail section of SUMMARY.md for the obstruction and the
-suggested next attempt), then the ifelse/empty-block/empty-label chain, the
-opcode fetch, and the 14 per-opcode tails; then L2 and L3.  Cost note: the
+dissolves — and returns the result into function 6's continuation, and it
+proves the empty-block/empty-label chains after the second ifelse.  59 events,
+210M prover steps, ~200 s.  The opcode test's two slice facts
+(`fail-lone-testop`, `deqz-slice`) and their literal cons/quote corollaries are
+proved; the lift of the testop step (and of the ifelse that follows it) is
+next — see "Where the opcode test stands" in SUMMARY.md for the precise
+obstruction (the `step/search21` measure guards over the evaluated body) and
+the suggested next attempt; then the opcode fetch and the 14 per-opcode tails;
+then L2 and L3.  Cost note: the
 second body position's INNER two-shot done as one lemma measured ~281M prover
 steps; split into flat ctxt-instrs (16.5M), bridge (74k), label (1.85M) and
 frame (2.0M) -- ~20M, 14x cheaper.  Split the lifts this way.  For a

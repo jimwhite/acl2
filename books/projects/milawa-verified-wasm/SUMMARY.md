@@ -1041,18 +1041,33 @@ are expensive for the opposite reason: the frame-6 measure has to see through
 the whole body's 39-instruction continuation.  Neither blocks anything; the
 book certifies in under four minutes.
 
-**Where the opcode test stands.**  The two slice facts are proved
-(`fail-lone-testop`, 12,895 steps; `deqz-slice`, 13,916).  The lift of the
-testop step is not: at a symbolic value the search's k = 1 test runs against a
-concrete instruction list, ACL2 rewrites the `(step ...)` test rather than
-using the fact, and evaluating `$TESTOP_` splits the goal into its 0 and 1
-branches.  The two ways tried were keeping `$TESTOP_` opaque (the search then
-cannot reduce its guards) and stating the slice facts in the search's exact
-cons/quote shape (the fact still does not fire on the re-evaluated test).  The
-next attempt should state the k = 1 test and the k = 0 slice step as explicit
-hypotheses of the context lemma, with `step` and `acl2-count` disabled and the
-size test as a hypothesis, so the definition instance has nothing left to
-prove; the same pattern applies to the second ifelse's `if-false` step.
+**Where the opcode test stands.**  Three pieces are proved.  The two slice
+facts (`fail-lone-testop`, 12,895 steps; `deqz-slice`, 13,916), and their
+literal cons/quote corollaries (`fail-lone-testop-cons`, 21 steps;
+`deqz-slice-cons`, 245) -- the corollaries matter because a rule whose LHS
+contains `(dconst ...)` never matches the search's evaluated slice, while the
+literal-shaped fact does.  And the empty-block/empty-label chains after the
+second ifelse: their instruction lists are concrete (the ifelse's condition
+value is not in them), so the search's measure tests compute and the standard
+seven-part recipe goes through in 2.4M steps.
+
+The lift of the testop step is not proved.  The search computation itself is
+right: with a *small* continuation and a variable store it proves in 23k
+steps, and with the real continuation the only failures are the `step/search21`
+measure guards.  The guards compare `%SIZE` of the slice with `%SIZE` of the
+whole body; the whole is the evaluated 40-instruction list, so a size rule
+stated over `(dvl (dbody4 pc clen))` never matches.  Stating the rules over the
+*literal* body works (they prove in 463 and 1025 steps as `:linear` rules,
+with `(integerp (dltu ...))` relieved by a new `integerp-dltu-op`
+type-prescription and `integer-abs-nonneg`), but inside the search's
+definition instance the size test's *false* branch is generated with its own
+negation as the final goal, and ACL2 does not use the size fact there: the
+residual goals seen were `(<= (+ 9003 x) (+ 11 x))`, `(<= 2^32 clen)` (the
+third conjunct of an `unsigned-byte-p` hypothesis being proved), and a bare
+`NIL`.  The next attempt should avoid the `step/search21` definition for this
+position: prove a specialized context lemma for a value-plus-testop body, or
+hand-compute the two `search21` steps as a rewrite rule stated at the literal
+slice terms, rather than driving the generic definition's measure tests.
 
 ## What is next, in order
 
