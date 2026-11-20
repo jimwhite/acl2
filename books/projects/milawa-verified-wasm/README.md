@@ -50,7 +50,8 @@ any book in the tree has been skipped.
 | **The running branch's shared head** (`status = 1`): the seven steps every running path starts with — the status test's else branch, the empty block and its label, the call split, and the call into `$in_code`'s frame — with `$in_code`'s body at the head, and the first instruction of that body stepped | **proved** (`wasm3/running.lisp`) |
 | **The callee's tail and the in-code dispatch**: `$in_code`'s body end to end — the sub, the read of the code length, the mul, the comparison (the last instruction, stepped by the pure rule), and the two value dissolves — then, under the in-code hypothesis (the comparison is 1, so the testop's value is the concrete 0), the opcode test, the second ifelse, and the empty block/label dissolve, and the first instruction of the opcode fetch (`global.get 1`) | **proved** (`wasm3/dispatch.lisp`, 78 measured events, 214M prover steps) |
 | **The opcode fetch and the first frame write**: the `i32.load` of the opcode — a read whose guard is the numeric round trip, with the in-bounds hypothesis that rules out the TRAP branch — then `local.set 0`, the first write, storing the opcode in the callee frame's local 0; both lifted to function 6's frame at symbolic `pc`/`clen`/`bytes`/opcode | **proved** (`wasm3/load.lisp`, 15 measured events, 8.49M prover steps) |
-| **The next fetch instructions**: the second `global.get 1` (pc, through the updated frame); the add `pc + 4` (the `(const 4)` is already a value, so the add consumes both constants in one pure step); the `global.set 1` write of pc (the store's global 6); `local.get 0` (the saved opcode back onto the stack); the opcode test `(relop eq)` against zero; the dispatch ifelse in both cases (opcode 0 takes the halt branch, anything else falls through to the next test); and the block step that exposes a taken branch (a `BLOCK` around the branch, with the halt and empty bodies); then the second opcode test (`local.get 0`, `(const 1)`, `relop eq`) and its ifelse in both cases, with generic ifelse fail/slice facts for every test; the CONST test's block/label positions in both branches; the halt branch's first call split (`(:CALL 2)` = `(:REF.FUNC_ADDR 2)` + the call_ref type, at the callee pair); and the ADD/SUB/LT test's whole OR-chain (`eq 2`, `eq 3`, `or`, `eq 4`, `or`) its ifelse in both cases (opcode 2/3/4 vs the rest), and the block/label positions of both branches (the ADD/SUB/LT body's block, and the empty block/label falling through to the IFZ test) | **proved** (`wasm3/fetch.lisp`, 165 measured events, 488.4M prover steps) |
+| **The next fetch instructions and the first two dispatch tests**: the second `global.get 1` (pc, through the updated frame); the add `pc + 4`; the `global.set 1` write of pc; `local.get 0`; the opcode test `(relop eq)` against zero and its ifelse in both cases; the block step; then the CONST test (`local.get 0`, `(const 1)`, `relop eq`) and its ifelse and block/label positions; generic ifelse fail/slice facts for every test; and the halt branch's first call split (`(:CALL 2)` = `(:REF.FUNC_ADDR 2)` + the call_ref type, at the callee pair) | **proved** (`wasm3/fetch.lisp`, 111 measured events, 211.1M prover steps) |
+| **The last three dispatch tests**: the ADD/SUB/LT test's whole OR-chain (`eq 2`, `eq 3`, `or`, `eq 4`, `or`) and its ifelse (opcode 2/3/4 vs the rest); the IFZ test (`const 5`) and the JMP test (`const 6`), each through its local.get, equality, ifelse (both cases) and block/label positions; the false path now reaches `(call 4)`, the unknown-opcode abort | **proved** (`wasm3/dispatch-tests.lisp`, 114 measured events, 559.6M prover steps) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -64,12 +65,12 @@ One command, from this directory:
 ```
 $ make check ACL2=/path/to/saved_acl2
 --- lint (parentheses the way ACL2 reads them)
-lint: 36 file(s) balance the way ACL2 reads them
+lint: 37 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 36 book(s))
---- every book has a certificate           (36 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 37 book(s))
+--- every book has a certificate           (37 books, all certified)
 
 ===== summary =====
 books certified:  33

@@ -171,11 +171,14 @@ already uses that package.  In terms of the phases below:
   abort after them.  The CONST test's block/label positions are proved, and so
   is the halt branch's first call split (:CALL 2 -> (:REF.FUNC_ADDR 2) + the
   call_ref type), at the callee pair, and the ADD/SUB/LT test's whole OR-chain
-  its ifelse in both cases, and the block/label positions of both branches --
-  165 events, 488.4M steps.  Next are the IFZ and JMP tests and the abort call,
-  and then the five opcode bodies -- the hard part, because every body calls the
-  module's runtime functions ($depth, $pop, $push, $in_code, $abort), so each
-  needs those callees' body and return facts.  Two findings are
+  its ifelse in both cases, and the block/label positions of both branches
+  (fetch: 111 events, 211.1M steps), and the last three dispatch tests -- the
+  ADD/SUB/LT OR-chain, the IFZ test and the JMP test, each through both branch
+  entries and block/label positions (dispatch-tests: 114 events, 559.6M steps).
+  The false path reaches (call 4), the unknown-opcode abort.  Next are that
+  abort call and then the five opcode bodies -- the hard part, because every
+  body calls the module's runtime functions ($depth, $pop, $push, $in_code,
+  $abort), so each needs those callees' body and return facts.  Two findings are
   recorded in the project's `SUMMARY` because they cost the most: the full body
   at label 6 must `append` the frame instruction (a `cons` of the one-element
   admin list puts a list of instructions where an instruction belongs, and every
