@@ -1,6 +1,6 @@
 (in-package "MILAWA-WASM")
 
-(include-book "halt")
+(include-book "abort")
 
 ; L1, the running branch: the out-of-code abort at the entry.
 ;
@@ -58,8 +58,6 @@
                                             (list (list :call 4) (list :return)))))
                  (:instance dcall4-lone (bytes bytes) (sp sp) (pc pc) (clen clen) (result result))))))
 
-
-
 (defthm dcall4-spure-body
   (equal (w3t::step_pure (list (list :call 4) (list :return))) nil)
   :hints (("Goal" :in-theory (disable w3t::step_pure)
@@ -85,8 +83,6 @@
                                      (list (list :call 4) (list :return)))))
            :use (dcall4-spure-body dcall4-split-body dcall4-ctxt-body))))
 
-
-
 (defthm dlabel0-call
   (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
                           (list (list :label_%{%}% 0 nil
@@ -108,8 +104,6 @@
          (list (icfg (iz6 bytes sp pc clen result)
                      (list (list :label_%{%}% 0 nil
                                  (list (list :call 4) (list :return))))))))
-
-
 
 (defthm testop-slice-zero
   (equal (w3t::step (icfg z (list (list :const (list :i32) 0)
@@ -198,8 +192,6 @@
                                                                     (dvl (dbody4 pc clen)))))))))
                  (:instance dlabel6-eqz0)))))
 
-
-
 (defthm difelse-slice-1
   (equal (w3t::step (list :|%;%| z (cons (list :const '(:i32) 1) '((:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL)))))
          (list (list :|%;%| z (list '(:BLOCK (:_RESULT NIL) ((:CALL 4) (:RETURN))))))))
@@ -211,8 +203,6 @@
 (defthm dlabel6-ifelse0 (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (dvl-after-testop (list (dconst 1))))))) (list (icfg (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (dvl-after-ifelse (list '(:BLOCK (:_RESULT NIL) ((:CALL 4) (:RETURN)))))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (dvl-after-testop (list (dconst 1)))))))) dstep-ifelse0))))
 
 (defthm douter-ifelse0 (equal (w3t::step (frozen-body-cfg bytes sp pc clen 1 result (dvl-after-testop (list (dconst 1))))) (list (frozen-body-cfg bytes sp pc clen 1 result (dvl-after-ifelse (list '(:BLOCK (:_RESULT NIL) ((:CALL 4) (:RETURN)))))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-frame) (w3t::%a0 (list :|%;%| (frozen-z bytes sp pc clen 1 result) (list (list :frame_%{%}% 1 (milawa-callee-frame 6) (list (list :label_%{%}% 1 nil (dvl-after-testop (list (dconst 1)))))))))) (:instance dlabel6-ifelse0)))))
-
-
 
 (defthm dctxt-block-abort
   (equal (w3t::step/r-ctxt-instrs
@@ -321,8 +311,6 @@
                                                                     (dvl-after-ifelse (list (list :label_%{%}% 0 nil (list (list :call 4) (list :return))))))))))))
                  (:instance dlabel6-elabel-abort)))))
 
-
-
 (defthm dc4-no-ctxt-2
   (equal (w3t::step/r-ctxt-instrs (icfg (iz6 bytes sp pc clen result)
                                         (list (list :ref.func_addr 4) *t3*)))
@@ -380,3 +368,619 @@
                                      (list (list :ref.func_addr 4) *t3* (list :return)))))
            :use (dc4-ctxt))))
 
+(defthm dframe4-step
+  (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                          (list (list :frame_%{%}% 1 (milawa-callee-frame 4)
+                                      (list (list :label_%{%}% 1 nil *abort-body*))))))
+         (list (icfg (list :|%;%|
+                           (w3t::$sof
+                            (w3t::$with_global
+                             (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                   (milawa-callee-frame 4))
+                             3 (list :const (list :i32) 2)))
+                           (w3t::$fof (iz6 bytes sp pc clen result)))
+                     (list (list :frame_%{%}%
+                                 1
+                                 (w3t::$fof
+                                  (w3t::$with_global
+                                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                         (milawa-callee-frame 4))
+                                   3 (list :const (list :i32) 2)))
+                                 (list (list :label_%{%}% 1 nil *abort-body-after*)))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (list (list :frame_%{%}% 1 (milawa-callee-frame 4)
+                                                        (list (list :label_%{%}% 1 nil *abort-body*)))))))
+                 (:instance dlabel-abort-body-gen
+                            (z (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                     (milawa-callee-frame 4))))))))
+
+(defthm dcallee4-cont-spure
+  (equal (w3t::step_pure (append (milawa-callee-admin 4) (list (list :return)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (append (milawa-callee-admin 4) (list (list :return)))))))))
+
+(defthm dcallee4-cont-split
+  (equal (w3t::step_read/split
+          (icfg (iz6 bytes sp pc clen result)
+                (append (milawa-callee-admin 4) (list (list :return)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (append (milawa-callee-admin 4) (list (list :return))))))))))
+
+(defthm dcallee4-cont-ctxt
+  (equal (w3t::step/r-ctxt-instrs
+          (icfg (iz6 bytes sp pc clen result)
+                (append (milawa-callee-admin 4) (list (list :return)))))
+         (list
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :label_%{%}% 1 nil *abort-body-after*))))
+            (list (list :return))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (append (milawa-callee-admin 4) (list (list :return))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (append (milawa-callee-admin 4) (list (list :return)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (append (milawa-callee-admin 4) (list (list :return))))
+                            (w3t::%t9 0)
+                            (w3t::z (iz6 bytes sp pc clen result))
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (append (milawa-callee-admin 4) (list (list :return))))))
+                 dframe4-step))))
+
+(defthm dcallee4-cont-step
+  (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                          (append (milawa-callee-admin 4) (list (list :return)))))
+         (list
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :label_%{%}% 1 nil *abort-body-after*))))
+            (list (list :return))))))
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :expand ((w3t::step (icfg (iz6 bytes sp pc clen result)
+                                     (append (milawa-callee-admin 4) (list (list :return))))))
+           :use (dcallee4-cont-spure dcallee4-cont-split dcallee4-cont-ctxt))))
+
+(defthm dframe-label-vals-gen
+  (implies (and (equal (w3t::step (icfg (list :|%;%| s fp)
+                                       (list (list :label_%{%}% 1 nil
+                                                   (list (list :const (list :i32) 2))))))
+                        (list (icfg (list :|%;%| s fp)
+                                    (list (list :const (list :i32) 2)))))
+                (< (w3t::%size (list (list :label_%{%}% 1 nil
+                                           (list (list :const (list :i32) 2)))))
+                   (w3t::%size (list (list :frame_%{%}% 1 fp
+                                           (list (list :label_%{%}% 1 nil
+                                                       (list (list :const (list :i32) 2)))))))))
+           (equal (w3t::step (icfg (list :|%;%| s f)
+                                   (list (list :frame_%{%}% 1 fp
+                                               (list (list :label_%{%}% 1 nil
+                                                           (list (list :const (list :i32) 2))))))))
+                  (list (icfg (list :|%;%| s f)
+                              (list (list :frame_%{%}% 1 fp
+                                          (list (list :const (list :i32) 2))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (icfg (list :|%;%| s f)
+                                            (list (list :frame_%{%}% 1 fp
+                                                        (list (list :label_%{%}% 1 nil
+                                                                    (list (list :const (list :i32) 2)))))))))))))
+
+(defthm dcallee4-lv-spure
+  (equal (w3t::step_pure
+          (append (list (list :frame_%{%}%
+                              1
+                              (w3t::$fof
+                               (w3t::$with_global
+                                (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                      (milawa-callee-frame 4))
+                                3 (list :const (list :i32) 2)))
+                              (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                  (list (list :return))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (append (list (list :frame_%{%}%
+                                                         1
+                                                         (w3t::$fof
+                                                          (w3t::$with_global
+                                                           (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                                 (milawa-callee-frame 4))
+                                                           3 (list :const (list :i32) 2)))
+                                                         (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                                             (list (list :return)))))))))
+
+(defthm dcallee4-lv-ctxt
+  (equal (w3t::step/r-ctxt-instrs
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :label_%{%}% 1 nil *abort-body-after*))))
+            (list (list :return)))))
+         (list
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :const (list :i32) 2))))
+            (list (list :return))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg
+                                       (list :|%;%|
+                                             (w3t::$sof
+                                              (w3t::$with_global
+                                               (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                     (milawa-callee-frame 4))
+                                               3 (list :const (list :i32) 2)))
+                                             (w3t::$fof (iz6 bytes sp pc clen result)))
+                                       (append
+                                        (list (list :frame_%{%}%
+                                                    1
+                                                    (w3t::$fof
+                                                     (w3t::$with_global
+                                                      (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                            (milawa-callee-frame 4))
+                                                      3 (list :const (list :i32) 2)))
+                                                    (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                                        (list (list :return))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (append
+                                      (list (list :frame_%{%}%
+                                                  1
+                                                  (w3t::$fof
+                                                   (w3t::$with_global
+                                                    (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                          (milawa-callee-frame 4))
+                                                    3 (list :const (list :i32) 2)))
+                                                  (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                                      (list (list :return)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (append
+                                       (list (list :frame_%{%}%
+                                                   1
+                                                   (w3t::$fof
+                                                    (w3t::$with_global
+                                                     (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                           (milawa-callee-frame 4))
+                                                     3 (list :const (list :i32) 2)))
+                                                   (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                                       (list (list :return))))
+                            (w3t::%t9 0)
+                            (w3t::z (list :|%;%|
+                                          (w3t::$sof
+                                           (w3t::$with_global
+                                            (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                  (milawa-callee-frame 4))
+                                            3 (list :const (list :i32) 2)))
+                                          (w3t::$fof (iz6 bytes sp pc clen result))))
+                            (w3t::%a0 (icfg
+                                       (list :|%;%|
+                                             (w3t::$sof
+                                              (w3t::$with_global
+                                               (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                     (milawa-callee-frame 4))
+                                               3 (list :const (list :i32) 2)))
+                                             (w3t::$fof (iz6 bytes sp pc clen result)))
+                                       (append
+                                        (list (list :frame_%{%}%
+                                                    1
+                                                    (w3t::$fof
+                                                     (w3t::$with_global
+                                                      (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                            (milawa-callee-frame 4))
+                                                      3 (list :const (list :i32) 2)))
+                                                    (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                                        (list (list :return))))))
+                 (:instance dframe-label-vals-gen
+                            (s (w3t::$sof
+                                (w3t::$with_global
+                                 (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                       (milawa-callee-frame 4))
+                                 3 (list :const (list :i32) 2))))
+                            (f (w3t::$fof (iz6 bytes sp pc clen result)))
+                            (fp (w3t::$fof
+                                 (w3t::$with_global
+                                  (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                        (milawa-callee-frame 4))
+                                  3 (list :const (list :i32) 2)))))))))
+
+(defthm dcallee4-lv-split
+  (equal (w3t::step_read/split
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :label_%{%}% 1 nil *abort-body-after*))))
+            (list (list :return)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (icfg
+                                       (list :|%;%|
+                                             (w3t::$sof
+                                              (w3t::$with_global
+                                               (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                     (milawa-callee-frame 4))
+                                               3 (list :const (list :i32) 2)))
+                                             (w3t::$fof (iz6 bytes sp pc clen result)))
+                                       (append
+                                        (list (list :frame_%{%}%
+                                                    1
+                                                    (w3t::$fof
+                                                     (w3t::$with_global
+                                                      (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                            (milawa-callee-frame 4))
+                                                      3 (list :const (list :i32) 2)))
+                                                    (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                                        (list (list :return))))))))))
+
+(defthm dcallee4-lv-step
+  (equal (w3t::step
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :label_%{%}% 1 nil *abort-body-after*))))
+            (list (list :return)))))
+         (list
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :const (list :i32) 2))))
+            (list (list :return))))))
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :expand ((w3t::step
+                     (icfg
+                      (list :|%;%|
+                            (w3t::$sof
+                             (w3t::$with_global
+                              (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                    (milawa-callee-frame 4))
+                              3 (list :const (list :i32) 2)))
+                            (w3t::$fof (iz6 bytes sp pc clen result)))
+                      (append
+                       (list (list :frame_%{%}%
+                                   1
+                                   (w3t::$fof
+                                    (w3t::$with_global
+                                     (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                           (milawa-callee-frame 4))
+                                     3 (list :const (list :i32) 2)))
+                                   (list (list :label_%{%}% 1 nil *abort-body-after*))))
+                       (list (list :return))))))
+           :use (dcallee4-lv-spure dcallee4-lv-split dcallee4-lv-ctxt))))
+
+(defthm dcallee4-fv-spure
+  (equal (w3t::step_pure
+          (append (list (list :frame_%{%}%
+                              1
+                              (w3t::$fof
+                               (w3t::$with_global
+                                (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                      (milawa-callee-frame 4))
+                                3 (list :const (list :i32) 2)))
+                              (list (list :const (list :i32) 2))))
+                  (list (list :return))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (append (list (list :frame_%{%}%
+                                                         1
+                                                         (w3t::$fof
+                                                          (w3t::$with_global
+                                                           (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                                 (milawa-callee-frame 4))
+                                                           3 (list :const (list :i32) 2)))
+                                                         (list (list :const (list :i32) 2))))
+                                             (list (list :return)))))))))
+
+(defthm dcallee4-fv-split
+  (equal (w3t::step_read/split
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :const (list :i32) 2))))
+            (list (list :return)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (icfg
+                                       (list :|%;%|
+                                             (w3t::$sof
+                                              (w3t::$with_global
+                                               (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                     (milawa-callee-frame 4))
+                                               3 (list :const (list :i32) 2)))
+                                             (w3t::$fof (iz6 bytes sp pc clen result)))
+                                       (append
+                                        (list (list :frame_%{%}%
+                                                    1
+                                                    (w3t::$fof
+                                                     (w3t::$with_global
+                                                      (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                            (milawa-callee-frame 4))
+                                                      3 (list :const (list :i32) 2)))
+                                                    (list (list :const (list :i32) 2))))
+                                        (list (list :return))))))))))
+
+(defthm dcallee4-fv-ctxt
+  (equal (w3t::step/r-ctxt-instrs
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :const (list :i32) 2))))
+            (list (list :return)))))
+         (list
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :const (list :i32) 2))
+            (list (list :return))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg
+                                       (list :|%;%|
+                                             (w3t::$sof
+                                              (w3t::$with_global
+                                               (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                     (milawa-callee-frame 4))
+                                               3 (list :const (list :i32) 2)))
+                                             (w3t::$fof (iz6 bytes sp pc clen result)))
+                                       (append
+                                        (list (list :frame_%{%}%
+                                                    1
+                                                    (w3t::$fof
+                                                     (w3t::$with_global
+                                                      (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                            (milawa-callee-frame 4))
+                                                      3 (list :const (list :i32) 2)))
+                                                    (list (list :const (list :i32) 2))))
+                                        (list (list :return))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (append
+                                      (list (list :frame_%{%}%
+                                                  1
+                                                  (w3t::$fof
+                                                   (w3t::$with_global
+                                                    (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                          (milawa-callee-frame 4))
+                                                    3 (list :const (list :i32) 2)))
+                                                  (list (list :const (list :i32) 2))))
+                                      (list (list :return)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (append
+                                       (list (list :frame_%{%}%
+                                                   1
+                                                   (w3t::$fof
+                                                    (w3t::$with_global
+                                                     (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                           (milawa-callee-frame 4))
+                                                     3 (list :const (list :i32) 2)))
+                                                   (list (list :const (list :i32) 2))))
+                                       (list (list :return))))
+                            (w3t::%t9 0)
+                            (w3t::z (list :|%;%|
+                                          (w3t::$sof
+                                           (w3t::$with_global
+                                            (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                  (milawa-callee-frame 4))
+                                            3 (list :const (list :i32) 2)))
+                                          (w3t::$fof (iz6 bytes sp pc clen result))))
+                            (w3t::%a0 (icfg
+                                       (list :|%;%|
+                                             (w3t::$sof
+                                              (w3t::$with_global
+                                               (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                     (milawa-callee-frame 4))
+                                               3 (list :const (list :i32) 2)))
+                                             (w3t::$fof (iz6 bytes sp pc clen result)))
+                                       (append
+                                        (list (list :frame_%{%}%
+                                                    1
+                                                    (w3t::$fof
+                                                     (w3t::$with_global
+                                                      (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                            (milawa-callee-frame 4))
+                                                      3 (list :const (list :i32) 2)))
+                                                    (list (list :const (list :i32) 2))))
+                                        (list (list :return))))))
+                 (:instance dstep-frame-vals
+                            (z (list :|%;%|
+                                     (w3t::$sof
+                                      (w3t::$with_global
+                                       (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                             (milawa-callee-frame 4))
+                                       3 (list :const (list :i32) 2)))
+                                     (w3t::$fof (iz6 bytes sp pc clen result))))
+                            (fp (w3t::$fof
+                                 (w3t::$with_global
+                                  (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                        (milawa-callee-frame 4))
+                                  3 (list :const (list :i32) 2)))))))))
+
+(defthm dcallee4-fv-step
+  (equal (w3t::step
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :frame_%{%}%
+                        1
+                        (w3t::$fof
+                         (w3t::$with_global
+                          (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                (milawa-callee-frame 4))
+                          3 (list :const (list :i32) 2)))
+                        (list (list :const (list :i32) 2))))
+            (list (list :return)))))
+         (list
+          (icfg
+           (list :|%;%|
+                 (w3t::$sof
+                  (w3t::$with_global
+                   (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                         (milawa-callee-frame 4))
+                   3 (list :const (list :i32) 2)))
+                 (w3t::$fof (iz6 bytes sp pc clen result)))
+           (append
+            (list (list :const (list :i32) 2))
+            (list (list :return))))))
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :expand ((w3t::step
+                     (icfg
+                      (list :|%;%|
+                            (w3t::$sof
+                             (w3t::$with_global
+                              (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                    (milawa-callee-frame 4))
+                              3 (list :const (list :i32) 2)))
+                            (w3t::$fof (iz6 bytes sp pc clen result)))
+                      (append
+                       (list (list :frame_%{%}%
+                                   1
+                                   (w3t::$fof
+                                    (w3t::$with_global
+                                     (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                           (milawa-callee-frame 4))
+                                     3 (list :const (list :i32) 2)))
+                                   (list (list :const (list :i32) 2))))
+                       (list (list :return))))))
+           :use (dcallee4-fv-spure dcallee4-fv-split dcallee4-fv-ctxt))))
