@@ -1431,3 +1431,50 @@
                  (:instance e-lift-final-gen (s (w3t::$sof (szg bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (w3t::$fof (szg bytes sp pc clen result W))) (zp (zo6 bytes sp pc clen result W)) (cont (cdr (const-tail3))))
                  (:instance e-frame-vals-gen (s (w3t::$sof (szg bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (w3t::$fof (szg bytes sp pc clen result W))))
                  e-spure-nil2 e-split-nil2))))
+
+; ---------------------------------------------------------------------------
+; The CONST branch's return of 1: the pure label and frame return steps
+; ---------------------------------------------------------------------------
+;
+; The callee's void return leaves the tail's continuation ((const 1) (:return))
+; at the post-$push state.  That value is the CONST opcode's answer: the
+; machine is still running (status 1 is what the tail returns to the
+; dispatcher's loop).  At the function-6 administration level the label 1 and
+; the entry frame each consume the value+return by the pure return rules -- the
+; generic returns.lisp facts -- so the run-level composition's last two steps
+; are these.  The steps are expensive (35.6M and 11.6M) because the dispatcher's
+; size checks evaluate the post-$push z; they are the price of the abstract
+; state's many nested records.
+
+(defun ret-z (bytes sp pc clen result W)
+  (zo6 bytes sp pc clen result W))
+(defconst *ret-cont* '((:const (:i32) 1) (:return)))
+(defthm r1-label-return
+  (equal (w3t::step (list :|%;%| (ret-z bytes sp pc clen result W)
+                          (list (list :label_%{%}% 1 nil *ret-cont*))))
+         (list (list :|%;%| (ret-z bytes sp pc clen result W) *ret-cont*)))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-pure w3t::step_pure)
+           :use ((:instance (:definition w3t::step)
+                            (w3t::%a0 (list :|%;%| (ret-z bytes sp pc clen result W)
+                                            (list (list :label_%{%}% 1 nil *ret-cont*)))))
+                 (:instance (:definition w3t::step/r-pure)
+                            (w3t::%a0 (list :|%;%| (ret-z bytes sp pc clen result W)
+                                            (list (list :label_%{%}% 1 nil *ret-cont*)))))
+                 (:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (list (list :label_%{%}% 1 nil *ret-cont*))))
+                 (:instance step-pure-return-out-of-label (n 1) (is0 nil) (x 1))))))
+(defthm r2-frame-return
+  (equal (w3t::step (list :|%;%| (ret-z bytes sp pc clen result W)
+                          (list (list :frame_%{%}% 1 *frozen-entry-frame* *ret-cont*))))
+         (list (list :|%;%| (ret-z bytes sp pc clen result W)
+                     (list (list :const (list :i32) 1)))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-pure w3t::step_pure)
+           :use ((:instance (:definition w3t::step)
+                            (w3t::%a0 (list :|%;%| (ret-z bytes sp pc clen result W)
+                                            (list (list :frame_%{%}% 1 *frozen-entry-frame* *ret-cont*)))))
+                 (:instance (:definition w3t::step/r-pure)
+                            (w3t::%a0 (list :|%;%| (ret-z bytes sp pc clen result W)
+                                            (list (list :frame_%{%}% 1 *frozen-entry-frame* *ret-cont*)))))
+                 (:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (list (list :frame_%{%}% 1 *frozen-entry-frame* *ret-cont*))))
+                 (:instance step-pure-return-out-of-frame (f *frozen-entry-frame*) (x 1))))))
