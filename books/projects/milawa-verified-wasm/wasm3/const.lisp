@@ -594,3 +594,596 @@
                             (z (w3t::$with_global (zlset1 bytes sp pc clen result W) 1
                                                   (list :const (list :i32) (dadd pc)))))
                  local-of-gset1-concrete))))
+
+; ---------------------------------------------------------------------------
+; The $push callee (function 0): its body end to end
+; ---------------------------------------------------------------------------
+;
+; The dispatcher's CONST branch ends by calling function 0, the seven-
+; instruction $push: (global.get 0) reads the stack pointer, (local.get 0)
+; the word W, the i32.store writes the word, and the sp write advances it.
+; The callee's frame carries W in local 0; its label and frame have arity 0
+; (no results), so its return is void.
+;
+; The chain is the dispatch book's seven layers per position -- the slice, the
+; body's ctxt, the body step, the label step, the frame step (through the
+; arity-0 wrapper), the ctxt lift with the caller's continuation, and the
+; step-level fact -- at the explicit z spellings the frame rule builds.  Two
+; lessons this tier cost: the phase facts (step_pure and step_read/split nil)
+; must be stated at the CONCRETE instruction lists, because step_pure's trap
+; search scans the list's length; and the concrete slice/failure facts must be
+; in constructor form.  The store's slice is proved generically in z (the
+; memory's byte length is symbolic), with its lone and one-value refusals.
+;
+; Positions 0-4 are closed here.  Position 5 (the global.set 0 write) and the
+; two dissolves (the label-vals and frame-vals of the void return) are next.
+
+
+(defun const-tail3 () (cdr (cddddr (const-tail2))))
+
+(defun zlset1 (bytes sp pc clen result W) (w3t::$with_local (iz6 bytes sp pc clen result) 1 (list :const (list :i32) W)))
+
+(defun zw2 (bytes sp pc clen result W) (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))))
+
+(defun sframe0 (bytes sp pc clen result W)
+  (declare (ignore bytes sp pc clen result))
+  (list :%rec (cons :locals (list (list (list :const (list :i32) W))))
+        (cons :module (milawa-func-module 0))))
+
+(defun sadmin (bytes sp pc clen result W)
+  (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W)
+              (list (list :label_%{%}% 0 nil (milawa-func-body 0))))))
+
+(defun sz0 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (zw2 bytes sp pc clen result W)) (sframe0 bytes sp pc clen result W)))
+
+(defun sz1 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (sz0 bytes sp pc clen result W)) (sframe0 bytes sp pc clen result W)))
+
+(defun sz2 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (sz1 bytes sp pc clen result W)) (sframe0 bytes sp pc clen result W)))
+
+(defun szm (bytes sp pc clen result W) (w3t::$with_mem (sz2 bytes sp pc clen result W) 0 (+ sp 0) 4 (w3t::$nbytes_ (list :i32) W)))
+
+(defun sz3 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (szm bytes sp pc clen result W)) (sframe0 bytes sp pc clen result W)))
+
+(defun sz5 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (sz3 bytes sp pc clen result W)) (sframe0 bytes sp pc clen result W)))
+
+(defun szg (bytes sp pc clen result W) (w3t::$with_global (sz5 bytes sp pc clen result W) 0 (list :const (list :i32) (dadd sp))))
+
+(defun zo1 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (sz0 bytes sp pc clen result W)) (w3t::$fof (zw2 bytes sp pc clen result W))))
+
+(defun zo2 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (sz1 bytes sp pc clen result W)) (w3t::$fof (zw2 bytes sp pc clen result W))))
+
+(defun zo3 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (szm bytes sp pc clen result W)) (w3t::$fof (zw2 bytes sp pc clen result W))))
+
+(defun zo4 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (sz3 bytes sp pc clen result W)) (w3t::$fof (zw2 bytes sp pc clen result W))))
+
+(defun zo5 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (sz5 bytes sp pc clen result W)) (w3t::$fof (zw2 bytes sp pc clen result W))))
+
+(defun zo6 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (szg bytes sp pc clen result W)) (w3t::$fof (zw2 bytes sp pc clen result W))))
+
+(defun sbody0 () (milawa-func-body 0))
+
+(defun sbody1 (sp) (cons (list :const (list :i32) sp) (cdr (milawa-func-body 0))))
+
+(defun sbody2 (sp W)
+  (cons (list :const (list :i32) sp)
+        (cons (list :const (list :i32) W) (cddr (milawa-func-body 0)))))
+
+(defun sbody3 () (cdddr (milawa-func-body 0)))
+
+(defun sbody4 (sp) (cons (list :const (list :i32) sp) (cdr (sbody3))))
+
+(defun sbody5 (sp) (cons (list :const (list :i32) (dadd sp)) (cdddr (sbody3))))
+
+(defun zpair0 (bytes sp pc clen result W) (list :|%;%| (w3t::$sof (zw2 bytes sp pc clen result W)) (w3t::$fof (zw2 bytes sp pc clen result W))))
+
+(defun sarg6 (bytes sp pc clen result W) (w3t::$sof (szg bytes sp pc clen result W)))
+
+(defun store-instrs (sp W)
+  (list (list :const (list :i32) sp) (list :const (list :i32) W)
+        '(:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))
+
+(defun store-hyps (z sp W)
+  (and (unsigned-byte-p 32 sp) (unsigned-byte-p 32 W)
+       (<= (+ sp 4) (len (w3t::%get-field (w3t::$mem z 0) :bytes)))))
+
+(defthm gfail-lone-gset0
+  (equal (w3t::step (list :|%;%| z (list (quote (:global.set 0))))) nil)
+  :hints (("Goal" :in-theory (disable)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list (quote (:global.set 0))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list (quote (:global.set 0)))) (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (quote (:global.set 0))))))))))
+
+(defthm dstep-frame-outer-gen-0
+  (implies (and (equal (w3t::step (list :|%;%| (list :|%;%| s fp)
+                                         (list (list :label_%{%}% 0 nil b))))
+                        (list (list :|%;%| zp (list (list :label_%{%}% 0 nil b2)))))
+                (< (w3t::%size (list (list :label_%{%}% 0 nil b)))
+                   (w3t::%size (list (list :frame_%{%}% 0 fp (list (list :label_%{%}% 0 nil b))))))
+                (consp zp) (equal (car zp) :|%;%|)
+                (true-listp (cdr zp)) (equal (len (cdr zp)) 2))
+           (equal (w3t::step (list :|%;%| (list :|%;%| s f)
+                                   (list (list :frame_%{%}% 0 fp
+                                               (list (list :label_%{%}% 0 nil b))))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof zp) f)
+                              (list (list :frame_%{%}% 0 (w3t::$fof zp)
+                                          (list (list :label_%{%}% 0 nil b2))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| s f)
+                                            (list (list :frame_%{%}% 0 fp
+                                                        (list (list :label_%{%}% 0 nil b)))))))
+                 (:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| s f)
+                                            (list (list :frame_%{%}% 0 fp
+                                                        (list (list :label_%{%}% 0 nil b)))))))))))
+
+(defthm s-lone-store
+  (equal (w3t::step (list :|%;%| z (list (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))))
+         nil)
+  :hints (("Goal" :in-theory (disable)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (list (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))
+                            (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))))))))
+
+(defthm s-store-one
+  (implies (unsigned-byte-p 32 c)
+           (equal (w3t::step (list :|%;%| z (list (list :const (list :i32) c) (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))))
+                  nil))
+  :hints (("Goal" :in-theory (disable)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list (list :const (list :i32) c) (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (list (list :const (list :i32) c) (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (list (list :const (list :i32) c) (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))
+                            (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (list :const (list :i32) c) (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (list (list :const (list :i32) c) (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))
+                            (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (list :const (list :i32) c) (quote (:store (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))))
+                 s-lone-store))))
+
+(defthm s-store-spure
+  (equal (w3t::step_pure (store-instrs sp W)) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (store-instrs sp W)))))))
+
+(defthm s-store-split
+  (equal (w3t::step_read/split (list :|%;%| z (store-instrs sp W))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| z (store-instrs sp W))))))))
+
+(defthm s-store-rctxti
+  (implies (store-hyps z sp W)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| z (store-instrs sp W)))
+                  nil))
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (store-instrs sp W))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (store-instrs sp W)))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 2) (w3t::%lo 0) (w3t::%hi 2)
+                            (w3t::%t6 (store-instrs sp W)) (w3t::%t9 2) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (store-instrs sp W))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 2)
+                            (w3t::%t6 (store-instrs sp W)) (w3t::%t9 2) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (store-instrs sp W))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 2)
+                            (w3t::%t6 (store-instrs sp W)) (w3t::%t9 2) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (store-instrs sp W))))
+                 s-lone-store s-store-one))))
+
+(defthm s-store-slice-gen
+  (implies (store-hyps z sp W)
+           (equal (w3t::step (list :|%;%| z (store-instrs sp W)))
+                  (list (list :|%;%| (w3t::$with_mem z 0 (+ sp 0) 4 (w3t::$nbytes_ (list :i32) W))
+                              nil))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-store-num-val)
+           :use ((:instance (:definition w3t::step)
+                            (w3t::%a0 (list :|%;%| z (store-instrs sp W))))
+                 (:instance (:definition w3t::step/r-store-num-val)
+                            (w3t::%a0 (list :|%;%| z (store-instrs sp W))))
+                 s-store-spure s-store-split s-store-rctxti))))
+
+(defthm s-ctxt-lift-gen
+  (implies (and (equal (w3t::step (list :|%;%| (list :|%;%| s f)
+                                         (list (list :frame_%{%}% 0 fp b))))
+                        (list (list :|%;%| zp (list (list :frame_%{%}% 0 fp2 b2)))))
+                (consp zp) (equal (car zp) :|%;%|)
+                (true-listp (cdr zp)) (equal (len (cdr zp)) 2)
+                (consp cont) (true-listp cont)
+                (< (w3t::%size (list (list :frame_%{%}% 0 fp b)))
+                   (w3t::%size (cons (list :frame_%{%}% 0 fp b) cont))))
+           (equal (w3t::step/r-ctxt-instrs
+                   (list :|%;%| (list :|%;%| s f)
+                         (cons (list :frame_%{%}% 0 fp b) cont)))
+                  (list (list :|%;%| zp
+                              (cons (list :frame_%{%}% 0 fp2 b2) cont)))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| s f)
+                                            (cons (list :frame_%{%}% 0 fp b) cont))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (cons (list :frame_%{%}% 0 fp b) cont)))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (cons (list :frame_%{%}% 0 fp b) cont))
+                            (w3t::%t9 0) (w3t::z (list :|%;%| s f))
+                            (w3t::%a0 (list :|%;%| (list :|%;%| s f)
+                                            (cons (list :frame_%{%}% 0 fp b) cont))))))))
+
+(defthm s-respell0
+  (equal (list :|%;%| (zw2 bytes sp pc clen result W) zz)
+         (list :|%;%| (zpair0 bytes sp pc clen result W) zz))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_))))
+
+(defthm s-slice0
+  (equal (w3t::step (list :|%;%| (sz0 bytes sp pc clen result W) (list (list :global.get 0))))
+         (list (list :|%;%| (sz0 bytes sp pc clen result W) (list (list :const (list :i32) sp)))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_))))
+
+(defthm s-slice1
+  (equal (w3t::step (list :|%;%| (sz1 bytes sp pc clen result W) (list (list :local.get 0))))
+         (list (list :|%;%| (sz1 bytes sp pc clen result W) (list (list :const (list :i32) W)))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_))))
+
+(defthm s-mem-of-sz2
+  (equal (w3t::%get-field (w3t::$mem (sz2 bytes sp pc clen result W) 0) :bytes)
+         bytes)
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_))))
+
+(defthm s-slice2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W)
+           (equal (w3t::step (list :|%;%| (sz2 bytes sp pc clen result W) (store-instrs sp W)))
+                  (list (list :|%;%| (szm bytes sp pc clen result W) nil))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use ((:instance s-store-slice-gen (z (sz2 bytes sp pc clen result W))) s-mem-of-sz2))))
+
+(defthm s-slice3
+  (equal (w3t::step (list :|%;%| (sz3 bytes sp pc clen result W) (list (list :global.get 0))))
+         (list (list :|%;%| (sz3 bytes sp pc clen result W) (list (list :const (list :i32) sp)))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_))))
+
+(defthm s-ctxt0
+  (equal (w3t::step/r-ctxt-instrs (list :|%;%| (sz0 bytes sp pc clen result W) (sbody0)))
+         (list (list :|%;%| (sz0 bytes sp pc clen result W) (sbody1 sp))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (sz0 bytes sp pc clen result W) (sbody0)))) (:instance (:definition w3t::step/prefix7) (w3t::%s (sbody0))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0) (w3t::%t6 (sbody0)) (w3t::%t9 0) (w3t::z (sz0 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz0 bytes sp pc clen result W) (sbody0)))) s-slice0 ))))
+
+(defthm s-body0
+  (equal (w3t::step (list :|%;%| (sz0 bytes sp pc clen result W) (sbody0)))
+         (list (list :|%;%| (sz0 bytes sp pc clen result W) (sbody1 sp))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-ctxt0)
+           :expand ((w3t::step (list :|%;%| (sz0 bytes sp pc clen result W) (sbody0)))))))
+
+(defthm s-label0
+  (equal (w3t::step (list :|%;%| (sz0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))))
+         (list (list :|%;%| (sz0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (sz0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))))) s-body0))))
+
+(defthm s-frame0
+  (equal (w3t::step (list :|%;%| (zpair0 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))))))
+         (list (list :|%;%| (zo1 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (w3t::$fof (sz0 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody1 sp))))))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use ((:instance dstep-frame-outer-gen-0 (s (w3t::$sof (zw2 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody0)) (b2 (sbody1 sp)) (zp (sz0 bytes sp pc clen result W))) s-label0))))
+
+(defthm s-lift0
+  (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zpair0 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))))
+         (list (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz0 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use ((:instance s-ctxt-lift-gen (s (w3t::$sof (zw2 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody0)) (b2 (sbody1 sp)) (zp (zo1 bytes sp pc clen result W)) (fp2 (w3t::$fof (sz0 bytes sp pc clen result W))) (cont (cdr (const-tail3)))) s-frame0))))
+
+(defthm s-spure0
+  (equal (w3t::step_pure (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody0))))
+                               (cdr (const-tail3))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody0))))
+                                            (cdr (const-tail3)))))))))
+
+(defthm s-split0
+  (equal (w3t::step_read/split (list :|%;%| (sz0 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody0))))
+                                                        (cdr (const-tail3)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| (sz0 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody0))))
+                                                                 (cdr (const-tail3))))))))))
+
+(defthm s-spure1
+  (equal (w3t::step_pure (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody1 sp))))
+                               (cdr (const-tail3))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody1 sp))))
+                                            (cdr (const-tail3)))))))))
+
+(defthm s-split1
+  (equal (w3t::step_read/split (list :|%;%| (sz1 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody1 sp))))
+                                                        (cdr (const-tail3)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| (sz1 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody1 sp))))
+                                                                 (cdr (const-tail3))))))))))
+
+(defthm s-spure2
+  (equal (w3t::step_pure (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody2 sp W))))
+                               (cdr (const-tail3))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody2 sp W))))
+                                            (cdr (const-tail3)))))))))
+
+(defthm s-split2
+  (equal (w3t::step_read/split (list :|%;%| (sz2 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody2 sp W))))
+                                                        (cdr (const-tail3)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| (sz2 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody2 sp W))))
+                                                                 (cdr (const-tail3))))))))))
+
+(defthm s-spure3
+  (equal (w3t::step_pure (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody3))))
+                               (cdr (const-tail3))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody3))))
+                                            (cdr (const-tail3)))))))))
+
+(defthm s-split3
+  (equal (w3t::step_read/split (list :|%;%| (sz3 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody3))))
+                                                        (cdr (const-tail3)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| (sz3 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody3))))
+                                                                 (cdr (const-tail3))))))))))
+
+(defthm s-spure4
+  (equal (w3t::step_pure (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody4 sp))))
+                               (cdr (const-tail3))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody4 sp))))
+                                            (cdr (const-tail3)))))))))
+
+(defthm s-split4
+  (equal (w3t::step_read/split (list :|%;%| (sz5 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody4 sp))))
+                                                        (cdr (const-tail3)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody4 sp))))
+                                                                 (cdr (const-tail3))))))))))
+
+(defthm s-spure5
+  (equal (w3t::step_pure (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody5 sp))))
+                               (cdr (const-tail3))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure)
+                            (w3t::%a0 (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody5 sp))))
+                                            (cdr (const-tail3)))))))))
+
+(defthm s-split5
+  (equal (w3t::step_read/split (list :|%;%| (sz5 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody5 sp))))
+                                                        (cdr (const-tail3)))))
+         nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (cons (list :frame_%{{%}}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{{%}}% 0 nil (sbody5 sp))))
+                                                                 (cdr (const-tail3))))))))))
+
+(defthm s-step0
+  (equal (w3t::step (list :|%;%| (zpair0 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))))
+         (list (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz0 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-lift0)
+           :expand ((w3t::step (list :|%;%| (zpair0 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))))))))
+
+(defthm s-ctxt1
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (sz1 bytes sp pc clen result W) (sbody1 sp)))
+                  (list (list :|%;%| (sz1 bytes sp pc clen result W) (sbody2 sp W)))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (sz1 bytes sp pc clen result W) (sbody1 sp)))) (:instance (:definition w3t::step/prefix7) (w3t::%s (sbody1 sp))) (:instance (:definition w3t::step/search21) (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1) (w3t::%t6 (sbody1 sp)) (w3t::%t9 1) (w3t::z (sz1 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz1 bytes sp pc clen result W) (sbody1 sp)))) s-slice1))))
+
+(defthm s-body1
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (sz1 bytes sp pc clen result W) (sbody1 sp)))
+                  (list (list :|%;%| (sz1 bytes sp pc clen result W) (sbody2 sp W)))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-ctxt1)
+           :expand ((w3t::step (list :|%;%| (sz1 bytes sp pc clen result W) (sbody1 sp)))))))
+
+(defthm s-label1
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (sz1 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))))
+                  (list (list :|%;%| (sz1 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (sz1 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))))) s-body1))))
+
+(defthm s-frame1
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (zo1 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))))))
+                  (list (list :|%;%| (zo2 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (w3t::$fof (sz1 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody2 sp W)))))))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use ((:instance dstep-frame-outer-gen-0 (s (w3t::$sof (sz0 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody1 sp)) (b2 (sbody2 sp W)) (zp (sz1 bytes sp pc clen result W))) s-label1))))
+
+(defthm s-lift1
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz1 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use ((:instance s-ctxt-lift-gen (s (w3t::$sof (sz0 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody1 sp)) (b2 (sbody2 sp W)) (zp (zo2 bytes sp pc clen result W)) (fp2 (w3t::$fof (sz1 bytes sp pc clen result W))) (cont (cdr (const-tail3)))) s-frame1))))
+
+(defthm s-step1
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz1 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-lift1)
+           :expand ((w3t::step (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))))))))
+
+(defthm s-ctxt2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (sz2 bytes sp pc clen result W) (sbody2 sp W)))
+                  (list (list :|%;%| (szm bytes sp pc clen result W) (sbody3)))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (sz2 bytes sp pc clen result W) (sbody2 sp W)))) (:instance (:definition w3t::step/prefix7) (w3t::%s (sbody2 sp W))) (:instance (:definition w3t::step/search21) (w3t::%k 2) (w3t::%lo 0) (w3t::%hi 2) (w3t::%t6 (sbody2 sp W)) (w3t::%t9 2) (w3t::z (sz2 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz2 bytes sp pc clen result W) (sbody2 sp W)))) (:instance (:definition w3t::step/search21) (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 2) (w3t::%t6 (sbody2 sp W)) (w3t::%t9 2) (w3t::z (sz2 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz2 bytes sp pc clen result W) (sbody2 sp W)))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 2) (w3t::%t6 (sbody2 sp W)) (w3t::%t9 2) (w3t::z (sz2 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz2 bytes sp pc clen result W) (sbody2 sp W)))) s-slice2 ))))
+
+(defthm s-body2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W)
+           (equal (w3t::step (list :|%;%| (sz2 bytes sp pc clen result W) (sbody2 sp W)))
+                  (list (list :|%;%| (szm bytes sp pc clen result W) (sbody3)))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-ctxt2)
+           :expand ((w3t::step (list :|%;%| (sz2 bytes sp pc clen result W) (sbody2 sp W)))))))
+
+(defthm s-label2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W)
+           (equal (w3t::step (list :|%;%| (sz2 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))))
+                  (list (list :|%;%| (szm bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (sz2 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))))) s-body2))))
+
+(defthm s-frame2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W)
+           (equal (w3t::step (list :|%;%| (zo2 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))))))
+                  (list (list :|%;%| (zo3 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (w3t::$fof (szm bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody3)))))))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use ((:instance dstep-frame-outer-gen-0 (s (w3t::$sof (sz1 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody2 sp W)) (b2 (sbody3)) (zp (szm bytes sp pc clen result W))) s-label2))))
+
+(defthm s-lift2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szm bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use ((:instance s-ctxt-lift-gen (s (w3t::$sof (sz1 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody2 sp W)) (b2 (sbody3)) (zp (zo3 bytes sp pc clen result W)) (fp2 (w3t::$fof (szm bytes sp pc clen result W))) (cont (cdr (const-tail3)))) s-frame2))))
+
+(defthm s-step2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W)
+           (equal (w3t::step (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szm bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-lift2)
+           :expand ((w3t::step (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))))))
+
+(defthm s-ctxt3
+  (equal (w3t::step/r-ctxt-instrs (list :|%;%| (sz3 bytes sp pc clen result W) (sbody3)))
+         (list (list :|%;%| (sz3 bytes sp pc clen result W) (sbody4 sp))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (sz3 bytes sp pc clen result W) (sbody3)))) (:instance (:definition w3t::step/prefix7) (w3t::%s (sbody3))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0) (w3t::%t6 (sbody3)) (w3t::%t9 0) (w3t::z (sz3 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz3 bytes sp pc clen result W) (sbody3)))) s-slice3 ))))
+
+(defthm s-body3
+  (equal (w3t::step (list :|%;%| (sz3 bytes sp pc clen result W) (sbody3)))
+         (list (list :|%;%| (sz3 bytes sp pc clen result W) (sbody4 sp))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-ctxt3)
+           :expand ((w3t::step (list :|%;%| (sz3 bytes sp pc clen result W) (sbody3)))))))
+
+(defthm s-label3
+  (equal (w3t::step (list :|%;%| (sz3 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))))
+         (list (list :|%;%| (sz3 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (sz3 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))))) s-body3))))
+
+(defthm s-frame3
+  (equal (w3t::step (list :|%;%| (zo3 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))))))
+         (list (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (w3t::$fof (sz3 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody4 sp))))))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use ((:instance dstep-frame-outer-gen-0 (s (w3t::$sof (szm bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody3)) (b2 (sbody4 sp)) (zp (sz3 bytes sp pc clen result W))) s-label3))))
+
+(defthm s-lift3
+  (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))
+         (list (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz3 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use ((:instance s-ctxt-lift-gen (s (w3t::$sof (szm bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody3)) (b2 (sbody4 sp)) (zp (zo4 bytes sp pc clen result W)) (fp2 (w3t::$fof (sz3 bytes sp pc clen result W))) (cont (cdr (const-tail3)))) s-frame3))))
+
+(defthm s-step3
+  (equal (w3t::step (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))
+         (list (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz3 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step)
+                            (w3t::%a0 (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3))))))
+                 s-spure3 s-split3 s-lift3))))
+
+(defthm s-ctxt4
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (sz5 bytes sp pc clen result W) (sbody4 sp)))
+                  (list (list :|%;%| (sz5 bytes sp pc clen result W) (sbody5 sp)))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (sbody4 sp)))) (:instance (:definition w3t::step/prefix7) (w3t::%s (sbody4 sp))) (:instance (:definition w3t::step/search21) (w3t::%k 2) (w3t::%lo 0) (w3t::%hi 2) (w3t::%t6 (sbody4 sp)) (w3t::%t9 2) (w3t::z (sz5 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (sbody4 sp)))) (:instance (:definition w3t::step/search21) (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 2) (w3t::%t6 (sbody4 sp)) (w3t::%t9 2) (w3t::z (sz5 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (sbody4 sp)))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 2) (w3t::%t6 (sbody4 sp)) (w3t::%t9 2) (w3t::z (sz5 bytes sp pc clen result W)) (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (sbody4 sp)))) (:instance dadd-slice (z (sz5 bytes sp pc clen result W)) (pc sp)) (:instance fail-lone-add (z (sz5 bytes sp pc clen result W))) (:instance fail-add-one (z (sz5 bytes sp pc clen result W)) (c 4))))))
+
+(defthm s-body4
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (sz5 bytes sp pc clen result W) (sbody4 sp)))
+                  (list (list :|%;%| (sz5 bytes sp pc clen result W) (sbody5 sp)))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (s-ctxt4)
+           :expand ((w3t::step (list :|%;%| (sz5 bytes sp pc clen result W) (sbody4 sp)))))))
+
+(defthm s-label4
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (sz5 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))))
+                  (list (list :|%;%| (sz5 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody5 sp)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))))) s-body4))))
+
+(defthm s-frame4
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))))))
+                  (list (list :|%;%| (zo5 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (w3t::$fof (sz5 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody5 sp)))))))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use ((:instance dstep-frame-outer-gen-0 (s (w3t::$sof (sz3 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody4 sp)) (b2 (sbody5 sp)) (zp (sz5 bytes sp pc clen result W))) s-label4))))
+
+(defthm s-lift4
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo5 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz5 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody5 sp)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use ((:instance s-ctxt-lift-gen (s (w3t::$sof (sz3 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (sbody4 sp)) (b2 (sbody5 sp)) (zp (zo5 bytes sp pc clen result W)) (fp2 (w3t::$fof (sz5 bytes sp pc clen result W))) (cont (cdr (const-tail3)))) s-frame4))))
+
+(defthm s-step4
+  (implies (unsigned-byte-p 32 sp)
+           (equal (w3t::step (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo5 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz5 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody5 sp)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step)
+                            (w3t::%a0 (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))))
+                 s-spure4 s-split4 s-lift4))))
+
+(defthm s-label-vals
+  (equal (w3t::step (list :|%;%| (szg bytes sp pc clen result W) (list (list :label_%{%}% 0 nil nil))))
+         (list (list :|%;%| (szg bytes sp pc clen result W) nil)))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_))))
+
+(defthm s-frame-vals-gen
+  (equal (w3t::step (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 0 fp nil))))
+         (list (list :|%;%| (list :|%;%| s f) nil))))
