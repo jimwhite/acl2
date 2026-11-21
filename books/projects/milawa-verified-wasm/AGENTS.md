@@ -97,6 +97,18 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   label step itself into the `ctxt-instrs` result plus a separate step-bridge
   fact (the `dstep-phases-gen` route) so the label rule's guard is never asked
   to compute sizes at all.
+- **A context rule's guard is cheapest discharged by the dispatcher's phase
+  facts, not by unfolding the dispatcher.**  For the halt-level label step the
+  route that works is: prove `step_pure` and `step_read/split` nil for the
+  label's code, `step/r-ctxt-instrs` nil for the label config (its search's
+  slice IS the config, so the size disjuncts tie and reject), and the label
+  predicate's value from the inner step; then instantiate the definition of
+  `step` with those four equalities plus the inner step and the label rule's
+  size.  8 facts, 2.94M steps.  The attempts that let the dispatcher unfold
+  looped on the phase computations (`%tag-lo`/`floor`/`mod`/`acl2-count`).
+  The residual: the label's context lift's search still meets the symbolic
+  body in its size arithmetic; a generic variable-body label fact (so the two
+  size terms share the body and cancel) is the next move.
 - **The search's nil fact must be stated at the EVALUATED body.**  The pure
   return-label rule searches the label's body, and the search is not ground once
   the body carries a symbolic value (`(car ($binop_ ... sub sp 4))`).  A fact
