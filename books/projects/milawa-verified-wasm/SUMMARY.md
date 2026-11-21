@@ -1388,6 +1388,30 @@ unchanged; only the frame's local-0 field and the `pc` argument change.
   three lifts per step.  The remaining engineering is the per-step body
   facts; the other opcode tails will reuse all of it.
 
+**Progress on the tail's body facts (scratch, after the front landed).**  The
+run's first body-level facts at the run's state are true and provable, but
+the hint discipline differs from the front's:
+
+- `tail-call-split` (the lone `(:CALL 3)` split at `(:%;% (sof (gset ...))
+  (fof (gset ...)))`) proves in 111k steps by plain evaluation with `step`
+  ENABLED — the opposite of the front's facts, where `step` is disabled and
+  a fact about it is handed in.  Disabling `step` here stalls the prover on
+  an unevaluated `(step ...)`.
+- `tail-ctxt` (the full `TAIL13` ctxt-instrs step at that state) proves in
+  ~4.9M steps with the book's `dconst-tail-ctxt` recipe (the
+  `step/r-ctxt-instrs`/`prefix7`/`search21` instances) and the lone-call
+  slice supplied by `tail-call-split`.  The book's own version at `iz6` is
+  534k steps: the run's state costs ~9x, because the store's `$with_global`
+  and the frame's `$with_local` unfold into the record during the checks.
+  That cost is the tail's budget item: 30 steps at ~5M each is ~150M prover
+  steps, the same order as the dispatch/`$in_code` books.
+- `tail-step` (the step-level fact from the ctxt one, `:expand` plus the
+  ctxt fact) is cheap.
+- The lone `label 0` lift at the run's state needs `dadd`/`$binop_` opaque
+  in the hint, or the `acl2-count` of the symbolic `(dadd pc)` global turns
+  the measure checks into rational arithmetic
+  (`(EQUAL (DENOMINATOR (+ 1/1073741824 ...)) 1)`).
+
 ## Reproducing
 
 ```sh
