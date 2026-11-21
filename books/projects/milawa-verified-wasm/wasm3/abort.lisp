@@ -26,6 +26,12 @@
 
 (include-book "halt")
 
+; The halt book's store-pair projection lemmas (with-global-pair2 and
+; fof-of-with-global) are rewrite rules whose terms occur in this book's
+; statements; keep them out of the theory here so the facts read the way they
+; are written.
+(in-theory (disable fof-of-with-global with-global-pair2))
+
 (defthm dcall4-split
   (equal (w3t::step (list :|%;%| (dcallee-pair bytes sp pc clen result w)
                           (list (list :call 4))))
