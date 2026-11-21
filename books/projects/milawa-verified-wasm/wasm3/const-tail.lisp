@@ -282,3 +282,78 @@
                  (:instance istep-read-1 (pc (dadd pc)))
                  sof-gset-is-frozen-store))))
 
+
+
+; ---------------------------------------------------------------------------
+; THE CALLEE'S REMAINING POSITIONS: read2, the mul, the ltu
+; ---------------------------------------------------------------------------
+;
+; The same pc-substitution recipe as the read: the lone-admin step at the
+; run's ZL (the book's ctxt-frame rule with the innermost label step at
+; (pc (dadd pc)) and the store bridge), then the body-level ctxt fact with
+; the book's prefix7/search21 instances.  The dbody2/dbody3 helpers take
+; (pc clen), so the substitution is pc := (dadd pc) with clen standing.
+(defthm tail-dframe-read2
+  (implies (and (unsigned-byte-p 32 (dadd pc)) (unsigned-byte-p 32 clen))
+           (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody1 (dadd pc)))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody2 (dadd pc) clen))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody1 (dadd pc))))))
+                 (:instance dlabel-read (pc (dadd pc)))
+                 sof-gset-is-frozen-store))))
+(defthm tail-read2-ctxt
+  (implies (and (unsigned-byte-p 32 (dadd pc)) (unsigned-byte-p 32 clen))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody1 (dadd pc))) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody2 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody1 (dadd pc))) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+                 (:instance (:definition w3t::step/prefix7) (w3t::%s (append (dadmin (dbody1 (dadd pc))) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (append (dadmin (dbody1 (dadd pc))) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (w3t::%t9 0)
+                            (w3t::z (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody1 (dadd pc))) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+                 tail-dframe-read2))))
+(defthm tail-dframe-mul
+  (implies (and (unsigned-byte-p 32 (dadd pc)) (unsigned-byte-p 32 clen))
+           (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody2 (dadd pc) clen))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody3 (dadd pc) clen))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody2 (dadd pc) clen)))))
+                 (:instance dlabel-mul (pc (dadd pc)))
+                 sof-gset-is-frozen-store))))
+(defthm tail-mul-ctxt
+  (implies (and (unsigned-byte-p 32 (dadd pc)) (unsigned-byte-p 32 clen))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody2 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody3 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody2 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+                 (:instance (:definition w3t::step/prefix7) (w3t::%s (append (dadmin (dbody2 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (append (dadmin (dbody2 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (w3t::%t9 0)
+                            (w3t::z (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody2 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+                 tail-dframe-mul))))
+(defthm tail-dframe-ltu
+  (implies (and (unsigned-byte-p 32 (dadd pc)) (unsigned-byte-p 32 clen))
+           (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody3 (dadd pc) clen))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody4 (dadd pc) clen))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (dadmin (dbody3 (dadd pc) clen)))))
+                 (:instance dlabel-ltu (pc (dadd pc)))
+                 sof-gset-is-frozen-store))))
+(defthm tail-ltu-ctxt
+  (implies (and (unsigned-byte-p 32 (dadd pc)) (unsigned-byte-p 32 clen))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody3 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody4 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody3 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+                 (:instance (:definition w3t::step/prefix7) (w3t::%s (append (dadmin (dbody3 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (append (dadmin (dbody3 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (w3t::%t9 0)
+                            (w3t::z (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (append (dadmin (dbody3 (dadd pc) clen)) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+                 tail-dframe-ltu))))
+
