@@ -1590,6 +1590,59 @@ config is concrete and the step evaluates -- and bridge the symbolic
 spellings across the value with the hypothesis.  The ldis/fdis dissolves and
 the eqz testop all sit in this tier.
 
+## The CONST tail at the run's states: where the composition stands
+
+The run fact's tail is 30 machine steps from the front's end
+(`(:%;% (:%;% ($sof gset) *frozen-entry-frame*)
+  ((:frame 1 ($fof gset) ((:label 1 nil ((:label 0 nil TAIL13) :: rest13))))))`).
+The certified pieces (`wasm3/const-tail.lisp`, `const-branch.lisp`,
+`const-callee.lisp`, `const-fetch.lisp`):
+
+1. **step 1** (the `(call 3)` split) and **step 2** (the call entry): the
+   full six-fact chain each (step, label 0, label-0/rest, premises, label 1,
+   frame) -- `const-tail`.
+2. **the eqz** (the callee's value pushed as a const, then the testop): the
+   eleven-fact chain at the dvl spelling with the dltu=1 hypothesis --
+   `const-tail`.
+3. **the callee end to end** (read1, sub, read2, mul, ltu, the label-3 and
+   frame-3 dissolves): the body-level ctxt facts -- `const-tail` (read2/mul/
+   ltu/dissolves) and `const-branch` (read1/sub) -- and the full 20-fact
+   lift groups for read1/sub/read2/mul/ltu, plus the ldis/fdis at the
+   literal value 1, in `const-callee` (141 facts).
+4. **the caller's fetch**: the ifelse (the abort test's else), the empty
+   block/label dissolve, the read (global.get 1), the local.set 1, the
+   second read, the add, the global.set 1 and the local.get 1 -- 95 facts in
+   `const-fetch`, including the state-changing steps at the PAIR spelling of
+   their result states (see the recipe below).
+
+**What is left for the tail**: (a) the LOAD's lift group -- its step fact
+and slice fact are proved in scratch (`tail-ld-step-v2` with `:use
+(tail-ld-ctxt tail-load-slice2)`, and the slice at the run's Z, 388k steps);
+its LABEL-0 needs the generic label-lift recipe (the ctxt-label route hits
+the 8M step limit), i.e. the seven premises + `label-lift-general-n` as in
+`const-callee`; (b) the `(call 0)` hand-off (the expand and the entry, the
+book's `dconst-call0-expand/entry` recipes at the run's Z2p); (c) the $push
+callee's seven positions and its dissolves at the run's states (the book's
+push facts at the `s-` spellings are the template); (d) the final
+`(:CONST 1) (:RETURN)` end (the label-0/label-1/frame returns, the certified
+`pred31`/`endstep31` at the run's config); (e) the 30-step
+`steps/%fuel` composition (the front's structural-lemma recipe) and the
+`steps/%fuel 67` check theorem with the observations readback.
+
+**The pair spelling recipe** (for every state-changing step): write the
+result z as `(list :%;% ($sof z) ($fof z))` (its own pair), prove the
+`(equal z-old z-pair)` facts `:rule-classes nil` (with the builders
+enabled) and hand them to the ctxt/step proofs; the label lift's and the
+frame rule's z-shape conditions then hold by `sof/fof-of-a-pair`.  The
+frame lift must take its outer store/frame from the STEP's own z, never
+from the gset: after `local.set 1` the run's frame-6 record is the updated
+one (`($fof z1)`), and hardcoding `($fof (gset ...))` makes the frame rule's
+`(equal z0 (list :%;% s fp))` premise unprovable (the gs/gs-frame failure
+that cost an hour).  The emit template that encodes all of this is
+`/tmp/gen/gen_tail_step.py` (with `zr2`, `extra_dis`, `extra_use`); the
+label-0 generic lemma and the callee recipe are in `/tmp/gen/gen_step2.py`,
+`/tmp/gen/callee_final.py`, `/tmp/gen/tail_final.py`.
+
 ## Reproducing
 
 ```sh
