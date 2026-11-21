@@ -239,3 +239,46 @@
                             (b (cons (list :label_%{%}% 0 nil (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) (b2 (cons (list :label_%{%}% 0 nil (append (milawa-callee-admin 3) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))
                  tail-entry-zl-label1))))
 
+
+
+; ---------------------------------------------------------------------------
+; THE THIRD TAIL STEP: the callee's first position (the read of global 1)
+; ---------------------------------------------------------------------------
+;
+; The const book's callee-position facts are reusable at the run's state by
+; SUBSTITUTING the pc: the run's store is (frozen-store bytes sp (dadd pc)
+; clen 1 result), proved once as SOF-GSET-IS-FROZEN-STORE, and the callee's
+; own frame is the fresh milawa-callee-frame 3 in both.  So the lone admin
+; step -- the frame rule over the label-1 over func-body 3's first read --
+; is the book's iframe3-instance recipe with the inner z's at
+; (iz3 bytes sp (dadd pc) clen result) and istep-read-1 instantiated at
+; (pc (dadd pc)); the read of global 1 yields (dadd pc), and the label's
+; body becomes (ibody3-after-1 (dadd pc)).
+(defthm sof-gset-is-frozen-store
+  (equal (w3t::$sof (gset bytes sp pc clen result w))
+         (frozen-store bytes sp (dadd pc) clen 1 result)))
+(defthm tail-iframe3
+  (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))
+                          (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (milawa-func-body 3)))))))
+         (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))
+                     (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (ibody3-after-1 (dadd pc)))))))))
+  :hints (("Goal"
+           :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :use ((:instance (:definition w3t::step/r-ctxt-frame)
+                            (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))
+                                            (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (milawa-func-body 3))))))))
+                 (:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (list :|%;%| (iz3 bytes sp (dadd pc) clen result)
+                                            (list (list :label_%{%}% 1 nil (milawa-func-body 3))))))
+                 (:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| (iz3 bytes sp (dadd pc) clen result) (milawa-func-body 3))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (milawa-func-body 3)))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (milawa-func-body 3)) (w3t::%t9 0)
+                            (w3t::z (iz3 bytes sp (dadd pc) clen result))
+                            (w3t::%a0 (list :|%;%| (iz3 bytes sp (dadd pc) clen result) (milawa-func-body 3))))
+                 (:instance istep-read-1 (pc (dadd pc)))
+                 sof-gset-is-frozen-store))))
+
