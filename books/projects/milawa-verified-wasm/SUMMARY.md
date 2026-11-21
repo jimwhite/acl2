@@ -1615,17 +1615,30 @@ The certified pieces (`wasm3/const-tail.lisp`, `const-branch.lisp`,
    `const-fetch`, including the state-changing steps at the PAIR spelling of
    their result states (see the recipe below).
 
-**What is left for the tail**: (a) the LOAD's lift group -- its step fact
-and slice fact are proved in scratch (`tail-ld-step-v2` with `:use
-(tail-ld-ctxt tail-load-slice2)`, and the slice at the run's Z, 388k steps);
-its LABEL-0 needs the generic label-lift recipe (the ctxt-label route hits
-the 8M step limit), i.e. the seven premises + `label-lift-general-n` as in
-`const-callee`; (b) the `(call 0)` hand-off (the expand and the entry, the
-book's `dconst-call0-expand/entry` recipes at the run's Z2p); (c) the $push
+**The LOAD** is now in too (`const-fetch`, 20 facts): the step via
+`:use (tail-ld-ctxt tail-load-slice2)`, and the label-0's premises via the
+book's own `cal-load` trap-search recipes -- the FREE-variable expansions
+(`:expand ((:free (x) (w3t::step_pure/search141 11 11 11 x)))` etc.) plus
+the `(%tag-lo :RETURN 1 body) = 11` fact.  Without those the pure
+return-label search runs past 8M steps; with them the whole group is 2.4M.
+
+**What is left for the tail**: (a) the `(call 0)` hand-off.  The EXPAND is
+easy (its slice fact `(step (list Z2 (list (call 0)))) =
+(list (list Z2 (list (ref.func_addr 0) *t0*)))` proves by evaluation), but
+the ENTRY's 3-slice step `[const W, ref.func_addr 0, *t0*] -> sadmin`
+diverges at the run's Z2: the step looks the function's type up in the
+store's module and the prover unfolds the run's `$with_global/$with_local`
+fof nest into the record (the book's `dconst-call0-entry` is at `zw2`, whose
+fof is the iz6-based frame).  The step is frame-INDEPENDENT in the result
+(`sadmin`'s frame is `sframe0`, which ignores the caller's frame), so the
+clean fix is a z-generic entry lemma with the premise
+`(equal (w3t::%get-field (w3t::$fof z) :module) (milawa-func-module 0))`
+(or a bridge from the run's fof to the iz6 one); then the expand and the
+entry groups go through the same 20-fact template as the ld.  (b) the $push
 callee's seven positions and its dissolves at the run's states (the book's
-push facts at the `s-` spellings are the template); (d) the final
+push facts at the `s-` spellings are the template); (c) the final
 `(:CONST 1) (:RETURN)` end (the label-0/label-1/frame returns, the certified
-`pred31`/`endstep31` at the run's config); (e) the 30-step
+`pred31`/`endstep31` at the run's config); (d) the 30-step
 `steps/%fuel` composition (the front's structural-lemma recipe) and the
 `steps/%fuel 67` check theorem with the observations readback.
 
