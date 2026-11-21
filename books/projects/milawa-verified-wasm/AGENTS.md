@@ -97,6 +97,16 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   label step itself into the `ctxt-instrs` result plus a separate step-bridge
   fact (the `dstep-phases-gen` route) so the label rule's guard is never asked
   to compute sizes at all.
+- **A disjunctive hypothesis is weak in clausification, and its TERMS are
+  rewritten.**  Carrying a context rule's size condition as an `or` hypothesis
+  splits into the clauses `(or (not A) ...)` and `(or (not B) ...)`, so the
+  proof gets `not A` in one branch, not `A` — carry the needed disjunct ALONE.
+  And even the `(unsigned-byte-p 32 V)`/`(mvm-word-to-bytes W)` hypotheses are
+  rewritten in place: `unsigned-byte-p` expands to the `expt` bound,
+  `mvm-word-to-bytes` to the `floor`/`loghead`/`logtail` encoding, and those
+  normal forms then pollute the linear pot.  Keep `unsigned-byte-p`,
+  `mvm-word-to-bytes`, `acl2-count` and the store accessors disabled when a
+  fact's hypotheses contain them and the goal also mentions them.
 - **A context rule's guard is cheapest discharged by the dispatcher's phase
   facts, not by unfolding the dispatcher.**  For the halt-level label step the
   route that works is: prove `step_pure` and `step_read/split` nil for the
