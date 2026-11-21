@@ -1187,3 +1187,120 @@
 (defthm s-frame-vals-gen
   (equal (w3t::step (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 0 fp nil))))
          (list (list :|%;%| (list :|%;%| s f) nil))))
+
+; ---------------------------------------------------------------------------
+; The $push tail: the global.set 0 write (position 5)
+; ---------------------------------------------------------------------------
+;
+; The callee's last instruction advances the stack pointer: the write's slice
+; is the two-element ((const (dadd sp)) (global.set 0)); the ctxt rule does NOT
+; fire on a slice that is the whole configuration (the search's measure ties),
+; so the slice's step IS the global.set rule (gsGS0) and the ctxt is nil.  The
+; stepped value (dadd sp) must be a value (the val-p hypothesis); the store's
+; $with_global stays opaque so the module/global records never unfold.
+
+(defun gset-instrs (sp)
+  (list (list :const (list :i32) (dadd sp)) (quote (:global.set 0))))
+
+(defthm gfail-lone-gset0
+  (equal (w3t::step (list :|%;%| z (list (quote (:global.set 0))))) nil)
+  :hints (("Goal" :in-theory (disable)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list (quote (:global.set 0))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list (quote (:global.set 0)))) (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list (quote (:global.set 0))))))))))
+
+(defthm g-gset-spure
+  (equal (w3t::step_pure (gset-instrs sp)) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_pure)
+           :use ((:instance (:definition w3t::step_pure) (w3t::%a0 (gset-instrs sp)))))))
+
+(defthm g-gset-split
+  (equal (w3t::step_read/split (list :|%;%| z (gset-instrs sp))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split) (w3t::%a0 (list :|%;%| z (gset-instrs sp))))))))
+
+(defthm g-gset-rctxti
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| z (gset-instrs sp))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (gset-instrs sp))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (gset-instrs sp)))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (gset-instrs sp)) (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (gset-instrs sp))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (gset-instrs sp)) (w3t::%t9 1) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (gset-instrs sp))))
+                 gfail-lone-gset0))))
+
+(defthm gsGS0
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step (list :|%;%| z (gset-instrs sp)))
+                  (list (list :|%;%| (w3t::$with_global z 0 (list :const (list :i32) (dadd sp))) nil))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_ w3t::$with_global)
+           :use ((:instance (:definition w3t::step) (w3t::%a0 (list :|%;%| z (gset-instrs sp))))
+                 (:instance (:definition w3t::step/r-global.set) (w3t::%a0 (list :|%;%| z (gset-instrs sp))))
+                 g-gset-spure g-gset-split g-gset-rctxti))))
+
+(defthm s-ctxt5-nil
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (sz5 bytes sp pc clen result W) (gset-instrs sp))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :use ((:instance g-gset-rctxti (z (sz5 bytes sp pc clen result W)))))))
+
+(defthm s-body5
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step (list :|%;%| (sz5 bytes sp pc clen result W) (gset-instrs sp)))
+                  (list (list :|%;%| (szg bytes sp pc clen result W) nil))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::$with_global)
+           :use ((:instance gsGS0 (z (sz5 bytes sp pc clen result W)))))))
+
+(defthm s-label5
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step (list :|%;%| (sz5 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))))
+                  (list (list :|%;%| (szg bytes sp pc clen result W) (list (list :label_%{%}% 0 nil nil))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ wrt::%le-bytes wrt::%u w3t::$sof w3t::$fof w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$frame w3t::$store w3t::%get-field w3t::%put-field frozen-store iz6 zlset1 zw2 sframe0 milawa-func-module milawa-callee-frame milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (list :|%;%| (sz5 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp))))))
+                 s-body5))))
+
+(defthm s-zg-shape-p5
+  (and (consp (szg bytes sp pc clen result W))
+       (equal (car (szg bytes sp pc clen result W)) :|%;%|)
+       (true-listp (cdr (szg bytes sp pc clen result W)))
+       (equal (len (cdr (szg bytes sp pc clen result W))) 2))
+  :hints (("Goal" :in-theory (disable w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$sof w3t::$fof w3t::$frame w3t::$store w3t::%get-field w3t::%put-field frozen-store iz6 zlset1 zw2 sframe0 milawa-func-module milawa-callee-frame milawa-func-body dadd w3t::$binop_))))
+
+(defthm s-frame5
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))))))
+                  (list (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))))))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_ w3t::$nbytes_ wrt::%le-bytes wrt::%u w3t::$sof w3t::$fof w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$frame w3t::$store w3t::%get-field w3t::%put-field frozen-store iz6 zlset1 zw2 sframe0 milawa-func-module milawa-callee-frame milawa-func-body)
+           :use ((:instance dstep-frame-outer-gen-0 (s (w3t::$sof (sz3 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W)) (b (gset-instrs sp)) (b2 nil) (zp (szg bytes sp pc clen result W)))
+                 s-label5 s-zg-shape-p5))))
+
+(defthm s-lift5
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo6 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_ w3t::$nbytes_ wrt::%le-bytes wrt::%u w3t::$sof w3t::$fof w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$frame w3t::$store w3t::%get-field w3t::%put-field frozen-store iz6 zlset1 zw2 sframe0 milawa-func-module milawa-callee-frame milawa-func-body)
+           :use ((:instance s-ctxt-lift-gen (s (w3t::$sof (sz3 bytes sp pc clen result W))) (f (w3t::$fof (zw2 bytes sp pc clen result W))) (fp (sframe0 bytes sp pc clen result W))
+                            (b (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (b2 (list (list :label_%{%}% 0 nil nil)))
+                            (zp (zo6 bytes sp pc clen result W)) (fp2 (w3t::$fof (szg bytes sp pc clen result W))) (cont (cdr (const-tail3))))
+                 s-frame5))))
+
+(defthm s-step5
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp)))
+           (equal (w3t::step (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))))
+                  (list (list :|%;%| (zo6 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_ w3t::$nbytes_ wrt::%le-bytes wrt::%u w3t::$sof w3t::$fof w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$frame w3t::$store w3t::%get-field w3t::%put-field frozen-store iz6 zlset1 zw2 sframe0 milawa-func-module milawa-callee-frame milawa-func-body)
+           :use ((:instance (:definition w3t::step)
+                            (w3t::%a0 (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3))))))
+                 s-spure5 s-split5 s-lift5))))
