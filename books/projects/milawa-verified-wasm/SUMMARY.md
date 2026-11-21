@@ -1502,6 +1502,32 @@ is closed for the first tail step (a quoted body) and open for the second (a
   the rung has the exact shape that worked for step 1, and bridge the chain's
   `append` spelling to the literal once.
 
+## The caller-side eqz: the current blocker (measured)
+
+The CONST tail's caller-side sequence starts with the testop eqz at the run's
+state.  Its *slice* is fine: the pure testop step on
+`((:CONST (:I32) (dltu ...)) (:TESTOP (:I32) (:EQZ)))` at the ZL z proves by
+the dispatcher's own `testop-slice-one` rule once the hypothesis
+`(equal (dltu (dsub (dadd pc)) (dmul clen)) 1)` rewrites the value to 1
+(165k steps, probe tail92).
+
+The *body-level ctxt* fact around it does not: every formulation tried --
+the book's `dconst-search-eqz-1` recipe at ZL (the search21 k=1/k=0
+instances plus the slice facts), the same with the slice facts left as
+enabled rules, and the bare `step/r-ctxt-instrs` + `step/prefix7`
+instances with no search facts at all -- hits `HARD ACL2 ERROR [Call depth]
+in PREPROCESS`/`REWRITER` (the limit of 1000) before any goal is printed,
+with or without the full opaque ZL set and with `(:definition
+w3t::step/search21)` disabled.  The book's identical recipes are clean at
+iz6 (534k steps), so the loop is tied to the ZL spelling, not to the
+mathematics.  Next diagnostics, in order: `:do-not '(preprocess)` plus the
+suggested `(cw-gstack :frames 30)` to name the cycling rule; or formulate
+the ctxt fact at the body's *literal value-1* spelling and bridge the
+`dltu` spelling by congruence (the hypothesis already rewrites it to 1);
+or, since the caller-side steps are the ones that do not read the store,
+prove a small generic "the step of a value-prefixed body is blind to the
+z's frame" fact once and reuse it.
+
 ## Reproducing
 
 ```sh
