@@ -23,152 +23,16 @@
 ; the rest of the tail follow.
 
 
-(defthm dcall3-lone
-  (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (list (list :call 3))))
-         (list (icfg (iz6 bytes sp pc clen result)
-                     (list (list :ref.func_addr 3) *t3*)))))
 
-(defthm dconst-tail-read
-  (equal (w3t::step_read/split
-          (icfg (iz6 bytes sp pc clen result)
-                (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                        (list (list :ifelse (list :_result nil)
-                                    (list (list :call 4) (list :return)) nil)
-                              (list :global.get 1)))))
-         nil))
+(defthm dcall3-lone (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (list (list :call 3)))) (list (icfg (iz6 bytes sp pc clen result) (list (list :ref.func_addr 3) *t3*)))))
 
+(defthm dconst-tail-spure (equal (w3t::step_pure (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil) :hints (("Goal" :in-theory (disable w3t::step_pure) :use ((:instance (:definition w3t::step_pure) (w3t::%a0 (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))))
 
+(defthm dconst-tail-read (equal (w3t::step_read/split (icfg (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil) :hints (("Goal" :in-theory (disable w3t::step_read/split) :use ((:instance (:definition w3t::step_read/split) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))))
 
-(defthm dconst-tail-spure
-  (equal (w3t::step_pure
-          (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                  (list (list :ifelse (list :_result nil)
-                              (list (list :call 4) (list :return)) nil)
-                        (list :global.get 1))))
-         nil)
-  :hints (("Goal" :in-theory (disable w3t::step_pure)
-           :use ((:instance (:definition w3t::step_pure)
-                            (w3t::%a0 (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                                              (list (list :ifelse (list :_result nil)
-                                                          (list (list :call 4) (list :return)) nil)
-                                                    (list :global.get 1)))))))))
+(defthm dconst-tail-ctxt (equal (w3t::step/r-ctxt-instrs (icfg (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (list (icfg (iz6 bytes sp pc clen result) (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))) :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) (:instance (:definition w3t::step/prefix7) (w3t::%s (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0) (w3t::%t6 (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (w3t::%t9 0) (w3t::z (iz6 bytes sp pc clen result)) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) dcall3-lone))))
 
-(defthm dconst-tail-ctxt
-  (equal (w3t::step/r-ctxt-instrs
-          (icfg (iz6 bytes sp pc clen result)
-                (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                        (list (list :ifelse (list :_result nil)
-                                    (list (list :call 4) (list :return)) nil)
-                              (list :global.get 1)))))
-         (list
-          (icfg (iz6 bytes sp pc clen result)
-                (cons (list :ref.func_addr 3)
-                      (cons *t3*
-                            (append (list (list :testop (list :i32) (list :eqz)))
-                                    (list (list :ifelse (list :_result nil)
-                                                (list (list :call 4) (list :return)) nil)
-                                          (list :global.get 1))))))))
-  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
-           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
-                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                                                    (list (list :ifelse (list :_result nil)
-                                                                (list (list :call 4) (list :return)) nil)
-                                                          (list :global.get 1))))))
-                 (:instance (:definition w3t::step/prefix7)
-                            (w3t::%s (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                                             (list (list :ifelse (list :_result nil)
-                                                         (list (list :call 4) (list :return)) nil)
-                                                   (list :global.get 1)))))
-                 (:instance (:definition w3t::step/search21)
-                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
-                            (w3t::%t6 (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                                              (list (list :ifelse (list :_result nil)
-                                                          (list (list :call 4) (list :return)) nil)
-                                                    (list :global.get 1))))
-                            (w3t::%t9 0)
-                            (w3t::z (iz6 bytes sp pc clen result))
-                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                                                    (list (list :ifelse (list :_result nil)
-                                                                (list (list :call 4) (list :return)) nil)
-                                                          (list :global.get 1))))))
-                 dcall3-lone))))
+(defthm dconst-tail-step (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (list (icfg (iz6 bytes sp pc clen result) (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))) :hints (("Goal" :in-theory (disable w3t::step) :expand ((w3t::step (icfg (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) :use (dconst-tail-spure dconst-tail-read dconst-tail-ctxt))))
 
-
-
-(defthm dconst-tail-step
-  (equal (w3t::step
-          (icfg (iz6 bytes sp pc clen result)
-                (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                        (list (list :ifelse (list :_result nil)
-                                    (list (list :call 4) (list :return)) nil)
-                              (list :global.get 1)))))
-         (list
-          (icfg (iz6 bytes sp pc clen result)
-                (cons (list :ref.func_addr 3)
-                      (cons *t3*
-                            (append (list (list :testop (list :i32) (list :eqz)))
-                                    (list (list :ifelse (list :_result nil)
-                                                (list (list :call 4) (list :return)) nil)
-                                          (list :global.get 1))))))))
-  :hints (("Goal" :in-theory (disable w3t::step)
-           :expand ((w3t::step
-                     (icfg (iz6 bytes sp pc clen result)
-                           (append (list (list :call 3) (list :testop (list :i32) (list :eqz)))
-                                   (list (list :ifelse (list :_result nil)
-                                               (list (list :call 4) (list :return)) nil)
-                                         (list :global.get 1))))))
-           :use (dconst-tail-spure dconst-tail-read dconst-tail-ctxt))))
-
-(defthm dconst-tail-entry-ctxt
-  (equal (w3t::step/r-ctxt-instrs
-          (icfg (iz6 bytes sp pc clen result)
-                (cons (list :ref.func_addr 3)
-                      (cons *t3*
-                            (append (list (list :testop (list :i32) (list :eqz)))
-                                    (list (list :ifelse (list :_result nil)
-                                                (list (list :call 4) (list :return)) nil)
-                                          (list :global.get 1)))))))
-         (list
-          (icfg (iz6 bytes sp pc clen result)
-                (append (milawa-callee-admin 3)
-                        (append (list (list :testop (list :i32) (list :eqz)))
-                                (list (list :ifelse (list :_result nil)
-                                            (list (list :call 4) (list :return)) nil)
-                                      (list :global.get 1)))))))
-  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
-           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
-                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (cons (list :ref.func_addr 3)
-                                                  (cons *t3*
-                                                        (append (list (list :testop (list :i32) (list :eqz)))
-                                                                (list (list :ifelse (list :_result nil)
-                                                                            (list (list :call 4) (list :return)) nil)
-                                                                      (list :global.get 1))))))))
-                 (:instance (:definition w3t::step/prefix7)
-                            (w3t::%s (cons (list :ref.func_addr 3)
-                                           (cons *t3*
-                                                 (append (list (list :testop (list :i32) (list :eqz)))
-                                                         (list (list :ifelse (list :_result nil)
-                                                                     (list (list :call 4) (list :return)) nil)
-                                                               (list :global.get 1)))))))
-                 (:instance (:definition w3t::step/search21)
-                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1)
-                            (w3t::%t6 (cons (list :ref.func_addr 3)
-                                            (cons *t3*
-                                                  (append (list (list :testop (list :i32) (list :eqz)))
-                                                          (list (list :ifelse (list :_result nil)
-                                                                      (list (list :call 4) (list :return)) nil)
-                                                                (list :global.get 1))))))
-                            (w3t::%t9 1)
-                            (w3t::z (iz6 bytes sp pc clen result))
-                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
-                                            (cons (list :ref.func_addr 3)
-                                                  (cons *t3*
-                                                        (append (list (list :testop (list :i32) (list :eqz)))
-                                                                (list (list :ifelse (list :_result nil)
-                                                                            (list (list :call 4) (list :return)) nil)
-                                                                      (list :global.get 1))))))))
-                 (:instance rstep-call-entry-3 (status 1))))))
+(defthm dconst-tail-entry-ctxt (equal (w3t::step/r-ctxt-instrs (icfg (iz6 bytes sp pc clen result) (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) (list (icfg (iz6 bytes sp pc clen result) (append (milawa-callee-admin 3) (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))) (:instance (:definition w3t::step/prefix7) (w3t::%s (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1) (w3t::%t6 (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) (w3t::%t9 1) (w3t::z (iz6 bytes sp pc clen result)) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))) (:instance rstep-call-entry-3 (status 1))))))
 
