@@ -189,6 +189,13 @@ LOAD_HYPS = [
     "(equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))",
 ]
 
+MOD0_LIT = "(:%REC (:TYPES (:_DEF (:REC ((:SUB ((:FINAL)) NIL (:FUNC%->% ((:I32)) NIL)))) 0) (:_DEF (:REC ((:SUB ((:FINAL)) NIL (:FUNC%->% NIL ((:I32)))))) 0)) (:TAGS) (:GLOBALS 5 6 7 8 9) (:MEMS 0) (:TABLES) (:FUNCS 0 1 2 3 4 5 6 7 8 9 10 11) (:DATAS) (:ELEMS) (:EXPORTS (:%REC (:NAME 109 101 109 111 114 121) (:ADDR :MEM 0)) (:%REC (:NAME 114 101 115 101 116) (:ADDR :FUNC 5)) (:%REC (:NAME 115 116 101 112) (:ADDR :FUNC 6)) (:%REC (:NAME 115 116 97 116 117 115) (:ADDR :FUNC 7)) (:%REC (:NAME 114 101 115 117 108 116) (:ADDR :FUNC 8)) (:%REC (:NAME 112 99) (:ADDR :FUNC 9)) (:%REC (:NAME 115 112) (:ADDR :FUNC 10)) (:%REC (:NAME 99 111 100 101 95 98 97 115 101) (:ADDR :FUNC 11))))"
+PUSH_BODY = "((:GLOBAL.GET 0) (:LOCAL.GET 0) (:STORE (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:GLOBAL.GET 0) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 0))"
+SADMIN_APPEND = (
+    f"(cons (list :frame_%{{%}}% 0 (list :%rec (cons :locals (list (list (list :const '(:i32) W)))) "
+    f"(cons :module '{MOD0_LIT})) (list (list :label_%{{%}}% 0 nil '{PUSH_BODY}))) "
+    f"'((:CONST (:I32) 1) (:RETURN)))")
+
 LATER_POSITIONS = [
     dict(name="cal-load", ctxt="dconst-load-ctxt", hyps=LOAD_HYPS,
          z="(iz6 bytes sp pc clen result)", z2="(iz6 bytes sp pc clen result)",
@@ -221,6 +228,18 @@ LATER_POSITIONS = [
          z2="(w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))",
          l0=lit(TAIL13_XS[9:]), l1=cons(const("W"), TAIL13_XS[10:]),
          k=4, take=3),
+    dict(name="cal-call0-expand", ctxt="dconst-call0-expand-ctxt",
+         hyps=["(unsigned-byte-p 32 W)"],
+         z="(zw2 bytes sp pc clen result W)", z2="(zw2 bytes sp pc clen result W)",
+         l0=f"(cons {const('W')} '((:CALL 0) (:CONST (:I32) 1) (:RETURN)))",
+         l1=f"(cons {const('W')} (cons (list :ref.func_addr 0) (cons *t0* '((:CONST (:I32) 1) (:RETURN)))))",
+         k=4, take=3),
+    dict(name="cal-call0-entry", ctxt="dconst-call0-entry-ctxt",
+         hyps=["(unsigned-byte-p 32 W)"],
+         z="(zw2 bytes sp pc clen result W)", z2="(zw2 bytes sp pc clen result W)",
+         l0=f"(cons {const('W')} (cons (list :ref.func_addr 0) (cons *t0* '((:CONST (:I32) 1) (:RETURN)))))",
+         l1=SADMIN_APPEND + "",
+         k=5, take=4, eval_admin=True),
 ]
 
 
@@ -239,7 +258,10 @@ def emit_later(p):
     out.append('           :expand ((:free (x) (w3t::step_read/split x))))))')
     out.append(f"(defthm ctxt-{n}-body")
     out.append(f"  {implies(h, f'(equal (w3t::step/r-ctxt-instrs (list :|%;%| {z} {l0})) (list (list :|%;%| {z2} {l1})))')}")
-    out.append('  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)')
+    Hc = H
+    if p.get("eval_admin"):
+        Hc = "(disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 dconst zlset1 zw2)"
+    out.append(f'  :hints (("Goal" :in-theory {Hc}')
     if p.get("generic_z"):
         out.append(f"           :use ((:instance {c} (z {z}))))))")
     else:
