@@ -182,3 +182,45 @@
                                      (cons (list :global.get 1) (cddr (const-rest))))))
            :use (dconst-read-ctxt))))
 
+; ---------------------------------------------------------------------------
+; The load at pc: the instruction word
+; ---------------------------------------------------------------------------
+;
+; The immediate is read from the code memory at the pc: the slice's step
+; pushes the word W under the memory hypotheses (the same shape as the halt
+; book's p2load-slice), the lone load has no step (the address is missing),
+; and the ctxt step splices the continuation after the two-element slice.
+
+
+(defthm dconst-load-slice
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32)
+                (<= (+ pc 4) (len bytes))
+                (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W)))
+           (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                                   (list (list :const (list :i32) pc)
+                                         (quote (:load (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))))
+                  (list (icfg (iz6 bytes sp pc clen result)
+                              (list (list :const (list :i32) W))))))
+  :hints (("Goal" :in-theory (disable w3t::$binop_ (:executable-counterpart w3t::$binop_)))))
+
+(defthm dconst-fail-lone-load
+  (equal (w3t::step (list :|%;%| z
+                          (list (quote (:load (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))))
+         nil)
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z
+                                            (list (quote (:load (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list (quote (:load (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))
+                            (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z
+                                            (list (quote (:load (:i32) nil 0 (:%rec (:align . 2) (:offset . 0))))))))))))
+
+
+
+(defthm dconst-load-ctxt (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step/r-ctxt-instrs (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest))))) (list (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) W) (cddddr (const-rest))))))) :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs) :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest)))))) (:instance (:definition w3t::step/prefix7) (w3t::%s (cons (list :const (list :i32) pc) (cdddr (const-rest))))) (:instance (:definition w3t::step/search21) (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1) (w3t::%t6 (cons (list :const (list :i32) pc) (cdddr (const-rest)))) (w3t::%t9 1) (w3t::z (iz6 bytes sp pc clen result)) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest)))))) (:instance (:definition w3t::step/search21) (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 1) (w3t::%t6 (cons (list :const (list :i32) pc) (cdddr (const-rest)))) (w3t::%t9 1) (w3t::z (iz6 bytes sp pc clen result)) (w3t::%a0 (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest)))))) (:instance dconst-fail-lone-load (z (iz6 bytes sp pc clen result))) (:instance dconst-load-slice)))))
+
+(defthm dconst-load-step (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest))))) (list (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) W) (cddddr (const-rest))))))) :hints (("Goal" :in-theory (disable w3t::step w3t::$binop_ (:executable-counterpart w3t::$binop_)) :expand ((w3t::step (icfg (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest)))))) :use (dconst-load-ctxt))))
+
