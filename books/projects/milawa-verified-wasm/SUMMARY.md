@@ -1502,41 +1502,46 @@ is closed for the first tail step (a quoted body) and open for the second (a
   the rung has the exact shape that worked for step 1, and bridge the chain's
   `append` spelling to the literal once.
 
-## The caller-side eqz: the current blocker (measured)
+## The caller-side eqz: the resolution (dvl spelling + the slice handed in)
 
 The CONST tail's caller-side sequence starts with the testop eqz at the run's
 state.  Its *slice* is fine: the pure testop step on
 `((:CONST (:I32) (dltu ...)) (:TESTOP (:I32) (:EQZ)))` at the ZL z proves by
 the dispatcher's own `testop-slice-one` rule once the hypothesis
 `(equal (dltu (dsub (dadd pc)) (dmul clen)) 1)` rewrites the value to 1
-(165k steps, probe tail92).
+(165k steps, `probe-slice-zl`).
 
-The *body-level ctxt* fact around it does not: every formulation tried --
-the book's `dconst-search-eqz-1` recipe at ZL (the search21 k=1/k=0
-instances plus the slice facts), the same with the slice facts left as
-enabled rules, and the bare `step/r-ctxt-instrs` + `step/prefix7`
-instances with no search facts at all -- hits `HARD ACL2 ERROR [Call depth]
-in PREPROCESS`/`REWRITER` (the limit of 1000) before any goal is printed,
-with or without the full opaque ZL set and with `(:definition
-w3t::step/search21)` disabled.  The book's identical recipes are clean at
-iz6 (534k steps), so the loop is tied to the ZL spelling, not to the
-mathematics.  Next diagnostics, in order: `:do-not '(preprocess)` plus the
-suggested `(cw-gstack :frames 30)` to name the cycling rule; or formulate
-the ctxt fact at the body's *literal value-1* spelling and bridge the
-`dltu` spelling by congruence (the hypothesis already rewrites it to 1);
-or, since the caller-side steps are the ones that do not read the store,
-prove a small generic "the step of a value-prefixed body is blind to the
-z's frame" fact once and reuse it.
+The *body-level ctxt* fact at the raw quoted spelling hits `HARD ACL2 ERROR
+[Call depth] in PREPROCESS`/`REWRITER` (the limit of 1000) before any goal
+is printed, under every theory tried (the book's recipe, the slice facts as
+rules, the bare prefix7/search21 instances, the full opaque ZL set);
+`set-rewrite-stack-limit` only changes the number in the message -- a true
+rewrite cycle, not a deep term.  The resolution is the **dvl spelling**:
 
-Two further measurements (after the first write-up): raising
-`set-rewrite-stack-limit` to 30000 does NOT help (the depth-1000 message
-just reports the new number: a true cycle, not a deep term).  And stating
-the same ctxt fact at the book's `dvl`/`dvl-after-testop` spellings
-(`(dvl (dbody4 (dadd pc) clen))`) does NOT loop -- the preprocessor gets
-through -- but then exceeds the 8M prover-step limit, so the recipe is
-close: the `dvl` spelling plus a cheaper slice arrangement (the proven
-pure-slice fact `probe-slice-zl` supplies the value-prefixed testop step)
-is the next thing to try.
+    (dvl (dbody4 (dadd pc) clen))  ->  (dvl-after-testop (list (dconst 0)))
+
+with `dvl`/`dvl-after-testop`/`dbody4`/`dconst` ENABLED (they compute the
+append into the literal list, which is what lets prefix7/search21 fire) and
+`dsub`/`dmul`/`dltu`/`deqz` DISABLED (the symbolic value stays as written,
+matching the hypothesis and the slice fact).  The proof is the book's
+`dconst-tail-eqz-1` recipe with `probe-slice-zl` handed in:
+
+    :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dsub dmul dltu deqz)
+    :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 CFG))
+          (:instance (:definition w3t::step/prefix7) (w3t::%s BODY))
+          probe-slice-zl)
+
+and the step-level fact then follows exactly as the book's
+`dconst-tail-eqz-1-step`: `(disable w3t::step dsub dmul dltu deqz)`, expand
+the one step instance, `:use` the ctxt fact.  **The conditional step fact
+must carry the dltu=1 hypothesis** -- without it the const's symbolic value
+does not evaluate through the testop and the splitter explores both eqz
+outcomes (the first failure mode: a key checkpoint with the `$binop_` car
+comparisons as a hypothesis).
+
+The whole eqz rung set (the two facts above, the step, the lone label 0, the
+label-0/rest ctxt slice, the five label-1 premises, the label-1 lift and the
+frame lift) is 12 facts, 1.81M prover steps, certified in `const-tail.lisp`.
 
 ## Reproducing
 
