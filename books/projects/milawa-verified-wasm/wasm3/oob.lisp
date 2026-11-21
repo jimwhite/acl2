@@ -984,3 +984,106 @@
                                    (list (list :const (list :i32) 2))))
                        (list (list :return))))))
            :use (dcallee4-fv-spure dcallee4-fv-split dcallee4-fv-ctxt))))
+
+; ---------------------------------------------------------------------------
+; The fallthrough abort tail (the unknown opcode)
+; ---------------------------------------------------------------------------
+;
+; The dispatch's last test (the JMP test) leaves the body tail ((:CALL 4)) at
+; the head of function 6's label body -- the unknown-opcode abort call.  At the
+; body level (z = iz6) the chain is the oob callee's, re-used: the call splits
+; to (ref.func_addr 4) *t3* (dcall4-lone), the entry pushes the callee admin
+; (dc4-entry-2), the frame-4 step runs the abort body's global.set 3
+; (dframe4-step), then the label-vals and frame-vals dissolves (dfall-lv,
+; dfall-fv) leave the abort's value 2.  There is no continuation after this
+; call -- the (call 4) is the body's last instruction -- so the function's
+; return of 2 is the run composition's frame-6/label-6 step.
+
+
+(defthm dfall-lv
+  (equal (w3t::step
+          (icfg (list :|%;%|
+                      (w3t::$sof
+                       (w3t::$with_global
+                        (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                              (milawa-callee-frame 4))
+                        3 (list :const (list :i32) 2)))
+                      (w3t::$fof (iz6 bytes sp pc clen result)))
+                (list (list :frame_%{%}%
+                            1
+                            (w3t::$fof
+                             (w3t::$with_global
+                              (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                    (milawa-callee-frame 4))
+                              3 (list :const (list :i32) 2)))
+                            (list (list :label_%{%}% 1 nil
+                                        (list (list :const (list :i32) 2))))))))
+         (list
+          (icfg (list :|%;%|
+                      (w3t::$sof
+                       (w3t::$with_global
+                        (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                              (milawa-callee-frame 4))
+                        3 (list :const (list :i32) 2)))
+                      (w3t::$fof (iz6 bytes sp pc clen result)))
+                (list (list :frame_%{%}%
+                            1
+                            (w3t::$fof
+                             (w3t::$with_global
+                              (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                    (milawa-callee-frame 4))
+                              3 (list :const (list :i32) 2)))
+                            (list (list :const (list :i32) 2)))))))
+  :hints (("Goal" :use ((:instance dframe-label-vals-gen
+                                   (s (w3t::$sof
+                                       (w3t::$with_global
+                                        (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                              (milawa-callee-frame 4))
+                                        3 (list :const (list :i32) 2))))
+                                   (f (w3t::$fof (iz6 bytes sp pc clen result)))
+                                   (fp (w3t::$fof
+                                        (w3t::$with_global
+                                         (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                               (milawa-callee-frame 4))
+                                         3 (list :const (list :i32) 2)))))))))
+
+(defthm dfall-fv
+  (equal (w3t::step
+          (icfg (list :|%;%|
+                      (w3t::$sof
+                       (w3t::$with_global
+                        (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                              (milawa-callee-frame 4))
+                        3 (list :const (list :i32) 2)))
+                      (w3t::$fof (iz6 bytes sp pc clen result)))
+                (list (list :frame_%{%}%
+                            1
+                            (w3t::$fof
+                             (w3t::$with_global
+                              (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                    (milawa-callee-frame 4))
+                              3 (list :const (list :i32) 2)))
+                            (list (list :const (list :i32) 2))))))
+         (list
+          (icfg (list :|%;%|
+                      (w3t::$sof
+                       (w3t::$with_global
+                        (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                              (milawa-callee-frame 4))
+                        3 (list :const (list :i32) 2)))
+                      (w3t::$fof (iz6 bytes sp pc clen result)))
+                (list (list :const (list :i32) 2)))))
+  :hints (("Goal" :use ((:instance dstep-frame-vals
+                                   (z (list :|%;%|
+                                            (w3t::$sof
+                                             (w3t::$with_global
+                                              (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                                    (milawa-callee-frame 4))
+                                              3 (list :const (list :i32) 2)))
+                                            (w3t::$fof (iz6 bytes sp pc clen result))))
+                                   (fp (w3t::$fof
+                                        (w3t::$with_global
+                                         (list :|%;%| (w3t::$sof (iz6 bytes sp pc clen result))
+                                               (milawa-callee-frame 4))
+                                         3 (list :const (list :i32) 2)))))))))
+
