@@ -1688,3 +1688,142 @@
                                      (cons (list :const (list :i32) W)
                                            (cons (list :ref.func_addr 0)
                                                  (cons *t0* (cdr (const-tail3)))))))))))
+
+
+; ---------------------------------------------------------------------------
+; The run-level composition, part 1: the constructor respells and label lifts
+; ---------------------------------------------------------------------------
+;
+; The admin composition needs each body-level step both in CONSTRUCTOR form
+; (the label rule calls step on (list :%;% z body), not on (icfg z body)) and
+; with function 6's label 1 wrapped around it.  The respells are one-line
+; proofs from the ICFG facts; the lifts go by the label rule with the respell
+; as the inner step.  The value functions (dsub/dmul/dltu/deqz) stay disabled
+; or the label rule's guards unfold the symbolic arithmetic.  The lifts of
+; the callee's remaining positions and the later tiers are next.
+
+(defthm stepc-dconst-tail-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-tail-step))))
+
+(defthm lbl-dconst-tail-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :ref.func_addr 3) (cons *t3* (quote ((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (quote ((:CALL 3) (:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+                 stepc-dconst-tail-step))))
+
+(defthm stepc-dconst-cal-read1-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (milawa-func-body 3))))) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (ibody3-after-1 pc))))) (const-rest)))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-cal-read1-step))))
+
+(defthm lbl-dconst-cal-read1-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (milawa-func-body 3))))) (const-rest))))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (ibody3-after-1 pc))))) (const-rest)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (milawa-func-body 3))))) (const-rest)))))))
+                 stepc-dconst-cal-read1-step))))
+
+(defthm stepc-dconst-cal-sub-step
+  (implies (unsigned-byte-p 32 pc)
+           (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (append (dadmin (dbody0 pc)) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (append (dadmin (dbody1 pc)) (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-cal-sub-step))))
+
+(defthm stepc-dconst-cal-ldis-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (append (dadmin (dbody4 pc clen)) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (append (dframe3 (dbody4 pc clen)) (const-rest)))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-cal-ldis-step))))
+
+(defthm stepc-dconst-cal-fdis-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (append (dframe3 (dbody4 pc clen)) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (append (dbody4 pc clen) (const-rest)))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-cal-fdis-step))))
+
+(defthm stepc-dconst-cal-read2-step2
+  (implies (unsigned-byte-p 32 pc)
+           (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (dbody1 pc))))) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (dbody2 pc clen))))) (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-cal-read2-step2))))
+
+(defthm stepc-dconst-cal-mul-step2
+  (implies (and (unsigned-byte-p 32 pc) (unsigned-byte-p 32 clen))
+           (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (dbody2 pc clen))))) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (dbody3 pc clen))))) (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-cal-mul-step2))))
+
+(defthm stepc-dconst-cal-ltu-step2
+  (implies (and (unsigned-byte-p 32 pc) (unsigned-byte-p 32 clen))
+           (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (dbody3 pc clen))))) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (append (list (list :frame_%{%}% 1 (milawa-callee-frame 3) (list (list :label_%{%}% 1 nil (dbody4 pc clen))))) (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-cal-ltu-step2))))
+
+(defthm stepc-dconst-tail-eqz-1-step
+  (implies (equal (dltu (dsub pc) (dmul clen)) 1)
+           (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const (list :i32) (dltu (dsub pc) (dmul clen))) (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const (list :i32) 0) (cdr (const-rest)))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-tail-eqz-1-step))))
+
+(defthm lbl-dconst-tail-eqz-1-step
+  (implies (equal (dltu (dsub pc) (dmul clen)) 1)
+           (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (dltu (dsub pc) (dmul clen))) (const-rest))))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) 0) (cdr (const-rest)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) (dltu (dsub pc) (dmul clen))) (const-rest)))))))
+                 stepc-dconst-tail-eqz-1-step))))
+
+(defthm stepc-dconst-tail-ifelse-0-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const (list :i32) 0) (cdr (const-rest)))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (cons (quote (:BLOCK (:_RESULT NIL) NIL)) (cddr (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-tail-ifelse-0-step))))
+
+(defthm lbl-dconst-tail-ifelse-0-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) 0) (cdr (const-rest)))))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (quote (:BLOCK (:_RESULT NIL) NIL)) (cddr (const-rest))))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) 0) (cdr (const-rest))))))))
+                 stepc-dconst-tail-ifelse-0-step))))
+
+(defthm stepc-dconst-block-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (cons (quote (:BLOCK (:_RESULT NIL) NIL)) (cddr (const-rest)))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (cons (quote (:LABEL_%{%}% 0 NIL NIL)) (cddr (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-block-step))))
+
+(defthm lbl-dconst-block-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (quote (:BLOCK (:_RESULT NIL) NIL)) (cddr (const-rest)))))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (quote (:LABEL_%{%}% 0 NIL NIL)) (cddr (const-rest))))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (quote (:BLOCK (:_RESULT NIL) NIL)) (cddr (const-rest))))))))
+                 stepc-dconst-block-step))))
+
+(defthm stepc-dconst-elabel-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (cons (quote (:LABEL_%{%}% 0 NIL NIL)) (cddr (const-rest)))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (cddr (const-rest)))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-elabel-step))))
+
+(defthm lbl-dconst-elabel-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (quote (:LABEL_%{%}% 0 NIL NIL)) (cddr (const-rest)))))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cddr (const-rest)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (quote (:LABEL_%{%}% 0 NIL NIL)) (cddr (const-rest))))))))
+                 stepc-dconst-elabel-step))))
+
+(defthm stepc-dconst-read-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (cddr (const-rest))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-read-step))))
+
+(defthm lbl-dconst-read-step
+  (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cddr (const-rest))))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) pc) (cdddr (const-rest))))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cddr (const-rest)))))))
+                 stepc-dconst-read-step))))
+
+(defthm stepc-dconst-load-step
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W)))
+           (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const (list :i32) pc) (cdddr (const-rest)))))
+         (list (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const (list :i32) W) (cddddr (const-rest)))))))
+  :hints (("Goal" :in-theory (disable w3t::step) :use (dconst-load-step))))
