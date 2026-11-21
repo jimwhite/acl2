@@ -1470,6 +1470,38 @@ each needs its slice fact (plain evaluation at the run's state where the
 rule's reads resolve, or the opaque+bridge recipe where they do not), the
 book's ctxt recipe, and the template's rungs.
 
+## The frame rung's open surface (measured, 20+ attempts)
+
+The per-step template's last rung -- the frame rule at the run's outer config --
+is closed for the first tail step (a quoted body) and open for the second (a
+`cons`-bodied label-0).  What the probes established:
+
+- The frame rule's `dframe-outer-sep` instance needs the label-1 step at the
+  spelling of its OWN premise, `(list :%;% (list :%;% ($sof (gset ...)) ($fof
+  (gset ...))) (list (list :label 1 nil b)))` -- the z is the explicit pair.
+  With the state kept opaque (all store/frame constructors disabled) the
+  instance's result z stays `($sof (list :%;% ...))` instead of projecting,
+  and with the projections enabled the store unfolds into its record and the
+  `acl2-count` checks pick up the rational arithmetic.  Two generic projection
+  facts, `(equal ($sof (list :%;% x y)) x)` and the `$fof` twin, bridge the
+  first half; `$store`/`$frame`'s own `(consp z)` checks are what an opaque
+  `(gset ...)` cannot decide.
+- Respelling the whole second step at the explicit-pair z (`-zl` names) works
+  for the ctxt recipe -- except that the ZL body-level slice
+  (`tail-entry-slice-zl`) needs its own no-ctxt-instrs fact and the two field
+  bridges at the ZL spelling; deriving it from the `zrun` version with the
+  `zrun-is-the-pair` rule does not close, and inserting that rule before the
+  `zrun`-spelled facts destabilizes them (the slice's own proof then exceeds
+  the step limit -- rule ordering matters as much as the theory).
+- Candidate paths, in order of expected cost: (a) finish the ZL chain by
+  proving `no-ctxt-instrs-on-call-3` at the ZL spelling with the book's
+  `:expand` recipe and the field bridges at `($s ZL)`/`($f ZL)`, then the ZL
+  slice by the standard recipe, then reuse the generator's `-zl` rungs; (b)
+  state the frame with the label-0's body as a fully evaluated literal
+  (`(append (milawa-callee-admin 3) (quote REST12))` folds to a constant), so
+  the rung has the exact shape that worked for step 1, and bridge the chain's
+  `append` spelling to the literal once.
+
 ## Reproducing
 
 ```sh
