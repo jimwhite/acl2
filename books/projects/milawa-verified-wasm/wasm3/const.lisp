@@ -3123,3 +3123,79 @@
 (defthm body-bridge-25 (equal (cons (list :frame_%{%}% 0 (w3t::$fof (sz3 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))) :hints (("Goal" :in-theory (enable iz6 zlset1 zw2 zpair0 sz0 sz1 sz2 sz3 sz5 szm szg zo1 zo2 zo3 zo4 zo5 zo6 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-func-module milawa-callee-frame milawa-callee-admin frozen-store dadd dconst ibody3-after-1 dadmin dbody0 dbody1 dbody2 dbody3 dbody4 const-rest))))
 (defthm body-bridge-26 (equal (cons (list :frame_%{%}% 0 (w3t::$fof (sz5 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody5 sp)))) (cdr (const-tail3))) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))) :hints (("Goal" :in-theory (enable iz6 zlset1 zw2 zpair0 sz0 sz1 sz2 sz3 sz5 szm szg zo1 zo2 zo3 zo4 zo5 zo6 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-func-module milawa-callee-frame milawa-callee-admin frozen-store dadd dconst ibody3-after-1 dadmin dbody0 dbody1 dbody2 dbody3 dbody4 const-rest))))
 
+
+
+; ---------------------------------------------------------------------------
+; THE RETURN END: the label-1 dissolve inside frame 1, the frame's return,
+; and the stopped machine
+; ---------------------------------------------------------------------------
+;
+; The 30 links leave the run at the config whose instruction list is the single
+; frame-1 instruction (:frame 1 ($fof (zo6 ...)) ((:label 1 nil B))), B the
+; CONST tail's answer instructions ((:const (:i32) 1) (:return)).  Three pieces
+; close the run from there:
+;
+;   * STEP/R-CTXT-FRAME at that config (PRED31): the label dissolves inside the
+;     frame, leaving (:frame 1 ($fof (zo6 ...)) B) at the outer pair's frame.
+;     The rule's own measure ((OR (< a b) (AND (EQUAL a b) (< c d)))) is decided
+;     by CHECK31-GROUND, the first disjunct in the form the rewriter leaves it:
+;     the %SIZE calls expand to ACL2-COUNT, and the counts are 14 and 20 plus
+;     the count of the frame record, so the inequality is linear arithmetic.
+;     (The same comparison stated with %SIZE, or as a hypothesis, does not fire:
+;     %SIZE normalizes to ACL2-COUNT before any rule can match it.)
+;
+;   * STEP at that config (ENDSTEP31): the dispatcher's five earlier rules are
+;     the P-STEP-R-* nil facts, then the frame rule's value is PRED31's.
+;
+;   * the frame's return (R2-RETURN-1, an instance of the halt book's
+;     DRET-FRAME-RETURN-GEN): the frame-1 instruction's body is the value and
+;     the :RETURN, so the frame goes and the value (:CONST (:I32) 1) is pushed
+;     into the caller's instruction list -- and CONSTSTEP-STUCK: a lone value is
+;     not an instruction, so the machine has stopped (the frozen path's last
+;     step, at this path's state).
+;
+; R1-INNER is the inner step the frame rule hands in: the label-1 rule at the
+; same pair state, dissolving the label to B.
+(defthm r1-inner (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (zo6 bytes sp pc clen result W))) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (zo6 bytes sp pc clen result W))) (quote ((:const (:i32) 1) (:return)))))) :hints (("Goal" :in-theory (disable frozen-store milawa-func-body milawa-func-module milawa-callee-frame iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd))))
+(defthm size31 (< (w3t::%size (nth 2 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (zo6 bytes sp pc clen result W))) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return)))))))) (w3t::%size (nth 2 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))))) :hints (("Goal" :in-theory (disable w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd))))
+(defthm check31-ground
+  (equal (< 14 (+ 20 (acl2-count (w3t::$fof (zo6 bytes sp pc clen result W))))) t))
+(defthm pred31
+  (equal (w3t::step/r-ctxt-frame (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return)))))))))
+         (list (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (quote ((:const (:i32) 1) (:return))))))))
+  :hints (("Goal" :in-theory (disable w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd))))
+
+(defthm p-step-r-pure (equal (w3t::step/r-pure (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-pure w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance (:definition w3t::step/r-pure) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))))))))
+(defthm p-step-r-read (equal (w3t::step/r-read (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-read w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance (:definition w3t::step/r-read) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))))))))
+(defthm p-step-r-ctxt-instrs (equal (w3t::step/r-ctxt-instrs (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))))))))
+(defthm p-step-r-ctxt-label (equal (w3t::step/r-ctxt-label (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-label w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))))))))
+(defthm p-step-r-ctxt-handler (equal (w3t::step/r-ctxt-handler (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-handler w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance (:definition w3t::step/r-ctxt-handler) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))))))))
+(defthm endstep31 (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (quote ((:const (:i32) 1) (:return))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-pure w3t::step/r-read
+                                    w3t::step/r-ctxt-instrs w3t::step/r-ctxt-label
+                                    w3t::step/r-ctxt-handler w3t::step/r-ctxt-frame w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance (:definition w3t::step) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (list (list :label_%{%}% 1 nil (quote ((:const (:i32) 1) (:return))))))))))
+                 p-step-r-pure p-step-r-read p-step-r-ctxt-instrs
+                 p-step-r-ctxt-label p-step-r-ctxt-handler pred31))))
+(defthm r2-return-1 (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :frame_%{%}% 1 (w3t::$fof (zo6 bytes sp pc clen result W)) (quote ((:const (:i32) 1) (:return)))))))
+         (list (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :const (list :i32) 1)))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local
+                                    frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg
+                                    w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance dret-frame-return-gen (z (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result)))) (fp (w3t::$fof (zo6 bytes sp pc clen result W))) (x 1))))))
+(defthm conststep-stuck (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :const (list :i32) 1)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs w3t::$sof w3t::$fof w3t::$with_global w3t::$frame w3t::$with_local
+                                    frozen-store iz6 zo6 zw2 zlset1 sz0 sz1 sz2 sz3 sz5 szm szg
+                                    w3t::$binop_ (:executable-counterpart w3t::$binop_) dadd)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (zo6 bytes sp pc clen result W)) (w3t::$fof (iz6 bytes sp pc clen result))) (list (list :const (list :i32) 1)))))))))
+
