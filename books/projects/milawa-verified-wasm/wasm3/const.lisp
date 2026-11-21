@@ -1478,3 +1478,213 @@
                  (:instance (:definition w3t::step_pure)
                             (w3t::%a0 (list (list :frame_%{%}% 1 *frozen-entry-frame* *ret-cont*))))
                  (:instance step-pure-return-out-of-frame (f *frozen-entry-frame*) (x 1))))))
+
+; ---------------------------------------------------------------------------
+; The (call 0) hand-off to the $push callee
+; ---------------------------------------------------------------------------
+;
+; The CONST tail ends by calling function 0 ($push): the loaded word W is
+; pushed onto the operand stack.  The call's read-layer rule expands
+; (:CALL 0) to (ref.func_addr 0) + the call_ref type (*t0*); the entry's
+; three-element slice ((const W) (ref.func_addr 0) *t0*) then fires the
+; call_ref-func rule with one argument: the callee's frame carries W in
+; local 0, with arity 0 for both its label and frame.  The dispatcher's
+; ctxt phase refuses the call slices (its search cannot step a slice whose
+; size is not smaller than the whole configuration), which is what makes the
+; search terminate; and the failure facts for those slices must be stated in
+; CONSTRUCTOR form ((list :%;% ...), not ICFG) or they never fire as rewrite
+; rules inside the search's evaluation.
+
+(defconst *t0* (list :call_ref (list :_def (list :rec (list (list :sub (list (list :final)) nil (list :func%->% (list (list :i32)) nil)))) 0)))
+
+(defun sframe0 (bytes sp pc clen result W)
+  (declare (ignore bytes sp pc clen result))
+  (list :%rec
+        (cons :locals (list (list (list :const (list :i32) W))))
+        (cons :module (milawa-func-module 0))))
+
+(defun sadmin (bytes sp pc clen result W)
+  (list (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W)
+              (list (list :label_%{%}% 0 nil (milawa-func-body 0))))))
+
+(defthm dconst-call0-expand
+  (equal (w3t::step (icfg (zw2 bytes sp pc clen result W)
+                          (list (list :call 0))))
+         (list (icfg (zw2 bytes sp pc clen result W)
+                     (list (list :ref.func_addr 0) *t0*)))))
+
+(defthm dconst-lone-call0-ref
+  (equal (w3t::step (list :|%;%| z (list *t0*))) nil)
+  :hints (("Goal"
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (list :|%;%| z (list *t0*))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (list *t0*))
+                            (w3t::%t9 0) (w3t::z z)
+                            (w3t::%a0 (list :|%;%| z (list *t0*))))))))
+
+(defthm dconst-no-ctxt-call0-two
+  (equal (w3t::step/r-ctxt-instrs
+          (icfg (zw2 bytes sp pc clen result W)
+                (list (list :ref.func_addr 0) *t0*)))
+         nil)
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :expand ((w3t::step/r-ctxt-instrs
+                     (icfg (zw2 bytes sp pc clen result W)
+                           (list (list :ref.func_addr 0) *t0*)))
+                    (:free (k lo hi i t9 zz a0)
+                           (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+(defthm dconst-call0-entry-two
+  (equal (w3t::step (list :|%;%| (zw2 bytes sp pc clen result W)
+                          (list (list :ref.func_addr 0) *t0*)))
+         nil)
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use (dconst-no-ctxt-call0-two)
+           :expand ((w3t::step (list :|%;%| (zw2 bytes sp pc clen result W)
+                                     (list (list :ref.func_addr 0) *t0*)))))))
+
+(defthm dconst-no-ctxt-call0-three
+  (implies (unsigned-byte-p 32 W)
+           (equal (w3t::step/r-ctxt-instrs
+                   (icfg (zw2 bytes sp pc clen result W)
+                         (list (list :const (list :i32) W)
+                               (list :ref.func_addr 0) *t0*)))
+                  nil))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use (dconst-call0-entry-two)
+           :expand ((w3t::step/r-ctxt-instrs
+                     (icfg (zw2 bytes sp pc clen result W)
+                           (list (list :const (list :i32) W)
+                                 (list :ref.func_addr 0) *t0*)))
+                    (:free (k lo hi i t9 zz a0)
+                           (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+(defthm dconst-call0-entry
+  (implies (unsigned-byte-p 32 W)
+           (equal (w3t::step (list :|%;%| (zw2 bytes sp pc clen result W)
+                                   (list (list :const (list :i32) W)
+                                         (list :ref.func_addr 0) *t0*)))
+                  (list (list :|%;%| (zw2 bytes sp pc clen result W)
+                              (sadmin bytes sp pc clen result W)))))
+  :hints (("Goal" :in-theory (disable dadd w3t::$binop_)
+           :use (dconst-no-ctxt-call0-three)
+           :expand ((w3t::step (list :|%;%| (zw2 bytes sp pc clen result W)
+                                     (list (list :const (list :i32) W)
+                                           (list :ref.func_addr 0) *t0*)))))))
+
+(defthm dconst-call0-expand-ctxt
+  (implies (unsigned-byte-p 32 W)
+           (equal (w3t::step/r-ctxt-instrs
+                   (icfg (zw2 bytes sp pc clen result W)
+                         (cons (list :const (list :i32) W) (const-tail3))))
+                  (list (icfg (zw2 bytes sp pc clen result W)
+                              (cons (list :const (list :i32) W)
+                                    (cons (list :ref.func_addr 0)
+                                          (cons *t0* (cdr (const-tail3)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg (zw2 bytes sp pc clen result W)
+                                            (cons (list :const (list :i32) W)
+                                                  (const-tail3)))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (cons (list :const (list :i32) W)
+                                           (const-tail3))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 1)
+                            (w3t::%t6 (cons (list :const (list :i32) W)
+                                            (const-tail3)))
+                            (w3t::%t9 1) (w3t::z (zw2 bytes sp pc clen result W))
+                            (w3t::%a0 (icfg (zw2 bytes sp pc clen result W)
+                                            (cons (list :const (list :i32) W)
+                                                  (const-tail3)))))
+                 dconst-call0-expand))))
+
+(defthm dconst-call0-expand-step
+  (implies (unsigned-byte-p 32 W)
+           (equal (w3t::step (icfg (zw2 bytes sp pc clen result W)
+                                   (cons (list :const (list :i32) W) (const-tail3))))
+                  (list (icfg (zw2 bytes sp pc clen result W)
+                              (cons (list :const (list :i32) W)
+                                    (cons (list :ref.func_addr 0)
+                                          (cons *t0* (cdr (const-tail3)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (dconst-call0-expand-ctxt)
+           :expand ((w3t::step (icfg (zw2 bytes sp pc clen result W)
+                                     (cons (list :const (list :i32) W)
+                                           (const-tail3))))))))
+
+(defthm dconst-call0-entry-ctxt
+  (implies (unsigned-byte-p 32 W)
+           (equal (w3t::step/r-ctxt-instrs
+                   (icfg (zw2 bytes sp pc clen result W)
+                         (cons (list :const (list :i32) W)
+                               (cons (list :ref.func_addr 0)
+                                     (cons *t0* (cdr (const-tail3)))))))
+                  (list (icfg (zw2 bytes sp pc clen result W)
+                              (append (sadmin bytes sp pc clen result W)
+                                      (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs dadd w3t::$binop_
+                                      zw2 zlset1 iz6 frozen-store
+                                      sframe0 sadmin milawa-callee-frame
+                                      milawa-func-body milawa-func-module
+                                      w3t::$with_local w3t::$with_global)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg (zw2 bytes sp pc clen result W)
+                                            (cons (list :const (list :i32) W)
+                                                  (cons (list :ref.func_addr 0)
+                                                        (cons *t0* (cdr (const-tail3))))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (cons (list :const (list :i32) W)
+                                           (cons (list :ref.func_addr 0)
+                                                 (cons *t0* (cdr (const-tail3)))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 2) (w3t::%lo 0) (w3t::%hi 2)
+                            (w3t::%t6 (cons (list :const (list :i32) W)
+                                            (cons (list :ref.func_addr 0)
+                                                  (cons *t0* (cdr (const-tail3))))))
+                            (w3t::%t9 2) (w3t::z (zw2 bytes sp pc clen result W))
+                            (w3t::%a0 (icfg (zw2 bytes sp pc clen result W)
+                                            (cons (list :const (list :i32) W)
+                                                  (cons (list :ref.func_addr 0)
+                                                        (cons *t0* (cdr (const-tail3))))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 1) (w3t::%lo 0) (w3t::%hi 2)
+                            (w3t::%t6 (cons (list :const (list :i32) W)
+                                            (cons (list :ref.func_addr 0)
+                                                  (cons *t0* (cdr (const-tail3))))))
+                            (w3t::%t9 2) (w3t::z (zw2 bytes sp pc clen result W))
+                            (w3t::%a0 (icfg (zw2 bytes sp pc clen result W)
+                                            (cons (list :const (list :i32) W)
+                                                  (cons (list :ref.func_addr 0)
+                                                        (cons *t0* (cdr (const-tail3))))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 2)
+                            (w3t::%t6 (cons (list :const (list :i32) W)
+                                            (cons (list :ref.func_addr 0)
+                                                  (cons *t0* (cdr (const-tail3))))))
+                            (w3t::%t9 2) (w3t::z (zw2 bytes sp pc clen result W))
+                            (w3t::%a0 (icfg (zw2 bytes sp pc clen result W)
+                                            (cons (list :const (list :i32) W)
+                                                  (cons (list :ref.func_addr 0)
+                                                        (cons *t0* (cdr (const-tail3))))))))
+                 dconst-lone-call0-ref
+                 dconst-call0-entry-two
+                 dconst-call0-entry))))
+
+(defthm dconst-call0-entry-step
+  (implies (unsigned-byte-p 32 W)
+           (equal (w3t::step (icfg (zw2 bytes sp pc clen result W)
+                                   (cons (list :const (list :i32) W)
+                                         (cons (list :ref.func_addr 0)
+                                               (cons *t0* (cdr (const-tail3)))))))
+                  (list (icfg (zw2 bytes sp pc clen result W)
+                              (append (sadmin bytes sp pc clen result W)
+                                      (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_)
+           :use (dconst-call0-entry-ctxt)
+           :expand ((w3t::step (icfg (zw2 bytes sp pc clen result W)
+                                     (cons (list :const (list :i32) W)
+                                           (cons (list :ref.func_addr 0)
+                                                 (cons *t0* (cdr (const-tail3)))))))))))
