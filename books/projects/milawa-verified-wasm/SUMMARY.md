@@ -1528,6 +1528,16 @@ or, since the caller-side steps are the ones that do not read the store,
 prove a small generic "the step of a value-prefixed body is blind to the
 z's frame" fact once and reuse it.
 
+Two further measurements (after the first write-up): raising
+`set-rewrite-stack-limit` to 30000 does NOT help (the depth-1000 message
+just reports the new number: a true cycle, not a deep term).  And stating
+the same ctxt fact at the book's `dvl`/`dvl-after-testop` spellings
+(`(dvl (dbody4 (dadd pc) clen))`) does NOT loop -- the preprocessor gets
+through -- but then exceeds the 8M prover-step limit, so the recipe is
+close: the `dvl` spelling plus a cheaper slice arrangement (the proven
+pure-slice fact `probe-slice-zl` supplies the value-prefixed testop step)
+is the next thing to try.
+
 ## Reproducing
 
 ```sh
