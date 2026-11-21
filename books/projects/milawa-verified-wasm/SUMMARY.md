@@ -1361,6 +1361,33 @@ provide given the premises.  The local-0 variant is the part to build as a
 generator: the const chain's recipes (slice, ctxt, step, label, frame) apply
 unchanged; only the frame's local-0 field and the `pc` argument change.
 
+**What the tail's first experiment measured** (scratch, not yet in the book):
+
+- The `ctxt-instrs` slice lemma for a `label 0` followed by a rest is TRUE and
+  its proof recipe is the books' (`step/r-ctxt-instrs` + `step/prefix7` +
+  `step/search21` definitions plus the lone-label step as hypothesis), but
+  stated with the REST as a variable it diverges (>100s): the search's guard
+  and measure need the rest's shape, so the rest must be the concrete
+  `rest13`, one fact per tail step, exactly as the books state their lifts.
+- The body-level call-split fact at the run's state (the `$with_global`-
+  updated store, the local-0 frame) does not prove by the default theory:
+  the store unfolds into its `:%rec` record (the globals as value records)
+  and the `acl2-count` of the symbolic `(dadd pc)` poisons the measure checks
+  into rational arithmetic (`(EQUAL (DENOMINATOR ...) 1)`), the trap the
+  fetch book already documented.  Keeping `dadd`/`$binop_` opaque removes
+  the rationals; the remaining stall is the store's `:funcs`/`:types` field
+  lookup, which the rule must see as the artifact's values.  The fix is the
+  books' own pattern: state the tail facts with the store's field values as
+  hypotheses (or as rewrite bridges: `(%get-field (sof (gset ...)) :funcs) =
+  <the artifact's functions>`), then instantiate.
+- The ladders and the frame lifts are cheap and already generic
+  (`label-lift-general` is generic in both z and body; `dframe-outer-sep` is
+  generic in the outer frame).  So the tail is mostly (a) one body-level fact
+  per instruction at the run's store/frame spelling, (b) the two premise
+  facts per label-1 body (`step_pure`/`step_read` nil, evaluable), (c) the
+  three lifts per step.  The remaining engineering is the per-step body
+  facts; the other opcode tails will reuse all of it.
+
 ## Reproducing
 
 ```sh
