@@ -2538,3 +2538,330 @@
                  spure-cal-call0-entry-label sread-cal-call0-entry-label))))
 
 
+
+; ---------------------------------------------------------------------------
+; THE $push CALLEE, at label 1: the seven positions and the two dissolves.
+;
+; The s-chain's s-stepK/s-liftK facts already give the body-level steps and
+; the ctxt lifts inside the callee's frame and label 0; these events lift them
+; to label 1, so the call-entry's admin literal and the callee's execution sit
+; in one label-1 chain.  The bodies stay at the s-chain's spelling (sframe0,
+; sbodyK, const-tail3, and the z's zpair0/zoK, kept opaque), which is what
+; lets the ctxt facts apply verbatim.
+;
+; Positions 0-4 go through the ctxt route: label-lift-general with the
+; s-liftK premise.  Position 5 (the global.set 0 write of sp+4) is the
+; late-rule case -- its ctxt phase is nil (the two-element slice ties the
+; search's measure) -- so its label lift uses the dispatcher directly with
+; the phase facts and s-step5.  The two dissolves then follow: the label-0
+; nil body is removed by the pure label-vals rule in the tail context
+; (e-lift-nil), and the empty frame by e-final.  After them the label-1 body
+; is the caller's continuation (cdr (const-tail3)) = ((const 1) (return)).
+
+(defthm spure-push-s0-body
+  (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-s0-body
+  (equal (w3t::step_read/split (list :|%;%| (zpair0 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-push-s0-body
+  (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zpair0 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3))))) (list (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz0 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (s-lift0))))
+(defthm match-push-s0-body
+  (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 2 x))))))
+(defthm search-push-s0-body
+  (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x)))
+           :use (match-push-s0-body))))
+(defthm spure-push-s0-label
+  (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-push-s0-body))))
+(defthm taglo-push-s0
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))) 4)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-s0
+  (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-s0-label
+  (equal (w3t::step_read/split (list :|%;%| (zpair0 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3))))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zpair0 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))))
+                 rsearch-push-s0))))
+(defthm lbl-dconst-push-s0-lit
+  (equal (w3t::step (list :|%;%| (zpair0 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3))))))) (list (list :|%;%| (zo1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (sz0 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs)
+           :use ((:instance label-lift-general (z (zpair0 bytes sp pc clen result W)) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody0)))) (cdr (const-tail3)))) (z2 (zo1 bytes sp pc clen result W)) (body2 (cons (list :frame_%{%}% 0 (w3t::$fof (sz0 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))))
+                 spure-push-s0-body sread-push-s0-body ctxt-push-s0-body
+                 spure-push-s0-label sread-push-s0-label))))
+
+(defthm spure-push-s1-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-s1-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_read/split (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-push-s1-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo1 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))) (list (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz1 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (s-lift1))))
+(defthm match-push-s1-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 2 x))))))
+(defthm search-push-s1-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x)))
+           :use (match-push-s1-body))))
+(defthm spure-push-s1-label
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-push-s1-body))))
+(defthm taglo-push-s1
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))) 4)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-s1
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-s1-label
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_read/split (list :|%;%| (zo1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zo1 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))))
+                 rsearch-push-s1))))
+(defthm lbl-dconst-push-s1-lit
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step (list :|%;%| (zo1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3))))))) (list (list :|%;%| (zo2 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (sz1 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs)
+           :use ((:instance label-lift-general (z (zo1 bytes sp pc clen result W)) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody1 sp)))) (cdr (const-tail3)))) (z2 (zo2 bytes sp pc clen result W)) (body2 (cons (list :frame_%{%}% 0 (w3t::$fof (sz1 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))
+                 spure-push-s1-body sread-push-s1-body ctxt-push-s1-body
+                 spure-push-s1-label sread-push-s1-label))))
+
+(defthm spure-push-s2-body
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-s2-body
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step_read/split (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-push-s2-body
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo2 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3))))) (list (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szm bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (s-lift2))))
+(defthm match-push-s2-body
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 2 x))))))
+(defthm search-push-s2-body
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x)))
+           :use (match-push-s2-body))))
+(defthm spure-push-s2-label
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-push-s2-body))))
+(defthm taglo-push-s2
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))) 4)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-s2
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-s2-label
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step_read/split (list :|%;%| (zo2 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zo2 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))))
+                 rsearch-push-s2))))
+(defthm lbl-dconst-push-s2-lit
+  (implies (store-hyps (sz2 bytes sp pc clen result W) sp W) (equal (w3t::step (list :|%;%| (zo2 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3))))))) (list (list :|%;%| (zo3 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szm bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs)
+           :use ((:instance label-lift-general (z (zo2 bytes sp pc clen result W)) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody2 sp W)))) (cdr (const-tail3)))) (z2 (zo3 bytes sp pc clen result W)) (body2 (cons (list :frame_%{%}% 0 (w3t::$fof (szm bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))
+                 spure-push-s2-body sread-push-s2-body ctxt-push-s2-body
+                 spure-push-s2-label sread-push-s2-label))))
+
+(defthm spure-push-s3-body
+  (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-s3-body
+  (equal (w3t::step_read/split (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-push-s3-body
+  (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo3 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3))))) (list (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz3 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (s-lift3))))
+(defthm match-push-s3-body
+  (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 2 x))))))
+(defthm search-push-s3-body
+  (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x)))
+           :use (match-push-s3-body))))
+(defthm spure-push-s3-label
+  (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-push-s3-body))))
+(defthm taglo-push-s3
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))) 4)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-s3
+  (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-s3-label
+  (equal (w3t::step_read/split (list :|%;%| (zo3 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3))))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zo3 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))))
+                 rsearch-push-s3))))
+(defthm lbl-dconst-push-s3-lit
+  (equal (w3t::step (list :|%;%| (zo3 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3))))))) (list (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (sz3 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs)
+           :use ((:instance label-lift-general (z (zo3 bytes sp pc clen result W)) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody3)))) (cdr (const-tail3)))) (z2 (zo4 bytes sp pc clen result W)) (body2 (cons (list :frame_%{%}% 0 (w3t::$fof (sz3 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))))
+                 spure-push-s3-body sread-push-s3-body ctxt-push-s3-body
+                 spure-push-s3-label sread-push-s3-label))))
+
+(defthm spure-push-s4-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-s4-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_read/split (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-push-s4-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))) (list (list :|%;%| (zo5 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (sz5 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody5 sp)))) (cdr (const-tail3)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (s-lift4))))
+(defthm match-push-s4-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 2 x))))))
+(defthm search-push-s4-body
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x)))
+           :use (match-push-s4-body))))
+(defthm spure-push-s4-label
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-push-s4-body))))
+(defthm taglo-push-s4
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))) 4)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-s4
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-s4-label
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step_read/split (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zo4 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))))
+                 rsearch-push-s4))))
+(defthm lbl-dconst-push-s4-lit
+  (implies (unsigned-byte-p 32 sp) (equal (w3t::step (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3))))))) (list (list :|%;%| (zo5 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (sz5 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody5 sp)))) (cdr (const-tail3)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs)
+           :use ((:instance label-lift-general (z (zo4 bytes sp pc clen result W)) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (sbody4 sp)))) (cdr (const-tail3)))) (z2 (zo5 bytes sp pc clen result W)) (body2 (cons (list :frame_%{%}% 0 (w3t::$fof (sz5 bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil (sbody5 sp)))) (cdr (const-tail3)))))
+                 spure-push-s4-body sread-push-s4-body ctxt-push-s4-body
+                 spure-push-s4-label sread-push-s4-label))))
+
+
+
+(defthm spure-push-s5-body
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-s5-body
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step_read/split (list :|%;%| (zo4 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm match-push-s5-body
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/match135 x)) (:free (x) (take 2 x))))))
+(defthm search-push-s5-body
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x)))
+           :use (match-push-s5-body))))
+(defthm spure-push-s5-label
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-push-s5-body))))
+(defthm taglo-push-s5
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))) 4)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-s5
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-s5-label
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step_read/split (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general (z (zo4 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3)))))
+                 rsearch-push-s5))))
+(defthm lbl-dconst-push-s5-lit
+  (implies (w3t::val-p (list :const (list :i32) (dadd sp))) (equal (w3t::step (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3))))))) (list (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::$binop_ w3t::$nbytes_ w3t::%get-field w3t::%put-field w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$frame w3t::$store frozen-store)
+           :use ((:instance (:definition w3t::step/r-ctxt-label)
+                            (w3t::%a0 (list :|%;%| (zo4 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (sframe0 bytes sp pc clen result W) (list (list :label_%{%}% 0 nil (gset-instrs sp)))) (cdr (const-tail3))))))))
+                 no-ctxt-instrs-on-a-lone-label-general
+                 spure-push-s5-body sread-push-s5-body spure-push-s5-label sread-push-s5-label
+                 s-ctxt5-nil s-step5))))
+
+
+(defthm spure-push-ediss-body (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-ediss-body (equal (w3t::step_read/split (list :|%;%| (zo6 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3))))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm match-push-ediss-body (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3))))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure/match135 x)) (:free (x) (take 2 x))))))
+(defthm search-push-ediss-body (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x))) :use (match-push-ediss-body))))
+(defthm spure-push-ediss-label (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure x))) :use (search-push-ediss-body))))
+(defthm taglo-push-ediss (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))) 4) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-ediss (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-ediss-label (equal (w3t::step_read/split (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3))))))) nil) :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes) :use ((:instance read-on-a-lone-label-general (z (zo6 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3))))) rsearch-push-ediss))))
+(defthm ctxt-push-ediss-body (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zo6 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3))))) (list (list :|%;%| (zo6 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))))) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs) :use (e-lift-nil))))
+(defthm lbl-dconst-push-ediss-lit (equal (w3t::step (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3))))))) (list (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))))))) :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ w3t::%get-field w3t::%put-field w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$frame w3t::$store frozen-store szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module) :use ((:instance label-lift-general (z (zo6 bytes sp pc clen result W)) (body (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) (list (list :label_%{%}% 0 nil nil))) (cdr (const-tail3)))) (z2 (zo6 bytes sp pc clen result W)) (body2 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3))))) spure-push-ediss-body sread-push-ediss-body ctxt-push-ediss-body spure-push-ediss-label sread-push-ediss-label))))
+(defthm spure-push-efinal-body (equal (w3t::step_pure (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-push-efinal-body (equal (w3t::step_read/split (list :|%;%| (zo6 bytes sp pc clen result W) (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3))))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm match-push-efinal-body (equal (w3t::step_pure/match135 (take 2 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3))))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure/match135 x)) (:free (x) (take 2 x))))))
+(defthm search-push-efinal-body (equal (w3t::step_pure/search141 3 3 3 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure/search141 3 3 3 x))) :use (match-push-efinal-body))))
+(defthm spure-push-efinal-label (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (x) (w3t::step_pure x))) :use (search-push-efinal-body))))
+(defthm taglo-push-efinal (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))) 4) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-push-efinal (equal (w3t::step_read/split/search60 4 4 3 (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))) nil) :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ frozen-store iz6 zlset1 zw2 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0) :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-push-efinal-label (equal (w3t::step_read/split (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3))))))) nil) :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes) :use ((:instance read-on-a-lone-label-general (z (zo6 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3))))) rsearch-push-efinal))))
+(defthm lbl-dconst-push-efinal-lit (equal (w3t::step (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3))))))) (list (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cdr (const-tail3))))))) :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs dadd w3t::$binop_ w3t::$nbytes_ w3t::%get-field w3t::%put-field w3t::$with_global w3t::$with_mem w3t::$with_local w3t::$frame w3t::$store frozen-store szg sz0 sz1 sz2 sz3 sz5 szm zo1 zo2 zo3 zo4 zo5 zo6 zpair0 sframe0 sbody0 sbody1 sbody2 sbody3 sbody4 sbody5 gset-instrs const-tail3 milawa-func-body milawa-callee-frame milawa-func-module) :use ((:instance (:definition w3t::step/r-ctxt-label) (w3t::%a0 (list :|%;%| (zo6 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :frame_%{%}% 0 (w3t::$fof (szg bytes sp pc clen result W)) nil) (cdr (const-tail3)))))))) no-ctxt-instrs-on-a-lone-label-general spure-push-efinal-body sread-push-efinal-body spure-push-efinal-label sread-push-efinal-label e-final))))
+
