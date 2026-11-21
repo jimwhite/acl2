@@ -1543,6 +1543,53 @@ The whole eqz rung set (the two facts above, the step, the lone label 0, the
 label-0/rest ctxt slice, the five label-1 premises, the label-1 lift and the
 frame lift) is 12 facts, 1.81M prover steps, certified in `const-tail.lisp`.
 
+## The callee's positions at the run's states: the label-0 recipe (measured)
+
+The run's body is `(label 1 nil ((label 0 nil TAIL13) . rest13))`; every
+machine step happens on the label-0's body, so each body-level fact needs a
+label-0 lift, a label-0/rest slice, the label-1 premises, the label-1 lift and
+the frame lift.  The recipe that makes this go (validated on the callee's
+read1/sub/read2/mul/ltu; `wasm3/const-callee.lisp`, 101 facts, 21s):
+
+- The **label-0 lift is generic in the label number**: `label-lift-general-n`
+  is `label-lift-general` with the label hardcoded to `n`; its proof is the
+  same (`step/r-ctxt-label` definition instance +
+  `no-ctxt-instrs-on-a-lone-label-general`).  Instantiated at `n = 0`, its
+  seven premises are: `step_pure`/`step_read/split` of the body and of the
+  lone label, the two `%size` conditions, and the MATCH135 and SEARCH141
+  nil facts (the pure trap search).
+- **The premises must be stated at the DATA spelling** -- the fully evaluated
+  instruction list, with `(milawa-callee-frame 3)` left as a call (its
+  executable counterpart disabled) and the symbolic value as
+  `(car (w3t::$binop_ '(:i32) '(:sub) (dadd pc) 4096))`.  At the builder
+  spelling the label rule's trap search cannot evaluate and the prover
+  wanders into the whole `step_pure`/`step_read` definitions.  The
+  `match141` fact is `(step_pure/match135 (take (n-1) B)) = nil` and
+  `search141` is `(step_pure/search141 n n n B) = nil` (n = the body length),
+  proved by `:expand` of match135/take/search141.
+- **The label-0 proof disables `step_pure`/`step_read/split`** (and the whole
+  opaque store/frame set) so the seven premises are matched, not re-derived.
+- **The body-level ctxt facts stay at the builder spellings** (already
+  proven); a data-spelled copy is derived per step with two
+  `:rule-classes nil` BRIDGES `(equal <data> <builder>)` (`:in-theory
+  (e/d (<builders>) (dadd $binop_ ...))`, so the equality is purely
+  structural).
+- The label-0/rest slice is the book's `step/r-ctxt-instrs` +
+  `step/prefix7` + `step/search21` (k=0) recipe with the label-0 step handed
+  in TOGETHER WITH the five label-1 premises (without them the slice's
+  internal pure/read checks stall).
+- `dframe-outer-sep` then gives the frame-1 step; for the state-changing
+  steps (local.set/global.set) its `z1` shape conditions are handed in from
+  `:rule-classes nil` shape facts (as the book's links do with `zinfo-K`).
+
+**The value tier**: when the body's instruction list carries a symbolic
+`(dltu ...)` that is provably 1 on the run's path (the in-code hypothesis the
+front already assumes), the pure trap search again stalls.  The clean fix is
+to spell those bodies at the literal value 1 (`(const 1)`) -- then the whole
+config is concrete and the step evaluates -- and bridge the symbolic
+spellings across the value with the hypothesis.  The ldis/fdis dissolves and
+the eqz testop all sit in this tier.
+
 ## Reproducing
 
 ```sh
