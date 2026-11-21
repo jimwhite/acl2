@@ -1411,6 +1411,12 @@ the hint discipline differs from the front's:
   in the hint, or the `acl2-count` of the symbolic `(dadd pc)` global turns
   the measure checks into rational arithmetic
   (`(EQUAL (DENOMINATOR (+ 1/1073741824 ...)) 1)`).
+  With the opaque `dadd` the rationals are gone, but the lone-label lift is
+  still open: the ctxt-label definition instance and the inner step are both
+  in the clause and the prover does not yet derive the labelled step from
+  them -- the next thing to tune (the books' `dlabel6-*` facts are the
+  template; they use the same instance and the inner fact, so the difference
+  is in the z/frame spelling or in which builder is left enabled).
 
 ## Reproducing
 
