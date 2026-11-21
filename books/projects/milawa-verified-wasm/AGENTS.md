@@ -85,6 +85,33 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   wrote `:TESTTOP` and every `:use` fact silently failed to match (the printed
   goals looked identical at a glance).  Prefer `(list :testop (list :i32)
   (list :eqz))` or copy the keyword from a walk output.
+- **A rule guard's size disjunct does not compose propositionally.**  Carrying
+  a context rule's first `%size` disjunct as a hypothesis (and proving it
+  standalone: the label-0 body size is 5.8k steps) works for the callee-level
+  label facts, but at the halt level the same fact still stalls: the instance's
+  guard normalizes the disjunct to `(< (+ 4753 V) (+ 4758 V))` while the
+  context's linear pot is polluted by the store term's `sp` rational normal
+  forms, and the clausifier never sees the two as the same literal.  The next
+  attack should state the guard's whole size condition (both disjuncts, at the
+  exact post-normalization spelling) as the fact's hypothesis, or split the
+  label step itself into the `ctxt-instrs` result plus a separate step-bridge
+  fact (the `dstep-phases-gen` route) so the label rule's guard is never asked
+  to compute sizes at all.
+- **The search's nil fact must be stated at the EVALUATED body.**  The pure
+  return-label rule searches the label's body, and the search is not ground once
+  the body carries a symbolic value (`(car ($binop_ ... sub sp 4))`).  A fact
+  about the folded body never matches the goal's frame record; state it at the
+  evaluated body (the quoted `(:%REC ...)` frame record and the literal
+  instruction list) and hand in `(:definition step_pure/search141)` instances at
+  `k` and `k+1` (the `k+1` instance is the guard-false NIL).  The `if0`/`block`
+  chains need no such fact only because their bodies are fully literal.
+- **`(fof ($with_global pair i v))` is the pair's fof, i.e. the literal callee
+  record.**  State the frame's `fp` field as the quoted record rather than
+  `(fof z)`: the symbolic spelling unfolds to `($frame ($with_global ...))`,
+  which makes the label rule's `%size` comparison arithmetic over a symbolic
+  call and it never closes.  With the record, the size lemmas (`%size-is-
+  acl2-count`, `acl2-count-of-frame-gt-body`, `acl2-count-of-label-gt-body`)
+  discharge the guards and the frame/label lifts prove in seconds.
 - **The tail after a consumed instruction changes.**  After the testop the
   body appends to `(cddr (nthcdr 4 *body-6*))`; after the ifelse to
   `(cdddr ...)`; `rest6` itself starts *at* the testop.  Stating a result with
