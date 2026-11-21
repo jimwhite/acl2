@@ -1,6 +1,6 @@
 (in-package "MILAWA-WASM")
 
-(include-book "const-branch")
+(include-book "const-callee")
 
 ; L1, the CONST path's tail, part 4: the caller's fetch, the test, the abort
 ; ifelse and the empty block/label dissolves, then the pc bump and the
@@ -626,3 +626,103 @@
                             (b (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd (dadd pc))) (cdddr (const-tail2)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) (b2 (cons (list :label_%{%}% 0 nil (cddddr (const-tail2))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))
                  tail-gsp-label1 run-z1-pair run-z2-pair))))
 
+
+; ---------------------------------------------------------------------------
+; THE LOAD: the memory read at the run's state
+; ---------------------------------------------------------------------------
+;
+; The read (global.get 1) pushed the address (dadd pc); the load then reads
+; the word W at it under the memory hypotheses.  The step itself is proved by
+; handing in the ctxt fact AND the load's slice fact (the read phase's search
+; needs the slice to see the value).  The label-0 lift uses the generic
+; recipe; its step_pure/step_read premises need the book's `cal-load'
+; trap-search recipes -- the FREE-variable expansions of match135 /
+; search141 (`:expand ((:free (x) (step_pure/search141 11 11 11 x)))`) plus
+; the `(%tag-lo :RETURN 1 body) = 11` fact, without which the pure
+; return-label search runs away past 8M steps.
+; ---------- the load: value/hyp spelling, generic label-0 recipe ----------
+(defthm tail-load-slice2
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W)))
+           (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :const (list :i32) (dadd pc))
+                                                    (quote (:load (:i32) nil 0 (:%rec (:align . 2) (:offset . 0)))))))
+                  (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :const (list :i32) W)))))))
+(defthm tail-ld2-taglo
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (wrt::%tag-lo :RETURN 1 (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) 11))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1))))
+(defthm tail-ld2-match
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure/match135 (take 10 (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 10 x))))))
+(defthm tail-ld2-search
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure/search141 11 11 11 (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/search141 11 11 11 x)))
+           :use (tail-ld2-match))))
+(defthm tail-ld2-spure-b
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm tail-ld2-sread-b
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_read/split (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((w3t::step_read/split (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))))))))
+(defthm tail-ld2-spure-l0
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure (list (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (tail-ld2-taglo tail-ld2-search))))
+(defthm tail-ld2-sread-l0
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_read/split (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((w3t::step_read/split (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))))))))))
+(defthm tail-ld2-size-b
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (< (w3t::%size (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (w3t::%size (list (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest))))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1))))
+(defthm tail-ld2-label0
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))))))
+                       (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :label_%{%}% 0 nil (cons (list :const (list :i32) W) (cddddr (const-rest)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step zrun gset w3t::$with_global w3t::$sof w3t::$fof w3t::$s w3t::$f w3t::$store w3t::$frame w3t::$with_local frozen-store iz6 milawa-callee-frame (:executable-counterpart milawa-callee-frame) dadd w3t::$binop_ (:executable-counterpart w3t::$binop_) w3t::step_pure w3t::step_read/split)
+           :use ((:instance label-lift-general-n (z (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (z2 (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (n 0) (body (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (body2 (cons (list :const (list :i32) W) (cddddr (const-rest))))) tail-ld2-spure-b tail-ld2-sread-b tail-ld2-spure-l0
+                 tail-ld2-sread-l0 tail-ld2-size-b tail-ld2-search tail-ld2-taglo
+                 tail-ld-ctxt))))
+(defthm tail-ld2-step
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :const (list :i32) W) (cddddr (const-rest)))))))
+  :hints (("Goal" :in-theory (disable w3t::step dadd w3t::$binop_ (:executable-counterpart w3t::$binop_))
+           :expand ((w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest))))))
+           :use (tail-ld-ctxt tail-load-slice2))))
+(defthm tail-ld2-spure-body (equal (w3t::step_pure (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) nil))
+(defthm tail-ld2-sread-body
+  (equal (w3t::step_read/split (list :|%;%| z (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))) nil))
+(defthm tail-ld2-spure-label
+  (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))) nil))
+(defthm tail-ld2-sread-label
+  (equal (w3t::step_read/split (list :|%;%| z (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))))) nil))
+(defthm tail-ld2-size
+  (< (w3t::%size (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) (w3t::%size (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))))))
+(defthm tail-ld2-label0-rest
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) W) (cddddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))))
+  :hints (("Goal" :in-theory (disable w3t::step zrun gset w3t::$with_global w3t::$sof w3t::$fof w3t::$s w3t::$f w3t::$store w3t::$frame w3t::$with_local frozen-store iz6 milawa-callee-frame (:executable-counterpart milawa-callee-frame) dadd w3t::$binop_ (:executable-counterpart w3t::$binop_) dsub dmul dltu deqz)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))))
+                 (:instance (:definition w3t::step/prefix7) (w3t::%s (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) (w3t::%t9 0)
+                            (w3t::z (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (w3t::%a0 (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))))
+                 tail-ld2-label0 tail-ld2-spure-body tail-ld2-sread-body
+                 tail-ld2-spure-label tail-ld2-sread-label tail-ld2-size))))
+(defthm tail-ld2-label1
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))))
+                       (list (list :|%;%| (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))) (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) W) (cddddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step zrun gset w3t::$with_global w3t::$sof w3t::$fof w3t::$s w3t::$f w3t::$store w3t::$frame w3t::$with_local frozen-store iz6 milawa-callee-frame (:executable-counterpart milawa-callee-frame) dadd w3t::$binop_ (:executable-counterpart w3t::$binop_) dsub dmul dltu deqz)
+           :use ((:instance label-lift-general (z (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (body (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) (z2 (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (body2 (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) W) (cddddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))
+                 tail-ld2-label0-rest tail-ld2-spure-body tail-ld2-sread-body
+                 tail-ld2-spure-label tail-ld2-sread-label tail-ld2-size))))
+(defthm tail-ld2-frame
+  (implies (and (w3t::un-p (dadd pc) 32) (w3t::un-p W 32) (<= (+ (dadd pc) 4) (len bytes)) (equal (take 4 (nthcdr (dadd pc) bytes)) (mvm-word-to-bytes W))) (equal (w3t::step (list :|%;%| (list :|%;%| (w3t::$sof (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*)))))))))))))))))))) (list (list :|%;%| (list :|%;%| (w3t::$sof (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) *frozen-entry-frame*) (list (list :frame_%{%}% 1 (w3t::$fof (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (list (list :label_%{%}% 1 nil (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) W) (cddddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))))))))
+  :hints (("Goal" :in-theory (disable w3t::step zrun gset w3t::$with_global w3t::$sof w3t::$fof w3t::$s w3t::$f w3t::$store w3t::$frame w3t::$with_local frozen-store iz6 milawa-callee-frame (:executable-counterpart milawa-callee-frame) dadd w3t::$binop_ (:executable-counterpart w3t::$binop_) dsub dmul dltu deqz)
+           :use ((:instance dframe-outer-sep
+                            (s (w3t::$sof (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))))) (fp (w3t::$fof (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))))) (f *frozen-entry-frame*)
+                            (z0 (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w)))) (z1 (list :|%;%| (w3t::$sof (gset bytes sp pc clen result w)) (w3t::$fof (gset bytes sp pc clen result w))))
+                            (b (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) (dadd pc)) (cdddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))) (b2 (cons (list :label_%{%}% 0 nil (cons (list :const (list :i32) W) (cddddr (const-rest)))) (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr (cdr *ft2*))))))))))))))))
+                 tail-ld2-label1))))
