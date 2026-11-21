@@ -2092,3 +2092,335 @@
            :use ((:instance label-lift-general (z (iz6 bytes sp pc clen result)) (body (cons (list :frame_%{%}% 1 '(:%REC (:LOCALS) (:MODULE :%REC (:TYPES (:_DEF (:REC ((:SUB ((:FINAL)) NIL (:FUNC%->% ((:I32)) NIL)))) 0) (:_DEF (:REC ((:SUB ((:FINAL)) NIL (:FUNC%->% NIL ((:I32)))))) 0)) (:TAGS) (:GLOBALS 5 6 7 8 9) (:MEMS 0) (:TABLES) (:FUNCS 0 1 2 3 4 5 6 7 8 9 10 11) (:DATAS) (:ELEMS) (:EXPORTS (:%REC (:NAME 109 101 109 111 114 121) (:ADDR :MEM 0)) (:%REC (:NAME 114 101 115 101 116) (:ADDR :FUNC 5)) (:%REC (:NAME 115 116 101 112) (:ADDR :FUNC 6)) (:%REC (:NAME 115 116 97 116 117 115) (:ADDR :FUNC 7)) (:%REC (:NAME 114 101 115 117 108 116) (:ADDR :FUNC 8)) (:%REC (:NAME 112 99) (:ADDR :FUNC 9)) (:%REC (:NAME 115 112) (:ADDR :FUNC 10)) (:%REC (:NAME 99 111 100 101 95 98 97 115 101) (:ADDR :FUNC 11))))) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) (dsub pc)) (cons (list :const '(:i32) (dmul clen)) '((:RELOP (:I32) (:LT (:U))))))))) '((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (z2 (iz6 bytes sp pc clen result)) (body2 (cons (list :frame_%{%}% 1 '(:%REC (:LOCALS) (:MODULE :%REC (:TYPES (:_DEF (:REC ((:SUB ((:FINAL)) NIL (:FUNC%->% ((:I32)) NIL)))) 0) (:_DEF (:REC ((:SUB ((:FINAL)) NIL (:FUNC%->% NIL ((:I32)))))) 0)) (:TAGS) (:GLOBALS 5 6 7 8 9) (:MEMS 0) (:TABLES) (:FUNCS 0 1 2 3 4 5 6 7 8 9 10 11) (:DATAS) (:ELEMS) (:EXPORTS (:%REC (:NAME 109 101 109 111 114 121) (:ADDR :MEM 0)) (:%REC (:NAME 114 101 115 101 116) (:ADDR :FUNC 5)) (:%REC (:NAME 115 116 101 112) (:ADDR :FUNC 6)) (:%REC (:NAME 115 116 97 116 117 115) (:ADDR :FUNC 7)) (:%REC (:NAME 114 101 115 117 108 116) (:ADDR :FUNC 8)) (:%REC (:NAME 112 99) (:ADDR :FUNC 9)) (:%REC (:NAME 115 112) (:ADDR :FUNC 10)) (:%REC (:NAME 99 111 100 101 95 98 97 115 101) (:ADDR :FUNC 11))))) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) (dltu (dsub pc) (dmul clen))) nil)))) '((:TESTOP (:I32) (:EQZ)) (:IFELSE (:_RESULT NIL) ((:CALL 4) (:RETURN)) NIL) (:GLOBAL.GET 1) (:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))))
 
 
+
+; ---------------------------------------------------------------------------
+; THE LATER TIERS: load, local.set 1, the second read, the add, the write,
+; and the local.get -- each lifted at label 1, with the store evolving.
+;
+; Two new pieces of machinery are needed here.
+;
+; The read phase.  For a lone label, the step_read/split dispatcher's label
+; rules are the only ones whose body searches survive the shape checks: the
+; return_call_ref-label rule searches the body for :RETURN_CALL_REF, and the
+; throw_ref-label rule needs a two-element body.  read-on-a-lone-label-general
+; takes the first search as a hypothesis and the second failure as the
+; premise (len != 2), and reduces the whole phase to nil.  Per position the
+; search is nil because %tag-lo returns (len body)+1 when the tag is absent,
+; which is above the upper bound; the taglo- fact records that value and the
+; rsearch- fact the (concrete-bound) nil result.
+;
+; The lbl proofs hand the phase facts in with :use rather than relying on
+; backchaining through their hypotheses: an equality that is a literal of the
+; clause composes by lockstep normalization, which is immune to the rule
+; ordering that made the rewrite-rule route fragile.
+;
+; The store evolves: the local.set and the global.set change z, so their
+; facts are stated at the concrete z of the chain (and the book's generic-z
+; ctxt facts are instantiated explicitly).  The lset1 result body starts at
+; (cddr (cddddr const-rest)): the local.set instruction itself is consumed.
+
+(defthm read-on-a-lone-label-general
+  (implies (and (true-listp body)
+                (not (equal (acl2::len body) 2))
+                (equal (w3t::step_read/split/search60
+                        (w3t::%tag-lo :RETURN_CALL_REF 1 body)
+                        (w3t::%tag-lo :RETURN_CALL_REF 1 body)
+                        (acl2::len body)
+                        body)
+                       nil))
+           (equal (w3t::step_read/split
+                   (list :|%;%| z (list (list :label_%{%}% n is0 body))))
+                  nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% n is0 body)))))))))
+
+(defthm spure-cal-load-body
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-cal-load-body
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_read/split (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-cal-load-body
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (list (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (dconst-load-ctxt))))
+(defthm match-cal-load-body
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure/match135 (take 10 (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 10 x))))))
+(defthm search-cal-load-body
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure/search141 11 11 11 (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/search141 11 11 11 x)))
+           :use (match-cal-load-body))))
+(defthm spure-cal-load-label
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-cal-load-body))))
+(defthm taglo-cal-load
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) 12)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-cal-load
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_read/split/search60 12 12 11 (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-cal-load-label
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step_read/split (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (iz6 bytes sp pc clen result)) (n 1) (is0 nil) (body (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 rsearch-cal-load))))
+(defthm lbl-dconst-cal-load-lit
+  (implies (and (w3t::un-p pc 32) (w3t::un-p W 32) (<= (+ pc 4) (len bytes)) (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes W))) (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) (list (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::un-p mvm-word-to-bytes dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :use ((:instance label-lift-general (z (iz6 bytes sp pc clen result)) (body (cons (list :const '(:i32) pc) '((:LOAD (:I32) NIL 0 (:%REC (:ALIGN . 2) (:OFFSET . 0))) (:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (z2 (iz6 bytes sp pc clen result)) (body2 (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 spure-cal-load-body sread-cal-load-body ctxt-cal-load-body
+                 spure-cal-load-label sread-cal-load-label))))
+
+(defthm spure-cal-lset1-body
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step_pure (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-cal-lset1-body
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step_read/split (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-cal-lset1-body
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (iz6 bytes sp pc clen result) (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (list (list :|%;%| (w3t::$with_local (iz6 bytes sp pc clen result) 1 (list :const (list :i32) W)) '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use ((:instance dconst-lset1-ctxt (z (iz6 bytes sp pc clen result)))))))
+(defthm match-cal-lset1-body
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step_pure/match135 (take 9 (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 9 x))))))
+(defthm search-cal-lset1-body
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step_pure/search141 10 10 10 (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/search141 10 10 10 x)))
+           :use (match-cal-lset1-body))))
+(defthm spure-cal-lset1-label
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-cal-lset1-body))))
+(defthm taglo-cal-lset1
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) 11)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-cal-lset1
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step_read/split/search60 11 11 10 (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-cal-lset1-label
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step_read/split (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (iz6 bytes sp pc clen result)) (n 1) (is0 nil) (body (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 rsearch-cal-lset1))))
+(defthm lbl-dconst-cal-lset1-lit
+  (implies (and (unsigned-byte-p 32 W)) (equal (w3t::step (list :|%;%| (iz6 bytes sp pc clen result) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) (list (list :|%;%| (w3t::$with_local (iz6 bytes sp pc clen result) 1 (list :const (list :i32) W)) (list (list :label_%{%}% 1 nil '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::un-p mvm-word-to-bytes dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :use ((:instance label-lift-general (z (iz6 bytes sp pc clen result)) (body (cons (list :const '(:i32) W) '((:LOCAL.SET 1) (:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (z2 (w3t::$with_local (iz6 bytes sp pc clen result) 1 (list :const (list :i32) W))) (body2 '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))
+                 spure-cal-lset1-body sread-cal-lset1-body ctxt-cal-lset1-body
+                 spure-cal-lset1-label sread-cal-lset1-label))))
+
+(defthm spure-cal-get1-body
+  (equal (w3t::step_pure '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-cal-get1-body
+  (equal (w3t::step_read/split (list :|%;%| (zlset1 bytes sp pc clen result W) '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-cal-get1-body
+  (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zlset1 bytes sp pc clen result W) '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (list (list :|%;%| (zlset1 bytes sp pc clen result W) (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (dconst-get1-ctxt))))
+(defthm match-cal-get1-body
+  (equal (w3t::step_pure/match135 (take 7 '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 7 x))))))
+(defthm search-cal-get1-body
+  (equal (w3t::step_pure/search141 8 8 8 '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/search141 8 8 8 x)))
+           :use (match-cal-get1-body))))
+(defthm spure-cal-get1-label
+  (equal (w3t::step_pure (list (list :label_%{%}% 1 nil '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-cal-get1-body))))
+(defthm taglo-cal-get1
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) 9)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-cal-get1
+  (equal (w3t::step_read/split/search60 9 9 8 '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-cal-get1-label
+  (equal (w3t::step_read/split (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) nil)
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zlset1 bytes sp pc clen result W)) (n 1) (is0 nil) (body '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))
+                 rsearch-cal-get1))))
+(defthm lbl-dconst-cal-get1-lit
+  (equal (w3t::step (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) (list (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::un-p mvm-word-to-bytes dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :use ((:instance label-lift-general (z (zlset1 bytes sp pc clen result W)) (body '((:GLOBAL.GET 1) (:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) (z2 (zlset1 bytes sp pc clen result W)) (body2 (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 spure-cal-get1-body sread-cal-get1-body ctxt-cal-get1-body
+                 spure-cal-get1-label sread-cal-get1-label))))
+
+(defthm spure-cal-add-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-cal-add-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_read/split (list :|%;%| (zlset1 bytes sp pc clen result W) (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-cal-add-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zlset1 bytes sp pc clen result W) (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (list (list :|%;%| (zlset1 bytes sp pc clen result W) (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use (dconst-add-ctxt))))
+(defthm match-cal-add-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure/match135 (take 7 (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 7 x))))))
+(defthm search-cal-add-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure/search141 8 8 8 (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/search141 8 8 8 x)))
+           :use (match-cal-add-body))))
+(defthm spure-cal-add-label
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-cal-add-body))))
+(defthm taglo-cal-add
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) 9)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-cal-add
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_read/split/search60 9 9 8 (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-cal-add-label
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_read/split (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zlset1 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 rsearch-cal-add))))
+(defthm lbl-dconst-cal-add-lit
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) (list (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::un-p mvm-word-to-bytes dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :use ((:instance label-lift-general (z (zlset1 bytes sp pc clen result W)) (body (cons (list :const '(:i32) pc) '((:CONST (:I32) 4) (:BINOP (:I32) (:ADD)) (:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (z2 (zlset1 bytes sp pc clen result W)) (body2 (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 spure-cal-add-body sread-cal-add-body ctxt-cal-add-body
+                 spure-cal-add-label sread-cal-add-label))))
+
+(defthm spure-cal-gset-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-cal-gset-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_read/split (list :|%;%| (zlset1 bytes sp pc clen result W) (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-cal-gset-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (zlset1 bytes sp pc clen result W) (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) (list (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use ((:instance dconst-gset-ctxt (z (zlset1 bytes sp pc clen result W)))))))
+(defthm match-cal-gset-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure/match135 (take 5 (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 5 x))))))
+(defthm search-cal-gset-body
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure/search141 6 6 6 (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/search141 6 6 6 x)))
+           :use (match-cal-gset-body))))
+(defthm spure-cal-gset-label
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-cal-gset-body))))
+(defthm taglo-cal-gset
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) 7)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-cal-gset
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_read/split/search60 7 7 6 (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-cal-gset-label
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step_read/split (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (zlset1 bytes sp pc clen result W)) (n 1) (is0 nil) (body (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 rsearch-cal-gset))))
+(defthm lbl-dconst-cal-gset-lit
+  (implies (and (unsigned-byte-p 32 pc)) (equal (w3t::step (list :|%;%| (zlset1 bytes sp pc clen result W) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))) (list (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) (list (list :label_%{%}% 1 nil '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::un-p mvm-word-to-bytes dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :use ((:instance label-lift-general (z (zlset1 bytes sp pc clen result W)) (body (cons (list :const '(:i32) (dadd pc)) '((:GLOBAL.SET 1) (:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (z2 (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))) (body2 '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))
+                 spure-cal-gset-body sread-cal-gset-body ctxt-cal-gset-body
+                 spure-cal-gset-label sread-cal-gset-label))))
+
+(defthm spure-cal-lget-body
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step_pure '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x))))))
+(defthm sread-cal-lget-body
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step_read/split (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_read/split x))))))
+(defthm ctxt-cal-lget-body
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step/r-ctxt-instrs (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) (list (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) (cons (list :const '(:i32) W) '((:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)
+           :use ((:instance dconst-lget-ctxt (z (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))))))))
+(defthm match-cal-lget-body
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step_pure/match135 (take 3 '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/match135 x))
+                    (:free (x) (take 3 x))))))
+(defthm search-cal-lget-body
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step_pure/search141 4 4 4 '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure/search141 4 4 4 x)))
+           :use (match-cal-lget-body))))
+(defthm spure-cal-lget-label
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step_pure (list (list :label_%{%}% 1 nil '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (x) (w3t::step_pure x)))
+           :use (search-cal-lget-body))))
+(defthm taglo-cal-lget
+  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) 5)
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))
+(defthm rsearch-cal-lget
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step_read/split/search60 5 5 4 '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))
+(defthm sread-cal-lget-label
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step_read/split (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) (list (list :label_%{%}% 1 nil '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)
+           :use ((:instance read-on-a-lone-label-general
+                  (z (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))) (n 1) (is0 nil) (body '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))))
+                 rsearch-cal-lget))))
+(defthm lbl-dconst-cal-lget-lit
+  (implies (and (equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))) (equal (w3t::step (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) (list (list :label_%{%}% 1 nil '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN)))))) (list (list :|%;%| (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) (list (list :label_%{%}% 1 nil (cons (list :const '(:i32) W) '((:CALL 0) (:CONST (:I32) 1) (:RETURN)))))))))
+  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::un-p mvm-word-to-bytes dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)
+           :use ((:instance label-lift-general (z (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))) (body '((:LOCAL.GET 1) (:CALL 0) (:CONST (:I32) 1) (:RETURN))) (z2 (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))) (body2 (cons (list :const '(:i32) W) '((:CALL 0) (:CONST (:I32) 1) (:RETURN)))))
+                 spure-cal-lget-body sread-cal-lget-body ctxt-cal-lget-body
+                 spure-cal-lget-label sread-cal-lget-label))))
+
+

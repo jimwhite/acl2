@@ -194,10 +194,11 @@ LATER_POSITIONS = [
          z="(iz6 bytes sp pc clen result)", z2="(iz6 bytes sp pc clen result)",
          l0=cons(const("pc"), TAIL13_XS[3:]), l1=cons(const("W"), TAIL13_XS[4:]),
          k=11, take=10),
-    dict(name="cal-lset1", ctxt="dconst-lset1-ctxt",
+    dict(name="cal-lset1", ctxt="dconst-lset1-ctxt", generic_z=True,
          hyps=["(unsigned-byte-p 32 W)"],
-         z="z", z2="(w3t::$with_local z 1 (list :const (list :i32) W))",
-         l0=cons(const("W"), TAIL13_XS[4:]), l1=lit(TAIL13_XS[4:]),
+         z="(iz6 bytes sp pc clen result)",
+         z2="(w3t::$with_local (iz6 bytes sp pc clen result) 1 (list :const (list :i32) W))",
+         l0=cons(const("W"), TAIL13_XS[4:]), l1=lit(TAIL13_XS[5:]),
          k=10, take=9),
     dict(name="cal-get1", ctxt="dconst-get1-ctxt", hyps=[],
          z="(zlset1 bytes sp pc clen result W)", z2="(zlset1 bytes sp pc clen result W)",
@@ -208,14 +209,16 @@ LATER_POSITIONS = [
          z="(zlset1 bytes sp pc clen result W)", z2="(zlset1 bytes sp pc clen result W)",
          l0=cons(const("pc"), TAIL13_XS[6:]), l1=cons(const("(dadd pc)"), TAIL13_XS[8:]),
          k=8, take=7),
-    dict(name="cal-gset", ctxt="dconst-gset-ctxt",
+    dict(name="cal-gset", ctxt="dconst-gset-ctxt", generic_z=True,
          hyps=["(unsigned-byte-p 32 pc)"],
-         z="z", z2="(w3t::$with_global z 1 (list :const (list :i32) (dadd pc)))",
+         z="(zlset1 bytes sp pc clen result W)",
+         z2="(w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))",
          l0=cons(const("(dadd pc)"), TAIL13_XS[8:]), l1=lit(TAIL13_XS[9:]),
          k=6, take=5),
-    dict(name="cal-lget", ctxt="dconst-lget-ctxt",
-         hyps=["(equal (w3t::$local z 1) (list (list :const (list :i32) W)))"],
-         z="z", z2="z",
+    dict(name="cal-lget", ctxt="dconst-lget-ctxt", generic_z=True,
+         hyps=["(equal (w3t::$local (w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc))) 1) (list (list :const (list :i32) W)))"],
+         z="(w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))",
+         z2="(w3t::$with_global (zlset1 bytes sp pc clen result W) 1 (list :const (list :i32) (dadd pc)))",
          l0=lit(TAIL13_XS[9:]), l1=cons(const("W"), TAIL13_XS[10:]),
          k=4, take=3),
 ]
@@ -237,7 +240,10 @@ def emit_later(p):
     out.append(f"(defthm ctxt-{n}-body")
     out.append(f"  {implies(h, f'(equal (w3t::step/r-ctxt-instrs (list :|%;%| {z} {l0})) (list (list :|%;%| {z2} {l1})))')}")
     out.append('  :hints (("Goal" :in-theory (disable w3t::step/r-ctxt-instrs)')
-    out.append(f"           :use ({c}))))")
+    if p.get("generic_z"):
+        out.append(f"           :use ((:instance {c} (z {z}))))))")
+    else:
+        out.append(f"           :use ({c}))))")
     out.append(f"(defthm match-{n}-body")
     out.append(f"  {implies(h, f'(equal (w3t::step_pure/match135 (take {tk} {l0})) nil)')}")
     out.append(f'  :hints (("Goal" :in-theory {H}')
@@ -253,27 +259,53 @@ def emit_later(p):
     out.append(f'  :hints (("Goal" :in-theory {H}')
     out.append('           :expand ((:free (x) (w3t::step_pure x)))')
     out.append(f"           :use (search-{n}-body))))")
+    out.append(f"(defthm taglo-{n}")
+    out.append(f"  (equal (w3t::%tag-lo :RETURN_CALL_REF 1 {l0}) {k+1})")
+    out.append(f'  :hints (("Goal" :in-theory {H}')
+    out.append('           :expand ((:free (a b c d) (w3t::%tag-lo1 a b c d))))))')
     out.append(f"(defthm rsearch-{n}")
-    out.append(f"  {implies(h, f'(equal (w3t::step_read/split/search60 (w3t::%tag-lo :RETURN_CALL_REF 1 {l0}) (w3t::%tag-lo :RETURN_CALL_REF 1 {l0}) (acl2::len {l0}) {l0}) nil)')}")
-    out.append(f'  :hints (("Goal" :in-theory {H[:-1]} wrt::%tag-lo)')
+    out.append(f"  {implies(h, f'(equal (w3t::step_read/split/search60 {k+1} {k+1} {k} {l0}) nil)')}")
+    out.append(f'  :hints (("Goal" :in-theory {H}')
     out.append('           :expand ((:free (a b c x) (w3t::step_read/split/search60 a b c x))))))')
     out.append(f"(defthm sread-{n}-label")
     out.append(f"  {implies(h, f'(equal (w3t::step_read/split (list :|%;%| {z} (list (list :label_%{{%}}% 1 nil {l0})))) nil)')}")
-    out.append('  :hints (("Goal" :in-theory (disable w3t::step_read/split wrt::%tag-lo w3t::un-p mvm-word-to-bytes)')
-    out.append(f'           :use ((:instance (:definition w3t::step_read/split)')
-    out.append(f'                  (w3t::%a0 (list :|%;%| {z} (list (list :label_%{{%}}% 1 nil {l0})))))')
+    out.append('  :hints (("Goal" :in-theory (disable w3t::step_read/split w3t::un-p mvm-word-to-bytes)')
+    out.append('           :use ((:instance read-on-a-lone-label-general')
+    out.append(f'                  (z {z}) (n 1) (is0 nil) (body {l0}))')
     out.append(f'                 rsearch-{n}))))')
     out.append(f"(defthm lbl-dconst-{n}-lit")
     out.append(f"  {implies(h, f'(equal (w3t::step (list :|%;%| {z} (list (list :label_%{{%}}% 1 nil {l0})))) (list (list :|%;%| {z2} (list (list :label_%{{%}}% 1 nil {l1})))))')}")
     out.append('  :hints (("Goal" :in-theory (disable w3t::step_pure w3t::step_read/split w3t::step/r-ctxt-instrs w3t::un-p mvm-word-to-bytes dsub dmul dltu deqz w3t::$binop_ w3t::$nbytes_ w3t::$with_mem w3t::$with_global w3t::$with_local frozen-store iz6 milawa-func-body dconst zlset1)')
-    out.append(f"           :use ((:instance label-lift-general (z {z}) (body {l0}) (z2 {z2}) (body2 {l1}))))))")
+    out.append(f"           :use ((:instance label-lift-general (z {z}) (body {l0}) (z2 {z2}) (body2 {l1}))")
+    out.append(f"                 spure-{n}-body sread-{n}-body ctxt-{n}-body")
+    out.append(f"                 spure-{n}-label sread-{n}-label))))")
     return "\n".join(out)
+
+
+READ_ON_A_LONE_LABEL_GENERAL = """(defthm read-on-a-lone-label-general
+  (implies (and (true-listp body)
+                (not (equal (acl2::len body) 2))
+                (equal (w3t::step_read/split/search60
+                        (w3t::%tag-lo :RETURN_CALL_REF 1 body)
+                        (w3t::%tag-lo :RETURN_CALL_REF 1 body)
+                        (acl2::len body)
+                        body)
+                       nil))
+           (equal (w3t::step_read/split
+                   (list :|%;%| z (list (list :label_%{%}% n is0 body))))
+                  nil))
+  :hints (("Goal" :in-theory (disable w3t::step_read/split)
+           :use ((:instance (:definition w3t::step_read/split)
+                            (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% n is0 body)))))))))"""
 
 
 def main():
     import sys
     later = "--later" in sys.argv
     print("; Generated by harness/gen_compose.py -- do not edit by hand.")
+    if later:
+        print(READ_ON_A_LONE_LABEL_GENERAL)
+        print()
     for p in (LATER_POSITIONS if later else POSITIONS):
         print(emit_later(p) if later else emit(p))
         print()
