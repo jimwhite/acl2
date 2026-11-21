@@ -97,6 +97,15 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   label step itself into the `ctxt-instrs` result plus a separate step-bridge
   fact (the `dstep-phases-gen` route) so the label rule's guard is never asked
   to compute sizes at all.
+- **A chain instantiates by exact-text substitution.**  The pop's return
+  lifts were generated from the load's certified chain by replacing the
+  literal term strings (the frame with its load body -> the return's frame with
+  the popped value, the stepped frame -> the dissolved one).  The substitution
+  must match the ACL2 printer's exact rendering: the record is
+  `(quote (:%REC ...))`, never `'(:%REC ...)`, and an instruction inside a cons
+  is `(quote (:load ...))` -- a missed quote makes the replace a silent no-op.
+  Rename the inner-fact references first (`p2hload-ctxt` -> the stage's
+  ctxt fact), then the fact-name prefixes.
 - **A disjunctive hypothesis is weak in clausification, and its TERMS are
   rewritten.**  Carrying a context rule's size condition as an `or` hypothesis
   splits into the clauses `(or (not A) ...)` and `(or (not B) ...)`, so the
