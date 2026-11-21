@@ -1276,6 +1276,91 @@ The discipline that follows: **before believing a per-position lemma, walk the
 position and check the inner step the lemma assumes**.  Admiring that it proved is
 how a vacuous lemma survives.
 
+## The CONST path's front, and the run composition's recipe
+
+The CONST path's run is now composed from the entry configuration through the
+CONST test's block: **34 steps in two advance lemmas** in `const.lisp`
+(`front-advance-19` and `front2-advance-15`, each stated with a fuel
+remainder R so the two chain):
+
+    steps/%fuel (+ 19 r) (mvm-abs-abstract bytes sp pc clen 1 result)
+      = steps/%fuel (+ 15 r) (frozen-body-cfg ... (dvl-after-ifelse nil))
+      = steps/%fuel r <the label-1 body with (label 0 nil TAIL13) :: rest13>
+
+The clock matches `abs.lisp`'s `abs-const-67`: 34 front steps + 30 tail steps
++ the frame rule's dissolve + the frame's return = 66, and the 67th discovers
+the stopped configuration.
+
+**The recipe that made this cheap**, after several false starts, is three
+layers.  (1) A *structural* lemma with the configurations as variables --
+`steps-structural-N`: given `(step c_i) = (list c_{i+1})` for i < N, prove
+`(steps/%fuel (+ N r) c0) = (steps/%fuel r cN)` -- proved once per N with N
+instances of `steps-fuel-succ-of-a-step` and the fuel n's written `(+ k r)`.
+It costs ~3,000 steps and does not care how big the configurations are.
+(2) The *instantiation* at the real configurations with the books' step facts
+discharging the antecedents; every spelling builder (`frozen-body-cfg`,
+`dcfg`, `dfull`, `dbody*`, `rbody-*`, `ibody`, `iz6`, ...) and every semantic
+function (`$sof`, `$fof`, `$with_global`, `dsub`, ...) is DISABLED so the
+terms stay as written, and `(:executable-counterpart milawa-callee-frame)` is
+disabled too -- disabling a definition does not disable its counterpart, and
+an evaluated frame record loses every rewrite match.  (3) Bridges where the
+books spell the same term differently: running's `(ibody (ibody3-after-1 pc))`
+vs dispatch's `(dfull (dbody0 pc))`; `dcfg` vs `frozen-body-cfg`+`dfull`;
+`iz6` vs its explicit list; and `ft-bridge` for the in-code ifelse's empty
+else vs the fetch's first body.  A bridge is an `equal` theorem proved once
+with the builders ENABLED; in the composition the builders are disabled and
+the bridge fires as a rewrite rule.
+
+**The label/frame dissolves are ladders.**  `douter-label-dissolve` and its
+frame twin are implications whose hypotheses are the label-1 steps, whose
+hypotheses are the body-level steps.  Chaining them with a bare `:use` fails
+(the prover re-derives the inner steps); walking the ladder explicitly -- one
+lemma per rung, each by `:use (the fact, the rung below)` -- costs 400-2,400
+steps per rung.  The rungs are `dframe3-dissolve-label` -> `dbody6-label-
+dissolve` -> `dlabel6-label-dissolve` -> `douter-label-dissolve` (same for
+the frame), with the first rung a fact of the book.
+
+**Four traps, all measured.**
+- `:%;%` is a symbol whose name starts with a semicolon: written without the
+  bars (`:%;%`) in a generated script it becomes `:%` followed by a comment,
+  the form is truncated, and ACL2 reports `Unexpected end of file` -- a
+  parse error that looks like a proof error.  Generated Lisp must always
+  print `:|%;%|`.
+- `(steps/%fuel 0 c)` is `nil`, not `(list c)` (the fuel-zero clause answers
+  *nil*, which is what the check's `(null (steps/%fuel s ...))` reads).  A
+  "run fact" for a non-stuck configuration must be stated with a fuel
+  remainder; a concrete fuel only works when the last step is the stuck one.
+- The frame rule's measure `(or (< a b) (and (equal a b) (< c d)))` is
+  decided by giving the rewriter the *normalized* disjunct as a rewrite rule
+  (`check31-ground`: `%size` expands to `acl2-count`, so the counts are
+  literals and the inequality is linear); the same fact stated with `%size`,
+  or as a hypothesis, never fires.
+- The expected result of a step must carry the configuration's leading
+  `:%;%`: a missing keyword makes the equality false, ACL2 reduces the goal
+  to NIL, and the residual reads like a failing arithmetic side condition.
+
+**What remains for the run fact**: the tail's 30 steps at the run's states.
+The front ends at
+
+    (:%;% (:%;% ($sof gset) *frozen-entry-frame*)
+          ((:frame 1 ($fof gset) ((:label 1 nil ((:label 0 nil TAIL13) :: rest13))))))
+
+and the run's machine steps for the tail are *not* the const chain's: the
+chain's body-level facts are at `iz6` (the frozen store, the zero-local
+callee frame), while the run's inner state has `global 1 := pc + 4` (the
+`pc` substitution, which the chain's facts accept as a schema instantiation)
+and the callee frame's **local 0 = the opcode** (the front's `local.set 0`).
+The label structure also differs: the run has a `label 0` around `TAIL13`
+with the rest of the function after it, inside the function's `label 1`; the
+chain's facts are label-1 lifts with no label 0 and no rest.  So the tail
+needs (a) a generic `ctxt-instrs`-slice lemma for a `label 0` followed by a
+rest, (b) the body-level tail facts re-derived at the local-0-written frame
+(the tail never reads local 0, but the terms must match), and (c) the label-1
+and frame lifts, which `label-lift-general` and `dframe-outer-sep` already
+provide given the premises.  The local-0 variant is the part to build as a
+generator: the const chain's recipes (slice, ctxt, step, label, frame) apply
+unchanged; only the frame's local-0 field and the `pc` argument change.
+
 ## Reproducing
 
 ```sh
