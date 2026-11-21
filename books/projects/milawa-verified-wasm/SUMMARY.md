@@ -1418,6 +1418,58 @@ the hint discipline differs from the front's:
   template; they use the same instance and the inner fact, so the difference
   is in the z/frame spelling or in which builder is left enabled).
 
+## The tail's per-step template (after the first step landed)
+
+`wasm3/const-tail.lisp` (certified, 24.7s) builds the run's first tail step at
+the run's own states and fixes the per-step template:
+
+    body-level slice/ctxt/step   at the run's state
+      -> lone label 0            (the book's dlabel6 hint shape)
+        -> label-0/rest ctxt     (the ctxt-instrs slice with rest13 after it)
+          -> label-1 lift        (LABEL-LIFT-GENERAL, premises handed in)
+            -> frame rule        (the run's outer step)
+
+Recipes measured while extending it to the second step (the call entry):
+
+- **Store/frame-touching slices** prove with the state as an OPAQUE function
+  call (`zrun`) plus field bridges stated at the rule's OWN projections:
+  `(%get-field ($s (zrun ...)) :funcs) = <the artifact's>` and
+  `(%get-field (%get-field ($f (zrun ...)) :module) :funcs) = (0 1 ... 11)`.
+  With those, `tail-entry-slice` (the call_ref-func rule at the run's state)
+  is 111k steps; plain evaluation unfolds the store into its record and the
+  rule never sees its fields.
+- **`dadd`/$BINOP_ must stay opaque** in every rung: enabled, the store's
+  global 1 unfolds to `(+ 4 pc (- (* 4294967296 (numerator (+ 1/1073741824
+  (* 1/4294967296 pc))))))` and the `acl2-count` measure checks become the
+  rational goals the fetch book already documented.
+- **The ctxt recipes replay at the run's state** with the definition
+  instances and the run's slice fact: `tail-entry-ctxt` proves with the
+  book's `dconst-tail-entry-ctxt` hint shape (ctxt-instrs/prefix7/search21
+  instances, t9 = 1) plus `tail-entry-slice`.
+- **The lone label 0** uses the book's `dlabel6` hint shape exactly: `step`
+  ENABLED, only `step/r-ctxt-instrs` disabled, the `step/r-ctxt-label`
+  definition instance and the inner STEP fact handed in.  `:expand` of
+  `step`, or disabling `step`, stalls it.
+- **The label-0/rest ctxt slice** is the book's `dctxt` recipe, with every
+  state constructor disabled; the premises (the two `step_pure` and the two
+  `step_read` refusals and the size check) are five evaluable facts.
+- **The label-1 lift** is `label-lift-general` with those premises.
+
+Open at this writing: the FRAME rung for the second step.  For the first
+step (the label 0's body a quoted instruction list) it proves with
+`dframe-outer-sep` + the label-1 fact at the `(list :%;% ($sof (gset ...))
+($fof (gset ...)))` spelling and only `step` disabled.  For the second step
+(the label 0's body a `cons` term) the same hint still unfolds the state and
+the size/shape premises pick up the store's arithmetic.  The next attempt
+should state the label-1 fact at the frame's instance spelling (a
+`-label1-lit` respelling exists and is being tuned) or prove the frame with
+the state's fields as hypotheses, the way the slices were done.
+
+The body-level vocabulary is now all in place for the remaining 28 steps:
+each needs its slice fact (plain evaluation at the run's state where the
+rule's reads resolve, or the opaque+bridge recipe where they do not), the
+book's ctxt recipe, and the template's rungs.
+
 ## Reproducing
 
 ```sh
