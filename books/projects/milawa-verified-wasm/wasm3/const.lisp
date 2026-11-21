@@ -135,3 +135,50 @@
 
 (defthm dconst-elabel-step (equal (w3t::step (icfg (iz6 bytes sp pc clen result) (cons (quote (:LABEL_%{%}% 0 NIL NIL)) (cddr (const-rest))))) (list (icfg (iz6 bytes sp pc clen result) (cddr (const-rest))))) :hints (("Goal" :in-theory (disable w3t::step dsub dmul dltu deqz) :expand ((w3t::step (icfg (iz6 bytes sp pc clen result) (cons (quote (:LABEL_%{%}% 0 NIL NIL)) (cddr (const-rest)))))) :use (dconst-elabel))))
 
+; ---------------------------------------------------------------------------
+; The immediate read: (global.get 1) pushes pc
+; ---------------------------------------------------------------------------
+;
+; With the empty block/label dissolved, the tail's head is (global.get 1):
+; the runtime's global 1 is the pc (the absolute code address), so the read
+; pushes (const pc).  The read's slice and its ctxt step at the tail's
+; continuation are the first two facts; the load at pc is next.
+
+
+(defthm dconst-read-slice
+  (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                          (list (list :global.get 1))))
+         (list (icfg (iz6 bytes sp pc clen result)
+                     (list (list :const (list :i32) pc))))))
+
+(defthm dconst-read-ctxt
+  (equal (w3t::step/r-ctxt-instrs
+          (icfg (iz6 bytes sp pc clen result)
+                (cons (list :global.get 1) (cddr (const-rest)))))
+         (list (icfg (iz6 bytes sp pc clen result)
+                     (cons (list :const (list :i32) pc) (cddr (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step w3t::step/r-ctxt-instrs)
+           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (cons (list :global.get 1) (cddr (const-rest))))))
+                 (:instance (:definition w3t::step/prefix7)
+                            (w3t::%s (cons (list :global.get 1) (cddr (const-rest)))))
+                 (:instance (:definition w3t::step/search21)
+                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
+                            (w3t::%t6 (cons (list :global.get 1) (cddr (const-rest))))
+                            (w3t::%t9 0)
+                            (w3t::z (iz6 bytes sp pc clen result))
+                            (w3t::%a0 (icfg (iz6 bytes sp pc clen result)
+                                            (cons (list :global.get 1) (cddr (const-rest))))))
+                 dconst-read-slice))))
+
+(defthm dconst-read-step
+  (equal (w3t::step (icfg (iz6 bytes sp pc clen result)
+                          (cons (list :global.get 1) (cddr (const-rest)))))
+         (list (icfg (iz6 bytes sp pc clen result)
+                     (cons (list :const (list :i32) pc) (cddr (const-rest))))))
+  :hints (("Goal" :in-theory (disable w3t::step)
+           :expand ((w3t::step (icfg (iz6 bytes sp pc clen result)
+                                     (cons (list :global.get 1) (cddr (const-rest))))))
+           :use (dconst-read-ctxt))))
+
