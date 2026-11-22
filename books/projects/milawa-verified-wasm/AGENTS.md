@@ -93,18 +93,22 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   `milawa-func-body`; `:use` the isolated step fact, and add
   `we::not-exit-body-p-of-vals-admin-term-rest` for the admin lift's
   `exit-body-p` hypothesis.
-- `wasm3/engine-flat.lisp` exports `engine-ctxt-from-values-instr-step`: a
-  value prefix before a single instruction, with `milawa-values-p` (project
-  vocabulary; the local `milawa-values-p-is-we` bridge supplies `we::vals-p`
-  to the engine).  It cut `const.lisp`'s `dconst-call0-expand-ctxt` from
-  **3,230,608 to 29,337** prover steps.  The 39.5M `dconst-call0-entry-ctxt`
-  is not covered: its redex is the two-instruction `ref.func_addr` +
-  `call_ref` pair with the const as operand, so the prefix contains a
-  non-value and `flat-search`'s `vals-p` does not apply; a generic
-  multi-instruction slice lemma timed out (400 s).  `const.lisp`'s
-  `link-*` chain (30 facts, up to 24M) uses `dframe-outer-sep` with the same
-  shape as the engine frame lift, but the `zo*`/`sz*` state-spelling
-  alignment was not yet achieved.
+- `wasm3/engine-flat.lisp` exports three context rungs:
+  `engine-ctxt-from-values-instr-step` (a value prefix before one
+  instruction; `milawa-values-p` + the local `milawa-values-p-is-we` bridge),
+  `engine-ctxt-two-values-instr-step` (two values then one instruction), and
+  `engine-ctxt-pair-instr-step` (a value then a two-instruction redex, with a
+  local `flat-search2` + two-instruction `%size` layer).  The first cut
+  `dconst-call0-expand-ctxt` from **3,230,608 to 29,337**; the second cut
+  `dconst-call0-entry-ctxt` from **39,463,918 to 266,356** (the const and
+  `ref.func_addr` are both values; the `call_ref` is the instruction).  The
+  pair lemma is not needed for the call0 entry but covers the case where the
+  second element is not a value; its bridge required the take-form
+  `%size-of-operands-and-two-instr`, the append-form linear corollaries, and
+  `:do-not-induct` (the symbolic search otherwise loops).  `const.lisp`
+  453.8M -> **414.6M**.  The `link-*` chain (30 facts, up to 24M) remains on
+  `dframe-outer-sep`: its `zo*`/`sz*` state spellings did not align with the
+  engine frame lift in the attempted prototype.
 - `wasm3/const-fetch.lisp` has the same ten-position shape and now runs all
   ten `label0-rest` rungs through `engine-ctxt-from-instr-step`
   (1.0M-6.3M -> 1.2k-18k steps; book 32.2M -> 16.8M).  Four frames (blk, elb,

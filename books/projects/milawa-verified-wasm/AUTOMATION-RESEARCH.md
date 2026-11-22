@@ -941,24 +941,24 @@ statement that mentions a WE function from the local include).  It cut
 `dconst-call0-expand-ctxt` from **3,230,608 to 29,337** prover steps
 (`const.lisp` 457.0M -> 453.8M; the book certifies in ~14 min).
 
-`dconst-call0-entry-ctxt` (39,463,918 steps) is **not** covered.  Its redex
-is the two-instruction `(ref.func_addr 0)` + `call_ref` pair with the const
-as the operand, so the "values prefix" would contain a non-value and
-`flat-search`'s `(vals-p x)` fails.  The engine's flat abstraction commits to
-a single instruction `i` after the values; the call entry needs a
-multi-instruction slice search.  A generic one-value/two-instruction slice
-lemma was attempted with the search21 definitions and exceeded the 400 s
-budget.  Three further attempts (500M and 1B step limits; explicit `%size`
-hypotheses for the three slices; `step/prefix7` disabled so the hypothesis
-supplies the start index) all stalled on `Goal''` for 10-20 minutes with a
-2 GiB GC loop: the symbolic search guards do not reduce the way the concrete
-family proof's do.  The direct-expansion route is abandoned.  A pair-level
-`flat-search2` function was then defined and its `step/search21` bridge
-attempted by the same induction as the engine's 488-step
-`step/search21-becomes-flat-search`; that run also stalled (no certificate
-after 15+ minutes).  Closing this needs the full engine treatment: tailored
-`%size` lemmas for the two-instruction slice and the match/val-star analysis,
-i.e., a real extension of the engine's flat layer, not a wrapper.  `const.lisp`'s `link-*` chain (30 facts, up to 24M) is the same
+`dconst-call0-entry-ctxt` (39,463,918 steps) is now **covered**, and the
+decomposition was different from the first guess: in the untyped semantics
+`(:ref.func_addr 0)` **is a value** (`value-head-p` includes it), so the
+prefix is two values (the const and the reference) and the instruction is
+the lone `call_ref`.  `engine-ctxt-two-values-instr-step` (a two-value
+prefix) applies directly: `flat-search` at k = 2 and k = 1 steps only the
+lone instruction and the reference plus it (both nil), and k = 0 steps the
+whole slice (the call entry).  The entry dropped 39,463,918 -> **266,356**
+prover steps; `const.lisp` 453.8M -> **414.6M**.
+
+Getting there also produced a pair-redex layer in `engine-flat.lisp`
+(`engine-ctxt-pair-instr-step`, local `flat-search2`, local
+`%size-of-operands-and-two-instr` and its append-form linear corollaries).
+That layer is not needed for the call0 entry but covers a genuinely
+non-value second element.  The direct `search21` expansion attempts (500M and
+1B step limits, explicit `%size` hypotheses, `step/prefix7` disabled) looped
+on the symbolic guards; the working proof is the flat-search bridge plus the
+`flat-search` expansion at k = 2, 1, 0 with `:do-not-induct`.  `const.lisp`'s `link-*` chain (30 facts, up to 24M) is the same
 `dframe-outer-sep` shape as the engine frame lift, but aligning the
 `zo*`/`sz*` state spellings for the engine instance was not achieved;
 that migration is deferred.
