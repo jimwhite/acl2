@@ -952,11 +952,13 @@ budget.  Three further attempts (500M and 1B step limits; explicit `%size`
 hypotheses for the three slices; `step/prefix7` disabled so the hypothesis
 supplies the start index) all stalled on `Goal''` for 10-20 minutes with a
 2 GiB GC loop: the symbolic search guards do not reduce the way the concrete
-family proof's do.  The direct-expansion route is abandoned.  The next design
-is a pair-level `flat-search2` function mirroring `we::flat-search`, with a
-`step/search21` bridge proved by the same induction as the engine's
-488-step `step/search21-becomes-flat-search`; that avoids expanding
-`search21` at each k symbolically.  `const.lisp`'s `link-*` chain (30 facts, up to 24M) is the same
+family proof's do.  The direct-expansion route is abandoned.  A pair-level
+`flat-search2` function was then defined and its `step/search21` bridge
+attempted by the same induction as the engine's 488-step
+`step/search21-becomes-flat-search`; that run also stalled (no certificate
+after 15+ minutes).  Closing this needs the full engine treatment: tailored
+`%size` lemmas for the two-instruction slice and the match/val-star analysis,
+i.e., a real extension of the engine's flat layer, not a wrapper.  `const.lisp`'s `link-*` chain (30 facts, up to 24M) is the same
 `dframe-outer-sep` shape as the engine frame lift, but aligning the
 `zo*`/`sz*` state spellings for the engine instance was not achieved;
 that migration is deferred.
