@@ -136,6 +136,10 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   The four are `TAIL-CL-READ1/SUB/READ2/MUL-FRAME` instantiated there; they
   cost 119.7M prover steps (378 s), so they live in their own book rather than
   in the cheap `const-join`.
+- `wasm3/const-front.lisp` adds those four steps to the run-level advance
+  (`const-front-37..40`): each is one `steps-fuel-succ-of-a-step` at the state
+  the previous advance leaves, so the composition is cheap (63 s) even though
+  the step facts are not.  The CONST path is at 40 of 67 steps.
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.

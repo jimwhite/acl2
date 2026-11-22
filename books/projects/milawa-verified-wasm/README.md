@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Fifty-six books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Fifty-seven books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes a couple of minutes; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -59,6 +59,7 @@ any book in the tree has been skipped.
 | **The PoC**: Milawa-Lisp `(+ (quote 1) (quote 2))` from `MILAWA-EVAL` through `MVM-RUN` to **four exported `STEP` calls** on the artifact, with the compiler's output checked and the four calls threaded through the store each returns | **proved** (`wasm3/poc.lisp`, `POC.md`, `make poc`); a closed instance, not L1/L2/L3 |
 | **The CONST path's join**: the front's 34 steps (`front-advance-19` + `front2-advance-15`) and the tail's first two run-level steps (`tail-frame1`, the lone `(:CALL 3)` split, then `tail-entry-zl-frame`, the call entry) compose into one **36-step advance**; the front's unfolded endpoint is proved equal to the tail's `gset` entry | **proved** (`wasm3/const-join.lisp`, 8 events, 3.38M prover steps) |
 | **The CONST callee's first four positions**: the reads of globals 1 and 2, the sub and the mul, re-stated at one generic run-level state (`const-tail-callee-state`) with the body progressing `(milawa-func-body 3)` → `dbody0` → `dbody1` → `dbody2` → `dbody3` | **proved** (`wasm3/const-steps.lisp`, 4 events, 119.7M prover steps, 378 s) |
+| **The CONST front through the callee's first four**: `const-front-37..40` add those four steps to the 36-step advance, each a `steps-fuel-succ-of-a-step` at the state the previous advance leaves; the run is now **40 of 67 steps** | **proved** (`wasm3/const-front.lisp`, 5 events, 63 s) |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — the frozen path is proved end to end; the CONST path's front and callee's first four positions are composed (40 of 67 steps), with the remaining 27 tail steps open; the other fourteen paths are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -76,11 +77,11 @@ lint: 54 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (11 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 56 book(s))
---- every book has a certificate           (56 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 57 book(s))
+--- every book has a certificate           (57 books, all certified)
 
 ===== summary =====
-books certified:  56
+books certified:  57
 corpus examples:  11
 ```
 
