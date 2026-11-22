@@ -73,8 +73,8 @@ lint: 39 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 53 book(s))
---- every book has a certificate           (53 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 54 book(s))
+--- every book has a certificate           (54 books, all certified)
 
 ===== summary =====
 books certified:  33

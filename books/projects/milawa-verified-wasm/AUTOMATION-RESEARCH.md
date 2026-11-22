@@ -852,5 +852,51 @@ the engine's rules are in local encapsulates, and the state is kept opaque with
 `mvm-abs-z-abstract`.  `links.lisp` includes `chain-body` for
 `step-body-6-first`; `frozen.lisp` uses `chain-frame-step` in place of
 `frame-body-6-general`.  `links` certifies in 10.1 s and `frozen` in 49.2 s.
-The gate is green at **53 books**.
+The gate is green at **54 books**.
 
+
+## Appendix F. The read1 context rung through the engine (2026-11-22)
+
+`wasm3/const-callee-engine.lisp` is the first const-callee position moved to
+the engine.  `clr1-ctxt-engine` proves the read1 context search
+
+    step/r-ctxt-instrs (:%;% Z ((frame 1 callee ((label 1 nil (milawa-func-body 3)))) tail))
+
+from two facts: `tail-iframe3` (const-tail), which is the isolated frame step
+at the run's Z, and `engine-ctxt-from-instr-step`, whose `inner` hypothesis is
+exactly that step.  The proof is **2,098 prover steps** and the book certifies
+in 3.7 s.  This is the `tail-cl-read1-ctxt-d` rung; the family book still
+carries the hand-rolled version, because adding the engine instance to
+`const-callee` itself needs the local-engine (`chain-flat-own`) treatment.
+
+The hint is delicate in three places, and each was a measured failure:
+
+- `(:definition w3t::step)` must be disabled.  Otherwise the definition
+  unfolds the frame rule and the 2 MiB store literal is printed; the proof
+  then runs past the 30 s MCP cap and the output alone is megabytes.
+- `sof-gset-is-frozen-store` must be disabled.  It rewrites `(sof (gset ...))`
+  to `(frozen-store ...)`, so `tail-iframe3`'s LHS no longer matches and the
+  engine hypothesis is never discharged.
+- `milawa-callee-frame` (and its executable counterpart) must be disabled.
+  Otherwise the frame record is unfolded in the goal and `tail-iframe3`'s
+  `(milawa-callee-frame 3)` pattern no longer matches.
+- `milawa-func-body` stays disabled so the block is not constant-folded into a
+  quoted list.
+
+**The label-0 form is deferred, with the blocker identified.**
+`tail-cl-read1-label0` is data-spelled: its callee body and tail are quoted
+literals, because the family proves its label lifts at the normalized spelling.
+The engine lift wants the builder spelling (`(milawa-func-body 3)`), which is
+what `tail-iframe3` has.  Crossing the two is not a theory difference but a
+term-spelling one: enabling `milawa-func-body` constant-folds the whole block
+to a quoted list, and a quoted block does not match the explicit `list` in the
+data fact; keeping it disabled leaves the builder spelling, which does not
+match the data fact either.  The intended route is the one the engine's own
+comment records as 7,189 steps: build the builder-spelled inner facts (callee
+body step, label-1 step, frame step, label-0 step) with
+`engine-admin-term-in-block`, then the label-0 context rung with
+`engine-ctxt-from-instr-step`.  The body-step proof (`step` of
+`(milawa-func-body 3)` at the callee Z) runs into the same store-expansion and
+rewrite-orientation issues; the attempts measured 8,813-36,783 prover steps
+and were not landed.  The non-certifying scratch books were removed, so the
+gate remains green.

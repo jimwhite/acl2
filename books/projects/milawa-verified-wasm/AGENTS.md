@@ -78,6 +78,15 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
 - `wasm3/chain-body.lisp` — `step-body-6-first`, from `chain-frame-step` +
   `chain-label-step`; `links`/`frozen` include it.  `chain.lisp` is now only
   the flat laws and the generic label (its old label/frame proofs are gone).
+- `wasm3/const-callee-engine.lisp` — the read1 `ctxt-d` rung through
+  `engine-ctxt-from-instr-step`, with `tail-iframe3` as the isolated frame
+  step: 2,098 prover steps.  The hint must disable `w3t::step` (it unfolds the
+  store), `sof-gset-is-frozen-store` (it rewrites the state away from
+  `tail-iframe3`'s spelling), and `milawa-callee-frame`.  The label-0 form of
+  the rung is deferred: `tail-cl-read1-label0` is data-spelled (`milawa-func-body`
+  expanded), while the engine lift wants the builder spelling; crossing the
+  two constant-folds the block, and a quoted block does not match the
+  explicit `list` in the data fact.
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.
@@ -278,7 +287,7 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
 
 ## Current state (2026-11-20)
 
-53 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
+54 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
 symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
