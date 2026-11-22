@@ -838,9 +838,13 @@ The committed `chain.lisp` therefore still carries the old label/frame proofs.
 A fourth attempt restated the pair rebuild explicitly in the isolated book
 (`chain-reconstruct-abs-z`, proved) and enabled it in the flat step's hint;
 `chain-step-flat-own` still failed, 1,688 prover steps.  The missing piece is
-therefore not `reconstruct-abs-z` enablement.  Next attempt: a `:pr`/`:pso`
-diff of the same goal in the live session (where it proved) and in the book
-(where it fails), or a `make-event` that records and replays the session's
-theory; then instantiate the admin lemma.  The label/frame instances
-themselves are proved and ready.
+therefore not `reconstruct-abs-z` enablement.  Finally, a **fresh session** with
+the same `chain` + `engine` includes and the exact `repro-flat` form also
+failed.  So the original `step-flat-body-6-first-own-3` success is not
+reproducible even in a session; it depended on transient session state (the
+earlier failed attempts), not on a theory difference between the session and
+the book.  There is no session-vs-book diff to apply: the flat bridge has to be
+re-proved from scratch with a reproducible hint before the label/frame
+instances can be used.  The label/frame admin instances themselves are proved
+and ready.
 
