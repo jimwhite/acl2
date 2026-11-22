@@ -801,3 +801,29 @@ Concrete moves from the old design to the new one:
   full `make -C wasm3` rebuild is the check; `engine-flat` is before `chain`
   and `generic-position` after it in the `BOOKS` list.
 
+---
+
+## Appendix E: the label/frame refactor (validated, not yet integrated)
+
+In a session with `chain` and the global `engine` book, the three remaining
+chain levels were re-proved through `engine-admin-term-in-block`:
+
+- `step-flat-body-6-first-own` — the `step` (not ctxt) of the flat body, from
+  `we::step-of-flat-block` + `step-of-global-get-3` + `reconstruct-abs-z`.
+- `state-shape-p-mvm-abs-z-2` — the admin lift's state condition, 54 prover
+  steps, with `mvm-abs-z-abstract` opaque.
+- `step-in-label-body-6-first-gen-2` — the concrete label lift, from the admin
+  lemma + the local flat step + the state fact.  The old proof was 1,217,401
+  prover steps.
+- `frame-body-6-general-gen` — the frame lift, whose hypothesis is exactly the
+  admin lemma's inner step.  The old proof was 6,861,519 prover steps.
+
+The in-book integration failed at the first of these: emitting the four forms
+inside an `encapsulate` with a **local** `(include-book "engine")` left the
+`step-of-flat-block`/`reconstruct-abs-z` equality unproved in the encapsulate's
+local theory (the session proof used the engine globally).  The committed
+`chain.lisp` therefore still carries the old label/frame proofs.  Next attempt:
+put the refactored label/frame facts in a book **after** `chain` with the
+engine global, and let `frozen`/`step-body-6-first` use the new facts; or
+reproduce the session's exact theory in the local encapsulate.
+
