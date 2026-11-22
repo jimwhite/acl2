@@ -129,17 +129,22 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   tail step's result) as a defun, keeping every spelling function disabled in
   the composition, is the template for the remaining tail links: each one
   consumes the state the previous one leaves.
-- `wasm3/const-steps.lisp` re-states the callee's first four positions at one
+- `wasm3/const-steps.lisp` re-states the callee's first five positions at one
   generic run-level state, `const-tail-callee-state` (outer frame 6, label 1,
   label 0, frame 3 around a body), with the body progressing
-  `(milawa-func-body 3)` -> `dbody0` -> `dbody1` -> `dbody2` -> `dbody3`.
-  The four are `TAIL-CL-READ1/SUB/READ2/MUL-FRAME` instantiated there; they
-  cost 119.7M prover steps (378 s), so they live in their own book rather than
-  in the cheap `const-join`.
-- `wasm3/const-front.lisp` adds those four steps to the run-level advance
-  (`const-front-37..40`): each is one `steps-fuel-succ-of-a-step` at the state
-  the previous advance leaves, so the composition is cheap (63 s) even though
-  the step facts are not.  The CONST path is at 40 of 67 steps.
+  `(milawa-func-body 3)` -> `dbody0` -> `dbody1` -> `dbody2` -> `dbody3` ->
+  `dbody4`.  The first four are `TAIL-CL-READ1/SUB/READ2/MUL-FRAME`
+  instantiated there; the ltu is the exception: its frame fact's body is
+  stated with the literal `(CONS (CONST ...) ...)`/`(LIST (CONST (RELOP ...)))`
+  spelling, so it gets a literal-spelling state and body macros.  Unfolding
+  `dbody3`/`dbody4` there made the `:use` instance miss and the prover
+  re-derive the frame step (still running past 10 minutes); the literal
+  spelling proves in 5.4M steps/21 s.  The five cost 402 s together, so they
+  live in their own book rather than in the cheap `const-join`.
+- `wasm3/const-front.lisp` adds those five steps to the run-level advance
+  (`const-front-37..41`): each is one `steps-fuel-succ-of-a-step` at the state
+  the previous advance leaves, so the composition is cheap (162 s) even though
+  the step facts are not.  The CONST path is at 41 of 67 steps.
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.

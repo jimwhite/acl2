@@ -148,3 +148,32 @@
                             (c+ (const-tail-callee-state bytes sp pc clen result w
                                                          (dbody3 (dadd pc) clen))))
                  const-tail-mul-step))))
+
+(defthm const-front-41
+  (implies (and (unsigned-byte-p 32 pc) (unsigned-byte-p 32 clen)
+                (unsigned-byte-p 32 w)
+                (unsigned-byte-p 32 (dadd pc))
+                (equal (dltu (dsub pc) (dmul clen)) 1)
+                (<= (+ pc 4) (len bytes))
+                (equal (take 4 (nthcdr pc bytes)) (mvm-word-to-bytes w))
+                (not (equal w 0))
+                (equal w 1)
+                (equal (w3t::$local (list :|%;%| (const-front-store bytes sp pc clen result w)
+                                          (w3t::$fof (const-front-store bytes sp pc clen result w)))
+                                    0)
+                       (list (list :const (list :i32) w))))
+           (equal (w3t::steps/%fuel (+ 41 r) (mvm-abs-abstract bytes sp pc clen 1 result))
+                  (w3t::steps/%fuel r
+                                    (const-tail-ltu-state bytes sp pc clen result w
+                                                          (const-tail-ltu-output-body pc clen)))))
+  :hints (("Goal"
+           :in-theory (disable w3t::step w3t::steps/%fuel)
+           :use ((:instance const-front-40 (r (+ 1 r)))
+                 (:instance steps-fuel-succ-of-a-step
+                            (n r)
+                            (c (const-tail-ltu-state bytes sp pc clen result w
+                                                     (const-tail-ltu-input-body pc clen)))
+                            (c+ (const-tail-ltu-state bytes sp pc clen result w
+                                                      (const-tail-ltu-output-body pc clen))))
+                 const-tail-ltu-step
+                 const-tail-ltu-bridge))))
