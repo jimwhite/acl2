@@ -121,8 +121,9 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   they rewrote each other's goals).  The six large frames (nested states) and
   the ten `label0` steps (value-headed bodies) remain on the old proofs.
 - `wasm3/const-join.lisp` joins the front to the tail: the front's 34 steps
-  (`front-advance-19` + `front2-advance-15`) plus `tail-frame1` compose into a
-  35-step advance.  The front's endpoint and the tail's `gset` entry are the
+  (`front-advance-19` + `front2-advance-15`), `tail-frame1` (the lone call
+  split), and `tail-entry-zl-frame` (the call entry) compose into a 36-step
+  advance.  The front's endpoint and the tail's `gset` entry are the
   same state once `gset`/`iz6` are enabled and `(caddr (nth 12 *ft2*))` is
   rewritten to the literal 13-instruction body.  Naming each endpoint (and the
   tail step's result) as a defun, keeping every spelling function disabled in
