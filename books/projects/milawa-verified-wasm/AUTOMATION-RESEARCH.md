@@ -824,10 +824,19 @@ inside an `encapsulate` with a **local** `(include-book "engine")` left the
 local theory (the session proof used the engine globally).  A leaf book after
 `chain` with `(include-book "chain")` and `(include-book "engine")` (the engine
 global, the session's theory) failed at the same `chain-step-flat-own` event,
-1,730 prover steps, even with the session's exact hint.  The committed
-`chain.lisp` therefore still carries the old label/frame proofs.  Next attempt:
-isolate the flat step from `chain`'s rewrite rules (e.g., a book that proves
-`we::step-of-flat-block` on this body before including `chain`, or a
-`make-event` that captures the session's theory), then instantiate the admin
-lemma; the label/frame instances themselves are proved and ready.
+1,730 prover steps, even with the session's exact hint.  A third route — a book
+that includes only `head` and `engine`, defines `*body-6*` with
+`(milawa-func-body 6)`, and so has none of `chain`'s rewrite rules — also
+failed at the same event, 1,730 prover steps: the checkpoint is the
+`step-of-flat-block` conclusion with the state spelled `Z` on one side and
+`(list :%;% (cadr Z) (caddr Z))` on the other, and `reconstruct-abs-z` does not
+close it in the book.  So the difference is neither `chain`'s rules nor the
+include order; the session proof's exact theory has not been reproduced in a
+certified book.
+
+The committed `chain.lisp` therefore still carries the old label/frame proofs.
+Next attempt: diff the session's world/theory against the book's on the failed
+goal (e.g., `:pso`/`:pr` in both, or a `make-event` that records and replays
+the session's theory), then instantiate the admin lemma; the label/frame
+instances themselves are proved and ready.
 
