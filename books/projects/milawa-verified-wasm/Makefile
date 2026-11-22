@@ -5,6 +5,7 @@
 #   make books            just the certification (they make their own order)
 #   make examples         just the corpus: recorded answers vs the real .wasm
 #   make module-check     just "the pinned store still matches the .wasm"
+#   make generated-check  the generated books still match their sources
 #   make no-skips         the litmus test: no skip-proofs, no defaxiom, anywhere
 #   make lint             parentheses and formatting, read the way ACL2 reads them
 #   make experiment FILE=... [BOOK=...] [DIR=wasm3]
@@ -31,19 +32,23 @@
 ACL2 ?= ../../../../saved_acl2
 PROJECT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 BOOKDIRS := milawa-lisp machine wasm3
+# The project's own books.  Do not use */*.lisp: wasm-acl2/ is a submodule and
+# its root books are not ours to certify in this tree.
+PROJECT_BOOKS := $(PROJECT)/milawa-lisp/*.lisp $(PROJECT)/machine/*.lisp $(PROJECT)/wasm3/*.lisp
+PROJECT_CERTS := $(PROJECT)/milawa-lisp/*.cert $(PROJECT)/machine/*.cert $(PROJECT)/wasm3/*.cert
 WASM_MARKER := wasm-acl2/translate/gen/wasm-3.0/wasm3.cert
 
-.PHONY: all check books examples module-check no-skips lint experiment walk complete clean help
+.PHONY: all check books examples module-check no-skips lint generated-check experiment walk complete clean help
 
 all: check
 
 help:
-	@sed -n '2,12p' $(PROJECT)/Makefile
+	@sed -n '2,13p' $(PROJECT)/Makefile
 
-check: lint books module-check examples no-skips complete
+check: lint generated-check books module-check examples no-skips complete
 	@echo
 	@echo "===== summary ====="
-	@printf 'books certified:  %s\n' "$$(ls $(PROJECT)/*/*.cert 2>/dev/null | wc -l)"
+	@printf 'books certified:  %s\n' "$$(ls $(PROJECT_CERTS) 2>/dev/null | wc -l)"
 	@printf 'corpus examples:  %s\n' "$$(ls $(PROJECT)/examples/*.mvm 2>/dev/null | wc -l)"
 	@echo "the module and the model agree on every example; the general statement"
 	@echo "that they agree for all inputs is L1, which is what the wasm3/ books"
@@ -82,9 +87,9 @@ module-check:
 # comment saying "no skip-proofs here" does not count as one.
 no-skips:
 	@echo "--- litmus: no skip-proofs, no defaxiom"
-	@if sed 's/;.*//' $(PROJECT)/*/*.lisp | grep -n -i 'skip-proofs\|defaxiom'; then \
+	@if sed 's/;.*//' $(PROJECT_BOOKS) | grep -n -i 'skip-proofs\|defaxiom'; then \
 	  echo "a book contains skip-proofs or defaxiom"; exit 1; \
-	else echo "none in $$(ls $(PROJECT)/*/*.lisp | wc -l) book(s)"; fi
+	else echo "none in $$(ls $(PROJECT_BOOKS) | wc -l) book(s)"; fi
 
 # Parentheses and formatting.  This counts parentheses the way ACL2's reader
 # does -- skipping `;` comments, `#| ... |#` blocks, `"..."` strings and `|...|`
@@ -96,6 +101,15 @@ no-skips:
 lint:
 	@echo "--- lint (parentheses the way ACL2 reads them)"
 	@python3 $(PROJECT)/harness/lint_lisp.py
+
+# The generated books must still match the sources they are generated from.
+# module-check covers module.lisp/state.lisp; these are the rest.  A stale
+# generated book certifies fine, which is exactly why this is a build check.
+generated-check:
+	@echo "--- generated books vs their sources"
+	@python3 $(PROJECT)/harness/gen_bytes.py --check
+	@python3 $(PROJECT)/harness/gen_chain.py --check
+	@python3 $(PROJECT)/harness/examples.py --gen-lisp --check
 
 # Run a scratch ACL2 script against a book directory, with the timeout, working
 # directory, log path and summary all handled the same way every time.
@@ -127,11 +141,11 @@ walk:
 # cannot tell "all of them" from "the ones we remembered to list".
 complete:
 	@echo "--- every book has a certificate"
-	@missing=0; for f in $(PROJECT)/*/*.lisp; do \
+	@missing=0; for f in $(PROJECT_BOOKS); do \
 	  if [ ! -f "$${f%.lisp}.cert" ]; then echo "MISSING CERT: $$f"; missing=1; fi; \
 	done; \
 	if [ $$missing -ne 0 ]; then exit 1; fi; \
-	echo "$$(ls $(PROJECT)/*/*.lisp | wc -l) books, all certified"
+	echo "$$(ls $(PROJECT_BOOKS) | wc -l) books, all certified"
 
 clean:
 	@for d in $(BOOKDIRS); do $(MAKE) -s -C $(PROJECT)/$$d clean; done

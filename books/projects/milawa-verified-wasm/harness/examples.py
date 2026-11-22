@@ -141,11 +141,10 @@ HEADER = """\
 """
 
 
-def gen_lisp(names):
+def gen_lisp(names, check=False):
     parts = [HEADER]
     for path in names:
         _, words, expect = parse(path)
-        name = path.stem.replace("-", "_")
         fields = dict(kv.split("=") for kv in expect.split() if "=" in kv)
         status = expect.split()[0]
         conds = ["(equal (mvm-steps (example-init code) *example-fuel*) "
@@ -164,7 +163,18 @@ def gen_lisp(names):
             f" (let ((code '{lisp(words)}))\n"
             f"   (and\n{body})))\n\n"
         )
-    LISP_OUT.write_text("".join(parts))
+    text = "".join(parts)
+    if check:
+        if not LISP_OUT.exists():
+            sys.exit(f"{LISP_OUT.relative_to(PROJECT)} is missing; run "
+                     f"{sys.argv[0]} --gen-lisp")
+        if LISP_OUT.read_text() != text:
+            sys.exit(f"{LISP_OUT.relative_to(PROJECT)} is stale: regenerate it with "
+                     f"{sys.argv[0]} --gen-lisp")
+        print(f"ok {LISP_OUT.relative_to(PROJECT)} matches the corpus "
+              f"({len(names)} examples)")
+        return
+    LISP_OUT.write_text(text)
     print(f"wrote {LISP_OUT.relative_to(PROJECT)} ({len(names)} examples)")
 
 
@@ -194,7 +204,7 @@ def main():
     elif args[0] == "--check":
         check(names)
     else:
-        gen_lisp(names)
+        gen_lisp(names, check="--check" in args[1:])
 
 
 if __name__ == "__main__":

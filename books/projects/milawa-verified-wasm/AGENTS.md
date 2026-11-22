@@ -41,6 +41,27 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
 `acl2::` (`acl2::rem-bounds`, `acl2::loghead-identity`); after changing
 `package.lsp`, every certificate must be rebuilt.
 
+## Automation
+
+- `wasm3/literals.lisp` — write a position as `(func-body-lit i)`,
+  `(func-tail-lit i n)` or `(func-instr-lit i n)` (or a `def-func-*`
+  constant) and let the event carry the module's literal.  The value is
+  computed from `milawa-func-body` at expansion time, so a module change
+  propagates at the next certification, and a malformed instruction list is
+  an expansion error rather than a false lemma.  Use it instead of copying
+  instruction lists by hand.  A `defconst` of the accessor's value is also
+  spliced as a literal (measured: `step_pure` on `*literals-tail-6-3*`
+  proves by evaluation in 4 steps).
+- `wasm3/subst.lisp` — `defsubst-chain` applies a checked pseudo-term
+  substitution to a theorem's stored statement.  Use it for the return
+  chains instead of exact-text substitution: a pattern that does not occur
+  is an error naming the pair and its count.
+- `make generated-check` — the generated books (`bytes.lisp`, `chain.lisp`,
+  `machine/examples.lisp`) must still match their sources.  `module-check`
+  covers `module.lisp`/`state.lisp`.
+- `AUTOMATION-RESEARCH.md` — the measurements, the engine-reuse finding and
+  the roadmap.  Read it before starting the next fact family.
+
 ## House rules
 
 - No `skip-proofs`, no `defaxiom`; `make check` fails on either.

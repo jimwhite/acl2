@@ -12,13 +12,14 @@ fails loudly instead of silently invalidating the theorems.
     ./harness/gen_module.py         # rewrite wasm3/module.lisp
     ./harness/gen_module.py --check # fail if it would change
 """
+import os
 import pathlib
 import re
 import subprocess
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-ACL2 = pathlib.Path('/workspaces/acl2/saved_acl2')
+ACL2 = pathlib.Path(os.environ.get('ACL2', '/workspaces/acl2/saved_acl2'))
 SCRIPT = ROOT / 'harness' / 'decode.lsp'
 TARGET = ROOT / 'wasm3' / 'module.lisp'
 STATE = ROOT / 'wasm3' / 'state.lisp'

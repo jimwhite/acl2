@@ -597,3 +597,44 @@ session succeeded (3.70 s), and
 expected theorem with the `w3t::step` conclusion and the
 `vals`/`op-instr-p`/`redex-arity` hypotheses.
 
+---
+
+## Appendix B: first implementation steps
+
+Implemented after the report, in the same checkout:
+
+- **`wasm3/literals.lisp`.**  `func-body-lit`, `func-tail-lit`,
+  `func-instr-lit`, `func-prefix-lit` compute the module's literal at
+  macro-expansion time; `def-func-body`/`def-func-tail`/`def-func-instr`
+  give the named-constant form.  A program-mode `check-instruction-list`
+  rejects a non-cons element or a non-nil tail at expansion time.  Measured
+  in a live session: `(w3t::step_pure (func-tail-lit 6 3)) = nil` proves by
+  evaluation in **4 prover steps**, and the same fact with the `defconst`
+  spelling `*literals-tail-6-3*` also proves in **4 steps**.  So the Python
+  body parser in `gen_chain.py` is unnecessary: a `defconst` of
+  `(milawa-func-body 6)` carries the literal the search needs.
+- **`make generated-check`.**  It runs `gen_bytes.py --check` (540 bytes,
+  matches), `gen_chain.py --check` (up to date) and
+  `examples.py --gen-lisp --check` (10 examples, matches).  It is now part of
+  `make check`; previously only `module.lisp`/`state.lisp` had a drift check.
+- **`wasm3/subst.lisp`.**  `defsubst-chain` reads a theorem's stored statement,
+  applies a pseudo-term substitution, checks that every pattern occurs (the
+  default is at least once; `:count n` demands exactly n), and emits the new
+  theorem.  A missed quote is now an error naming the pair and its count,
+  which is the check the `/tmp/gen` text substitution could not make.  A
+  worked `subst-demo-new` check is in the book; it certifies.
+- **`gen_module.py` honors `$ACL2`.**  It previously hardcoded
+  `/workspaces/acl2/saved_acl2`, so `make module-check ACL2=...` silently
+  used the wrong binary.
+- **Gate fix for the submodule.**  `complete` and `no-skips` used to glob
+  `*/*.lisp`, which picked up Ray's root books once `wasm-acl2/` moved inside
+  the project.  They now use `PROJECT_BOOKS` (the three book directories), so
+  the submodule is not certified by this tree.
+- **Verification.**  The full `wasm3` rebuild completed (exit 0);
+  `literals.cert` was built in 3.8 s and `subst.cert` in 0.02 s; `make check`
+  now passes: **47 books all certified, 10 examples agree with the artifact,
+  no `skip-proofs` or `defaxiom`**.  The `literals` book's own assertion
+  caught a wrong ifelse literal while it was being written (`((:global.get 3)
+  (:return))`, not `((:call 4) (:return))`), which is the class of mistake the
+  book exists to make loud.
+
