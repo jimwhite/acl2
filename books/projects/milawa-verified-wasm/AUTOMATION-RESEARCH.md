@@ -383,6 +383,11 @@ Caveats measured here:
   validating an edit;
 - the session world is mutable: `install-not-normalized` disabled the original
   definitions in mine.  Use `save_checkpoint` before an experiment.
+- `certify_book` works for a self-contained book (it certified `subst.lisp`
+  in 0.02 s), but it fails on a book that names `w3t::` symbols: Step 1 hashes
+  the file before the included book's portcullis has defined the `W3T`
+  package ("no package named W3T").  `cert.pl` / `make` handles that ordering;
+  use it for the `wasm3` books, not the MCP tool.
 
 `defopeners` (Kestrel) is **not** a fit for `step_pure`: it reports "not needed
 for non-recursive function", and the generated dispatcher is a non-recursive
