@@ -120,6 +120,14 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   if, ld2) are engine instances marked `:rule-classes nil` (as rewrite rules
   they rewrote each other's goals).  The six large frames (nested states) and
   the ten `label0` steps (value-headed bodies) remain on the old proofs.
+- `wasm3/const-join.lisp` joins the front to the tail: the front's 34 steps
+  (`front-advance-19` + `front2-advance-15`) plus `tail-frame1` compose into a
+  35-step advance.  The front's endpoint and the tail's `gset` entry are the
+  same state once `gset`/`iz6` are enabled and `(caddr (nth 12 *ft2*))` is
+  rewritten to the literal 13-instruction body.  Naming each endpoint (and the
+  tail step's result) as a defun, keeping every spelling function disabled in
+  the composition, is the template for the remaining tail links: each one
+  consumes the state the previous one leaves.
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.

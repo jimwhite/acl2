@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Fifty-four books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Fifty-five books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes a couple of minutes; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -57,7 +57,8 @@ any book in the tree has been skipped.
 | **The out-of-code entry and the abort callee**: the in-code comparison's zero case — the testop tier (the value 0, its slice, the ifelse on 0 with its else branch) and the ifelse tier's slice/lifts through the empty block and label, the `(:CALL 4)` abort split at the body level and its entry, `$abort`'s frame lift, the callee's body end to end (status := 2 through the lone/slice/ctxt/write recipe and the frame descent), and the unknown-opcode fallthrough's label/frame value-returns (`frame-label-vals`, the callee-frame-around-a-value wrapper) | **proved** (`wasm3/oob.lisp`, 46 events, 9.18M prover steps) |
 | **The CONST tail (opcode 1)**: the testop/ifelse true branch of the CONST test — the `$in_code` call's lone split and entry, `$in_code`'s seven body positions (read/sub/read/mul/ltu and the two value dissolves), the testop/ifelse/empty-block/label tiers (the search's result spliced as `(const 0) :: (cdr of the tail)`), the `(global.get 1)` read of pc, the `(i32.load)` of the instruction word under the memory hypotheses, the `local.set 1` write (index 1 — the first write whose `update-nth` needs the opaque-`$with_local` treatment), the pc increment `(global.get 1)(const 4)(add)(global.set 1)` with the store global 6 write, and the `(local.get 1)` read-back of the word; then the `(call 0)` hand-off — the call's expansion and 3-element entry slice (the argument W), the dispatcher's ctxt refusals that make the search terminate, and the whole-config lifts at the tail's continuation; and function 0 `$push`: its seven instructions end to end through the seven-layer chain per position (slice, body ctxt, body step, label, arity-0 frame wrapper, continuation lift, step) at the explicit z spellings the frame rule builds — positions 0-4 (the two global reads, the local read, the memory store with its generic in-z slice and its lone/one-value refusals, and the add) — plus the arity-0 frame wrapper, the generic ctxt lift, the respell bridge and the value facts; position 5 (the `global.set 0` write of `sp + 4`) is also closed — its two-element slice does not fire the ctxt rule (the search's measure ties), so its step is the `global.set` rule itself and the ctxt is nil; the val-p of `(dadd sp)` and the opaque `$with_global` make the tier cheap; the void-return dissolves (the label-vals inside the frame and the frame-vals) are the remaining pieces of the callee, and the module's function 0 is confirmed as the stack-push (`sp` in global 0) | **proved** (`wasm3/const.lisp`, 132 facts; the callee through its last instruction) |
 | **The PoC**: Milawa-Lisp `(+ (quote 1) (quote 2))` from `MILAWA-EVAL` through `MVM-RUN` to **four exported `STEP` calls** on the artifact, with the compiler's output checked and the four calls threaded through the store each returns | **proved** (`wasm3/poc.lisp`, `POC.md`, `make poc`); a closed instance, not L1/L2/L3 |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
+| **The CONST path's join**: the front's 34 steps (`front-advance-19` + `front2-advance-15`) and the tail's first run-level step (`tail-frame1`, the lone `(:CALL 3)` split) compose into one **35-step advance**; the front's unfolded endpoint is proved equal to the tail's `gset` entry | **proved** (`wasm3/const-join.lisp`, 4 events, 1.65M prover steps) |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — the frozen path is proved end to end; the CONST path's front is joined to its tail (35 of 67 steps), with the remaining 32 tail steps open; the other fourteen paths are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
 | WASM 3.0 semantics and engine available locally (`wasm-acl2` `1ce59e0`, engine-plan2; the 26 semantics books and the engine books certified; IL reproducible from SpecTec) | **done** |
@@ -74,11 +75,11 @@ lint: 54 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (11 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 54 book(s))
---- every book has a certificate           (54 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 55 book(s))
+--- every book has a certificate           (55 books, all certified)
 
 ===== summary =====
-books certified:  54
+books certified:  55
 corpus examples:  11
 ```
 
