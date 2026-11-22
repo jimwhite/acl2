@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Fifty-three books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Fifty-four books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes a couple of minutes; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -35,7 +35,7 @@ any book in the tree has been skipped.
 | `MVM-STEP` — ACL2 model of the module, 32-bit words, status protocol, fixed points | **proved** (`machine/mvm.lisp`) |
 | `milawa-verified.wat` — the module: one step per call, runnable in Node | **done** (milestones: `wasm/`) |
 | `MVM` model vs the module, on a spread of programs and every abort case | **tested** (`machine/mvm-tests.lisp`, Node recording) |
-| **The example corpus**: ten programs with their answers, each recorded from the artifact and proved about the model | **done** (`examples/`, `machine/examples.lisp`) |
+| **The example corpus**: eleven programs with their answers, each recorded from the artifact and proved about the model | **done** (`examples/`, `machine/examples.lisp`) |
 | The artifact decodes in the certified semantics; the module is pinned as a logic constant; `W3T::MODULE-P` of it is proved | **proved** (`wasm3/`) |
 | The certified semantics executes the artifact: entry config is a call to function 6, `STEP` applies and is single-valued | **proved** (`wasm3/l1.lisp`) |
 | Memory correspondence: word image round trip, region round trip (decoding a word list's image gives it back), stack and code images, lengths, disjointness, and **the i-th word of an image** (`(take 4 (nthcdr (* 4 i) image)) = the word's bytes`) | **proved** (`wasm3/memory.lisp`) |
@@ -56,6 +56,7 @@ any book in the tree has been skipped.
 | **The unknown-opcode abort**: `(:CALL 4)` splits to `(:REF.FUNC_ADDR 4)` + the call_ref type; the call entry pushes `$abort`'s frame (body `((const 2) (global.set 3) (const 2))`, status := 2, implicit return); both are lifted through the caller's admin label, and the entry's **frame lift is closed** — the frame rule's parameterized wrapper instantiated at the updated store, with the inner label step discharged by a pair bridge (spelled `$sof`/`$fof` pair → the helper) and the label fact; and the callee's body is executed through the status write (`global.set 3` := 2, via the lone-failure/context-failure/slice recipe) and the callee frame descent (also restated at the helper pair, so the way out does not need the forward bridge); the step back out begins: the pair shape/component facts, the caller's label lift over the callee frame (helper pair, 28.6M), and the same lift at the SPELLED pair (so the frame rule's inner step matches it with no bridge; 36k, with the store's shape a fact and the step definition instance handed in — `:expand` does not fire once the config's arguments are rewritten); the **outer frame lift** over that label is closed (the outer frame wrapper instantiated at the updated store and the caller's frame; 8.9M steps), and the implicit value-returns — the pure `label-vals`/`frame-vals` steps and the callee-frame-around-a-value wrapper — are proved; the remaining way-out steps compose those through the caller's label and frame 6 | **closed**: the abort's implicit return is four pure steps (label-vals, frame-vals, label-vals, frame-vals) proved once generically (`dret-*`, 10.4M/1.07M/19.6k/43) and instantiated at the abort's store (2.7k/2.2k/1.7k/1.3k) | **done** (`wasm3/abort.lisp`, 40 measured events, 54.7M prover steps) |
 | **The out-of-code entry and the abort callee**: the in-code comparison's zero case — the testop tier (the value 0, its slice, the ifelse on 0 with its else branch) and the ifelse tier's slice/lifts through the empty block and label, the `(:CALL 4)` abort split at the body level and its entry, `$abort`'s frame lift, the callee's body end to end (status := 2 through the lone/slice/ctxt/write recipe and the frame descent), and the unknown-opcode fallthrough's label/frame value-returns (`frame-label-vals`, the callee-frame-around-a-value wrapper) | **proved** (`wasm3/oob.lisp`, 46 events, 9.18M prover steps) |
 | **The CONST tail (opcode 1)**: the testop/ifelse true branch of the CONST test — the `$in_code` call's lone split and entry, `$in_code`'s seven body positions (read/sub/read/mul/ltu and the two value dissolves), the testop/ifelse/empty-block/label tiers (the search's result spliced as `(const 0) :: (cdr of the tail)`), the `(global.get 1)` read of pc, the `(i32.load)` of the instruction word under the memory hypotheses, the `local.set 1` write (index 1 — the first write whose `update-nth` needs the opaque-`$with_local` treatment), the pc increment `(global.get 1)(const 4)(add)(global.set 1)` with the store global 6 write, and the `(local.get 1)` read-back of the word; then the `(call 0)` hand-off — the call's expansion and 3-element entry slice (the argument W), the dispatcher's ctxt refusals that make the search terminate, and the whole-config lifts at the tail's continuation; and function 0 `$push`: its seven instructions end to end through the seven-layer chain per position (slice, body ctxt, body step, label, arity-0 frame wrapper, continuation lift, step) at the explicit z spellings the frame rule builds — positions 0-4 (the two global reads, the local read, the memory store with its generic in-z slice and its lone/one-value refusals, and the add) — plus the arity-0 frame wrapper, the generic ctxt lift, the respell bridge and the value facts; position 5 (the `global.set 0` write of `sp + 4`) is also closed — its two-element slice does not fire the ctxt rule (the search's measure ties), so its step is the `global.set` rule itself and the ctxt is nil; the val-p of `(dadd sp)` and the opaque `$with_global` make the tier cheap; the void-return dissolves (the label-vals inside the frame and the frame-vals) are the remaining pieces of the callee, and the module's function 0 is confirmed as the stack-push (`sp` in global 0) | **proved** (`wasm3/const.lisp`, 132 facts; the callee through its last instruction) |
+| **The PoC**: Milawa-Lisp `(+ (quote 1) (quote 2))` from `MILAWA-EVAL` through `MVM-RUN` to **four exported `STEP` calls** on the artifact, with the compiler's output checked and the four calls threaded through the store each returns | **proved** (`wasm3/poc.lisp`, `POC.md`, `make poc`); a closed instance, not L1/L2/L3 |
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
@@ -69,16 +70,16 @@ One command, from this directory:
 ```
 $ make check ACL2=/path/to/saved_acl2
 --- lint (parentheses the way ACL2 reads them)
-lint: 39 file(s) balance the way ACL2 reads them
+lint: 54 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
---- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 53 book(s))
---- every book has a certificate           (53 books, all certified)
+--- example corpus (artifact)              (11 example(s) agree with the artifact)
+--- litmus: no skip-proofs, no defaxiom    (none in 54 book(s))
+--- every book has a certificate           (54 books, all certified)
 
 ===== summary =====
-books certified:  33
-corpus examples:  10
+books certified:  54
+corpus examples:  11
 ```
 
 `make help` lists the rest (`books`, `examples`, `module-check`, `no-skips`,
@@ -172,7 +173,7 @@ build runs.
 $ python3 harness/examples.py --check
 ok   if-lt-true.mvm: halted result=10 steps=6 pc=10
 ...
-10 example(s) agree with the artifact
+11 example(s) agree with the artifact
 ```
 
 So a passing corpus is two claims, deliberately kept apart: *the artifact does X*
@@ -181,7 +182,7 @@ evaluation).  The claim that joins them — agreement for all inputs — is L1 a
 open; when it lands, these files become its regression suite, and until then they
 are the thing to point at when the question is "does any of this run yet".
 
-Two of the ten are there to catch plausible mistakes rather than to show variety:
+Two of the eleven are there to catch plausible mistakes rather than to show variety:
 `sub-wraps` (`(- 0 1)` = `#xFFFFFFFF`, which the harness must report unsigned
 because JS exports an `i32`) and `lt-signed` (`#xFFFFFFFF` is the largest unsigned
 word but *less than* zero under `i32.lt_s`).

@@ -36,6 +36,15 @@
 ; machine has stopped, which is why this is safe.)
 (defconst *example-fuel* 1000)
 
+; halted result=3 steps=4 pc=6
+(assert-event
+ (let ((code '(1 1  1 2  2  0)))
+   (and
+     (mvm-haltedp (mvm-run (example-init code) *example-fuel*))
+     (equal (mvm-result (mvm-run (example-init code) *example-fuel*)) 3)
+     (equal (mvm-steps (example-init code) *example-fuel*) 4)
+     (equal (mvm-pc (mvm-run (example-init code) *example-fuel*)) 6))))
+
 ; halted result=22 steps=6 pc=9
 (assert-event
  (let ((code '(1 3  1 1  3  1 20  2  0)))

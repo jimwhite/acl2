@@ -1,0 +1,17 @@
+; (+ 1 2)
+;
+; The PoC's program: two constants and an add.  This is the MVM side of
+; wasm3/poc.lisp, where the same four calls are proved against the certified
+; semantics; here the artifact itself is asked, and the model is proved in
+; machine/examples.lisp.
+;
+; Run it on the artifact:   node harness/run.js wasm/milawa-verified.wasm <words>
+; Run the corpus:           python3 harness/examples.py --check
+;
+; WORDS is the program as MVM instruction words (see wasm/milawa-verified.wat).
+; EXPECT is RECORDED from the artifact by `harness/examples.py --record` and never
+; written by hand; machine/examples.lisp then PROVES the model agrees with it.  So
+; the file is the meeting point of a test and a proof, which is the point.
+
+words: 1 1  1 2  2  0
+expect: halted result=3 steps=4 pc=6

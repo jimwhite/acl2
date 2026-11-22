@@ -35,7 +35,7 @@ flowchart TB
 | `milawa-lisp/metatheory.lisp` | fuel monotonicity; abort/acceptance disjointness; zero fuel aborts |
 | `milawa-lisp/reachability.lisp` | `MILAWA-RUNS`: exact step count, the two inference rules, positivity, shape, and that it agrees with `MILAWA-RUN` both ways |
 | `machine/mvm.lisp` | `MVM-STEP`/`MVM-RUN`: the ACL2 model of the module, 32-bit words, status protocol.  A stopped machine is a fixed point; spending a budget in two instalments is spending it at once; **fuel monotonicity** — once it has stopped, a larger budget changes nothing |
-| `machine/examples.lisp` | the example corpus: ten programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
+| `machine/examples.lisp` | the example corpus: eleven programs, each with the answer the artifact actually gives (recorded in `examples/*.mvm` from Node), proved about the model by evaluation — so the corpus is a test of the artifact and a proof about the model, kept separate on purpose |
 | `machine/mvm-tests.lisp` | model vs module on a spread of programs — **tests, not proofs**, and labelled so |
 | `wasm3/links.lisp` | **the links**: the second step of function 6's body at the flat, label and frame levels, plus `step-body-6-two`, which steps the machine twice and shows the two links genuinely compose |
 | `wasm3/frozen.lisp` | **the frozen path, end to end**: the nine steps from `mvm-abs-abstract` when the status is not 1 -- the call, the read, the comparison, the branch, the block, the read inside the block's label, the two returns -- each at the callee's store and through the frame and the two labels, composed into the exact clock: nine fuel spends the nine steps and a tenth reports the stopped configuration, which is the abstract store unchanged with the status pushed into the caller's instruction list; and the readback, `milawa-observations` of that configuration against `(mvm-step st)`, with the stack words through the append form of the stack image.  `frozen-step-check` is `abs.lisp`'s `(milawa-step-check 9 st)` clause for clause, with the state symbolic |
@@ -61,12 +61,13 @@ flowchart TB
 | `wasm3/symbolic.lisp` | the abstraction a *symbolic* proof wants: the same store with the memory bytes a variable, the two lookups proved (field lookup on symbolic leaves, and the memory reading back as given), and the layering the instruction library follows |
 | `wasm3/abs.lisp` | the abstraction itself: `MVM` state → entry configuration of a call to the exported `STEP`, through the spec's own `$WITH_MEM`/`$WITH_GLOBAL`, and the inverse observations. **Sixteen theorems, one per path through the module** — every opcode, every abort, both frozen statuses — each giving the exact clock and the fact that what the semantics stopped on reads back as `MVM-STEP` |
 | `wasm3/l1.lisp` | the certified semantics executes the artifact: entry configuration is a call to function 6 with no arguments, `STEP` applies and is single-valued, three steps apply, one step enters the frame |
+| `wasm3/poc.lisp` | **the PoC**: Milawa-Lisp `(+ (quote 1) (quote 2))` from `MILAWA-EVAL` through `MVM-RUN` to four exported `STEP` calls on the artifact.  The compiler's output is checked (`poc-compile-correct`), the model's answer is `poc-add-model`, four calls threaded through the store each returns stop with observations of the model state (`poc-add`), each call's observations are one `MVM-STEP` (`poc-add-each-call`), the model's result is `milawa-result-value` of `milawa-eval` (`poc-add-refines-milawa`), and the artifact's result global is that same answer (`poc-add-artifact-result`).  A closed instance, not L1/L2/L3; `make poc` prints a real evaluation of the same run |
 | `wasm3/bytes.lisp`, `module.lisp`, `state.lisp` | **generated** from the `.wasm`: the memory image, the module record, and the pinned store and frame.  Scripted rather than proved, because decode and instantiate are `:program` mode |
 | `wasm3/decode.lisp` | the artifact decodes completely and instantiates with no externs (scripted, since the decoder and the instantiator are `:program` mode); the module is pinned as a logic constant; its shape, export names, and the fact that `STEP` is function 6 are theorems |
 
 ## The example corpus
 
-`examples/*.mvm` is the lower-level stand-in for a Milawa events file: ten programs
+`examples/*.mvm` is the lower-level stand-in for a Milawa events file: eleven programs
 with the answer each must give.  Each file holds the program as MVM words and an
 `expect:` line that is **recorded from the artifact**, never written by hand —
 `harness/examples.py --record` runs `wasm/milawa-verified.wasm` in Node and writes
@@ -75,6 +76,7 @@ model gives the same answer, by evaluation.
 
 | Example | Program | Answer |
 |---|---|---|
+| `add` | `(+ 1 2)` — the PoC's program | halted, 3, 4 steps |
 | `if-lt-true` | `(if (< 1 2) 10 20)` | halted, 10, 6 steps |
 | `if-lt-false` | `(if (< 2 1) 10 20)` | halted, 20, 6 steps |
 | `arith` | `(+ 20 (- 3 1))` | halted, 22, 6 steps |
@@ -90,7 +92,7 @@ So a passing corpus means *the artifact does X* (a test, in Node, through a host
 do not trust) **and** *the model does X* (a proof, by evaluation).  The sentence
 that ties the two together — that they agree for all inputs — is L1, still open.
 Keeping the two claims separate, and both checkable, is the point: when L1 lands,
-these same ten files become its regression suite.
+these same eleven files become its regression suite.
 
 Two of them earn their place by disagreeing with the obvious guess: `sub-wraps`
 because `(- 0 1)` is `#xFFFFFFFF` and the harness has to report it **unsigned**

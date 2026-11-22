@@ -12,6 +12,8 @@
 #   make experiment FILE=... [BOOK=...] [DIR=wasm3]
 #                         run a scratch ACL2 script with a timeout and a summary
 #   make walk             ask the semantics what each step of the frozen path is
+#   make poc              the smallest Milawa-Lisp expression, end to end:
+#                         MILAWA-EVAL -> MVM -> four exported STEP calls
 #   make clean
 #
 # The pieces were built one at a time and each has its own Makefile; this file
@@ -42,12 +44,12 @@ PROJECT_CERTS := $(PROJECT)/milawa-lisp/*.cert $(PROJECT)/machine/*.cert $(PROJE
 WASM_MARKER := wasm-acl2/translate/gen/wasm-3.0/wasm3.cert
 ENGINE_MARKER := wasm-acl2/engine/rules/context.cert
 
-.PHONY: all check books engine examples module-check no-skips lint generated-check experiment walk complete clean help
+.PHONY: all check books engine examples module-check no-skips lint generated-check experiment walk poc complete clean help
 
 all: check
 
 help:
-	@sed -n '2,14p' $(PROJECT)/Makefile
+	@sed -n '2,17p' $(PROJECT)/Makefile
 
 check: lint generated-check books module-check examples no-skips complete
 	@echo
@@ -148,6 +150,12 @@ STEPS ?= 9
 VALUE ?= 3
 walk:
 	@python3 $(PROJECT)/harness/walk.py --steps $(STEPS) --value $(VALUE)
+
+# The smallest Milawa-Lisp expression, proved end to end: MILAWA-EVAL gives 3,
+# MVM-RUN gives the same answer in four steps, and four calls to the artifact's
+# exported STEP reach a configuration whose observations are that MVM state.
+poc:
+	@$(MAKE) -s -C $(PROJECT)/wasm3 ACL2=$(abspath $(ACL2)) poc
 
 # Every .lisp in a book directory must have a .cert next to it.  This exists
 # because it caught a real bug: wasm3/Makefile's BOOKS line had silently lost the
