@@ -14,6 +14,8 @@
 
 (in-package "MILAWA-WASM")
 
+(include-book "engine-flat")
+
 (include-book "head")
 
 ; The body of function 6, the exported STEP, as the artifact holds it.
@@ -21,26 +23,25 @@
 (defconst *body-6*
   (milawa-func-body 6))
 
-; The body's first instruction, stepped, with the rest of the body
-; symbolic-ish: the body is a literal because the search only computes on
-; literals.  145,059 prover steps, and 0.09 seconds -- the step count is not
-; the wall clock.
+; The body's first instruction, stepped, through the generic engine
+; lemma: the instruction's own step is a hypothesis instead of a search
+; expansion.  The old proof was 145,059 prover steps.
 (defthm step-flat-body-6-first
   (equal (w3t::step/r-ctxt-instrs (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) *body-6*))
          (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (cons (list :const (list :i32) status) (cdr *body-6*)))))
   :hints (("Goal"
-           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
-                            (w3t::%a0 (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) *body-6*)))
-                 (:instance (:definition w3t::step/search21)
-                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
-                            (w3t::%t6 *body-6*) (w3t::%t9 0)
-                            (w3t::z (mvm-abs-z-abstract bytes sp pc clen status result))
-                            (w3t::%a0 (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) *body-6*)))))))
+           :in-theory (disable mvm-abs-z-abstract)
+           :use ((:instance engine-flat-body-step
+                            (b *body-6*)
+                            (z (mvm-abs-z-abstract bytes sp pc clen status result))
+                            (inner (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :const (list :i32) status))))))
+                 step-of-global-get-3))))
 
 ; The same law at an arbitrary store, with the instruction's own step taken
 ; as a hypothesis.  This is the one that composes: because `z` is a
 ; variable, the literal body in the left-hand side matches ANY store, so no
-; lemma about the store is needed.  683,415 prover steps.
+; lemma about the store is needed.  The old proof was 683,415 steps; this
+; is an instance of engine-flat-body-step.
 (defthm flat-body-6-general
   (implies (and (true-listp val)
                 (consp (cdr *body-6*))
@@ -49,13 +50,9 @@
            (equal (w3t::step/r-ctxt-instrs (list :|%;%| z *body-6*))
                   (list (list :|%;%| z2 (append val (cdr *body-6*))))))
   :hints (("Goal"
-           :use ((:instance (:definition w3t::step/r-ctxt-instrs)
-                            (w3t::%a0 (list :|%;%| z *body-6*)))
-                 (:instance (:definition w3t::step/search21)
-                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)
-                            (w3t::%t6 *body-6*) (w3t::%t9 0)
-                            (w3t::z z)
-                            (w3t::%a0 (list :|%;%| z *body-6*)))))))
+           :use ((:instance engine-flat-body-step
+                            (b *body-6*)
+                            (inner (list (list :|%;%| z2 val))))))))
 
 
 ; The label level: a step inside a label is a step of its body, re-wrapped.

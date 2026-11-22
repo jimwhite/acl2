@@ -21,7 +21,7 @@
 
 (in-package "MILAWA-WASM")
 
-(include-book "engine")
+(include-book "engine-flat")
 (include-book "chain")
 
 (defthm engine-flat-body-6-step

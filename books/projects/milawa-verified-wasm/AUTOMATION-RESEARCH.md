@@ -777,18 +777,27 @@ Concrete moves from the old design to the new one:
   `(:CODE ...)` in `state.lisp` with a paren counter.  `chain.lisp` now says
   `(defconst *body-6* (milawa-func-body 6))`; ACL2 computes the body and the
   defconst value is spliced at translation.  The regenerated `chain.lisp` lost
-  164 lines of copied instruction list and certifies in 11.6 s (measured).
+  164 lines of copied instruction list; the body change alone certified in
+  11.6 s (measured).
 - **`walk.py` no longer parses Lisp either.**  Its script says
   `(defconst *pb* (milawa-func-body FUNCTION))`; `make walk STEPS=3` was run
   and prints the same STEP lines as before.
-- **`wasm3/generic-position.lisp`** proves `engine-flat-body-6-step`: the flat
-  body-6 position in terms of the head instruction's own step, from
-  `engine-ctxt-from-instr-step`.  The old `step-flat-body-6-first` proves the
-  same concrete law by expanding `step/r-ctxt-instrs` and `search21` at
-  145,059 prover steps; the generic form is a `:use` instance plus the
-  instruction's step fact (`step-of-global-get-3`), which is the shape a
-  rewritten `chain.lisp` should emit.
+- **The chain's flat proofs are now generic.**  `step-flat-body-6-first`
+  (145,059 prover steps) and `flat-body-6-general` (683,415) were search
+  expansions; they are now instances of `engine-flat-body-step` (1,399 steps,
+  in `engine-flat.lisp`) plus `step-of-global-get-3`.
+  `wasm3/generic-position.lisp` keeps the generic body-6 form as a named
+  template.
+- **`engine-flat.lisp` keeps the engine rules LOCAL, and its lemmas are
+  `:rule-classes nil`.**  Including the engine globally in `chain.lisp` broke
+  the existing label lift: the engine's eager rules change the default theory
+  (`step-in-label-body-6-first` failed with the global include).  Exporting the
+  two flat lemmas as rewrite rules was also wrong: they changed `running.lisp`'s
+  theory and broke `running-step-eight` (measured).  A local `include-book`
+  plus `:rule-classes nil` gives the chain its `:use` facts without touching any
+  later book's theory.  `engine.lisp` now holds only the admin-term lift, whose
+  statement mentions the WE functions.
 - **Gate.**  The chain change invalidates every downstream `wasm3` book, so the
-  full `make -C wasm3` rebuild is the check; `generic-position` is added after
-  `chain` in the `BOOKS` list.
+  full `make -C wasm3` rebuild is the check; `engine-flat` is before `chain`
+  and `generic-position` after it in the `BOOKS` list.
 

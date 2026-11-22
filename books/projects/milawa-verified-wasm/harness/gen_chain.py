@@ -82,21 +82,19 @@ def render():
         return sum(1 if c == "(" else -1 if c == ")" else 0 for c in x)
 
     flat = "\n".join([
-        "; The body's first instruction, stepped, with the rest of the body",
-        "; symbolic-ish: the body is a literal because the search only computes on",
-        "; literals.  145,059 prover steps, and 0.09 seconds -- the step count is not",
-        "; the wall clock.",
+        "; The body's first instruction, stepped, through the generic engine",
+        "; lemma: the instruction's own step is a hypothesis instead of a search",
+        "; expansion.  The old proof was 145,059 prover steps.",
         "(defthm step-flat-body-6-first",
         "  (equal (w3t::step/r-ctxt-instrs " + CFG + ")",
         "         " + RHS + ")",
         '  :hints (("Goal"',
-        "           :use ((:instance (:definition w3t::step/r-ctxt-instrs)",
-        "                            (w3t::%a0 " + CFG + "))",
-        "                 (:instance (:definition w3t::step/search21)",
-        "                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)",
-        "                            (w3t::%t6 *body-6*) (w3t::%t9 0)",
-        "                            (w3t::z " + Z + ")",
-        "                            (w3t::%a0 " + CFG + ")))",
+        "           :in-theory (disable mvm-abs-z-abstract)",
+        "           :use ((:instance engine-flat-body-step",
+        "                            (b *body-6*)",
+        "                            (z " + Z + ")",
+        "                            (inner (list (list :|%;%| " + Z + " (list (list :const (list :i32) status))))))",
+        "                 step-of-global-get-3)))",
     ])
     flat += ")" * bal(flat)
     assert bal(flat) == 0
@@ -109,7 +107,8 @@ def render():
         "; The same law at an arbitrary store, with the instruction's own step taken",
         "; as a hypothesis.  This is the one that composes: because `z` is a",
         "; variable, the literal body in the left-hand side matches ANY store, so no",
-        "; lemma about the store is needed.  683,415 prover steps.",
+        "; lemma about the store is needed.  The old proof was 683,415 steps; this",
+        "; is an instance of engine-flat-body-step.",
         "(defthm flat-body-6-general",
         "  (implies (and (true-listp val)",
         "                (consp (cdr *body-6*))",
@@ -118,13 +117,9 @@ def render():
         "           (equal (w3t::step/r-ctxt-instrs (list :|%;%| z *body-6*))",
         "                  (list (list :|%;%| z2 (append val (cdr *body-6*))))))",
         '  :hints (("Goal"',
-        "           :use ((:instance (:definition w3t::step/r-ctxt-instrs)",
-        "                            (w3t::%a0 (list :|%;%| z *body-6*)))",
-        "                 (:instance (:definition w3t::step/search21)",
-        "                            (w3t::%k 0) (w3t::%lo 0) (w3t::%hi 0)",
-        "                            (w3t::%t6 *body-6*) (w3t::%t9 0)",
-        "                            (w3t::z z)",
-        "                            (w3t::%a0 (list :|%;%| z *body-6*)))))",
+        "           :use ((:instance engine-flat-body-step",
+        "                            (b *body-6*)",
+        "                            (inner (list (list :|%;%| z2 val)))))))",
     ])
     flatg += ")" * bal(flatg)
     assert bal(flatg) == 0
@@ -279,6 +274,8 @@ def render():
         "; what works.",
         "",
         '(in-package "MILAWA-WASM")',
+        "",
+        '(include-book "engine-flat")',
         "",
         '(include-book "head")',
         "",
