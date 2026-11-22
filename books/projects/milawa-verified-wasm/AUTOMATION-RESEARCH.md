@@ -821,9 +821,13 @@ chain levels were re-proved through `engine-admin-term-in-block`:
 The in-book integration failed at the first of these: emitting the four forms
 inside an `encapsulate` with a **local** `(include-book "engine")` left the
 `step-of-flat-block`/`reconstruct-abs-z` equality unproved in the encapsulate's
-local theory (the session proof used the engine globally).  The committed
+local theory (the session proof used the engine globally).  A leaf book after
+`chain` with `(include-book "chain")` and `(include-book "engine")` (the engine
+global, the session's theory) failed at the same `chain-step-flat-own` event,
+1,730 prover steps, even with the session's exact hint.  The committed
 `chain.lisp` therefore still carries the old label/frame proofs.  Next attempt:
-put the refactored label/frame facts in a book **after** `chain` with the
-engine global, and let `frozen`/`step-body-6-first` use the new facts; or
-reproduce the session's exact theory in the local encapsulate.
+isolate the flat step from `chain`'s rewrite rules (e.g., a book that proves
+`we::step-of-flat-block` on this body before including `chain`, or a
+`make-event` that captures the session's theory), then instantiate the admin
+lemma; the label/frame instances themselves are proved and ready.
 
