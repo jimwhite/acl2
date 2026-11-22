@@ -54,22 +54,6 @@
                             (b *body-6*)
                             (inner (list (list :|%;%| z2 val))))))))
 
-
-; The label level: a step inside a label is a step of its body, re-wrapped.
-; The flat lemma has to be passed with :USE rather than left to fire as a
-; rewrite rule, and `step/r-ctxt-instrs` has to be DISABLED so that ACL2
-; applies the lemma instead of expanding the search again.  Both are load-
-; bearing: without the disable the same goal costs 288,294 steps and stalls.
-; 1,217,401 prover steps.
-(defthm step-in-label-body-6-first
-  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :label_%{%}% 1 nil *body-6*))))
-         (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*)))))))
-  :hints (("Goal"
-           :use (step-flat-body-6-first
-                 (:instance (:definition w3t::step/r-ctxt-label)
-                            (w3t::%a0 (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :label_%{%}% 1 nil *body-6*))))))
-           :in-theory (disable w3t::step/r-ctxt-instrs))))
-
 ; The label level at an arbitrary store.  The value is kept CONCRETE: with
 ; it symbolic the rewriter has to reason about `append` and the same statement
 ; runs to 48.6M prover steps without finishing.  487,458 steps here.
@@ -81,52 +65,6 @@
   :hints (("Goal"
            :use ((:instance (:definition w3t::step/r-ctxt-label)
                             (w3t::%a0 (list :|%;%| z (list (list :label_%{%}% 1 nil *body-6*))))))
-           :in-theory (disable w3t::step/r-ctxt-instrs))))
-
-; The frame level, which is where the descent starts for a call to this
-; function.  6,861,519 prover steps -- the largest proof in the project -- and
-; the last of the three bridge lemmas.
-;
-; One thing to know: `step/r-ctxt-label` must be LEFT ENABLED here.  Disabling
-; it costs the proof, because ACL2 then still has to establish that the label
-; rule applies, and cannot unfold the rule to do it.
-(defthm frame-body-6-general
-  (implies (equal (w3t::step (list :|%;%| (list :|%;%| s f-prime) (list (list :label_%{%}% 1 nil *body-6*))))
-                  (list (list :|%;%| (list :|%;%| s2 f2) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*)))))))
-           (equal (w3t::step (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 f-prime (list (list :label_%{%}% 1 nil *body-6*))))))
-                  (list (list :|%;%| (list :|%;%| s2 f) (list (list :frame_%{%}% 1 f2 (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*))))))))))
-  :hints (("Goal"
-           :use ((:instance (:definition w3t::step/r-ctxt-frame)
-                            (w3t::%a0 (list :|%;%| (list :|%;%| s f) (list (list :frame_%{%}% 1 f-prime (list (list :label_%{%}% 1 nil *body-6*))))))))
-           :in-theory (disable w3t::step/r-ctxt-instrs))))
-
-; ---------------------------------------------------------------------
-; THE FIRST LINK.
-;
-; One step of function 6's body, from the configuration a call to it leaves
-; behind: a frame holding a label holding the body.  Result: the body's first
-; instruction replaced by the value it pushed, with the store, the frame and
-; the label's own stack untouched.
-;
-; This is just the three bridges instantiated at the abstract store, which is
-; why it went through first time: each level arrives as a hypothesis rather
-; than as something to be rediscovered.  `step/r-ctxt-instrs` is disabled so
-; the flat bridge is used instead of the search being re-expanded; the label
-; and frame rules are LEFT ENABLED, because `step` still has to reach them.
-(defthm step-body-6-first
-  (equal (w3t::step (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract bytes sp pc clen status result)) (list (list :label_%{%}% 1 nil *body-6*))))))
-         (list (list :|%;%| (mvm-abs-z-abstract bytes sp pc clen status result) (list (list :frame_%{%}% 1 (caddr (mvm-abs-z-abstract bytes sp pc clen status result)) (list (list :label_%{%}% 1 nil (cons (list :const (list :i32) status) (cdr *body-6*)))))))))
-  :hints (("Goal"
-           :use ((:instance frame-body-6-general
-                            (s (cadr (mvm-abs-z-abstract bytes sp pc clen status result))) (f (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))
-                            (f-prime (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))
-                            (s2 (cadr (mvm-abs-z-abstract bytes sp pc clen status result))) (f2 (caddr (mvm-abs-z-abstract bytes sp pc clen status result))))
-                 (:instance label-body-6-general
-                            (z (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))) (z2 (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))))
-                 (:instance flat-body-6-general
-                            (z (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result)))) (z2 (list :|%;%| (cadr (mvm-abs-z-abstract bytes sp pc clen status result)) (caddr (mvm-abs-z-abstract bytes sp pc clen status result))))
-                            (val (list (list :const (list :i32) status))))
-                 step-of-global-get-3)
            :in-theory (disable w3t::step/r-ctxt-instrs))))
 
 ; WHAT ONE STEP OF A WHOLE FRAME DOES, derived rather than guessed:

@@ -140,7 +140,7 @@
                                 (cons (list :const (list :i32) status)
                                       (cdr *body-6*)))))
   :hints (("Goal"
-           :use ((:instance frame-body-6-general
+           :use ((:instance chain-frame-step
                             (s (frozen-store bytes sp pc clen status result))
                             (f (milawa-callee-frame 6))
                             (f-prime (milawa-callee-frame 6))

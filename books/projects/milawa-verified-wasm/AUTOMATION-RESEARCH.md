@@ -841,10 +841,16 @@ from `we::step-of-flat-block` + `rebuild-when-state-shape-p`.
 - `chain-frame-step` — the frame lift via the admin lemma, its hypothesis
   being exactly the inner step (old proof: 6,861,519 prover steps).
 
-The committed `chain.lisp` still carries its old label/frame proofs, and
-`frozen`/`step-body-6-first` still use them.  The new facts are certified and
-ready; the remaining step is a downstream edit (include
-`chain-label-generic` from `frozen`/a post-chain body book and switch the
-`:instance` names), or moving the old lemmas out of `chain.lisp` so the new
-ones replace them.  The gate is green at **52 books**.
+**The replacement is landed.**  `chain.lisp` is reduced to
+`step-flat-body-6-first`, `flat-body-6-general` and `label-body-6-general`;
+`step-in-label-body-6-first` and `frame-body-6-general` are gone, and
+`step-body-6-first` moved to **`chain-body.lisp`**, which proves it from
+`chain-frame-step` + `chain-label-step` (3.3 s; the old proof was effectively
+the 6.8M-step frame expansion).  The exported facts are engine-free at the
+boundary: the flat lemma states `milawa-state-pair-p` (a project predicate),
+the engine's rules are in local encapsulates, and the state is kept opaque with
+`mvm-abs-z-abstract`.  `links.lisp` includes `chain-body` for
+`step-body-6-first`; `frozen.lisp` uses `chain-frame-step` in place of
+`frame-body-6-general`.  `links` certifies in 10.1 s and `frozen` in 49.2 s.
+The gate is green at **53 books**.
 

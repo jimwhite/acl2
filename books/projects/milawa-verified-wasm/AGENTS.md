@@ -69,12 +69,15 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   `engine-flat-body-step`; this is the template for replacing a search
   expansion: two `:use` facts instead of `step/r-ctxt-instrs` + `search21`
   at the literal body.
-- `wasm3/chain-flat-own.lisp` — the body-6 `step` over `s`/`f` with
-  `state-shape-p` and a non-nil `inner`, from `we::step-of-flat-block` +
-  `rebuild-when-state-shape-p`.  The `:use` must instantiate `we::z`.
-- `wasm3/chain-label-generic.lisp` — `chain-state-shape`, `chain-label-step`
-  and `chain-frame-step` via `engine-admin-term-in-block` (the refactored
-  label/frame levels; the old chain proofs remain).
+- `wasm3/chain-flat-own.lisp` — the body-6 `step` over the project's
+  `milawa-state-pair-p` with a non-nil `inner`, from
+  `we::step-of-flat-block` + `rebuild-when-state-shape-p`.  The engine rules
+  are local; the `:use` must instantiate `we::z`.
+- `wasm3/chain-label-generic.lisp` — `chain-state-pair`, `chain-label-step`
+  and `chain-frame-step` via `engine-admin-term-in-block`, engine rules local.
+- `wasm3/chain-body.lisp` — `step-body-6-first`, from `chain-frame-step` +
+  `chain-label-step`; `links`/`frozen` include it.  `chain.lisp` is now only
+  the flat laws and the generic label (its old label/frame proofs are gone).
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.
@@ -275,7 +278,7 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
 
 ## Current state (2026-11-20)
 
-52 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
+53 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
 symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running

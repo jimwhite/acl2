@@ -28,6 +28,7 @@
 
 (include-book "search")
 (include-book "chain")
+(include-book "chain-body")
 
 
 ; The label level at the second position.  The body there is
