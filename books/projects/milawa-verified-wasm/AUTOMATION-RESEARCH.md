@@ -643,3 +643,125 @@ Implemented after the report, in the same checkout:
   (:return))`, not `((:call 4) (:return))`), which is the class of mistake the
   book exists to make loud.
 
+---
+
+## Appendix C: the engine-reuse pilot (measured)
+
+The pilot reused `engine-plan2` (`1ce59e0`) directly: I checked the branch out
+into `/tmp/engine-plan2`, symlinked the project's generated 3.0 books into
+`translate/gen/wasm-3.0`, certified `engine/rules/context` (5.2 s after its
+dependencies), and loaded it in the same ACL2 session as the project's
+`wasm3/context` and `wasm3/const-callee`.  Both copies of the semantics
+resolve to the same file, so the include is cheap (0.33 s) and there is no
+package conflict.
+
+### The three generic lemmas
+
+All three are stated in the project's own package and term spellings.
+
+```lisp
+;; 319 prover steps.  The engine's bridge, with x = nil (no operand values).
+(defthm pilot-flat-search-bridge
+  (implies (and (true-listp r) (not (w3t::val-p i)))
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| z (cons i r)))
+                  (we::flat-search 0 nil i r z)))
+  :hints (("Goal" :use ((:instance we::step/r-ctxt-instrs-becomes-flat-search
+                                   (we::x nil) (we::i i) (we::r r) (we::z z))))))
+
+;; 841 prover steps.  The context rule for one instruction and a non-empty
+;; rest, in terms of the instruction's own step.  No %size/search arithmetic.
+(defthm pilot-ctxt-from-instr-step
+  (implies (and (not (w3t::val-p i))
+                (true-listp r)
+                (consp r)
+                (equal inner (w3t::step (list :|%;%| z (list i))))
+                inner)
+           (equal (w3t::step/r-ctxt-instrs (list :|%;%| z (cons i r)))
+                  (list (list :|%;%| (cadr (car inner))
+                              (append (caddr (car inner)) r)))))
+  :hints (("Goal" :use pilot-flat-search-bridge
+                  :expand ((we::flat-search 0 nil i r z)))))
+
+;; 7,189 prover steps.  A label/handler/frame as the head of a block with
+;; values before and a rest after -- the generic admin-term lift.
+(defthm pilot-admin-term-in-block-generic
+  (implies (and (member-equal k '(:l :h :f))
+                (or (equal k :f) (true-listp x))
+                (true-listp b)
+                (not (we::exit-body-p b))
+                (true-listp r)
+                (equal inner (w3t::step (list :|%;%|
+                                              (list :|%;%| s (if (equal k :f) x f))
+                                              b)))
+                inner
+                (we::state-shape-p (cadr (car inner))))
+           (equal (w3t::step (list :|%;%| (list :|%;%| s f)
+                                   (cons (we::admin-term k n x b) r)))
+                  (list (list :|%;%|
+                              (list :|%;%| (cadr (cadr (car inner)))
+                                    (if (equal k :f) f (caddr (cadr (car inner)))))
+                              (cons (we::admin-term k n
+                                                    (if (equal k :f)
+                                                        (caddr (cadr (car inner)))
+                                                      x)
+                                                    (caddr (car inner)))
+                                    r)))))
+  :hints (("Goal" :use ((:instance we::step-of-admin-term-in-block
+                                   (we::k k) (we::n n) (we::x x) (we::b b)
+                                   (we::s s) (we::f f) (we::v nil) (we::r r)
+                                   (we::inner inner))))))
+```
+
+`admin-term` builds exactly the project's `(:label_%{%}% n x b)`,
+`(:handler_%{%}% ...)` and `(:frame_%{%}% ...)` literals, so the engine's
+statements are in the project's configuration shape, not a parallel one.
+
+### The measured comparison at `const-callee`'s `read1`
+
+Per-event prover steps from `const-callee.cert.out`:
+
+| Project fact | Steps | Generic replacement | Steps |
+|---|---:|---|---:|
+| `tail-cl-read1-ctxt-d` (context rule, frame head) | 94,813 | `pilot-ctxt-from-instr-step` | **841** |
+| `tail-cl-read1-label0-rest` (context rule, label head + rest) | 1,173,308 | `pilot-admin-term-in-block-generic` | **7,189** |
+| `tail-cl-read1-label1` (label lift) | 56,263 | same generic lemma (r = nil) | **7,189** |
+| `tail-cl-read1-frame` (frame lift) | 25,820 | same generic lemma (k = :f, r = nil) | **7,189** |
+| `tail-cl-read1-step-d` (the composed step) | 101,333 | context lemma + an inner-step fact | small |
+
+So the context/search/%size rung drops by **113×** (94,813 → 841), and the
+label/frame rung drops by about **175×** (1.17M + 56k + 26k → three 7,189-step
+generic facts, or one fact reused).  The inner instruction steps
+(`tail-cl-read1-match141` 116, `search141` 386, and the callee's own steps)
+remain; they are the next thing to express with `step-of-flat-block`.
+
+### What this changes
+
+The generic lemmas replace the per-position `spure`/`sread`/`match`/`search`/
+`ctxt`/`label`/`frame` family, not the inner step facts.  A position becomes:
+
+1. a `step-of-flat-block` instance for the instruction itself (or a supplied
+   inner-step fact),
+2. a `pilot-ctxt-from-instr-step` instance for the context rule,
+3. a `pilot-admin-term-in-block-generic` instance at each enclosing
+   label/handler/frame.
+
+That is three `:use` forms per level instead of 20 hand-written lemmas.  The
+engine's V1–V3 books are the source of the shape/arity/exit-body facts these
+need; the pilot uses them as they are.
+
+### Reproducing
+
+```sh
+cd books/projects/milawa-verified-wasm/wasm-acl2
+git fetch origin engine-plan2
+git worktree add /tmp/engine-plan2 FETCH_HEAD
+ln -s "$PWD/translate/gen/wasm-3.0" /tmp/engine-plan2/translate/gen/wasm-3.0
+cd /tmp/engine-plan2/engine
+cert.pl --acl2 /workspaces/acl2/saved_acl2 -j 4 rules/context
+```
+
+Then in a session: load `package.lsp`, include `wasm3/context` and
+`/tmp/engine-plan2/engine/rules/context`, and submit the three forms above.
+`include-book` of `wasm3/const-callee` supplies the project facts for the
+comparison.
+
