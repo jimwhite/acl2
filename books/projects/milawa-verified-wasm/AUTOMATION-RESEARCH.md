@@ -835,8 +835,12 @@ include order; the session proof's exact theory has not been reproduced in a
 certified book.
 
 The committed `chain.lisp` therefore still carries the old label/frame proofs.
-Next attempt: diff the session's world/theory against the book's on the failed
-goal (e.g., `:pso`/`:pr` in both, or a `make-event` that records and replays
-the session's theory), then instantiate the admin lemma; the label/frame
-instances themselves are proved and ready.
+A fourth attempt restated the pair rebuild explicitly in the isolated book
+(`chain-reconstruct-abs-z`, proved) and enabled it in the flat step's hint;
+`chain-step-flat-own` still failed, 1,688 prover steps.  The missing piece is
+therefore not `reconstruct-abs-z` enablement.  Next attempt: a `:pr`/`:pso`
+diff of the same goal in the live session (where it proved) and in the book
+(where it fails), or a `make-event` that records and replays the session's
+theory; then instantiate the admin lemma.  The label/frame instances
+themselves are proved and ready.
 
