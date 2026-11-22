@@ -17,15 +17,17 @@ anyone (human or agent) working here.
 
 ```
 make check ACL2=/workspaces/acl2/saved_acl2    # lint, books, module pin, corpus, no-skips, completeness
-make -C wasm3 ACL2=...                         # the wasm3 books only (needs the pinned .wasm-acl2)
+make -C wasm3 ACL2=...                         # the wasm3 books only (needs the pinned wasm-acl2 submodule)
 make experiment FILE=/tmp/try.lsp BOOK=chain    # scratch ACL2 with dir/timeout/log fixed
 make walk                                       # what the semantics does next, from the post-call config
 make lint                                       # parens the way ACL2 reads them
 ```
 
-The wasm3 books depend on the pinned `wasm-acl2` clone at
-`/workspaces/acl2/.wasm-acl2` (commit `7f96c89`); its 26 generated books must be
-certified first.  `make books` says so rather than failing obscurely.
+The wasm3 books depend on the pinned `wasm-acl2` submodule at `wasm-acl2/`
+(commit `7f96c89`, remote `https://github.com/raymyers/wasm-acl2.git`); its 26
+generated books must be certified first.  `make books` says so rather than
+failing obscurely.  The submodule lives inside this project so the project's
+`cert_pl_exclude` keeps it out of a community certification run.
 
 **The package is `MILAWA-WASM`.**  Every book starts
 `(in-package "MILAWA-WASM")`.  The `defpkg` is in `package.lsp` at the project

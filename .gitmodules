@@ -1,0 +1,3 @@
+[submodule "books/projects/milawa-verified-wasm/wasm-acl2"]
+	path = books/projects/milawa-verified-wasm/wasm-acl2
+	url = https://github.com/raymyers/wasm-acl2.git

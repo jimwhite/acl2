@@ -87,7 +87,7 @@
 
 (in-package "MILAWA-WASM")
 
-(include-book "/workspaces/acl2/.wasm-acl2/translate/gen/wasm-3.0/wasm3")
+(include-book "../wasm-acl2/translate/gen/wasm-3.0/wasm3")
 (include-book "state")
 (include-book "memory")
 (include-book "../machine/mvm")

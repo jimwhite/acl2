@@ -270,11 +270,12 @@ make ACL2=/path/to/saved_acl2
 ```
 
 That certifies every book here; the whole tree takes a few seconds.  The WASM
-side is a separate, pinned clone, `../../../../.wasm-acl2` (commit `7f96c89`),
-and its 3.0 books are generated rather than checked in:
+side is a pinned git submodule, `wasm-acl2/` (commit `7f96c89`,
+`https://github.com/raymyers/wasm-acl2.git`), and its 3.0 books are generated
+rather than checked in:
 
 ```sh
-cd ../../../../.wasm-acl2/translate
+cd wasm-acl2/translate
 make gen SPEC=3.0 ACL2=$ACL2                    # ~2 min, no Nix needed
 $ACL2_SYSTEM_BOOKS/build/cert.pl --acl2 $ACL2 -j 4 gen/wasm-3.0/wasm3
 make check-il SPEC=3.0 NIX=/nix/var/nix/profiles/default/bin/nix   # Nix; the IL must match SpecTec

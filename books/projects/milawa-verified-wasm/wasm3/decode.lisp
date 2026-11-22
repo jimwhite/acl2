@@ -40,7 +40,7 @@
 ; the clone lives somewhere else.  (ADD-INCLUDE-BOOK-DIR would be tidier, but
 ; cert.pl loads these forms before the book's own events have run, so a :DIR key
 ; registered inside the book is not yet legal when the include is processed.)
-(include-book "/workspaces/acl2/.wasm-acl2/translate/gen/wasm-3.0/wasm3")
+(include-book "../wasm-acl2/translate/gen/wasm-3.0/wasm3")
 
 (include-book "module")
 

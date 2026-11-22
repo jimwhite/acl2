@@ -23,15 +23,15 @@
 #   node                         for the example corpus, which runs the real
 #                                .wasm; the books do not need it
 #
-# The wasm3/ books depend on the pinned wasm-acl2 tree at ../../.. /.wasm-acl2,
-# which is cloned rather than vendored and is excluded from `git status`.  Its 26
-# generated books must be certified before wasm3/ can be; `make books` says so
-# rather than failing obscurely.
+# The wasm3/ books depend on the pinned wasm-acl2 tree at wasm-acl2/, a git
+# submodule of this project (pinned commit 7f96c89) covered by the project's
+# cert_pl_exclude.  Its 26 generated books must be certified before wasm3/ can
+# be; `make books` says so rather than failing obscurely.
 
 ACL2 ?= ../../../../saved_acl2
 PROJECT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 BOOKDIRS := milawa-lisp machine wasm3
-WASM_MARKER := ../../../.wasm-acl2/translate/gen/wasm-3.0/wasm3.cert
+WASM_MARKER := wasm-acl2/translate/gen/wasm-3.0/wasm3.cert
 
 .PHONY: all check books examples module-check no-skips lint experiment walk complete clean help
 
@@ -55,7 +55,7 @@ check: lint books module-check examples no-skips complete
 books:
 	@if [ ! -f $(PROJECT)/$(WASM_MARKER) ]; then \
 	  echo "wasm3/ needs the WASM 3.0 semantics first:"; \
-	  echo "  cd $(PROJECT)/../../../.wasm-acl2/translate && make gen SPEC=3.0 ACL2=$(abspath $(ACL2))"; \
+	  echo "  cd $(PROJECT)/wasm-acl2/translate && make gen SPEC=3.0 ACL2=$(abspath $(ACL2))"; \
 	  echo "  cd gen/wasm-3.0 && $(PROJECT)/../../build/cert.pl --acl2 $(abspath $(ACL2)) -j 4 wasm3"; \
 	  exit 1; \
 	fi

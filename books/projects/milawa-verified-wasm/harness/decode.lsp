@@ -18,7 +18,7 @@
 ;
 ;   ./saved_acl2 < books/projects/milawa-verified-wasm/harness/decode.lsp
 
-(include-book "/workspaces/acl2/.wasm-acl2/translate/gen/wasm-3.0/wasm3")
+(include-book "/workspaces/acl2/books/projects/milawa-verified-wasm/wasm-acl2/translate/gen/wasm-3.0/wasm3")
 (program)
 (set-state-ok t)
 

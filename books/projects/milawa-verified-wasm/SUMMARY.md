@@ -1664,9 +1664,10 @@ make -C books/projects/milawa-verified-wasm/machine     ACL2=$ACL2   # 4 books, 
 make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # 20 books, needs the pin
 ```
 
-The `wasm3/` books depend on `wasm-acl2`, pinned at `7f96c89` and cloned (not
-vendored) as `/workspaces/acl2/.wasm-acl2`; they are listed in `cert_pl_exclude`
-so a community certification run never has to find it.  The 26 books of the WASM
+The `wasm3/` books depend on `wasm-acl2`, pinned at `7f96c89`, as the git
+submodule `wasm-acl2/` inside this project (`https://github.com/raymyers/wasm-acl2.git`);
+the project is listed in `cert_pl_exclude`, so a community certification run
+never has to find it or initialize the submodule.  The 26 books of the WASM
 3.0 semantics are generated from the checked-in IL (`make gen SPEC=3.0`, ~2 min)
 and certified (~5 min); `make -C translate check-il SPEC=3.0` re-derives that IL
 from the spec sources through Nix and reports it reproducible.
