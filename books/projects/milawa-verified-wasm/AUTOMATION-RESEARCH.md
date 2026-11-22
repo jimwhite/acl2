@@ -803,48 +803,48 @@ Concrete moves from the old design to the new one:
 
 ---
 
-## Appendix E: the label/frame refactor (validated, not yet integrated)
+## Appendix E: the label/frame refactor (landed)
 
-In a session with `chain` and the global `engine` book, the three remaining
-chain levels were re-proved through `engine-admin-term-in-block`:
+The chain's label and frame levels are now proved through
+`engine-admin-term-in-block`, in two certified leaf books.
 
-- `step-flat-body-6-first-own` — the `step` (not ctxt) of the flat body, from
-  `we::step-of-flat-block` + `step-of-global-get-3` + `reconstruct-abs-z`.
-- `state-shape-p-mvm-abs-z-2` — the admin lift's state condition, 54 prover
-  steps, with `mvm-abs-z-abstract` opaque.
-- `step-in-label-body-6-first-gen-2` — the concrete label lift, from the admin
-  lemma + the local flat step + the state fact.  The old proof was 1,217,401
-  prover steps.
-- `frame-body-6-general-gen` — the frame lift, whose hypothesis is exactly the
-  admin lemma's inner step.  The old proof was 6,861,519 prover steps.
+The blockers were not theory differences; they were statement bugs:
 
-The in-book integration failed at the first of these: emitting the four forms
-inside an `encapsulate` with a **local** `(include-book "engine")` left the
-`step-of-flat-block`/`reconstruct-abs-z` equality unproved in the encapsulate's
-local theory (the session proof used the engine globally).  A leaf book after
-`chain` with `(include-book "chain")` and `(include-book "engine")` (the engine
-global, the session's theory) failed at the same `chain-step-flat-own` event,
-1,730 prover steps, even with the session's exact hint.  A third route — a book
-that includes only `head` and `engine`, defines `*body-6*` with
-`(milawa-func-body 6)`, and so has none of `chain`'s rewrite rules — also
-failed at the same event, 1,730 prover steps: the checkpoint is the
-`step-of-flat-block` conclusion with the state spelled `Z` on one side and
-`(list :%;% (cadr Z) (caddr Z))` on the other, and `reconstruct-abs-z` does not
-close it in the book.  So the difference is neither `chain`'s rules nor the
-include order; the session proof's exact theory has not been reproduced in a
-certified book.
+- the earlier session statements omitted the configuration's leading `:%;%`
+  (`(list z body)` instead of `(list :%;% z body)`), so they were not the real
+  `step` and could not reproduce in a book;
+- the engine's `step-of-flat-block` requires `inner` to be **non-nil**; the
+  generic statement must carry `inner` as a hypothesis;
+- `rebuild-when-state-shape-p`'s variable is `WE::Z`; the `:use` needs
+  `(:instance we::rebuild-when-state-shape-p (we::z z))`, or the state spelling
+  stays apart from the project's `Z`.
 
-The committed `chain.lisp` therefore still carries the old label/frame proofs.
-A fourth attempt restated the pair rebuild explicitly in the isolated book
-(`chain-reconstruct-abs-z`, proved) and enabled it in the flat step's hint;
-`chain-step-flat-own` still failed, 1,688 prover steps.  The missing piece is
-therefore not `reconstruct-abs-z` enablement.  Finally, a **fresh session** with
-the same `chain` + `engine` includes and the exact `repro-flat` form also
-failed.  So the original `step-flat-body-6-first-own-3` success is not
-reproducible even in a session; it depended on transient session state (the
-earlier failed attempts), not on a theory difference between the session and
-the book.  There is no session-vs-book diff to apply: the flat bridge has to be
-re-proved from scratch with a reproducible hint before the label/frame
-instances can be used.  The label/frame admin instances themselves are proved
-and ready.
+**`wasm3/chain-flat-own.lisp`** (certified, 3.6 s):
+
+```lisp
+(defthm chain-step-flat-own
+  (implies (and (we::state-shape-p z)
+                (equal inner (w3t::step (list :|%;%| z (list (car *body-6*)))))
+                inner)
+           (equal (w3t::step (list :|%;%| z *body-6*))
+                  (list (list :|%;%| (cadr (car inner))
+                              (append (caddr (car inner)) (cdr *body-6*)))))))
+```
+
+from `we::step-of-flat-block` + `rebuild-when-state-shape-p`.
+
+**`wasm3/chain-label-generic.lisp`** (certified, 3.6 s):
+
+- `chain-state-shape` — `(state-shape-p (mvm-abs-z-abstract ...))`, 54 steps;
+- `chain-label-step` — the concrete label lift via the admin lemma and the
+  flat bridge (old proof: 1,217,401 prover steps);
+- `chain-frame-step` — the frame lift via the admin lemma, its hypothesis
+  being exactly the inner step (old proof: 6,861,519 prover steps).
+
+The committed `chain.lisp` still carries its old label/frame proofs, and
+`frozen`/`step-body-6-first` still use them.  The new facts are certified and
+ready; the remaining step is a downstream edit (include
+`chain-label-generic` from `frozen`/a post-chain body book and switch the
+`:instance` names), or moving the old lemmas out of `chain.lisp` so the new
+ones replace them.  The gate is green at **52 books**.
 
