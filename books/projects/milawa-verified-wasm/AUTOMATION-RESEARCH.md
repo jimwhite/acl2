@@ -932,6 +932,27 @@ to move: their label bodies start with value instructions, so the admin-head
 `exit-body-p` lemma does not apply, and enabling the `exit-*` helpers left the
 inner-state equality mismatched.
 
+**`const.lisp`'s value-prefixed context rungs.**  `engine-flat.lisp` now
+exports `engine-ctxt-from-values-instr-step`: a `milawa-values-p` prefix,
+then one instruction, with `flat-search` at `k = (len x)`.  The exported
+statement uses the project predicate; the local `milawa-values-p-is-we`
+bridge supplies `we::vals-p` to the engine (Step 1 cannot translate a
+statement that mentions a WE function from the local include).  It cut
+`dconst-call0-expand-ctxt` from **3,230,608 to 29,337** prover steps
+(`const.lisp` 457.0M -> 453.8M; the book certifies in ~14 min).
+
+`dconst-call0-entry-ctxt` (39,463,918 steps) is **not** covered.  Its redex
+is the two-instruction `(ref.func_addr 0)` + `call_ref` pair with the const
+as the operand, so the "values prefix" would contain a non-value and
+`flat-search`'s `(vals-p x)` fails.  The engine's flat abstraction commits to
+a single instruction `i` after the values; the call entry needs a
+multi-instruction slice search.  A generic one-value/two-instruction slice
+lemma was attempted with the search21 definitions and exceeded the 400 s
+budget.  `const.lisp`'s `link-*` chain (30 facts, up to 24M) is the same
+`dframe-outer-sep` shape as the engine frame lift, but aligning the
+`zo*`/`sz*` state spellings for the engine instance was not achieved;
+that migration is deferred.
+
 The earlier builder-spelling attempt (callee body step, label-1 step, frame
 step, then the admin lift) was abandoned: crossing the builder spelling to
 the data fact constant-folds the block into a quoted list, which never matches

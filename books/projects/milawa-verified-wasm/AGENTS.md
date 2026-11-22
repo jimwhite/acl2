@@ -93,6 +93,18 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   `milawa-func-body`; `:use` the isolated step fact, and add
   `we::not-exit-body-p-of-vals-admin-term-rest` for the admin lift's
   `exit-body-p` hypothesis.
+- `wasm3/engine-flat.lisp` exports `engine-ctxt-from-values-instr-step`: a
+  value prefix before a single instruction, with `milawa-values-p` (project
+  vocabulary; the local `milawa-values-p-is-we` bridge supplies `we::vals-p`
+  to the engine).  It cut `const.lisp`'s `dconst-call0-expand-ctxt` from
+  **3,230,608 to 29,337** prover steps.  The 39.5M `dconst-call0-entry-ctxt`
+  is not covered: its redex is the two-instruction `ref.func_addr` +
+  `call_ref` pair with the const as operand, so the prefix contains a
+  non-value and `flat-search`'s `vals-p` does not apply; a generic
+  multi-instruction slice lemma timed out (400 s).  `const.lisp`'s
+  `link-*` chain (30 facts, up to 24M) uses `dframe-outer-sep` with the same
+  shape as the engine frame lift, but the `zo*`/`sz*` state-spelling
+  alignment was not yet achieved.
 - `wasm3/const-fetch.lisp` has the same ten-position shape and now runs all
   ten `label0-rest` rungs through `engine-ctxt-from-instr-step`
   (1.0M-6.3M -> 1.2k-18k steps; book 32.2M -> 16.8M).  Four frames (blk, elb,
