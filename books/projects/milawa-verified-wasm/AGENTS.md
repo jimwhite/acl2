@@ -80,14 +80,19 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   the flat laws and the generic label (its old label/frame proofs are gone).
 - `wasm3/const-callee.lisp` now carries the engine rungs inline, with the
   engine's rules LOCAL: `clr1-ctxt-engine` (the read1 `ctxt-d` rung through
-  `engine-ctxt-from-instr-step` + `tail-iframe3`, 2,098 steps) and the seven
-  `label0-rest` rungs, each an encapsulated instance of the same engine lemma
-  with the position's `tail-cl-<p>-label0` as the isolated step.  The
-  label0-rest costs dropped from 120k-1.63M to 2.2k-14.1k prover steps.  The
-  hint must disable `w3t::step` (it unfolds the store),
-  `sof-gset-is-frozen-store` (it rewrites the state spelling),
-  `milawa-callee-frame`, and `milawa-func-body`; `:use` the isolated label0
-  fact rather than relying on the engine `inner` to be re-derived.
+  `engine-ctxt-from-instr-step` + `tail-iframe3`, 2,098 steps), the seven
+  `label0-rest` rungs (the same engine lemma with the position's
+  `tail-cl-<p>-label0` as the isolated step), the six larger `label0` rungs
+  (`engine-admin-term-in-block`, `k = :l`, with `tail-cl-<p>-step-d` as the
+  inner), and all seven `frame` rungs (`k = :f`, with `tail-cl-<p>-label1` as
+  the inner).  `label1` still uses `label-lift-general` and its trap/size
+  premises.  The costs: label0-rest 120k-1.63M -> 2.2k-14.1k; label0
+  10.8k-102.4k -> 4.7k-6.3k; frame 8.4k-80.9k -> 4.4k-7.6k.  The hint must
+  disable `w3t::step` (it unfolds the store), `sof-gset-is-frozen-store` (it
+  rewrites the state spelling), `milawa-callee-frame`, and
+  `milawa-func-body`; `:use` the isolated step fact, and add
+  `we::not-exit-body-p-of-vals-admin-term-rest` for the admin lift's
+  `exit-body-p` hypothesis.
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.

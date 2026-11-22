@@ -898,6 +898,26 @@ About **6.5M prover steps** removed; `const-callee` certifies in 16.2 s (from
 21.9 s with only the read1 rung, and from a much larger figure before).  The
 gate is green at **53 books**.
 
+The two levels below the payload came next, again at the data spelling:
+
+- **`label0`** (six of the seven positions; ldis/fdis were already cheap) via
+  `engine-admin-term-in-block` with `k = :l`, `b` the frame-plus-tail body,
+  and `tail-cl-<p>-step-d` as the inner.  Costs: 10.8k-102.4k -> 4.7k-6.3k.
+- **`frame`** (all seven) via `k = :f`, with `tail-cl-<p>-label1` as the
+  inner.  Costs: 8.4k-80.9k -> 4.4k-7.6k.
+
+Both need the engine fact `we::not-exit-body-p-of-vals-admin-term-rest` to
+discharge the admin lift's `(not (exit-body-p b))` hypothesis; without it the
+`exit-body-p` case survives clausification because the engine disables
+`exit-body-p`.  `label1` remains on `label-lift-general` and its trap/size
+premises: the `step` version of the label-0 block (needed as the engine's
+inner) expands `step` and hits a residual arithmetic side goal that the
+`label-lift-general` premises already discharge.
+
+The current `const-callee` total is 7.86M prover steps, down from roughly
+14.4M before the engine rungs (the remaining large items are `label1` and the
+`step_read/split` premises).
+
 The earlier builder-spelling attempt (callee body step, label-1 step, frame
 step, then the admin lift) was abandoned: crossing the builder spelling to
 the data fact constant-folds the block into a quoted list, which never matches
