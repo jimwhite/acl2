@@ -963,6 +963,17 @@ on the symbolic guards; the working proof is the flat-search bridge plus the
 `zo*`/`sz*` state spellings for the engine instance was not achieved;
 that migration is deferred.
 
+**`const.lisp`'s `link-*` chain.**  `link-24` was the prototype: the engine
+frame lift (`engine-admin-term-in-block`, `k = :f`) with the link's own
+`lbl-dconst-push-s2-lit` as the inner, **enabling `zo2`** so the engine's
+`(list :%;% (sof zo2) (fof zo2))` inner state unfolds to the `(zo2 ...)`
+spelling of the label fact.  It proves in **69,573** steps (was
+24,361,332).  The alignment is state-function-specific: the `iz6`-state
+links (`link-00`..`link-22`) and the rest of the `zo*` group still fail in a
+group test (first at `link-23`), because the output state and the
+`state-shape-p` fact need their own alignments; that is the next step for
+the chain.
+
 The earlier builder-spelling attempt (callee body step, label-1 step, frame
 step, then the admin lift) was abandoned: crossing the builder spelling to
 the data fact constant-folds the block into a quoted list, which never matches

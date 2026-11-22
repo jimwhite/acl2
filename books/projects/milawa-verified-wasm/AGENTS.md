@@ -106,9 +106,14 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   second element is not a value; its bridge required the take-form
   `%size-of-operands-and-two-instr`, the append-form linear corollaries, and
   `:do-not-induct` (the symbolic search otherwise loops).  `const.lisp`
-  453.8M -> **414.6M**.  The `link-*` chain (30 facts, up to 24M) remains on
-  `dframe-outer-sep`: its `zo*`/`sz*` state spellings did not align with the
-  engine frame lift in the attempted prototype.
+  453.8M -> **414.6M**.  The `link-*` chain (30 facts, up to 24M) is
+  prototyped on `link-24`: `engine-admin-term-in-block` (`k = :f`) with
+  `lbl-dconst-push-s2-lit` as the inner and **`zo2` enabled** so the engine's
+  `(list :%;% (sof zo2) (fof zo2))` inner state unfolds to the label fact's
+  `(zo2 ...)` spelling; 24,361,332 -> **69,573** steps.  The state-function
+  alignment is per link: the `iz6`-state links and the rest of the `zo*`
+  group still fail (first at `link-23`), needing the output-state and
+  `state-shape-p` alignments.
 - `wasm3/const-fetch.lisp` has the same ten-position shape and now runs all
   ten `label0-rest` rungs through `engine-ctxt-from-instr-step`
   (1.0M-6.3M -> 1.2k-18k steps; book 32.2M -> 16.8M).  Four frames (blk, elb,
