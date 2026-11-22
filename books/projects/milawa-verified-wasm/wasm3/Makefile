@@ -7,7 +7,7 @@
 
 ACL2 ?= ../../../../saved_acl2
 CERT_PL ?= ../../../build/cert.pl
-BOOKS ?= subst bytes module state decode l1 memory numerics abs size symbolic instructions reads frames context literals engine calls returns head chain search links frozen running dispatch load fetch dispatch-tests halt abort oob const const-tail const-branch const-callee const-fetch
+BOOKS ?= subst bytes module state decode l1 memory numerics abs size symbolic instructions reads frames context literals engine calls returns head chain generic-position search links frozen running dispatch load fetch dispatch-tests halt abort oob const const-tail const-branch const-callee const-fetch
 
 all: cert
 

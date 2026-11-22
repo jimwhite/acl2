@@ -29,24 +29,13 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PROJECT = HERE.parent
-sys.path.insert(0, str(HERE))
 
 
-def func_body(index):
-    """The index-th function's instruction list, as source text."""
-    import importlib.util
-
-    spec = importlib.util.spec_from_file_location("gen_chain", HERE / "gen_chain.py")
-    gen = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(gen)
-    return gen.func_body(index)
-
-
-def script(body, steps, full, value):
+def script(func, steps, full, value):
     L = [
         '(in-package "MILAWA-WASM")',
         f"(defconst *pz* (mvm-abs-z-abstract (list 0 1 2 3) 4000 4200 100 {value} 0))",
-        "(defconst *pb* '" + body + ")",
+        f"(defconst *pb* (milawa-func-body {func}))",
         "(defconst *c0* (list :|%;%| *pz*",
         "                       (list (list :frame_%{%}% 1 (caddr *pz*)",
         "                                   (list (list :label_%{%}% 1 nil *pb*))))))",
@@ -84,7 +73,7 @@ def main():
     ap.add_argument("--timeout", default="900")
     args = ap.parse_args()
 
-    text = script(func_body(args.func), args.steps, args.full, args.value)
+    text = script(args.func, args.steps, args.full, args.value)
     with tempfile.NamedTemporaryFile("w", suffix=".lsp", delete=False) as fh:
         fh.write(text)
         path = fh.name

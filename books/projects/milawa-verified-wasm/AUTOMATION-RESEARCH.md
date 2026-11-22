@@ -767,3 +767,28 @@ The three lemmas are in `wasm3/engine.lisp`; a position uses them through
 `:use` (see the hints in that book).  `include-book` of `wasm3/const-callee`
 supplies the project facts for the comparison table above.
 
+---
+
+## Appendix D: refactor progress
+
+Concrete moves from the old design to the new one:
+
+- **`gen_chain.py` no longer parses Lisp.**  It used to find the seventh
+  `(:CODE ...)` in `state.lisp` with a paren counter.  `chain.lisp` now says
+  `(defconst *body-6* (milawa-func-body 6))`; ACL2 computes the body and the
+  defconst value is spliced at translation.  The regenerated `chain.lisp` lost
+  164 lines of copied instruction list and certifies in 11.6 s (measured).
+- **`walk.py` no longer parses Lisp either.**  Its script says
+  `(defconst *pb* (milawa-func-body FUNCTION))`; `make walk STEPS=3` was run
+  and prints the same STEP lines as before.
+- **`wasm3/generic-position.lisp`** proves `engine-flat-body-6-step`: the flat
+  body-6 position in terms of the head instruction's own step, from
+  `engine-ctxt-from-instr-step`.  The old `step-flat-body-6-first` proves the
+  same concrete law by expanding `step/r-ctxt-instrs` and `search21` at
+  145,059 prover steps; the generic form is a `:use` instance plus the
+  instruction's step fact (`step-of-global-get-3`), which is the shape a
+  rewritten `chain.lisp` should emit.
+- **Gate.**  The chain change invalidates every downstream `wasm3` book, so the
+  full `make -C wasm3` rebuild is the check; `generic-position` is added after
+  `chain` in the `BOOKS` list.
+

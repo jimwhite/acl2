@@ -1661,7 +1661,8 @@ label-0 generic lemma and the callee recipe are in `/tmp/gen/gen_step2.py`,
 ```sh
 make -C books/projects/milawa-verified-wasm/milawa-lisp ACL2=$ACL2   # 7 books, seconds
 make -C books/projects/milawa-verified-wasm/machine     ACL2=$ACL2   # 4 books, seconds
-make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # 20 books, needs the pin
+make -C books/projects/milawa-verified-wasm engine      ACL2=$ACL2   # engine books, once per pin
+make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # needs the pin and the engine books
 ```
 
 The `wasm3/` books depend on `wasm-acl2`, pinned at `1ce59e0` (engine-plan2), as the git

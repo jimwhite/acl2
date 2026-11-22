@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """Generate wasm3/chain.lisp: the opcode chain's links, with literal bodies.
 
-The measurements settled that the chain's lemmas must carry the module's bodies as
-LITERALS: with the body behind the MILAWA-FUNC-BODY accessor the same statement
-costs 229,292 prover steps and still stalls, because the semantics' context rules
-search the instruction list and a term is not a list they can walk.
-
-The bodies are an artifact, so their literal form is a generated artifact, exactly
-like state.lisp and module.lisp.
+The chain's lemmas must carry the module's body as a LITERAL: the semantics'
+search only computes on a literal list, and a term is not a list it can walk.
+The body is read by ACL2 itself, through MILAWA-FUNC-BODY (defined in
+wasm3/context.lisp); a defconst of its value is spliced at translation, so the
+theorems see the literal.  (Writing (milawa-func-body 6) in the theorem does
+not splice and stalls; the defconst does.)  There is no Lisp parser here.
 
     python3 harness/gen_chain.py          # writes wasm3/chain.lisp
     python3 harness/gen_chain.py --check  # fails if it has drifted
@@ -40,50 +39,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 PROJECT = HERE.parent
-STATE = PROJECT / "wasm3" / "state.lisp"
 OUT = PROJECT / "wasm3" / "chain.lisp"
 
 Z = "(mvm-abs-z-abstract bytes sp pc clen status result)"
 
 
-def form_at(src, start):
-    """The s-expression beginning at src[start], balanced."""
-    depth = 0
-    i = start
-    while i < len(src):
-        if src[i] == "(":
-            depth += 1
-        elif src[i] == ")":
-            depth -= 1
-            if depth == 0:
-                return src[start : i + 1]
-        i += 1
-    raise SystemExit("unbalanced form")
-
-
-def func_body(i):
-    """The i-th function's instruction list, as source text."""
-    src = STATE.read_text()
-    idx = -1
-    for _ in range(i + 1):
-        idx = src.index("(:CODE", idx + 1)
-    code = form_at(src, idx)
-    # (:CODE :FUNC ty locals body) -- the body is the last element
-    depth = 0
-    starts, last = [], None
-    for j, c in enumerate(code):
-        if c == "(":
-            if depth == 1:
-                starts.append(j)
-            depth += 1
-        elif c == ")":
-            depth -= 1
-            if depth == 1:
-                last = j
-    return code[starts[-1] : last + 1]
-
-
-def probe_text(body):
+def probe_text():
     """A script that asks the semantics what one step actually does.
 
     Guessing the intermediate configurations of the descent has cost several
@@ -98,7 +59,7 @@ def probe_text(body):
     return "\n".join([
         '(in-package "MILAWA-WASM")',
         "(defconst *pz* (mvm-abs-z-abstract (list 0 1 2 3) 4000 4200 100 1 0))",
-        "(defconst *pb* '" + body + ")",
+        "(defconst *pb* (milawa-func-body 6))",
         "(defconst *pc0*",
         "  (list :|%;%| *pz*",
         "        (list (list :frame_%{%}% 1 (caddr *pz*)",
@@ -112,7 +73,6 @@ def probe_text(body):
 
 
 def render():
-    body = func_body(6)
     Z = "(mvm-abs-z-abstract bytes sp pc clen status result)"
     CFG = "(list :|%;%| " + Z + " *body-6*)"
     RHS = ("(list (list :|%;%| " + Z
@@ -323,8 +283,9 @@ def render():
         '(include-book "head")',
         "",
         "; The body of function 6, the exported STEP, as the artifact holds it.",
+        "; MILAWA-FUNC-BODY computes it; the defconst value is spliced at translation.",
         "(defconst *body-6*",
-        "  '" + body + ")",
+        "  (milawa-func-body 6))",
         "",
         flat,
         "",
@@ -357,7 +318,7 @@ def render():
 
 def main():
     if "--probe" in sys.argv:
-        print(probe_text(func_body(6)))
+        print(probe_text())
         return
     text = render()
     if "--check" in sys.argv:

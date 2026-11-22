@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Forty-eight books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Forty-nine books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes a couple of minutes; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -73,8 +73,8 @@ lint: 39 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 48 book(s))
---- every book has a certificate           (48 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 49 book(s))
+--- every book has a certificate           (49 books, all certified)
 
 ===== summary =====
 books certified:  33

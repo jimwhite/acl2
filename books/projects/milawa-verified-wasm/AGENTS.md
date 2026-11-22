@@ -59,6 +59,13 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   substitution to a theorem's stored statement.  Use it for the return
   chains instead of exact-text substitution: a pattern that does not occur
   is an error naming the pair and its count.
+- `wasm3/generic-position.lisp` — `engine-flat-body-6-step` states a flat
+  position through `engine-ctxt-from-instr-step` plus the instruction's own
+  step.  This is the template for replacing a search expansion: two `:use`
+  facts instead of `step/r-ctxt-instrs` + `search21` at the literal body.
+- `gen_chain.py` and `walk.py` read the body through ACL2's
+  `milawa-func-body`; there is no Lisp parser in the harness any more.
+  `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.
 - `make generated-check` — the generated books (`bytes.lisp`, `chain.lisp`,
   `machine/examples.lisp`) must still match their sources.  `module-check`
   covers `module.lisp`/`state.lisp`.
@@ -256,7 +263,7 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
 
 ## Current state (2026-11-20)
 
-48 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
+49 books, all certified.  The frozen path (`status ≠ 1`) is done end to end for
 symbolic state in `wasm3/frozen.lisp`: nine steps, the exact clock, the
 readback; `frozen-step-check` is `abs.lisp`'s `milawa-step-check` clause for
 clause.  `wasm3/running.lisp` proves the seven-step shared head of the running
