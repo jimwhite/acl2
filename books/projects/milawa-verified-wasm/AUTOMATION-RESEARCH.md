@@ -948,7 +948,15 @@ as the operand, so the "values prefix" would contain a non-value and
 a single instruction `i` after the values; the call entry needs a
 multi-instruction slice search.  A generic one-value/two-instruction slice
 lemma was attempted with the search21 definitions and exceeded the 400 s
-budget.  `const.lisp`'s `link-*` chain (30 facts, up to 24M) is the same
+budget.  Three further attempts (500M and 1B step limits; explicit `%size`
+hypotheses for the three slices; `step/prefix7` disabled so the hypothesis
+supplies the start index) all stalled on `Goal''` for 10-20 minutes with a
+2 GiB GC loop: the symbolic search guards do not reduce the way the concrete
+family proof's do.  The direct-expansion route is abandoned.  The next design
+is a pair-level `flat-search2` function mirroring `we::flat-search`, with a
+`step/search21` bridge proved by the same induction as the engine's
+488-step `step/search21-becomes-flat-search`; that avoids expanding
+`search21` at each k symbolically.  `const.lisp`'s `link-*` chain (30 facts, up to 24M) is the same
 `dframe-outer-sep` shape as the engine frame lift, but aligning the
 `zo*`/`sz*` state spellings for the engine instance was not achieved;
 that migration is deferred.
