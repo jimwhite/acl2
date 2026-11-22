@@ -918,6 +918,20 @@ The current `const-callee` total is 7.86M prover steps, down from roughly
 14.4M before the engine rungs (the remaining large items are `label1` and the
 `step_read/split` premises).
 
+**`const-fetch.lisp`** has the same ten-position shape (`tail-<p>-label0`,
+`-label0-rest`, `-label1`, `-frame`).  All ten `label0-rest` rungs moved to
+the engine ctxt lemma (1.0M-6.3M -> 1.2k-18k), taking the book from **32.2M to
+16.8M** prover steps.  Four of the ten `frame` rungs (blk, elb, if, ld2) also
+moved (`k = :f` from `tail-<p>-label1`); they are marked `:rule-classes nil`
+because, as rewrite rules, the instances rewrote each other's goals.  The six
+larger frames (adp, gsp, lgp, ls1p, g1p, frd2: 0.2M-3.1M) are still on
+`dframe-outer-sep`: their states are nested configurations, so the engine's
+`(list :%;% s x)` inner state is not the `label1` state, and the generic
+instance does not match.  The same ten positions' `label0` steps also failed
+to move: their label bodies start with value instructions, so the admin-head
+`exit-body-p` lemma does not apply, and enabling the `exit-*` helpers left the
+inner-state equality mismatched.
+
 The earlier builder-spelling attempt (callee body step, label-1 step, frame
 step, then the admin lift) was abandoned: crossing the builder spelling to
 the data fact constant-folds the block into a quoted list, which never matches

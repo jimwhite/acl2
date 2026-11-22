@@ -93,6 +93,12 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   `milawa-func-body`; `:use` the isolated step fact, and add
   `we::not-exit-body-p-of-vals-admin-term-rest` for the admin lift's
   `exit-body-p` hypothesis.
+- `wasm3/const-fetch.lisp` has the same ten-position shape and now runs all
+  ten `label0-rest` rungs through `engine-ctxt-from-instr-step`
+  (1.0M-6.3M -> 1.2k-18k steps; book 32.2M -> 16.8M).  Four frames (blk, elb,
+  if, ld2) are engine instances marked `:rule-classes nil` (as rewrite rules
+  they rewrote each other's goals).  The six large frames (nested states) and
+  the ten `label0` steps (value-headed bodies) remain on the old proofs.
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.
