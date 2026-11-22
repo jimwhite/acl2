@@ -1,4 +1,4 @@
-; L1, the CONST path: the front through the callee's first four positions.
+; L1, the CONST path: the front through the callee's first five positions.
 ;
 ; Copyright (C) 2026 Kookamara LLC
 ;
@@ -9,20 +9,21 @@
 ; CONST-TAIL-CALLEE-STATE.  The bridge below is the one spelling step between
 ; them: the entry state is the generic state with the callee's original body.
 ;
-; Then CONST-FRONT-37..40 add the four callee steps to the 36-step advance:
+; Then CONST-FRONT-37..41 add the five callee steps to the 36-step advance:
 ;
 ;   36  the call entry
 ;   37  read global 1          (dbody0)
 ;   38  sub                    (dbody1)
 ;   39  read global 2          (dbody2)
 ;   40  mul                    (dbody3)
+;   41  ltu                    (dbody4; literal spelling)
 ;
 ; Each is a `steps-fuel-succ-of-a-step` instance at the state the previous
 ; advance leaves, so the composition itself is cheap; the expensive proofs
-; are the four step facts in CONST-STEPS.
+; are the step facts in CONST-STEPS.
 ;
-; Measured: 5 events, the bridge and the four advances; certification is
-; seconds (the steps are already proved in const-steps).
+; Measured: 6 events, 57,152,846 prover steps, 162 s (the steps themselves
+; are in const-steps).
 
 (in-package "MILAWA-WASM")
 

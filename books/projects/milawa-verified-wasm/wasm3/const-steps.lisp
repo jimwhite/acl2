@@ -27,7 +27,7 @@
 ; together; they are kept in their own book so the cheap front composition
 ; (const-join) does not pay for them on every recertification.
 ;
-; Measured: 4 events, 119,671,938 prover steps, 383 s.
+; Measured: 6 events, 125,080,472 prover steps, 401.6 s.
 
 (in-package "MILAWA-WASM")
 
