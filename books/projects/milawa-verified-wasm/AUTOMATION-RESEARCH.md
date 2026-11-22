@@ -852,51 +852,54 @@ the engine's rules are in local encapsulates, and the state is kept opaque with
 `mvm-abs-z-abstract`.  `links.lisp` includes `chain-body` for
 `step-body-6-first`; `frozen.lisp` uses `chain-frame-step` in place of
 `frame-body-6-general`.  `links` certifies in 10.1 s and `frozen` in 49.2 s.
-The gate is green at **54 books**.
+The gate is green at **53 books**.
 
 
-## Appendix F. The read1 context rung through the engine (2026-11-22)
+## Appendix F. The const-callee context rungs through the engine (2026-11-22)
 
-`wasm3/const-callee-engine.lisp` is the first const-callee position moved to
-the engine.  `clr1-ctxt-engine` proves the read1 context search
+`wasm3/const-callee.lisp` now carries the engine rungs inline, behind a local
+`(include-book "engine-flat")`, so the engine's eager rules do not change the
+rest of the book's theory.  Two kinds of rung moved:
+
+**The read1 `ctxt-d` rung.**  `clr1-ctxt-engine` proves
 
     step/r-ctxt-instrs (:%;% Z ((frame 1 callee ((label 1 nil (milawa-func-body 3)))) tail))
 
-from two facts: `tail-iframe3` (const-tail), which is the isolated frame step
-at the run's Z, and `engine-ctxt-from-instr-step`, whose `inner` hypothesis is
-exactly that step.  The proof is **2,098 prover steps** and the book certifies
-in 3.7 s.  This is the `tail-cl-read1-ctxt-d` rung; the family book still
-carries the hand-rolled version, because adding the engine instance to
-`const-callee` itself needs the local-engine (`chain-flat-own`) treatment.
+from `tail-iframe3` (const-tail), the isolated frame step at the run's Z, and
+`engine-ctxt-from-instr-step`, whose `inner` hypothesis is exactly that step:
+**2,098 prover steps**.  The family's `tail-cl-read1-ctxt-d` now `:use`s this
+rung instead of the builder ctxt fact from const-branch.  The hint must:
 
-The hint is delicate in three places, and each was a measured failure:
+- disable `(:definition w3t::step)` (it unfolds the frame rule and the 2 MiB
+  store literal, which overruns the MCP cap and prints megabytes);
+- disable `sof-gset-is-frozen-store` (it rewrites `(sof (gset ...))` to
+  `(frozen-store ...)`, so `tail-iframe3`'s LHS stops matching);
+- disable `milawa-callee-frame` and its executable counterpart (otherwise the
+  frame record is unfolded and the `(milawa-callee-frame 3)` pattern fails);
+- keep `milawa-func-body` disabled so the block is not constant-folded.
 
-- `(:definition w3t::step)` must be disabled.  Otherwise the definition
-  unfolds the frame rule and the 2 MiB store literal is printed; the proof
-  then runs past the 30 s MCP cap and the output alone is megabytes.
-- `sof-gset-is-frozen-store` must be disabled.  It rewrites `(sof (gset ...))`
-  to `(frozen-store ...)`, so `tail-iframe3`'s LHS no longer matches and the
-  engine hypothesis is never discharged.
-- `milawa-callee-frame` (and its executable counterpart) must be disabled.
-  Otherwise the frame record is unfolded in the goal and `tail-iframe3`'s
-  `(milawa-callee-frame 3)` pattern no longer matches.
-- `milawa-func-body` stays disabled so the block is not constant-folded into a
-  quoted list.
+**All seven `label0-rest` rungs.**  Each position's `tail-cl-<p>-label0` is
+already the isolated step of the label-0 term.  Wrapping the engine instance
+in an encapsulate and `:use`ing that fact — with the same disables — proves
+the context rung directly, at the family's **data** spelling (no builder
+detour and no bridge).  Measured prover steps:
 
-**The label-0 form is deferred, with the blocker identified.**
-`tail-cl-read1-label0` is data-spelled: its callee body and tail are quoted
-literals, because the family proves its label lifts at the normalized spelling.
-The engine lift wants the builder spelling (`(milawa-func-body 3)`), which is
-what `tail-iframe3` has.  Crossing the two is not a theory difference but a
-term-spelling one: enabling `milawa-func-body` constant-folds the whole block
-to a quoted list, and a quoted block does not match the explicit `list` in the
-data fact; keeping it disabled leaves the builder spelling, which does not
-match the data fact either.  The intended route is the one the engine's own
-comment records as 7,189 steps: build the builder-spelled inner facts (callee
-body step, label-1 step, frame step, label-0 step) with
-`engine-admin-term-in-block`, then the label-0 context rung with
-`engine-ctxt-from-instr-step`.  The body-step proof (`step` of
-`(milawa-func-body 3)` at the callee Z) runs into the same store-expansion and
-rewrite-orientation issues; the attempts measured 8,813-36,783 prover steps
-and were not landed.  The non-certifying scratch books were removed, so the
-gate remains green.
+| position | before | after | ratio |
+|----------|-------:|------:|------:|
+| read1 | 1,173,308 | 2,797 | 419x |
+| sub | 1,447,786 | 3,307 | 438x |
+| read2 | 1,523,528 | 3,596 | 424x |
+| mul | 1,632,320 | 3,881 | 421x |
+| ltu | 692,485 | 14,076 | 49x |
+| ldis | 120,378 | 2,668 | 45x |
+| fdis | 119,572 | 2,195 | 54x |
+
+About **6.5M prover steps** removed; `const-callee` certifies in 16.2 s (from
+21.9 s with only the read1 rung, and from a much larger figure before).  The
+gate is green at **53 books**.
+
+The earlier builder-spelling attempt (callee body step, label-1 step, frame
+step, then the admin lift) was abandoned: crossing the builder spelling to
+the data fact constant-folds the block into a quoted list, which never matches
+the explicit `list` in the data statement.  Keeping the engine instance at
+the data spelling avoids the crossing entirely.
