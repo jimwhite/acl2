@@ -6,6 +6,7 @@
 #   make examples         just the corpus: recorded answers vs the real .wasm
 #   make module-check     just "the pinned store still matches the .wasm"
 #   make generated-check  the generated books still match their sources
+#   make engine           certify the wasm-acl2 engine books (once per pin)
 #   make no-skips         the litmus test: no skip-proofs, no defaxiom, anywhere
 #   make lint             parentheses and formatting, read the way ACL2 reads them
 #   make experiment FILE=... [BOOK=...] [DIR=wasm3]
@@ -25,9 +26,11 @@
 #                                .wasm; the books do not need it
 #
 # The wasm3/ books depend on the pinned wasm-acl2 tree at wasm-acl2/, a git
-# submodule of this project (pinned commit 7f96c89) covered by the project's
-# cert_pl_exclude.  Its 26 generated books must be certified before wasm3/ can
-# be; `make books` says so rather than failing obscurely.
+# submodule of this project (pinned commit 1ce59e0, engine-plan2) covered by
+# the project's cert_pl_exclude.  Its 26 generated semantics books, and the
+# engine books wasm3/engine.lisp includes, must be certified before wasm3/
+# can be; `make books` says so rather than failing obscurely (`make engine`
+# certifies the engine books once per pin).
 
 ACL2 ?= ../../../../saved_acl2
 PROJECT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
@@ -37,13 +40,14 @@ BOOKDIRS := milawa-lisp machine wasm3
 PROJECT_BOOKS := $(PROJECT)/milawa-lisp/*.lisp $(PROJECT)/machine/*.lisp $(PROJECT)/wasm3/*.lisp
 PROJECT_CERTS := $(PROJECT)/milawa-lisp/*.cert $(PROJECT)/machine/*.cert $(PROJECT)/wasm3/*.cert
 WASM_MARKER := wasm-acl2/translate/gen/wasm-3.0/wasm3.cert
+ENGINE_MARKER := wasm-acl2/engine/rules/context.cert
 
-.PHONY: all check books examples module-check no-skips lint generated-check experiment walk complete clean help
+.PHONY: all check books engine examples module-check no-skips lint generated-check experiment walk complete clean help
 
 all: check
 
 help:
-	@sed -n '2,13p' $(PROJECT)/Makefile
+	@sed -n '2,14p' $(PROJECT)/Makefile
 
 check: lint generated-check books module-check examples no-skips complete
 	@echo
@@ -64,10 +68,21 @@ books:
 	  echo "  cd gen/wasm-3.0 && $(PROJECT)/../../build/cert.pl --acl2 $(abspath $(ACL2)) -j 4 wasm3"; \
 	  exit 1; \
 	fi
+	@if [ ! -f $(PROJECT)/$(ENGINE_MARKER) ]; then \
+	  echo "wasm3/ needs the wasm-acl2 engine books (engine-plan2):"; \
+	  echo "  make engine"; \
+	  exit 1; \
+	fi
 	@for d in $(BOOKDIRS); do \
 	  echo "--- $$d"; \
 	  $(MAKE) -s -C $(PROJECT)/$$d ACL2=$(abspath $(ACL2)) || exit 1; \
 	done
+
+# The engine books wasm3/engine.lisp includes.  These live in the pinned
+# submodule; certify them once per pin.  `make books` checks the marker.
+engine:
+	cd $(PROJECT)/wasm-acl2/engine && \
+	  $(PROJECT)/../../build/cert.pl --acl2 $(abspath $(ACL2)) -j 4 portcullis rules/context
 
 # The corpus.  Two claims per example, deliberately separate: the artifact gives
 # this answer (tested here), and the model gives the same answer (proved in

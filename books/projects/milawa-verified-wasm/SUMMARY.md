@@ -1664,7 +1664,7 @@ make -C books/projects/milawa-verified-wasm/machine     ACL2=$ACL2   # 4 books, 
 make -C books/projects/milawa-verified-wasm/wasm3       ACL2=$ACL2   # 20 books, needs the pin
 ```
 
-The `wasm3/` books depend on `wasm-acl2`, pinned at `7f96c89`, as the git
+The `wasm3/` books depend on `wasm-acl2`, pinned at `1ce59e0` (engine-plan2), as the git
 submodule `wasm-acl2/` inside this project (`https://github.com/raymyers/wasm-acl2.git`);
 the project is listed in `cert_pl_exclude`, so a community certification run
 never has to find it or initialize the submodule.  The 26 books of the WASM

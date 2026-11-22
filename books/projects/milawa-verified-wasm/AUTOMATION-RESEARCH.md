@@ -488,7 +488,8 @@ The branch also contains `plan/wasm-engine/plan2.md` (1,114 lines) and
 
 - **Submodule.**  `wasm-acl2` was moved from `/workspaces/acl2/.wasm-acl2` to
   `books/projects/milawa-verified-wasm/wasm-acl2` and registered as a git
-  submodule pinned at `7f96c898e6c7693c50f2b90dec820e9266224a5c`
+  submodule pinned at `1ce59e094468ef90c327fcdbcd90eeeb5e9f3af5`
+  (`engine-plan2`)
   (`https://github.com/raymyers/wasm-acl2.git`).  It is inside the project so
   the project's `cert_pl_exclude` keeps it out of a community certification
   run.  `.gitmodules`, the gitlink, and `.git/modules/...` are in place;
@@ -647,13 +648,18 @@ Implemented after the report, in the same checkout:
 
 ## Appendix C: the engine-reuse pilot (measured)
 
-The pilot reused `engine-plan2` (`1ce59e0`) directly: I checked the branch out
-into `/tmp/engine-plan2`, symlinked the project's generated 3.0 books into
-`translate/gen/wasm-3.0`, certified `engine/rules/context` (5.2 s after its
-dependencies), and loaded it in the same ACL2 session as the project's
-`wasm3/context` and `wasm3/const-callee`.  Both copies of the semantics
-resolve to the same file, so the include is cheap (0.33 s) and there is no
-package conflict.
+The pilot ran against `engine-plan2` (`1ce59e0`) in a scratch worktree: I
+checked the branch out into `/tmp/engine-plan2`, symlinked the project's
+generated 3.0 books into `translate/gen/wasm-3.0`, certified
+`engine/rules/context` (5.2 s after its dependencies), and loaded it in the
+same ACL2 session as the project's `wasm3/context` and `wasm3/const-callee`.
+Both copies of the semantics resolve to the same file, so the include is cheap
+(0.33 s) and there is no package conflict.
+
+It is now integrated: the submodule is pinned to `1ce59e0` (engine-plan2),
+`make engine` certifies the engine books inside the submodule, and
+`wasm3/engine.lisp` states and certifies the three lemmas in `MILAWA-WASM`.
+The new book certifies in 3.6 s and `make check` passes with 48 books.
 
 ### The three generic lemmas
 
@@ -752,16 +758,12 @@ need; the pilot uses them as they are.
 ### Reproducing
 
 ```sh
-cd books/projects/milawa-verified-wasm/wasm-acl2
-git fetch origin engine-plan2
-git worktree add /tmp/engine-plan2 FETCH_HEAD
-ln -s "$PWD/translate/gen/wasm-3.0" /tmp/engine-plan2/translate/gen/wasm-3.0
-cd /tmp/engine-plan2/engine
-cert.pl --acl2 /workspaces/acl2/saved_acl2 -j 4 rules/context
+cd books/projects/milawa-verified-wasm
+make engine ACL2=/workspaces/acl2/saved_acl2   # engine/rules/context in the submodule
+make books  ACL2=/workspaces/acl2/saved_acl2   # includes wasm3/engine.lisp
 ```
 
-Then in a session: load `package.lsp`, include `wasm3/context` and
-`/tmp/engine-plan2/engine/rules/context`, and submit the three forms above.
-`include-book` of `wasm3/const-callee` supplies the project facts for the
-comparison.
+The three lemmas are in `wasm3/engine.lisp`; a position uses them through
+`:use` (see the hints in that book).  `include-book` of `wasm3/const-callee`
+supplies the project facts for the comparison table above.
 

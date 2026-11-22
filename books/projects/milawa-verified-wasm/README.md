@@ -16,7 +16,7 @@ HOL4 and WebAssembly in place of x86-64:
 
 ## Status
 
-Thirty-three books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
+Forty-eight books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
 build takes a couple of minutes; `make check` at the top of this directory runs
 every book, the example corpus, and the two policy checks, and refuses to pass if
 any book in the tree has been skipped.
@@ -59,7 +59,7 @@ any book in the tree has been skipped.
 | L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — one of the sixteen paths (the frozen one: the halted and aborted states) is proved from entry configuration to observations; the other fifteen are open |
 | L2 — `MVM` run level = `W3T::STEPS` | **not started** |
 | L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
-| WASM 3.0 semantics available locally (`wasm-acl2` `7f96c89`, 26 books certified, IL reproducible from SpecTec) | **done** |
+| WASM 3.0 semantics and engine available locally (`wasm-acl2` `1ce59e0`, engine-plan2; the 26 semantics books and the engine books certified; IL reproducible from SpecTec) | **done** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
 ## Building
@@ -73,8 +73,8 @@ lint: 39 file(s) balance the way ACL2 reads them
 --- milawa-lisp / machine / wasm3          (books, in dependency order)
 --- artifact vs pinned module              (module.lisp, state.lisp: up to date)
 --- example corpus (artifact)              (10 example(s) agree with the artifact)
---- litmus: no skip-proofs, no defaxiom    (none in 39 book(s))
---- every book has a certificate           (39 books, all certified)
+--- litmus: no skip-proofs, no defaxiom    (none in 48 book(s))
+--- every book has a certificate           (48 books, all certified)
 
 ===== summary =====
 books certified:  33
@@ -270,7 +270,7 @@ make ACL2=/path/to/saved_acl2
 ```
 
 That certifies every book here; the whole tree takes a few seconds.  The WASM
-side is a pinned git submodule, `wasm-acl2/` (commit `7f96c89`,
+side is a pinned git submodule, `wasm-acl2/` (commit `1ce59e0`, engine-plan2,
 `https://github.com/raymyers/wasm-acl2.git`), and its 3.0 books are generated
 rather than checked in:
 
