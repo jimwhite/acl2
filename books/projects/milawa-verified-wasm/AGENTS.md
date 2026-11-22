@@ -129,6 +129,13 @@ in `package.lsp` (`expt2`, `logapp`, `loghead`, `logtail`) or written with
   tail step's result) as a defun, keeping every spelling function disabled in
   the composition, is the template for the remaining tail links: each one
   consumes the state the previous one leaves.
+- `wasm3/const-steps.lisp` re-states the callee's first four positions at one
+  generic run-level state, `const-tail-callee-state` (outer frame 6, label 1,
+  label 0, frame 3 around a body), with the body progressing
+  `(milawa-func-body 3)` -> `dbody0` -> `dbody1` -> `dbody2` -> `dbody3`.
+  The four are `TAIL-CL-READ1/SUB/READ2/MUL-FRAME` instantiated there; they
+  cost 119.7M prover steps (378 s), so they live in their own book rather than
+  in the cheap `const-join`.
 - `gen_chain.py` and `walk.py` read the body through ACL2's
   `milawa-func-body`; there is no Lisp parser in the harness any more.
   `chain.lisp`'s `*body-6*` is `(milawa-func-body 6)`.
