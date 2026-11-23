@@ -1,5 +1,13 @@
 # refinement/ -- the Jitawa-shaped tree
 
+> **Direction (2026-11-23).** The goal is a Lisp runtime for Milawa that is
+> correct by construction: the WASM artifact is the output of a verified
+> compiler, and the correctness theorem is stated against the ACL2 `W3T`
+> model.  The hand-written `wasm/milawa-ops.wat`, the `ops-*` books, and the
+> host loop in `top-host.lisp` are an archive of the earlier experiment, not
+> the proof path.  The active path is `spec`/`compile`/`machine` as the
+> source and IR, then a generated-code (IR -> `W3T`) layer.
+
 This is the new proof tree from [`../PLAN-JITAWA.md`](../PLAN-JITAWA.md).  It
 is certified separately from the `wasm3/` archive:
 
@@ -50,10 +58,11 @@ a step machine:
 - closed instances `j2-add`, `j2-if`, `j2-cons` -- the J1 terms go through
   `compile-term` -> `lower-program` -> `machine-run` to the right answers.
 
-Measured: 4 books, ~3.5 s.  The general run-level theorem is J3; the
-per-opcode WASM artifact is J2b.
+Measured: 4 books, ~3.5 s.  The general run-level theorem is still useful,
+but it must target generated W3T code (K1); the hand-written per-opcode
+artifact (J2b below) is archived.
 
-## J2b-1: the per-opcode module and table (done)
+## J2b-1: the per-opcode module and table (archive/off-goal)
 
 `../wasm/milawa-ops.wat` (assembled to `milawa-ops.wasm`) is the
 integer/arithmetic/if opcode library: `op_const`, `op_add`, `op_sub`,
@@ -72,7 +81,7 @@ three-step `ir-op-const-body` composition (taking `CAR` after each `STEP`).
 The `$invoke` call entry is still open; this is a J2b-2 step, not yet the
 opcode theorem.
 
-**J2b-2 (partial): the W3T link.**  The `op_const` chain is complete:
+**J2b-2 (archive/off-goal): the W3T link.**  The `op_const` chain is complete:
 `ir-op-const-body` (the three local steps), the value-prefixed
 `no-ctxt-instrs-on-op-const-call` (with the two stuck-suffix `STEP` facts),
 `ir-op-const-call-entry` (one `STEP` from `$INVOKE` into the callee frame),
@@ -139,7 +148,7 @@ plan's J2 acceptance (one theorem per opcode plus a dispatcher theorem);
 the step clocks are the per-branch WASM block structure, not a concrete
 program trace.
 
-## J3: the run level and the front door (done for the host loop)
+## J3: the run level and the front door (archive/off-goal)
 
 `top-host.lisp` models the host loop that keeps pc/stack and calls the
 verified STEP for the arithmetic primitives (`+`, `-`, `<`): `host-prim-2`
@@ -180,30 +189,24 @@ runs all 100 events: `(:MILAWA-OK . SUCCESS)` in ~100 s, certified.
 `make milawa-check` reproduces it.  This is the Jitawa demo on the verified
 *evaluator model*: a checked run, not yet the WASM artifact.
 
-## Design finding (2026-11-23)
+## Corrected active path (2026-11-23)
 
-A CEK-style flat machine with a fuel/continuation run proof was prototyped
-first and is a slog (600 s, still diverging in the primitive case).  J2a
-sidesteps that by proving the per-opcode step layer, the dispatcher
-coverage, and the closed pass; the general run-level theorem is J3, where a
-relational exact-count presentation (the `MILAWA-RUNS` pattern) is the
-better target.  The machine that actually ships is the WASM artifact in
-J2b.  J2b-1 is the module/table/model; J2b-2's W3T link is the open
-bottleneck.
+The per-opcode W3T link and host loop above are archived.  The active layer
+is a verified code generator from the `machine` IR to a W3T module:
+
+- **K1** -- generated code for the arithmetic/control subset, with one
+  theorem that W3T execution of the generated code refines `machine-run`;
+  the PoC's module is compiler output.
+- **K2** -- conses, symbols, environments, and the heap.
+- **K3** -- the function table, calls, and runtime/REPL; compile the kernel
+  and run `100.events` on the generated module.
+- **K4** -- the Milawa soundness composition.
+- **K5** -- binary serialization and the artifact/regression suite.
 
 ## What is deliberately not here yet
 
-- **J2b-2 -- the W3T link (done).**  The per-opcode module, table and model
-  are in (`milawa-ops.wat`, `ops-state.lisp`, `ops.lisp`), and every
-  dispatcher branch and opcode function is proved from `$INVOKE` to its
-  value, with `ir-op-step-call-result` as the exported dispatcher theorem.
-  J3 is the remaining run-level layer.
-- **J3 -- the run level (host loop done; general lowering next).**  The host
-  loop that calls the verified STEP for `+`/`-`/`<` equals `machine-run`
-  (`host-run-refines-machine-run`), and the PoC/if/cons front-door instances
-  are proved.  The general `machine-run (pc-lower-flat ...) = bc-eval`
-  lowering theorem is the remaining piece; `top-run.lisp` has its verified
-  lowering and label/position invariants.
+- **The generated-code layer (K1).**  There is no `gen-wasm`/simulation
+  theorem yet; this is the next book.
 - **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
   and representative forms; the theorem for all terms at a computed clock
   is the remaining J1b piece (and also validates the spec against the
@@ -211,11 +214,12 @@ bottleneck.
 - **The parser/REPL.**  Terms are ACL2 s-expressions here; the surface
   parser and REPL are J0b.
 - **Calls/lambdas/heap.**  The subset is primitives + `if`; the function
-  table, `cons`-cell heap, and the full kernel are J1c/J4.
+  table, `cons`-cell heap, and the full kernel are K2/K3.
 
 ## Why this shape
 
 The earlier `wasm3/const-*` chain proved one fixed WASM dispatch trace for
 one opcode path.  This tree proves the compiler once, for all terms.  The
-next layer (per-opcode WASM, J2) is parametric in the program, as in
-Jitawa; see the plan for the full milestone list.
+correction is that the next layer is *generated* code, not a hand-written
+per-opcode module: the compiler emits the W3T module, and the proof is about
+the emitted module.  See the plan for the K-track.
