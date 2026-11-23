@@ -22,9 +22,7 @@
     (i32.lt_s (local.get 0) (local.get 1)))
 
   (func (export "op_ifz") (param i32 i32) (result i32)
-    (if (result i32) (i32.eqz (local.get 0))
-        (then (local.get 1))
-      (else (i32.const 0))))
+    (i32.mul (local.get 1) (i32.eqz (local.get 0))))
 
   (func (export "op_jmp") (param i32 i32) (result i32)
     (local.get 1))
@@ -44,9 +42,7 @@
     (if (i32.eq (local.get 0) (i32.const 4))
         (then (return (i32.lt_s (local.get 1) (local.get 2)))))
     (if (i32.eq (local.get 0) (i32.const 5))
-        (then (return (if (result i32) (i32.eqz (local.get 1))
-                          (then (local.get 2))
-                        (else (i32.const 0))))))
+        (then (return (i32.mul (local.get 2) (i32.eqz (local.get 1))))))
     (if (i32.eq (local.get 0) (i32.const 6))
         (then (return (local.get 2))))
     (if (i32.eq (local.get 0) (i32.const 7))

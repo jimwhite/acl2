@@ -101,14 +101,17 @@ proves the signed comparison bridge
 `$SIGNED_`/`$BOOL`, plus `unsigned-byte-p 31 => unsigned-byte-p 32`), the
 call entry and three body steps; `ops-lt-label.lisp` proves
 `ir-op-lt-body` and `ir-op-lt-call-result` with value
-`(if (< v1 v2) 1 0)`.  For `op_ifz` (function 4), `ops-ifz-body.lisp`
-proves the call entry, the `i32.eqz` value bridge, and the one-step body
-lemmas (`local.get`, `testop`, both `ifelse` branches, `block`, and the
-branch `local.get`); the frame/label composition and call result remain.
+`(if (< v1 v2) 1 0)`.  For `op_ifz` (function 4), the artifact now uses
+the straight-line `target * (test == 0 ? 1 : 0)` body
+(`local.get` / `i32.eqz` / `i32.mul`); `ops-ifz-body.lisp` proves the
+`$IEQZ_`/`$IMUL_` bridges, the call entry, and the four body steps, and
+`ops-ifz-label.lisp` proves `ir-op-ifz-body` and
+`ir-op-ifz-call-result` with value `(if (equal v1 0) v2 0)`.
 `ops-jmp.lisp` (function 5) and `ops-label.lisp` (function 6) prove the
-entry and three-step body/call results (to `v2` and `v1`).  The `op_ifz`
-call result and the `STEP` dispatcher remain.  This is not yet the plan's
-full J2 acceptance.
+entry and three-step body/call results (to `v2` and `v1`).  The `STEP`
+dispatcher remains (the model-level `ir-step-table` and
+`machine-step-dispatches` are proved).  This is not yet the plan's full
+J2 acceptance.
 
 ## Design finding (2026-11-23)
 

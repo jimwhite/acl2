@@ -145,7 +145,7 @@ initial function table --> checker soundness theorem
   `refinement/ops-state.lisp` pins it; `refinement/ops.lisp` has the checked
   table, the i32 model, per-opcode dispatcher theorems, and value-level
   agreement with `machine-step`.  0.5 s.
-- **J2b-2 W3T link: op_const/add/sub/lt done, ifz/jmp/label partial.**
+- **J2b-2 W3T link: all opcode chains done; dispatcher remains.**
   `refinement/ops-w3t.lisp` proves the frame/label `local.get`, the
   label/frame value returns, the frame-around-label-around-value step, the
   three-step `ir-op-const-body`, the value-prefixed
@@ -186,15 +186,18 @@ initial function table --> checker soundness theorem
   body steps, and `refinement/ops-lt-label.lisp` proves
   `ir-op-lt-body`/`ir-op-lt-call-result`.  The value is
   `(if (< v1 v2) 1 0)`; the theorems carry the (trivial) 32-bit value
-  bound.  For `op_ifz` (function 4), `ops-ifz-body.lisp` proves the call
-  entry, the `i32.eqz` bridge `$IEQZ_ 32 v = (if (equal v 0) 1 0)`, and
-  the one-step body lemmas (`local.get`, `testop`, the two `ifelse`
-  branches, `block`, and the branch `local.get`); the frame/label
-  composition and call result remain.  For `op_jmp` (function 5),
-  `ops-jmp.lisp` proves the entry and the three-step body/call result to
-  `v2`; for `op_label` (function 6), `ops-label.lisp` proves the entry and
-  the three-step body/call result to `v1`.  The `op_ifz` call result and
-  the `STEP` dispatcher remain.
+  bound.  For `op_ifz` (function 4), the artifact now implements
+  `target * (test == 0 ? 1 : 0)` with a straight-line `local.get` /
+  `i32.eqz` / `i32.mul` body, so it shares the add/sub composition
+  machinery.  `ops-ifz-body.lisp` proves the `$IEQZ_` and `$IMUL_`
+  bridges, the call entry, the four body steps, and
+  `ops-ifz-label.lisp` proves `ir-op-ifz-body` and
+  `ir-op-ifz-call-result`, value `(if (equal v1 0) v2 0)`.  For
+  `op_jmp` (function 5), `ops-jmp.lisp` proves the entry and the
+  three-step body/call result to `v2`; for `op_label` (function 6),
+  `ops-label.lisp` proves the entry and the three-step body/call result
+  to `v1`.  The `STEP` dispatcher remains (the model-level
+  `ir-step-table` and `machine-step-dispatches` are proved).
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving
