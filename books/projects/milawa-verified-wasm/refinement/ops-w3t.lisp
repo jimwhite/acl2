@@ -15,8 +15,9 @@
 ;   frame around a label around a value         -> the label dissolves
 ;
 ; This file now also proves the three-step op_const body composition
-; (ir-op-const-body), by taking CAR after each STEP.  The remaining J2b-2
-; pieces are the call entry from $INVOKE and the other opcodes/dispatcher.
+; (ir-op-const-body), the value-prefixed no-ctxt fact, the one-step call
+; entry, and the four-step ir-op-const-call-result from $INVOKE to the value.
+; The remaining J2b-2 pieces are the other opcodes/dispatcher.
 
 (in-package "MILAWA-WASM")
 
@@ -234,9 +235,252 @@
                   (ir-op-const-invoke-cfg v)))
   :hints (("Goal" :in-theory (enable w3t::$invoke))))
 
-;; The remaining J2b-2 pieces are the call entry from $INVOKE (one STEP from
-;; ir-op-const-invoke-cfg, blocked on STEP/R-CTXT-INSTRS for the value
-;; prefix) and the other opcode bodies/dispatcher.
+;; ---------------------------------------------------------------------------
+;; The value-prefixed no-ctxt fact and the one-step call entry
+;; ---------------------------------------------------------------------------
+
+(defconst *op-const-type*
+  '(:_def (:rec ((:sub ((:final)) nil (:func%->% ((:i32)) ((:i32)))))) 0))
+
+;; STEP/PREFIX7 sees the value (:CONST (:I32) v) and the (:REF.FUNC_ADDR 0)
+;; as the two leading values; the call_ref is not a value.
+(defthm prefix7-op-const-call
+  (implies (unsigned-byte-p 32 v)
+           (equal (w3t::step/prefix7
+                   (list (list :const (list :i32) v)
+                         (list :ref.func_addr 0)
+                         (list :call_ref *op-const-type*)))
+                  2))
+  :hints (("Goal" :in-theory (enable w3t::step/prefix7
+                                     w3t::val-p))))
+
+;; The old calls.lisp fact, at function 0/type 0.
+(defthm no-ctxt-instrs-on-ref-func-call-ref0
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z
+                (list (list :ref.func_addr 0)
+                      (list :call_ref *op-const-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step/r-ctxt-instrs
+                     (list :|%;%| z
+                           (list (list :ref.func_addr 0)
+                                 (list :call_ref *op-const-type*))))
+                    (:free (k lo hi i t9 zz a0)
+                     (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+(defthm no-ctxt-instrs-on-call-ref-alone0
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z (list (list :call_ref *op-const-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step/r-ctxt-instrs
+                     (list :|%;%| z (list (list :call_ref *op-const-type*))))
+                    (:free (k lo hi i t9 zz a0)
+                     (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+;; The two suffixes the search tries are stuck: the call_ref has no
+;; function reference, and the (ref.func, call_ref) pair has no argument.
+(defthm step-call-ref-alone-nil
+  (equal (w3t::step
+          (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                (list (list :call_ref *op-const-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                           (list (list :call_ref *op-const-type*)))))
+           :in-theory (enable no-ctxt-instrs-on-call-ref-alone0))))
+
+(defthm step-ref-func-call-ref-nil
+  (equal (w3t::step
+          (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                (list (list :ref.func_addr 0)
+                      (list :call_ref *op-const-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                           (list (list :ref.func_addr 0)
+                                 (list :call_ref *op-const-type*)))))
+           :in-theory (enable no-ctxt-instrs-on-ref-func-call-ref0))))
+
+(defthm no-ctxt-instrs-on-op-const-call
+  (implies (unsigned-byte-p 32 v)
+           (equal (w3t::step/r-ctxt-instrs
+                   (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                         (list (list :const (list :i32) v)
+                               (list :ref.func_addr 0)
+                               (list :call_ref *op-const-type*))))
+                  nil))
+  :hints (("Goal"
+           :expand ((w3t::step/r-ctxt-instrs
+                     (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                           (list (list :const (list :i32) v)
+                                 (list :ref.func_addr 0)
+                                 (list :call_ref *op-const-type*))))
+                    (:free (k lo hi i t9 zz a0)
+                     (w3t::step/search21 k lo hi i t9 zz a0)))
+           :in-theory (enable w3t::step/prefix7
+                              w3t::val-p))))
+
+;; The callee-frame configuration the body lemmas use, at an arbitrary z.
+(defun ir-frame-local-get-cfg-z (z l0)
+  (list :|%;%| z
+        (list (list :frame_%{%}% 1
+                    (ir-frame-with-locals (list (list l0)))
+                    (list (list :label_%{%}% 1 nil
+                                (list (list :local.get 0))))))))
+
+;; One STEP from $INVOKE enters the callee frame.
+(defthm ir-op-const-call-entry
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step
+                        (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                              (list (list :const (list :i32) v)
+                                    (list :ref.func_addr 0)
+                                    (list :call_ref *op-const-type*)))))
+                  (ir-frame-local-get-cfg-z
+                   (list :|%;%| *ir-store* *ir-call-frame*)
+                   (list :const (list :i32) v))))
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                           (list (list :const (list :i32) v)
+                                 (list :ref.func_addr 0)
+                                 (list :call_ref *op-const-type*)))))
+           :in-theory (enable no-ctxt-instrs-on-op-const-call
+                              ir-frame-local-get-cfg-z
+                              ir-frame-with-locals)
+           :do-not-induct t)))
+
+;; ---------------------------------------------------------------------------
+;; The generalized body: arbitrary outer frame
+;; ---------------------------------------------------------------------------
+
+(defun ir-frame-local-get-cfg-o (outer l0)
+  (list :|%;%| (list :|%;%| *ir-store* outer)
+        (list (list :frame_%{%}% 1
+                    (ir-frame-with-locals (list (list l0)))
+                    (list (list :label_%{%}% 1 nil
+                                (list (list :local.get 0))))))))
+
+(defun ir-frame-value-cfg-o (outer l0)
+  (list :|%;%| (list :|%;%| *ir-store* outer)
+        (list (list :frame_%{%}% 1
+                    (ir-frame-with-locals (list (list l0)))
+                    (list (list :label_%{%}% 1 nil (list l0)))))))
+
+(defthm ir-step-in-frame-local-get-o
+  (equal (w3t::step (ir-frame-local-get-cfg-o outer l0))
+         (list (ir-frame-value-cfg-o outer l0)))
+  :hints (("Goal" :in-theory (enable ir-frame-local-get-cfg-o
+                                     ir-frame-value-cfg-o
+                                     ir-frame-with-locals)
+                  :use (ir-step-in-label-local-get)
+                  :expand ((w3t::step (ir-frame-local-get-cfg-o outer l0))))))
+
+(defthm ir-step1-in-frame-local-get-o
+  (equal (car (w3t::step (ir-frame-local-get-cfg-o outer l0)))
+         (ir-frame-value-cfg-o outer l0))
+  :hints (("Goal" :use (ir-step-in-frame-local-get-o)
+                  :in-theory (enable ir-frame-local-get-cfg-o
+                                     ir-frame-value-cfg-o
+                                     ir-frame-with-locals))))
+
+(defthm ir-frame-value-cfg-o-is-in-frame
+  (equal (ir-frame-value-cfg-o outer (list :const (list :i32) v))
+         (ir-label-vals-in-frame-cfg
+          *ir-store* outer
+          (ir-frame-with-locals (list (list (list :const (list :i32) v))))
+          v))
+  :hints (("Goal" :in-theory (enable ir-frame-value-cfg-o
+                                     ir-label-vals-in-frame-cfg
+                                     ir-frame-with-locals))))
+
+(defthm ir-step1-frame-value-o
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step
+                        (ir-frame-value-cfg-o outer (list :const (list :i32) v))))
+                  (ir-frame-vals-cfg
+                   (list :|%;%| *ir-store* outer)
+                   (ir-frame-with-locals
+                    (list (list (list :const (list :i32) v))))
+                   v)))
+  :hints (("Goal" :in-theory (e/d (ir-frame-value-cfg-o-is-in-frame)
+                                  (ir-frame-value-cfg-o
+                                   ir-label-vals-in-frame-cfg
+                                   ir-frame-with-locals
+                                   w3t::step)))))
+
+(defthm ir-op-const-body-o
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step
+                        (car (w3t::step
+                              (car (w3t::step
+                                    (ir-frame-local-get-cfg-o
+                                     outer
+                                     (list :const (list :i32) v))))))))
+                  (ir-value-cfg
+                   (list :|%;%| *ir-store* outer)
+                   v)))
+  :hints (("Goal"
+           :in-theory (disable w3t::step
+                               ir-frame-local-get-cfg-o
+                               ir-frame-value-cfg-o
+                               ir-label-vals-in-frame-cfg
+                               ir-frame-vals-cfg
+                               ir-value-cfg
+                               ir-frame-with-locals
+                               ir-frame-value-cfg-o-is-in-frame)
+           :use ((:instance ir-step1-in-frame-local-get-o
+                            (l0 (list :const (list :i32) v))
+                            (outer outer))
+                 (:instance ir-step1-frame-value-o
+                            (v v) (outer outer))
+                 (:instance ir-step1-frame-vals
+                            (z (list :|%;%| *ir-store* outer))
+                            (f (ir-frame-with-locals
+                                (list (list (list :const (list :i32) v)))))
+                            (v v))))))
+
+(defthm ir-op-const-call-entry-invoke
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step (ir-op-const-invoke-cfg v)))
+                  (ir-frame-local-get-cfg-o
+                   *ir-call-frame*
+                   (list :const (list :i32) v))))
+  :hints (("Goal" :in-theory (enable ir-op-const-invoke-cfg
+                                     ir-frame-local-get-cfg-o
+                                     ir-frame-local-get-cfg-z
+                                     ir-frame-with-locals)
+                  :use (ir-op-const-call-entry))))
+
+;; $INVOKE, one call step, and the three body steps, in one composition.
+(defthm ir-op-const-call-result
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step
+                        (car (w3t::step
+                              (car (w3t::step
+                                    (car (w3t::step
+                                          (ir-op-const-invoke-cfg v)))))))))
+                  (ir-value-cfg
+                   (list :|%;%| *ir-store* *ir-call-frame*)
+                   v)))
+  :hints (("Goal"
+           :in-theory (disable w3t::step
+                               ir-op-const-invoke-cfg
+                               ir-frame-local-get-cfg-o
+                               ir-frame-value-cfg-o
+                               ir-label-vals-in-frame-cfg
+                               ir-frame-vals-cfg
+                               ir-value-cfg
+                               ir-frame-with-locals)
+           :use (ir-op-const-call-entry-invoke
+                 (:instance ir-op-const-body-o
+                            (outer *ir-call-frame*))))))
+
+;; The remaining J2b-2 pieces are the other opcode bodies/dispatcher.
 ;;
 ;; Call-entry finding (checked by evaluation).  Calling function 0 with the
 ;; value (:CONST (:I32) v) is

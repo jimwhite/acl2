@@ -72,15 +72,14 @@ three-step `ir-op-const-body` composition (taking `CAR` after each `STEP`).
 The `$invoke` call entry is still open; this is a J2b-2 step, not yet the
 opcode theorem.
 
-**J2b-2 (partial): the W3T link.**  The local `op_const` body is proved
-(`ir-op-const-body`).  Evaluation fixes the call entry: calling function 0
-with `(:CONST (:I32) v)` gives a config whose outer frame is the **empty call
-frame** (`:locals` / empty `:module`), not `*ir-frame*`, and one `STEP`
-enters the callee frame (the body's `ir-frame-local-get-cfg` at that outer
-frame); the `$INVOKE` equality to that config is checked.  The symbolic
-obligation that remains is `STEP/R-CTXT-INSTRS` for the value prefix; the old
-`calls.lisp` no-ctxt fact is the no-prefix case.  This is not yet the W3T
-theorem the plan's J2 acceptance asks for.
+**J2b-2 (partial): the W3T link.**  The `op_const` chain is complete:
+`ir-op-const-body` (the three local steps), the value-prefixed
+`no-ctxt-instrs-on-op-const-call` (with the two stuck-suffix `STEP` facts),
+`ir-op-const-call-entry` (one `STEP` from `$INVOKE` into the callee frame),
+and `ir-op-const-call-result` (four `STEP`s from `$INVOKE` to the value).
+The call's outer frame is the **empty call frame**, so the body lemmas are
+generalized over the outer frame.  The other opcode bodies and the `STEP`
+dispatcher remain; this is not yet the plan's full J2 acceptance.
 
 ## Design finding (2026-11-23)
 
@@ -96,10 +95,10 @@ bottleneck.
 ## What is deliberately not here yet
 
 - **J2b-2 -- the W3T link.**  The per-opcode module, table and model are in
-  (`milawa-ops.wat`, `ops-state.lisp`, `ops.lisp`), and the local `op_const`
-  body composition is proved; the symbolic W3T theorem that a call to an
-  exported function returns the model's value is blocked on the prefixed
-  `STEP/R-CTXT-INSTRS` call-entry obligation (see the J2b-1 section).
+  (`milawa-ops.wat`, `ops-state.lisp`, `ops.lisp`), and the full `op_const`
+  chain is proved from `$INVOKE` to the value; the other opcode bodies and
+  the `STEP` dispatcher are the remaining J2b-2 work (see the J2b-1
+  section).
 - **J3 -- the run-level theorem.**  `machine-run (lower-program ...)` equals
   `bc-eval`/`r-ev` for all terms; the closed instances are the J2a checks,
   the general theorem is J3.

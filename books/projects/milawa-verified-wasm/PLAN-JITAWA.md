@@ -145,18 +145,16 @@ initial function table --> checker soundness theorem
   `refinement/ops-state.lisp` pins it; `refinement/ops.lisp` has the checked
   table, the i32 model, per-opcode dispatcher theorems, and value-level
   agreement with `machine-step`.  0.5 s.
-- **J2b-2 W3T link: partial.**  `refinement/ops-w3t.lisp` proves the
-  frame/label `local.get`, the label/frame value returns, the
-  frame-around-label-around-value step for `*ir-store*`/`*ir-frame*`, and
-  the three-step `ir-op-const-body` composition.  The `$invoke` call entry
-  and the other opcodes/dispatcher remain.  Finding: calling function 0 with
-  `(:CONST (:I32) v)` is a config whose outer frame is the **empty call
-  frame** (`:locals` / empty `:module`), not `*ir-frame*`, and whose one
-  `STEP` enters the callee frame; the equality from `$INVOKE` is now checked.
-  The open symbolic obligation is `STEP/R-CTXT-INSTRS` for the value prefix
-  (the old `calls.lisp` no-ctxt fact is the no-prefix case), not the
-  `val-ok` cost.  This needs a prefixed no-ctxt lemma or J5's verified
-  translation.
+- **J2b-2 W3T link: op_const done, other opcodes partial.**
+  `refinement/ops-w3t.lisp` proves the frame/label `local.get`, the
+  label/frame value returns, the frame-around-label-around-value step, the
+  three-step `ir-op-const-body`, the value-prefixed
+  `no-ctxt-instrs-on-op-const-call` (with the two stuck-suffix `STEP` facts),
+  the one-step `ir-op-const-call-entry`, and the four-step
+  `ir-op-const-call-result` from `$INVOKE` to the value.  The outer frame is
+  the **empty call frame** (`:locals` / empty `:module`), not `*ir-frame*`;
+  the body lemmas are generalized over the outer frame.  The other opcode
+  bodies and the `STEP` dispatcher remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving
