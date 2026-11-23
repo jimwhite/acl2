@@ -116,11 +116,13 @@ label step (`((const v) (return))` under a label, bare and with a rest),
 function-label return with an arbitrary no-BR suffix, the frame return,
 and the generic frame/label lift for one body step.  `ops-trace-0.lisp`
 proves the six-step op0 body trace from the first comparison through the
-branch's `local.get` and the if-label return, and `ops-frame-0.lisp`
-proves the first frame-level lift, the function-label frame lift, and the
-frame return (with `un-p` forms of the return steps).  What remains is the
-full eight-step op0 frame trace (the body steps composed with the frame
-lifts), its generalization to all eight ops, the resulting
+branch's `local.get` and the if-label return, `ops-frame-0.lisp` proves
+the frame-level lift, the function-label frame lift, the frame return,
+and the append/frame config steps, `ops-frame-6.lisp` proves the
+six-step frame trace, and `ops-frame-8.lisp` closes the full eight-step
+op0 frame trace to the value configuration (with totalized `sel`/`tail-sel`
+eliminating the un-p/no-br side conditions).  What remains is the
+generalization of the eight-step trace to ops 1-7, the resulting
 `$invoke *ir-store* 7` call result, and the exported `STEP` theorem.  The
 model-level `ir-step-table` and `machine-step-dispatches` are proved.
 This is not yet the plan's full J2 acceptance.

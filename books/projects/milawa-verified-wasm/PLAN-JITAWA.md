@@ -202,9 +202,13 @@ initial function table --> checker soundness theorem
   `refinement/ops-dispatch-tail.lisp` factors the if-chain generators,
   and `refinement/ops-return-suffix.lisp` proves the no-BR-tail searches,
   the function-label return with an arbitrary no-BR suffix, the frame
-  return, and the generic frame/label lift for one body step.  The
-  remaining work is the dispatcher trace composition (the true-comparison
-  prefix and branch steps inside the function entry label/frame), the
+  return, and the generic frame/label lift for one body step.
+  `refinement/ops-trace-0.lisp` proves the six-step op0 body trace,
+  `refinement/ops-frame-6.lisp` the six-step op0 frame trace, and
+  `refinement/ops-frame-8.lisp` closes the full eight-step op0 frame
+  trace to the value configuration, using totalized `sel`/`tail-sel`
+  values to make the side conditions unconditional.  The remaining work
+  is generalizing the eight-step trace to ops 1-7, the
   `$invoke *ir-store* 7` call result, and the exported `STEP` theorem
   (the model-level `ir-step-table` and `machine-step-dispatches` are
   proved).
