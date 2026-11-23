@@ -434,3 +434,37 @@
                                                            (caddr (car inner)))))))))
            :in-theory (disable w3t::step)
            :do-not-induct t)))
+
+(defthm frame-label-step-of-body-x
+  (implies (and (true-listp body)
+                (not (we::exit-body-p body))
+                (equal inner
+                       (w3t::step
+                        (list :|%;%| (list :|%;%| s x) body)))
+                inner
+                (equal (cadr (car inner)) (list :|%;%| s x))
+                (we::state-shape-p (cadr (car inner))))
+           (equal
+            (w3t::step
+             (list :|%;%| (list :|%;%| s f)
+                   (list (list :frame_%{%}% 1 x
+                               (list (list :label_%{%}% 1 nil body))))))
+            (list
+             (list :|%;%| (list :|%;%| s f)
+                   (list (list :frame_%{%}% 1 x
+                               (list (list :label_%{%}% 1 nil
+                                           (caddr (car inner))))))))))
+  :hints (("Goal"
+           :use ((:instance engine-admin-term-in-block
+                            (k :l) (n 1) (x nil) (b body) (r nil)
+                            (s s) (f x) (inner inner))
+                 (:instance engine-admin-term-in-block
+                            (k :f) (n 1) (x x)
+                            (b (list (list :label_%{%}% 1 nil body)))
+                            (r nil) (s s) (f f)
+                            (inner (list (list :|%;%|
+                                               (cadr (car inner))
+                                               (list (list :label_%{%}% 1 nil
+                                                           (caddr (car inner)))))))))
+           :in-theory (disable w3t::step)
+           :do-not-induct t)))
