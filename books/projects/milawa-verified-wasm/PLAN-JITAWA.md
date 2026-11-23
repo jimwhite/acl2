@@ -172,8 +172,14 @@ initial function table --> checker soundness theorem
   proved: five steps from the callee config to the value and six from
   `$invoke`.  The value is `(loghead 32 (+ v1 v2))`; the theorems carry the
   type side condition `(unsigned-byte-p 32 (loghead 32 (+ v1 v2)))` (not yet
-  discharged).  The `sub`/`lt`/`ifz`/`jmp`/`label` bodies and the `STEP`
-  dispatcher remain.
+  discharged).  For `op_sub`, `refinement/ops-sub-body.lisp` proves the
+  `$isub_` bridge `(rem (- (+ 2^32 i1) i2) 2^32) = (loghead 32 (- i1 i2))`
+  (via `rem-positive-as-mod`, `loghead-32-as-mod`, and the non-local
+  `acl2::cancel-mod-+-basic` from `ihs/quotient-remainder-lemmas`), the sub
+  call entry and body steps; `refinement/ops-sub-label.lisp` proves
+  `ir-op-sub-body` and `ir-op-sub-call-result` (same conditional pattern,
+  side condition `(unsigned-byte-p 32 (loghead 32 (- v1 v2)))`).  The
+  `lt`/`ifz`/`jmp`/`label` bodies and the `STEP` dispatcher remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving

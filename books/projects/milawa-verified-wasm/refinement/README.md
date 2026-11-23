@@ -90,9 +90,13 @@ and instantiates them at the explicit inner terms, giving
 `ir-op-add-body` (five steps from the callee config to the value) and
 `ir-op-add-call-result` (six steps from `$invoke`).  The value is
 `(loghead 32 (+ v1 v2))`; the theorems carry the side condition
-`(unsigned-byte-p 32 (loghead 32 (+ v1 v2)))`.  The `sub`/`lt`/`ifz`/`jmp`/
-`label` bodies and the `STEP` dispatcher remain.  This is not yet the plan's
-full J2 acceptance.
+`(unsigned-byte-p 32 (loghead 32 (+ v1 v2)))`.  For `op_sub`,
+`ops-sub-body.lisp` proves the `$isub_` bridge
+`(rem (- (+ 2^32 i1) i2) 2^32) = (loghead 32 (- i1 i2))` using
+`rem-positive-as-mod`, `loghead-32-as-mod`, and the non-local
+`acl2::cancel-mod-+-basic`; `ops-sub-label.lisp` proves `ir-op-sub-body` and
+`ir-op-sub-call-result`.  The `lt`/`ifz`/`jmp`/`label` bodies and the `STEP`
+dispatcher remain.  This is not yet the plan's full J2 acceptance.
 
 ## Design finding (2026-11-23)
 
