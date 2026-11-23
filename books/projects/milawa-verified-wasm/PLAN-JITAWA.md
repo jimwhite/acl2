@@ -164,10 +164,14 @@ initial function table --> checker soundness theorem
   proved.  In `refinement/ops-add.lisp`, the first (`vals nil`) body step uses
   the engine's `step-of-flat-block`; the value-prefix step uses
   `engine-ctxt-from-values-instr-step`; and `add-body-inner3` composes the
-  three inner body steps to `(:CONST (:I32) (+ v1 v2))`.  The remaining
-  `op_add` piece is the label/frame admin lift from the body config to the
-  callee-frame config (the `engine-admin-term-in-block` conditions).  The
-  other opcode bodies and the `STEP` dispatcher also remain.
+  three inner body steps to `(:CONST (:I32) (+ v1 v2))`.  In
+  `refinement/ops-add-label.lisp`, the **conditional** label lifts for the
+  three body steps and the conditional frame lifts for the three label steps
+  are proved via `engine-admin-term-in-block`, with a local
+  `milawa-state-pair-p`/`we::state-shape-p` bridge and the `exit-body-p`
+  facts.  The concrete composition of those conditionals (instantiating the
+  inner terms) to `ir-op-add-body`/`ir-op-add-call-result` did not reduce and
+  remains.  The other opcode bodies and the `STEP` dispatcher also remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving
