@@ -81,12 +81,13 @@ The call's outer frame is the **empty call frame**, so the body lemmas are
 generalized over the outer frame.  For `op_add` (function 1), the entry
 configuration, the value-prefixed no-ctxt chain (including the one-constant
 suffix), and the one-step call entry are proved.  The redex steps
-`add-inner0/1/bin` (and explicit state-pair forms) are proved.  The
-`op_add` body has a multi-instruction label body (two `local.get`s and
-`binop`); the engine's `step-of-flat-block` closes the first (`vals nil`)
-step, but the value-prefix step's inner/`operands` normalization does not
-close.  That lift, the other opcode bodies, and the `STEP` dispatcher
-remain.  This is not yet the plan's full J2 acceptance.
+`add-inner0/1/bin` (and explicit state-pair forms) are proved.  `ops-add.lisp`
+proves the `op_add` body at the body config: the first step via the engine's
+`step-of-flat-block`, the value-prefix step via
+`engine-ctxt-from-values-instr-step`, and `add-body-inner3` composes the three
+inner steps.  The label/frame admin lift to the callee-frame config, the other
+opcode bodies, and the `STEP` dispatcher remain.  This is not yet the plan's
+full J2 acceptance.
 
 ## Design finding (2026-11-23)
 

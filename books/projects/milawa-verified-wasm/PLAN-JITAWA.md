@@ -161,10 +161,13 @@ initial function table --> checker soundness theorem
   multi-instruction label body, so it needs the label-lift/context lemmas,
   not the single-`local.get` value dissolve that made `op_const` easy.  The
   redex steps (`add-inner0/1/bin` and their explicit-state-pair forms) are
-  proved.  The engine's `step-of-flat-block` closes the first (`vals nil`)
-  body step; the value-prefix step's inner/`operands` normalization does not
-  close, so that lift is the next concrete blocker.  The other opcode bodies
-  and the `STEP` dispatcher also remain.
+  proved.  In `refinement/ops-add.lisp`, the first (`vals nil`) body step uses
+  the engine's `step-of-flat-block`; the value-prefix step uses
+  `engine-ctxt-from-values-instr-step`; and `add-body-inner3` composes the
+  three inner body steps to `(:CONST (:I32) (+ v1 v2))`.  The remaining
+  `op_add` piece is the label/frame admin lift from the body config to the
+  callee-frame config (the `engine-admin-term-in-block` conditions).  The
+  other opcode bodies and the `STEP` dispatcher also remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving
