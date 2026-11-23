@@ -139,6 +139,22 @@ plan's J2 acceptance (one theorem per opcode plus a dispatcher theorem);
 the step clocks are the per-branch WASM block structure, not a concrete
 program trace.
 
+## J3: the run level and the front door (done for the host loop)
+
+`top-host.lisp` models the host loop that keeps pc/stack and calls the
+verified STEP for the arithmetic primitives (`+`, `-`, `<`): `host-prim-2`
+checks the artifact's 30-bit range and uses `ir-step`, `host-step` is
+`machine-step` for everything else, and `host-run` iterates.
+**`host-run-refines-machine-run`** proves, by induction on fuel, that the
+host loop equals the VM run unless the artifact's range is exceeded (where
+WASM i32 wrap/signed LT differ from the Milawa primitives).
+
+`poc.lisp` is the front door: closed host/machine runs for `(+ 1 2)`, the
+`if` example and `(cons 1 2)` derived from that theorem and the J2a closed
+passes, plus closed W3T dispatcher theorems for add, lt and ifz derived from
+`ir-op-step-call-result`.  `make poc` prints the spec/machine/host answers
+and the dispatcher value.
+
 ## Design finding (2026-11-23)
 
 A CEK-style flat machine with a fuel/continuation run proof was prototyped

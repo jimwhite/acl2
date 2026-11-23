@@ -316,6 +316,25 @@ regression suite.
 
 ### J3 -- Run level and the front door (`refinement/top/`)
 
+**Status (2026-11-23): the host loop and the front door are done.**  The
+bytecode VM run is `machine-run` (J2a).  `refinement/top-host.lisp` models the
+host loop that holds pc/stack and calls the verified STEP for the arithmetic
+primitives: `host-prim-2` checks the artifact's 30-bit range and uses the J2
+dispatcher model `ir-step` for `+`, `-`, `<`; `host-step` is `machine-step`
+elsewhere; `host-run` iterates.  **`host-run-refines-machine-run`** is the
+fuel induction: the host loop equals the VM unless the artifact's range is
+exceeded (where WASM i32 wrap/signed LT differ from the Milawa 30-bit
+primitives).  `refinement/poc.lisp` proves the closed host/machine runs for
+`(+ 1 2)`, the `if` example and `(cons 1 2)` as instances of that theorem
+plus the J2a closed passes, and closed W3T dispatcher theorems for add, lt
+and ifz as instances of `ir-op-step-call-result`.  `make poc` prints the
+spec/machine/host answers and the dispatcher value.
+
+The general term-to-machine composition (`machine-run` of a lowered
+`compile-term` equals `bc-eval`/`r-ev` for every term, the J1b lowering
+theorem) is the remaining run-level piece; it is independent of the host
+loop and the front-door instances above.
+
 - Prove the host loop: `n` calls to the exported `STEP`, at the
   opcode-determined clocks, equal `bc-run` for `n` steps
   (`MVM-RUN`/`W3T::STEPS` relation).  This is an induction, not a path
