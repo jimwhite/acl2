@@ -7,7 +7,7 @@
 
 (in-package "MILAWA-WASM")
 
-(include-book "ops-dispatch-true")
+(include-book "../wasm3/engine")
 (include-book "../wasm-acl2/engine/rules/exits")
 
 ;; ---------------------------------------------------------------------------
