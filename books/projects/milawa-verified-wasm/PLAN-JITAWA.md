@@ -196,8 +196,18 @@ initial function table --> checker soundness theorem
   `op_jmp` (function 5), `ops-jmp.lisp` proves the entry and the
   three-step body/call result to `v2`; for `op_label` (function 6),
   `ops-label.lisp` proves the entry and the three-step body/call result
-  to `v1`.  The `STEP` dispatcher remains (the model-level
-  `ir-step-table` and `machine-step-dispatches` are proved).
+  to `v1`.  For the `STEP` dispatcher (function 7),
+  `refinement/ops-return-label.lisp` proves the exit-body label step
+  (`((const v) (return))`, bare and with a rest),
+  `refinement/ops-dispatch-tail.lisp` factors the if-chain generators,
+  and `refinement/ops-return-suffix.lisp` proves the no-BR-tail searches,
+  the function-label return with an arbitrary no-BR suffix, the frame
+  return, and the generic frame/label lift for one body step.  The
+  remaining work is the dispatcher trace composition (the true-comparison
+  prefix and branch steps inside the function entry label/frame), the
+  `$invoke *ir-store* 7` call result, and the exported `STEP` theorem
+  (the model-level `ir-step-table` and `machine-step-dispatches` are
+  proved).
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving

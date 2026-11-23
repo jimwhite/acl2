@@ -108,10 +108,18 @@ the straight-line `target * (test == 0 ? 1 : 0)` body
 `ops-ifz-label.lisp` proves `ir-op-ifz-body` and
 `ir-op-ifz-call-result` with value `(if (equal v1 0) v2 0)`.
 `ops-jmp.lisp` (function 5) and `ops-label.lisp` (function 6) prove the
-entry and three-step body/call results (to `v2` and `v1`).  The `STEP`
-dispatcher remains (the model-level `ir-step-table` and
-`machine-step-dispatches` are proved).  This is not yet the plan's full
-J2 acceptance.
+entry and three-step body/call results (to `v2` and `v1`).  For the `STEP`
+dispatcher (function 7), `ops-return-label.lisp` proves the exit-body
+label step (`((const v) (return))` under a label, bare and with a rest),
+`ops-dispatch-tail.lisp` factors the comparison/if-chain generators, and
+`ops-return-suffix.lisp` proves the generic no-BR-tail facts, the
+function-label return with an arbitrary no-BR suffix, the frame return,
+and the generic frame/label lift for one body step.  What remains is the
+composition of the actual dispatcher trace (the true-comparison prefix and
+branch steps inside the function entry label/frame), the resulting
+`$invoke *ir-store* 7` call result, and the exported `STEP` theorem.  The
+model-level `ir-step-table` and `machine-step-dispatches` are proved.
+This is not yet the plan's full J2 acceptance.
 
 ## Design finding (2026-11-23)
 
