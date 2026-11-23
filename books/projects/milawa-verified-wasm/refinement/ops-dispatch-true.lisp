@@ -2,7 +2,15 @@
 ;
 (in-package "MILAWA-WASM")
 (include-book "ops-dispatch")
-(include-book "ops-sub-body")
+(include-book "ops-ifz-body")
+
+(defthm isub-rem-loghead
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (rem (- (+ (expt 2 32) v1) v2) (expt 2 32))
+                  (loghead 32 (- v1 v2))))
+  :hints (("Goal"
+           :in-theory (e/d (loghead rem-positive-as-mod)
+                           (rem mod)))))
 
 (defthm ieq-value-all
   (equal (w3t::$ieq_ 32 v j)
