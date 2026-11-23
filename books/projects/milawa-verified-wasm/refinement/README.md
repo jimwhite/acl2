@@ -114,9 +114,13 @@ label step (`((const v) (return))` under a label, bare and with a rest),
 `ops-dispatch-tail.lisp` factors the comparison/if-chain generators, and
 `ops-return-suffix.lisp` proves the generic no-BR-tail facts, the
 function-label return with an arbitrary no-BR suffix, the frame return,
-and the generic frame/label lift for one body step.  What remains is the
-composition of the actual dispatcher trace (the true-comparison prefix and
-branch steps inside the function entry label/frame), the resulting
+and the generic frame/label lift for one body step.  `ops-trace-0.lisp`
+proves the six-step op0 body trace from the first comparison through the
+branch's `local.get` and the if-label return, and `ops-frame-0.lisp`
+proves the first frame-level lift, the function-label frame lift, and the
+frame return (with `un-p` forms of the return steps).  What remains is the
+full eight-step op0 frame trace (the body steps composed with the frame
+lifts), its generalization to all eight ops, the resulting
 `$invoke *ir-store* 7` call result, and the exported `STEP` theorem.  The
 model-level `ir-step-table` and `machine-step-dispatches` are proved.
 This is not yet the plan's full J2 acceptance.
