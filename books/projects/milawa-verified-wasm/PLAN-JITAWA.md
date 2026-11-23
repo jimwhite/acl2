@@ -237,8 +237,8 @@ plan.  The active plan follows Jitawa's two directories.
 - **L0 -- done.**  `refinement/l0-parse.lisp` is the surface-to-core parser:
   `LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda with closure conversion,
   `DEFUN`, and `FUNCALL`.  `refinement/l0-read.lisp` is the character reader:
-  numbers, symbols, lists, dotted pairs, `QUOTE`, and `#n=`/`#n#` sharing,
-  with an input stream of character lists.  `refinement/l0-spec.lisp` has the
+  numbers, symbols (including `|...|` escapes), lists, dotted pairs, `QUOTE`,
+  comments, and `#n=`/`#n#` sharing, with an input stream of character lists.  `refinement/l0-spec.lisp` has the
   core term predicate, the big-step `l0-ev`/`l0-evl`/`l0-ap` evaluator
   (primitives, lambdas, function table, `DEFINE`/`L0-DEFUN`/`PRINT`/`ERROR`/
   `FUNCALL`), the `l0-exec` read-eval-print loop, `l0-run-source`,

@@ -302,9 +302,30 @@
 ;; Printer (the output side of the read-eval-print loop)
 ;; ---------------------------------------------------------------------------
 
+(defun l0-symbol-char-ok-p (c)
+  (declare (xargs :guard t :verify-guards nil))
+  (or (and (<= (char-code #\A) (char-code c))
+           (<= (char-code c) (char-code #\Z)))
+      (l0-digit-char-p c)
+      (member-equal c '(#\- #\+ #\* #\/ #\< #\= #\> #\? #\! #\_ #\. #\:))))
+
+(defun l0-symbol-chars-ok-p (chars)
+  (declare (xargs :guard t :verify-guards nil :measure (acl2-count chars)))
+  (if (consp chars)
+      (and (l0-symbol-char-ok-p (car chars))
+           (l0-symbol-chars-ok-p (cdr chars)))
+    t))
+
+(defun l0-symbol-print-chars (x)
+  (declare (xargs :guard t :verify-guards nil))
+  (let ((chars (coerce (symbol-name x) 'list)))
+    (if (l0-symbol-chars-ok-p chars)
+        chars
+      (append (list #\|) chars (list #\|)))))
+
 (defun l0-print-atom-chars (x)
   (declare (xargs :guard t :verify-guards nil))
-  (cond ((symbolp x) (coerce (symbol-name x) 'list))
+  (cond ((symbolp x) (l0-symbol-print-chars x))
         ((natp x) (str::nat-to-dec-chars x))
         (t (coerce "#<value>" 'list))))
 
@@ -407,6 +428,15 @@
 (assert-event
  (equal (l0-read-all (coerce "#1=(a b) #1#" 'list))
         '((a b) (a b))))
+(assert-event
+ (equal (l0-read-all (coerce "1 ; a comment
+2" 'list))
+        '(1 2)))
+(assert-event
+ (equal (l0-read-all (coerce "|INC|" 'list))
+        (list 'inc)))
+(assert-event
+ (equal (l0-print-value '|foo|) "|foo|"))
 (assert-event
  (mv-let (x rest labels)
    (l0-read-sexp (l0-print-chars '(1 2 3)) 100 nil)

@@ -202,9 +202,9 @@ The active track is:
 
 - **L0 -- done.**  `l0-parse.lisp` is the surface-to-core front end
   (`LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda, closure conversion, `DEFUN`,
-  `FUNCALL`).  `l0-read.lisp` is the character reader: numbers, symbols,
-  lists, dotted pairs, `QUOTE`, and `#n=`/`#n#` sharing, with an input stream
-  of character lists.  `l0-spec.lisp` has the core term predicate, the
+  `FUNCALL`).  `l0-read.lisp` is the character reader: numbers, symbols
+  (including `|...|` escapes), lists, dotted pairs, `QUOTE`, comments, and
+  `#n=`/`#n#` sharing, with an input stream of character lists.  `l0-spec.lisp` has the core term predicate, the
   big-step evaluator `l0-ev`/`l0-evl`/`l0-ap` (primitives, lambdas, function
   table, `DEFINE`/`L0-DEFUN`/`PRINT`/`ERROR`/`FUNCALL`), the `l0-exec` read-
   eval-print loop, `l0-run-source`, `l0-run-chars`, and the string printer

@@ -35,11 +35,21 @@
       (eql c #\.)
       (eql c #\#)))
 
-(defun l0-skip-whitespace (chars)
+(defun l0-skip-comment (chars)
   (declare (xargs :guard t :measure (acl2-count chars)))
   (if (and (consp chars)
-           (l0-whitespace-char-p (car chars)))
-      (l0-skip-whitespace (cdr chars))
+           (not (eql (car chars) #\Newline)))
+      (l0-skip-comment (cdr chars))
+    chars))
+
+(defun l0-skip-whitespace (chars)
+  (declare (xargs :guard t :measure (acl2-count chars)))
+  (if (consp chars)
+      (cond ((l0-whitespace-char-p (car chars))
+             (l0-skip-whitespace (cdr chars)))
+            ((eql (car chars) #\;)
+             (l0-skip-whitespace (l0-skip-comment (cdr chars))))
+            (t chars))
     chars))
 
 (defun l0-digit-char-p (c)
@@ -93,15 +103,35 @@
   (intern-in-package-of-symbol (coerce (l0-upcase-chars chars) 'string)
                                'l0-variable-p))
 
+(defun l0-chars-to-symbol-raw (chars)
+  (declare (xargs :guard t :verify-guards nil))
+  (intern-in-package-of-symbol (coerce chars 'string)
+                               'l0-variable-p))
+
+(defun l0-pipe-token (chars acc)
+  (declare (xargs :guard t :verify-guards nil :measure (acl2-count chars)))
+  (cond ((endp chars) (mv :error chars))
+        ((eql (car chars) #\|)
+         (mv (reverse acc) (cdr chars)))
+        (t (l0-pipe-token (cdr chars) (cons (car chars) acc)))))
+
 (defun l0-read-atom (chars)
   (declare (xargs :guard t :verify-guards nil))
-  (let ((token (l0-token-chars chars))
-        (rest  (l0-token-rest chars)))
-    (cond ((endp token) (mv :error chars))
-          ((l0-all-digits-p token)
-           (mv (l0-chars-to-nat token 0) rest))
-          (t
-           (mv (l0-chars-to-symbol token) rest)))))
+  (cond
+   ((and (consp chars) (eql (car chars) #\|))
+    (mv-let (token rest)
+      (l0-pipe-token (cdr chars) nil)
+      (if (eq token :error)
+          (mv :error chars)
+        (mv (l0-chars-to-symbol-raw token) rest))))
+   (t
+    (let ((token (l0-token-chars chars))
+          (rest  (l0-token-rest chars)))
+      (cond ((endp token) (mv :error chars))
+            ((l0-all-digits-p token)
+             (mv (l0-chars-to-nat token 0) rest))
+            (t
+             (mv (l0-chars-to-symbol token) rest)))))))
 
 ;; ---------------------------------------------------------------------------
 ;; #n= and #n#
