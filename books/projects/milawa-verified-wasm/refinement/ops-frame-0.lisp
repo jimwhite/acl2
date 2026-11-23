@@ -153,3 +153,24 @@
                             we::append-of-cons)
                            (w3t::step dframe ir-frame-with-locals))
            :do-not-induct t)))
+
+(defthm step-frame-ret-cfg
+  (implies (w3t::un-p v 32)
+           (equal
+            (w3t::step
+             (list :|%;%|
+                   (list :|%;%| *ir-store* *ir-call-frame*)
+                   (list (list :frame_%{%}% 1 (dframe 0 a b)
+                               (list (list :const (list :i32) v)
+                                     (list :return))))))
+            (list
+             (list :|%;%|
+                   (list :|%;%| *ir-store* *ir-call-frame*)
+                   (list (list :const (list :i32) v))))))
+  :hints (("Goal"
+           :use ((:instance step-frame-return
+                            (v v)
+                            (f (dframe 0 a b))
+                            (z (list :|%;%| *ir-store* *ir-call-frame*))))
+           :in-theory (disable w3t::step dframe ir-frame-with-locals)
+           :do-not-induct t)))
