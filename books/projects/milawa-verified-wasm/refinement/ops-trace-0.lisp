@@ -242,3 +242,22 @@
                            (w3t::step dframe ir-frame-with-locals
                             (:e cons)))
            :do-not-induct t)))
+
+(defthm step-const-return-cons-rest-un-p
+  (implies (and (w3t::un-p v 32) (true-listp r))
+           (equal
+            (w3t::step
+             (list :|%;%| z
+                   (cons (list :label_%{%}% 0 nil
+                               (cons (list :const (list :i32) v)
+                                     (cons (list :return) nil)))
+                         r)))
+            (list
+             (list :|%;%| z
+                   (append (cons (list :const (list :i32) v)
+                                 (cons (list :return) nil))
+                           r)))))
+  :hints (("Goal"
+           :use ((:instance step-const-return-cons-rest))
+           :in-theory (enable un-p-implies-ubp)
+           :do-not-induct t)))

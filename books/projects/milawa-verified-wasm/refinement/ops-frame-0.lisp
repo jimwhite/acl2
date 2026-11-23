@@ -74,3 +74,23 @@
            :in-theory (e/d (frame-cfg0)
                            (w3t::step dframe ir-frame-with-locals))
            :do-not-induct t)))
+
+(defthm frame-function-label-tail-un-p
+  (implies (and (w3t::un-p v 32)
+                (true-listp tail)
+                (equal tail (dispatch-tail 0)))
+           (equal
+            (w3t::step
+             (frame-cfg0 a b
+                         (cons (list :const (list :i32) v)
+                               (cons (list :return) tail))))
+            (list
+             (list :|%;%|
+                   (list :|%;%| *ir-store* *ir-call-frame*)
+                   (list (list :frame_%{%}% 1 (dframe 0 a b)
+                               (list (list :const (list :i32) v)
+                                     (list :return))))))))
+  :hints (("Goal"
+           :use ((:instance frame-function-label-tail))
+           :in-theory (enable un-p-implies-ubp)
+           :do-not-induct t)))
