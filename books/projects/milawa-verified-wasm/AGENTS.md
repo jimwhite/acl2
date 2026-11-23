@@ -14,7 +14,7 @@ the earlier per-path experiment: keep them certified, do not extend them as
 the proof path.  The PoC and the `abs.lisp`/memory/numerics books are kept as
 the regression suite.
 
-**Refinement tree (J0/J1 compiler + J2a machine done, 2026-11-23).**
+**Refinement tree (J0/J1 compiler + J2a/J2b-1 done, 2026-11-23).**
 `refinement/spec.lisp` has `variable-p`/`term-p`/`r-ev`;
 `refinement/compile.lisp` has `compile-term`, `bc-eval`, and
 `compile-correct` for the arithmetic/control subset (all twelve primitives +
@@ -22,9 +22,16 @@ the regression suite.
 checks `r-ev` against `MILAWA-RUN` on those forms.  `refinement/machine.lisp`
 is J2a: the flat stack/pc lowering and `machine-step`/`machine-run`, one step
 theorem per opcode, the dispatcher coverage, and the closed
-`(+ 1 2)`/`if`/`cons` passes.  A CEK-style run proof was prototyped and is a
-slog (600 s, diverging); the general run-level theorem is J3, and the
-per-opcode WASM artifact is J2b.  The general `r-ev = MILAWA-RUN` bridge is
+`(+ 1 2)`/`if`/`cons` passes.  `wasm/milawa-ops.wat`/`.wasm` plus
+`refinement/ops-state.lisp` and `refinement/ops.lisp` are J2b-1: the
+per-opcode integer/arithmetic/if module, its checked table, the i32 model,
+per-opcode dispatcher theorems, and value-level agreement with
+`machine-step`.  J2b-2's symbolic W3T link is blocked: `op_const` timed out
+at 180 s and the call-entry lemma at 300 s on the generated
+`$invoke`/`val-ok`/call machinery; port the old call/entry/return lemmas or
+use J5's verified translation.  A CEK-style run proof was also a slog
+(600 s, diverging); the general run-level theorem is J3.  The general
+`r-ev = MILAWA-RUN` bridge is
 the open J1b piece.  Build with `make refinement ACL2=...`; separate from
 `make check`.
 

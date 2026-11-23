@@ -140,6 +140,16 @@ initial function table --> checker soundness theorem
   stack/pc program, gives it `machine-step`/`machine-run`, proves one step
   theorem per opcode, the dispatcher coverage, and the closed `(+ 1 2)`,
   `if`, `cons` passes.  0.4 s.  The general run-level theorem is J3.
+- **J2b-1 module/table/model: done.**  `wasm/milawa-ops.wat` +
+  `milawa-ops.wasm` is the per-opcode integer/arithmetic/if library;
+  `refinement/ops-state.lisp` pins it; `refinement/ops.lisp` has the checked
+  table, the i32 model, per-opcode dispatcher theorems, and value-level
+  agreement with `machine-step`.  0.5 s.
+- **J2b-2 W3T link: blocked.**  Symbolic W3T of `$invoke` on an exported
+  function timed out (op_const 180 s; call-entry 300 s); the generated
+  `$invoke`/`val-ok`/call machinery with symbolic arguments is the old
+  per-call cost.  Needs the old call/entry/return lemmas ported to this
+  store, or J5's verified translation.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving

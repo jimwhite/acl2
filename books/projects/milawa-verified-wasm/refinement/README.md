@@ -53,6 +53,28 @@ a step machine:
 Measured: 4 books, ~3.5 s.  The general run-level theorem is J3; the
 per-opcode WASM artifact is J2b.
 
+## J2b-1: the per-opcode module and table (done)
+
+`../wasm/milawa-ops.wat` (assembled to `milawa-ops.wasm`) is the
+integer/arithmetic/if opcode library: `op_const`, `op_add`, `op_sub`,
+`op_lt`, `op_ifz`, `op_jmp`, `op_label`, and a pure `step` dispatcher.
+`ops-state.lisp` pins its decoded module/store/frame; `ops.lisp` has the
+checked opcode table and index, the i32 model of each function, one
+dispatcher theorem per opcode, and value-level agreement with J2a's
+`machine-step` for const/add/sub/lt (with the subset's bounds).
+
+Measured: `ops-state` 0.25 s, `ops` 0.24 s.
+
+**J2b-2 (blocked): the W3T link.**  A symbolic W3T proof that
+`$invoke` on an exported function returns the model's i32 did not close:
+`op_const` through `steps/%fuel` timed out at 180 s, and the call-entry
+lemma alone at 300 s.  The cost is the generated `$invoke`/`val-ok`/call
+machinery with symbolic arguments, the same per-call cost the old chain
+books pay.  The module and model are checked in; the W3T layer needs the
+old call/entry/return lemmas ported to this store, or the verified
+translation route (J5).  This is not the W3T theorem the plan's J2
+acceptance asks for.
+
 ## Design finding (2026-11-23)
 
 A CEK-style flat machine with a fuel/continuation run proof was prototyped
@@ -61,13 +83,15 @@ sidesteps that by proving the per-opcode step layer, the dispatcher
 coverage, and the closed pass; the general run-level theorem is J3, where a
 relational exact-count presentation (the `MILAWA-RUNS` pattern) is the
 better target.  The machine that actually ships is the WASM artifact in
-J2b.
+J2b.  J2b-1 is the module/table/model; J2b-2's W3T link is the open
+bottleneck.
 
 ## What is deliberately not here yet
 
-- **J2b -- the WASM artifact.**  The per-opcode WASM module (exported
-  opcode functions plus the dispatcher) and its W3T theorems are the next
-  layer; J2a is the ACL2 machine they implement.
+- **J2b-2 -- the W3T link.**  The per-opcode module, table and model are in
+  (`milawa-ops.wat`, `ops-state.lisp`, `ops.lisp`); the symbolic W3T theorem
+  that a call to an exported function returns the model's value is blocked
+  on the generated `$invoke`/`val-ok`/call cost (see the J2b-1 section).
 - **J3 -- the run-level theorem.**  `machine-run (lower-program ...)` equals
   `bc-eval`/`r-ev` for all terms; the closed instances are the J2a checks,
   the general theorem is J3.
