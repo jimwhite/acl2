@@ -3,3 +3,7 @@
 
 # Python bytecode from the harness (regenerated on every run).
 __pycache__/
+
+.DS_Store
+
+jitawa-docs/

@@ -17,6 +17,7 @@ TMP*.*
 temp-emacs-file.lsp
 devel-check.out
 *~
+.DS_Store
 *.log
 *.64ufasl
 *.axpf
