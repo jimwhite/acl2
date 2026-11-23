@@ -433,6 +433,10 @@
 2" 'list))
         '(1 2)))
 (assert-event
+ (equal (l0-read-all (coerce "1;comment
+2" 'list))
+        '(1 2)))
+(assert-event
  (equal (l0-read-all (coerce "|INC|" 'list))
         (list 'inc)))
 (assert-event

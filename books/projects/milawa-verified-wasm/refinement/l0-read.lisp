@@ -33,7 +33,8 @@
       (eql c #\))
       (eql c #\')
       (eql c #\.)
-      (eql c #\#)))
+      (eql c #\#)
+      (eql c #\;)))
 
 (defun l0-skip-comment (chars)
   (declare (xargs :guard t :measure (acl2-count chars)))
