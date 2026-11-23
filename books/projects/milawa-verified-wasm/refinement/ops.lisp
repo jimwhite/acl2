@@ -168,4 +168,13 @@
 ;; checked in; the W3T layer needs the old call/entry/return lemmas ported to
 ;; this module's store, or the verified-translation route from the plan's
 ;; J5.  Do not mistake this book for that link.
+;;
+;; Porting the old return lemmas produced two generic facts (label-vals and
+;; frame-vals, with a symbolic value) but the frame-local-get port still
+;; fails in STEP/R-CTXT-INSTRS with the new frame/module record: the old
+;; STEP-IN-FRAME-LOCAL-GET is tied to *MILAWA-VERIFIED-FRAME* and its
+;; four-local frame, and the new module's frame record does not trigger the
+;; frame context search the same way.  The call-entry `$invoke` route times
+;; out separately (300 s).  Both are recorded here so the next attempt starts
+;; from the frame record, not from `$invoke`.
 ;; ---------------------------------------------------------------------------
