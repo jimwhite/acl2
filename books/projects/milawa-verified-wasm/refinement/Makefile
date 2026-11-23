@@ -7,7 +7,7 @@
 
 ACL2 ?= ../../../../saved_acl2
 CERT_PL ?= ../../../build/cert.pl
-BOOKS ?= spec compile
+BOOKS ?= spec compile bridge
 
 all: cert
 

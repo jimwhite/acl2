@@ -9,7 +9,7 @@ make -C refinement ACL2=/workspaces/acl2/saved_acl2
 make refinement ACL2=/workspaces/acl2/saved_acl2
 ```
 
-## J0/J1a (done)
+## J0/J1 (done for the compiler level)
 
 `spec.lisp`:
 - `variable-p`, `term-p` -- core terms: `QUOTE`, variables, `IF`, and the
@@ -27,18 +27,30 @@ make refinement ACL2=/workspaces/acl2/saved_acl2
   program.
 - Corollaries: `(+ 1 2)`, `(if (< 1 2) 10 20)`, and `(cons 1 2)`.
 
-Measured: 2 books, 2.5 s, 2.1M prover steps.
+`bridge.lisp`:
+- `r-ev-add-agrees-with-milawa-run`, `r-ev-if-...`, `r-ev-cons-...`,
+  `r-ev-variable-...`, `r-ev-quote-...` -- the PoC and representative forms
+  agree with the runtime's `MILAWA-RUN`, by evaluation.  These are checks,
+  not the general bridge.
+
+Measured: 3 books, ~3 s, 2.1M prover steps.
+
+## Design finding (2026-11-23)
+
+The flat ACL2 stack/pc machine (a CEK with a fuel/continuation proof) was
+prototyped after the compiler theorem.  It is **not** on the critical path:
+the fuel/subterm induction is a slog (600 s, still diverging in the primitive
+case), and the machine that actually matters is the WASM artifact in J2.
+The J1 compiler theorem is the Jitawa `BC_ev` level; the per-opcode WASM
+machine is J2, proved against `bc-eval` and `compile-correct`.  The flat
+ACL2 VM is dropped from J1 rather than optimized.
 
 ## What is deliberately not here yet
 
-- **J1b -- the flat machine.**  The IR is a tree, the simplest target that
-  makes the compiler theorem cheap.  The flat stack/pc machine
-  (`bc-step`/`bc-run`), the lowering from the tree IR, and the run-level
-  theorem are J1b.  The compiler theorem above is what that lowering
-  consumes.
-- **The bridge to `MILAWA-RUN`.**  `r-ev` is the Jitawa-style high-level
-  spec.  Proving `r-ev = MILAWA-RUN` (at a computed fuel) for the subset is
-  part of J1b; it is what ties the new spec to the existing interpreter.
+- **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
+  and representative forms; the theorem for all terms at a computed clock
+  is the remaining J1b piece (and also validates the spec against the
+  runtime).
 - **The parser/REPL.**  Terms are ACL2 s-expressions here; the surface
   parser and REPL are J0b.
 - **Calls/lambdas/heap.**  The subset is primitives + `if`; the function
@@ -48,5 +60,5 @@ Measured: 2 books, 2.5 s, 2.1M prover steps.
 
 The earlier `wasm3/const-*` chain proved one fixed WASM dispatch trace for
 one opcode path.  This tree proves the compiler once, for all terms.  The
-next layers (flat machine, per-opcode WASM, run level) are parametric in
-the program, as in Jitawa; see the plan for the full milestone list.
+next layer (per-opcode WASM, J2) is parametric in the program, as in
+Jitawa; see the plan for the full milestone list.

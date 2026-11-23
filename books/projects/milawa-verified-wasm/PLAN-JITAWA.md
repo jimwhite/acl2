@@ -129,13 +129,20 @@ initial function table --> checker soundness theorem
 - **J0 (subset): done.**  `refinement/spec.lisp` has `variable-p`,
   `term-p`, and `r-ev` for `QUOTE`, variables, `IF`, and the twelve
   primitives at their arities.
-- **J1a: done.**  `refinement/compile.lisp` has `compile-term`, `bc-eval`,
-  and **`compile-correct`**: for every term of the subset and every
-  environment, `bc-eval (compile-term term) = r-ev term`.  The IR is a
-  structured instruction tree; the PoC expressions are corollaries.
+- **J1 compiler: done.**  `refinement/compile.lisp` has `compile-term`,
+  `bc-eval`, and **`compile-correct`**: for every term of the subset and
+  every environment, `bc-eval (compile-term term) = r-ev term`.  The IR is
+  a structured instruction tree; the PoC expressions are corollaries.
   2.5 s, 2.1M prover steps.
-- **Next: J1b.**  The flat stack/pc machine (`bc-step`/`bc-run`), the
-  lowering from the tree IR, and the `r-ev = MILAWA-RUN` bridge.  Then J2.
+- **Bridge checks: done.**  `refinement/bridge.lisp` checks that `r-ev` and
+  `MILAWA-RUN` agree on the PoC and representative forms by evaluation.
+- **Design finding.**  The flat ACL2 stack/pc machine (CEK with fuel) is a
+  slog (600 s, still diverging in the primitive case) and is not on the
+  critical path; the machine that matters is the WASM artifact in J2.  The
+  flat ACL2 VM is dropped from J1.  The general `r-ev = MILAWA-RUN` bridge
+  remains the open J1b piece.
+- **Next.**  The general bridge, then J2: per-opcode WASM against
+  `bc-eval`/`compile-correct`.
 
 
 The milestones are ordered so that each one produces a theorem a reviewer
