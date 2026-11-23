@@ -14,6 +14,14 @@ the earlier per-path experiment: keep them certified, do not extend them as
 the proof path.  The PoC and the `abs.lisp`/memory/numerics books are kept as
 the regression suite.
 
+**Refinement tree (J0/J1a done, 2026-11-23).**  `refinement/spec.lisp` has
+`variable-p`/`term-p`/`r-ev`; `refinement/compile.lisp` has `compile-term`,
+`bc-eval`, and `compile-correct` for the arithmetic/control subset (all
+twelve primitives + `if`), with the PoC expressions as corollaries.  The IR
+is a structured instruction tree; J1b is the flat stack/pc machine, the
+lowering, and the `r-ev = MILAWA-RUN` bridge.  Build it with
+`make refinement ACL2=...`; it is certified separately from `make check`.
+
 ## Where the truth lives
 
 - **`README.md`** — authoritative status, one row per piece, build commands, and

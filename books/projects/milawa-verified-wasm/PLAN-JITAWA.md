@@ -124,6 +124,20 @@ initial function table --> checker soundness theorem
 
 ## 4. Milestones
 
+### Status (2026-11-23)
+
+- **J0 (subset): done.**  `refinement/spec.lisp` has `variable-p`,
+  `term-p`, and `r-ev` for `QUOTE`, variables, `IF`, and the twelve
+  primitives at their arities.
+- **J1a: done.**  `refinement/compile.lisp` has `compile-term`, `bc-eval`,
+  and **`compile-correct`**: for every term of the subset and every
+  environment, `bc-eval (compile-term term) = r-ev term`.  The IR is a
+  structured instruction tree; the PoC expressions are corollaries.
+  2.5 s, 2.1M prover steps.
+- **Next: J1b.**  The flat stack/pc machine (`bc-step`/`bc-run`), the
+  lowering from the tree IR, and the `r-ev = MILAWA-RUN` bridge.  Then J2.
+
+
 The milestones are ordered so that each one produces a theorem a reviewer
 can read, and each one is parametric rather than program-specific.
 
