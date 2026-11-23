@@ -26,10 +26,14 @@ theorem per opcode, the dispatcher coverage, and the closed
 `refinement/ops-state.lisp` and `refinement/ops.lisp` are J2b-1: the
 per-opcode integer/arithmetic/if module, its checked table, the i32 model,
 per-opcode dispatcher theorems, and value-level agreement with
-`machine-step`.  J2b-2's symbolic W3T link is blocked: `op_const` timed out
-at 180 s and the call-entry lemma at 300 s on the generated
-`$invoke`/`val-ok`/call machinery; port the old call/entry/return lemmas or
-use J5's verified translation.  A CEK-style run proof was also a slog
+`machine-step`.  J2b-2 is partial: `refinement/ops-w3t.lisp`, with the
+generic no-ctxt facts from `wasm3/context`, proves the frame/label
+`local.get`, the label/frame value returns, and the
+frame-around-label-around-value step for the new store.  The three-step
+op_const body composition and the `$invoke` call entry remain; `$invoke`
+timed out at 180/300 s on the generated `val-ok`/call machinery.  Port the
+call/entry lemmas or use J5's verified translation.  A CEK-style run proof
+was also a slog
 (600 s, diverging); the general run-level theorem is J3.  The general
 `r-ev = MILAWA-RUN` bridge is
 the open J1b piece.  Build with `make refinement ACL2=...`; separate from

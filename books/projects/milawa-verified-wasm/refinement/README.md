@@ -65,6 +65,12 @@ dispatcher theorem per opcode, and value-level agreement with J2a's
 
 Measured: `ops-state` 0.25 s, `ops` 0.24 s.
 
+`ops-w3t.lisp` (with `wasm3/context`'s generic no-ctxt facts) proves the
+frame/label `local.get`, the label/frame value returns, and the
+frame-around-label-around-value step for `*ir-store*`/`*ir-frame*`.  The
+three-step op_const body composition and the `$invoke` call entry are still
+open; these are J2b-2 steps, not an opcode theorem.
+
 **J2b-2 (blocked): the W3T link.**  A symbolic W3T proof that
 `$invoke` on an exported function returns the model's i32 did not close:
 `op_const` through `steps/%fuel` timed out at 180 s, and the call-entry

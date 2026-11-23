@@ -145,11 +145,13 @@ initial function table --> checker soundness theorem
   `refinement/ops-state.lisp` pins it; `refinement/ops.lisp` has the checked
   table, the i32 model, per-opcode dispatcher theorems, and value-level
   agreement with `machine-step`.  0.5 s.
-- **J2b-2 W3T link: blocked.**  Symbolic W3T of `$invoke` on an exported
-  function timed out (op_const 180 s; call-entry 300 s); the generated
-  `$invoke`/`val-ok`/call machinery with symbolic arguments is the old
-  per-call cost.  Needs the old call/entry/return lemmas ported to this
-  store, or J5's verified translation.
+- **J2b-2 W3T link: partial.**  `refinement/ops-w3t.lisp` proves the
+  frame/label `local.get`, the label/frame value returns, and the
+  frame-around-label-around-value step for `*ir-store*`/`*ir-frame*`.  The
+  three-step op_const body composition and the `$invoke` call entry remain;
+  `$invoke` timed out (op_const 180 s; call-entry 300 s) on the generated
+  `val-ok`/call machinery.  Needs the body composition fixed, the old
+  call/entry lemmas, or J5's verified translation.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving
