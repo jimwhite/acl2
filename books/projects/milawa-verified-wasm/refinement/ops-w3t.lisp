@@ -206,6 +206,49 @@
                                 (list (list (list :const (list :i32) v)))))
                             (v v))))))
 
-;; The remaining J2b-2 pieces are the call entry from $INVOKE and the other
-;; opcode bodies/dispatcher.
+;; ---------------------------------------------------------------------------
+;; The $INVOKE entry configuration
+;; ---------------------------------------------------------------------------
+
+;; $INVOKE builds an empty call frame (an empty module), not *ir-frame*.
+(defconst *ir-call-frame*
+  '(:%rec (:locals)
+          (:module :%rec (:types) (:tags) (:globals) (:mems) (:tables)
+                   (:funcs) (:datas) (:elems) (:exports))))
+
+(defun ir-op-const-invoke-cfg (v)
+  (list :|%;%|
+        (list :|%;%| *ir-store* *ir-call-frame*)
+        (list (list :const (list :i32) v)
+              '(:ref.func_addr 0)
+              '(:call_ref
+                (:_def
+                 (:rec ((:sub ((:final)) nil
+                              (:func%->% ((:i32)) ((:i32))))))
+                 0)))))
+
+(defthm ir-op-const-invoke
+  (implies (unsigned-byte-p 32 v)
+           (equal (w3t::$invoke *ir-store* 0
+                                (list (list :const (list :i32) v)))
+                  (ir-op-const-invoke-cfg v)))
+  :hints (("Goal" :in-theory (enable w3t::$invoke))))
+
+;; The remaining J2b-2 pieces are the call entry from $INVOKE (one STEP from
+;; ir-op-const-invoke-cfg, blocked on STEP/R-CTXT-INSTRS for the value
+;; prefix) and the other opcode bodies/dispatcher.
+;;
+;; Call-entry finding (checked by evaluation).  Calling function 0 with the
+;; value (:CONST (:I32) v) is
+;;
+;;   ($INVOKE *ir-store* 0 (list (list :const (list :i32) v)))
+;;     = (:%;% (:% *ir-store* <empty-call-frame>)
+;;             ((:const (:i32) v) (:ref.func_addr 0) (:call_ref <type>)))
+;;
+;; where <empty-call-frame> is (:locals)/(:module (:types)(:tags)...(:exports)),
+;; NOT *ir-frame* (whose :module is the full module).  One STEP enters the
+;; callee frame, i.e. this body's ir-frame-local-get-cfg at that outer frame.
+;; The symbolic proof has to discharge STEP/R-CTXT-INSTRS for the value
+;; prefix; calls.lisp's no-ctxt-instrs-on-a-call is the no-prefix fact, and
+;; the prefixed version is the open piece.
 ;; ---------------------------------------------------------------------------

@@ -73,15 +73,14 @@ The `$invoke` call entry is still open; this is a J2b-2 step, not yet the
 opcode theorem.
 
 **J2b-2 (partial): the W3T link.**  The local `op_const` body is proved
-(`ir-op-const-body`), but a symbolic W3T proof that `$invoke` on an exported
-function returns the model's i32 did not close:
-`op_const` through `steps/%fuel` timed out at 180 s, and the call-entry
-lemma alone at 300 s.  The cost is the generated `$invoke`/`val-ok`/call
-machinery with symbolic arguments, the same per-call cost the old chain
-books pay.  The module and model are checked in; the W3T layer needs the
-old call/entry/return lemmas ported to this store, or the verified
-translation route (J5).  This is not the W3T theorem the plan's J2
-acceptance asks for.
+(`ir-op-const-body`).  Evaluation fixes the call entry: calling function 0
+with `(:CONST (:I32) v)` gives a config whose outer frame is the **empty call
+frame** (`:locals` / empty `:module`), not `*ir-frame*`, and one `STEP`
+enters the callee frame (the body's `ir-frame-local-get-cfg` at that outer
+frame); the `$INVOKE` equality to that config is checked.  The symbolic
+obligation that remains is `STEP/R-CTXT-INSTRS` for the value prefix; the old
+`calls.lisp` no-ctxt fact is the no-prefix case.  This is not yet the W3T
+theorem the plan's J2 acceptance asks for.
 
 ## Design finding (2026-11-23)
 
@@ -99,8 +98,8 @@ bottleneck.
 - **J2b-2 -- the W3T link.**  The per-opcode module, table and model are in
   (`milawa-ops.wat`, `ops-state.lisp`, `ops.lisp`), and the local `op_const`
   body composition is proved; the symbolic W3T theorem that a call to an
-  exported function returns the model's value is blocked on the generated
-  `$invoke`/`val-ok`/call cost (see the J2b-1 section).
+  exported function returns the model's value is blocked on the prefixed
+  `STEP/R-CTXT-INSTRS` call-entry obligation (see the J2b-1 section).
 - **J3 -- the run-level theorem.**  `machine-run (lower-program ...)` equals
   `bc-eval`/`r-ev` for all terms; the closed instances are the J2a checks,
   the general theorem is J3.
