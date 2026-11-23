@@ -155,6 +155,13 @@ passes, plus closed W3T dispatcher theorems for add, lt and ifz derived from
 `ir-op-step-call-result`.  `make poc` prints the spec/machine/host answers
 and the dispatcher value.
 
+`top-run.lisp` is the verified-lowering groundwork for the remaining
+general run theorem (J1b): an untrusted lowering whose labels are the
+absolute pcs of their label instructions, its instruction count, the
+position invariant `positional-from`, and `label-pc` resolution on that
+code.  The run-level induction (`machine-run` of the lowered code equals
+`bc-eval`, and hence `r-ev` by `compile-correct`) is the next book.
+
 ## Design finding (2026-11-23)
 
 A CEK-style flat machine with a fuel/continuation run proof was prototyped
@@ -173,9 +180,12 @@ bottleneck.
   dispatcher branch and opcode function is proved from `$INVOKE` to its
   value, with `ir-op-step-call-result` as the exported dispatcher theorem.
   J3 is the remaining run-level layer.
-- **J3 -- the run-level theorem.**  `machine-run (lower-program ...)` equals
-  `bc-eval`/`r-ev` for all terms; the closed instances are the J2a checks,
-  the general theorem is J3.
+- **J3 -- the run level (host loop done; general lowering next).**  The host
+  loop that calls the verified STEP for `+`/`-`/`<` equals `machine-run`
+  (`host-run-refines-machine-run`), and the PoC/if/cons front-door instances
+  are proved.  The general `machine-run (pc-lower-flat ...) = bc-eval`
+  lowering theorem is the remaining piece; `top-run.lisp` has its verified
+  lowering and label/position invariants.
 - **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
   and representative forms; the theorem for all terms at a computed clock
   is the remaining J1b piece (and also validates the spec against the
