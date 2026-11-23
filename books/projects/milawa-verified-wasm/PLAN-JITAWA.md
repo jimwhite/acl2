@@ -186,7 +186,15 @@ initial function table --> checker soundness theorem
   body steps, and `refinement/ops-lt-label.lisp` proves
   `ir-op-lt-body`/`ir-op-lt-call-result`.  The value is
   `(if (< v1 v2) 1 0)`; the theorems carry the (trivial) 32-bit value
-  bound.  The `ifz`/`jmp`/`label` bodies and the `STEP` dispatcher remain.
+  bound.  For `op_ifz` (function 4), `ops-ifz-body.lisp` proves the call
+  entry, the `i32.eqz` bridge `$IEQZ_ 32 v = (if (equal v 0) 1 0)`, and
+  the one-step body lemmas (`local.get`, `testop`, the two `ifelse`
+  branches, `block`, and the branch `local.get`); the frame/label
+  composition and call result remain.  For `op_jmp` (function 5),
+  `ops-jmp.lisp` proves the entry and the three-step body/call result to
+  `v2`; for `op_label` (function 6), `ops-label.lisp` proves the entry and
+  the three-step body/call result to `v1`.  The `op_ifz` call result and
+  the `STEP` dispatcher remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving
