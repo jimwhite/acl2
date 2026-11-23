@@ -93,7 +93,7 @@
                                         (append (l0-print-tail d)
                                                 (append (list *l0-rparen*)
                                                         (l0-context stack suffix))))
-                                (1- fuel)
+                                (1- (nfix fuel))
                                 nil))
                        a)
                 (equal (mv-nth 1
@@ -102,7 +102,7 @@
                                         (append (l0-print-tail d)
                                                 (append (list *l0-rparen*)
                                                         (l0-context stack suffix))))
-                                (1- fuel)
+                                (1- (nfix fuel))
                                 nil))
                        (append (l0-print-tail d)
                                (append (list *l0-rparen*)
@@ -113,24 +113,63 @@
                                         (append (l0-print-tail d)
                                                 (append (list *l0-rparen*)
                                                         (l0-context stack suffix))))
-                                (1- fuel)
+                                (1- (nfix fuel))
                                 nil))
                        nil)
-                (equal (l0-read-list
-                        (l0-skip-whitespace
-                         (append (l0-print-tail d)
-                                 (append (list *l0-rparen*)
-                                         (l0-context stack suffix))))
-                        (1- fuel)
-                        nil)
-                       (mv d (l0-context stack suffix) nil)))
-           (equal (l0-read-list
-                   (append (l0-print-chars a)
-                           (append (l0-print-tail d)
-                                   (append (list *l0-rparen*)
-                                           (l0-context stack suffix))))
-                   fuel nil)
-                  (mv (cons a d) (l0-context stack suffix) nil)))
+                (equal (mv-nth 0
+                               (l0-read-list
+                                (l0-skip-whitespace
+                                 (append (l0-print-tail d)
+                                         (append (list *l0-rparen*)
+                                                 (l0-context stack suffix))))
+                                (1- (nfix fuel))
+                                nil))
+                       d)
+                (equal (mv-nth 1
+                               (l0-read-list
+                                (l0-skip-whitespace
+                                 (append (l0-print-tail d)
+                                         (append (list *l0-rparen*)
+                                                 (l0-context stack suffix))))
+                                (1- (nfix fuel))
+                                nil))
+                       (l0-context stack suffix))
+                (equal (mv-nth 2
+                               (l0-read-list
+                                (l0-skip-whitespace
+                                 (append (l0-print-tail d)
+                                         (append (list *l0-rparen*)
+                                                 (l0-context stack suffix))))
+                                (1- (nfix fuel))
+                                nil))
+                       nil))
+           (and (equal (mv-nth 0
+                               (l0-read-list
+                                (append (l0-print-chars a)
+                                        (append (l0-print-tail d)
+                                                (append (list *l0-rparen*)
+                                                        (l0-context stack suffix))))
+                                fuel
+                                nil))
+                       (cons a d))
+                (equal (mv-nth 1
+                               (l0-read-list
+                                (append (l0-print-chars a)
+                                        (append (l0-print-tail d)
+                                                (append (list *l0-rparen*)
+                                                        (l0-context stack suffix))))
+                                fuel
+                                nil))
+                       (l0-context stack suffix))
+                (equal (mv-nth 2
+                               (l0-read-list
+                                (append (l0-print-chars a)
+                                        (append (l0-print-tail d)
+                                                (append (list *l0-rparen*)
+                                                        (l0-context stack suffix))))
+                                fuel
+                                nil))
+                       nil)))
   :hints (("Goal" :do-not-induct t
                   :expand ((l0-read-list
                             (append (l0-print-chars a)
@@ -154,9 +193,16 @@
                                    l0-context
                                    l0-read-fuel)))))
 
-;; ---------------------------------------------------------------------------
-;; Stack-carrying induction
-;; ---------------------------------------------------------------------------
+(defthm l0-read-fuel-at-least-20
+  (<= 20 (l0-read-fuel x))
+  :hints (("Goal" :in-theory (enable l0-read-fuel))))
+
+(defthm more-than-one-fuel
+  (implies (and (integerp fuel)
+                (<= (l0-read-fuel x) fuel))
+           (< 1 fuel))
+  :hints (("Goal" :use l0-read-fuel-at-least-20))
+  :rule-classes :forward-chaining)
 
 (defun l0-inv-induct (x stack suffix fuel)
   (declare (xargs :measure (acl2-count x))
@@ -169,27 +215,22 @@
            (l0-inv-induct (cdr x) stack suffix (1- (nfix fuel))))
     t))
 
+(defthm l0-skip-whitespace-of-print-tail-cons
+  (implies (and (consp x) (l0-printable-list-p x))
+           (equal (l0-skip-whitespace
+                   (append (l0-print-tail x) suffix))
+                  (append (l0-print-chars (car x))
+                          (append (l0-print-tail (cdr x)) suffix))))
+  :hints (("Goal" :cases ((consp x))
+                  :in-theory (enable l0-print-tail-cons
+                                     l0-print-tail-nil
+                                     l0-printable-list-p
+                                     l0-skip-whitespace-of-space-print-chars
+                                     l0-skip-whitespace))))
 
-;; ---------------------------------------------------------------------------
-
-;; ---------------------------------------------------------------------------
-;; Full-value inverse in a context stack
-;; ---------------------------------------------------------------------------
-
-(defthm l0-read-sexp-atom-append-full
-  (implies (and (l0-printable-atom-p x)
-                (integerp fuel)
-                (<= 20 fuel)
-                (or (endp suffix)
-                    (l0-delimiter-char-p (car suffix))))
-           (equal (l0-read-sexp
-                   (append (l0-print-atom-chars x) suffix)
-                   fuel nil)
-                  (mv x suffix nil)))
-  :hints (("Goal" :use l0-read-sexp-atom-append
-                  :in-theory (enable mv-nth))))
 (defthm l0-read-inverse-stack
   (and
+   ;; value, context stack ++ suffix
    (implies (and (l0-printable-value-p x)
                  (l0-stack-p stack)
                  (integerp fuel)
@@ -197,23 +238,77 @@
                  (or (endp (l0-context stack suffix))
                      (l0-delimiter-char-p
                       (car (l0-context stack suffix)))))
-            (equal (l0-read-sexp
-                    (append (l0-print-chars x)
-                            (l0-context stack suffix))
-                    fuel nil)
-                   (mv x (l0-context stack suffix) nil)))
+            (equal (mv-nth 0
+                           (l0-read-sexp
+                            (append (l0-print-chars x)
+                                    (l0-context stack suffix))
+                            fuel nil))
+                   x))
+   (implies (and (l0-printable-value-p x)
+                 (l0-stack-p stack)
+                 (integerp fuel)
+                 (<= (l0-read-fuel x) fuel)
+                 (or (endp (l0-context stack suffix))
+                     (l0-delimiter-char-p
+                      (car (l0-context stack suffix)))))
+            (equal (mv-nth 1
+                           (l0-read-sexp
+                            (append (l0-print-chars x)
+                                    (l0-context stack suffix))
+                            fuel nil))
+                   (l0-context stack suffix)))
+   (implies (and (l0-printable-value-p x)
+                 (l0-stack-p stack)
+                 (integerp fuel)
+                 (<= (l0-read-fuel x) fuel)
+                 (or (endp (l0-context stack suffix))
+                     (l0-delimiter-char-p
+                      (car (l0-context stack suffix)))))
+            (equal (mv-nth 2
+                           (l0-read-sexp
+                            (append (l0-print-chars x)
+                                    (l0-context stack suffix))
+                            fuel nil))
+                   nil))
+   ;; list tail, including its closing parenthesis
    (implies (and (l0-printable-list-p x)
                  (l0-stack-p stack)
                  (integerp fuel)
                  (<= (l0-read-fuel x) fuel))
-            (equal (l0-read-list
-                    (l0-skip-whitespace
-                     (append (l0-print-tail x)
-                             (append (list *l0-rparen*)
-                                     (l0-context stack suffix))))
-                    fuel nil)
-                   (mv x (l0-context stack suffix) nil))))
+            (equal (mv-nth 0
+                           (l0-read-list
+                            (l0-skip-whitespace
+                             (append (l0-print-tail x)
+                                     (append (list *l0-rparen*)
+                                             (l0-context stack suffix))))
+                            fuel nil))
+                   x))
+   (implies (and (l0-printable-list-p x)
+                 (l0-stack-p stack)
+                 (integerp fuel)
+                 (<= (l0-read-fuel x) fuel))
+            (equal (mv-nth 1
+                           (l0-read-list
+                            (l0-skip-whitespace
+                             (append (l0-print-tail x)
+                                     (append (list *l0-rparen*)
+                                             (l0-context stack suffix))))
+                            fuel nil))
+                   (l0-context stack suffix)))
+   (implies (and (l0-printable-list-p x)
+                 (l0-stack-p stack)
+                 (integerp fuel)
+                 (<= (l0-read-fuel x) fuel))
+            (equal (mv-nth 2
+                           (l0-read-list
+                            (l0-skip-whitespace
+                             (append (l0-print-tail x)
+                                     (append (list *l0-rparen*)
+                                             (l0-context stack suffix))))
+                            fuel nil))
+                   nil)))
   :hints (("Goal" :induct (l0-inv-induct x stack suffix fuel)
+                  :do-not (quote (generalize eliminate-destructors))
                   :in-theory (disable l0-read-sexp
                                       l0-read-list
                                       l0-print-chars
@@ -231,6 +326,7 @@
                                       l0-raw-symbol-p
                                       l0-pipe-symbol-p
                                       l0-context
+                                      l0-skip-whitespace
                                       l0-stack-p
                                       l0-delimiter-char-p
                                       l0-whitespace-char-p
