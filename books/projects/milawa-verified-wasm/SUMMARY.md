@@ -7,6 +7,15 @@ WebAssembly for x86-64:
 > conforming WebAssembly engine, it can only accept theorems of formulas that are
 > semantically true.
 
+**Direction (2026-11-23).**  The PoC proved the right shape, but the
+continuation returned to a per-instruction chain, which is not how Jitawa is
+built.  The proof is being rebuilt as a Jitawa-shaped refinement stack:
+small spec -> untrusted compiler with one correctness theorem -> bytecode VM
+-> one symbolic theorem per WASM opcode -> run-level composition -> Milawa
+soundness.  See [`PLAN-JITAWA.md`](PLAN-JITAWA.md).  The `chain*`, `const*`
+and `engine*` books below are the archive of the earlier experiment: still
+certified, not extended.
+
 **Shape.** Verify an *interpreter*, not a compiler.  `core.admit-defun` in
 `milawa2.lsp` only records `(name formals body)` in a function table, so the
 checker never calls a compiled definition; an interpreted function table

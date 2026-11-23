@@ -4,6 +4,16 @@ A verified Lisp runtime for Milawa, in ACL2, targeting WebAssembly.  The plan is
 `../milawa/VERIFIED-WASM-LISP.md`; this file is the short operational memory for
 anyone (human or agent) working here.
 
+## Direction (2026-11-23)
+
+Read `PLAN-JITAWA.md` before starting work.  New proofs follow its J0--J5
+milestones in a `refinement/` tree: spec -> compiler correctness -> bytecode
+VM -> one symbolic theorem per WASM opcode -> run-level -> Milawa soundness.
+The `wasm3/chain*`, `wasm3/const*` and `wasm3/engine*` books are the archive of
+the earlier per-path experiment: keep them certified, do not extend them as
+the proof path.  The PoC and the `abs.lisp`/memory/numerics books are kept as
+the regression suite.
+
 ## Where the truth lives
 
 - **`README.md`** — authoritative status, one row per piece, build commands, and

@@ -14,6 +14,20 @@ HOL4 and WebAssembly in place of x86-64:
 > WebAssembly engine, it can only accept theorems of formulas that are
 > semantically true.
 
+## Direction (2026-11-23)
+
+The PoC proved the right *shape* -- one Lisp expression from `MILAWA-EVAL`
+through `MVM-RUN` to the artifact -- but the continuation went back to a
+per-instruction chain, which is not how Jitawa is built.  The project is
+being rebuilt in Jitawa's shape; see [`PLAN-JITAWA.md`](PLAN-JITAWA.md):
+a small spec, one compiler-correctness theorem, one symbolic machine theorem
+per opcode, a run-level composition, and the Milawa soundness composition.
+
+The `wasm3/chain*`, `wasm3/const*`, and `wasm3/engine*` books below are the
+archive of the earlier per-path experiment: they stay certified and are the
+regression suite, but they are **not extended**.  New work goes in
+`refinement/` and is judged by the plan's milestones.
+
 ## Status
 
 Fifty-seven books, all certifying; no `skip-proofs`, no `defaxiom`.  A clean
@@ -60,9 +74,9 @@ any book in the tree has been skipped.
 | **The CONST path's join**: the front's 34 steps (`front-advance-19` + `front2-advance-15`) and the tail's first two run-level steps (`tail-frame1`, the lone `(:CALL 3)` split, then `tail-entry-zl-frame`, the call entry) compose into one **36-step advance**; the front's unfolded endpoint is proved equal to the tail's `gset` entry | **proved** (`wasm3/const-join.lisp`, 8 events, 3.38M prover steps) |
 | **The CONST callee's first five positions**: the reads of globals 1 and 2, the sub, the mul and the ltu, re-stated at one generic run-level state (`const-tail-callee-state`) with the body progressing `(milawa-func-body 3)` → `dbody0` → `dbody1` → `dbody2` → `dbody3` → `dbody4`; the ltu gets a literal-spelling state because its frame fact's body is literal | **proved** (`wasm3/const-steps.lisp`, 6 events, 402 s) |
 | **The CONST front through the callee's first five**: `const-front-37..41` add those five steps to the 36-step advance, each a `steps-fuel-succ-of-a-step` at the state the previous advance leaves; the run is now **41 of 67 steps** | **proved** (`wasm3/const-front.lisp`, 6 events, 162 s) |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **in progress** — the frozen path is proved end to end; the CONST path's front and callee's first five positions are composed (41 of 67 steps), with the remaining 26 tail steps open; the other fourteen paths are open |
-| L2 — `MVM` run level = `W3T::STEPS` | **not started** |
-| L3 — `MVM` refines `MILAWA-EVAL` | **not started** |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **archived** — the frozen path and the CONST 41-step trace are the earlier experiment; the Jitawa-shaped plan replaces this with compiler correctness plus one theorem per opcode (`PLAN-JITAWA.md`) |
+| L2 — `MVM` run level = `W3T::STEPS` | **not started** (new plan: J3) |
+| L3 — `MVM` refines `MILAWA-EVAL` | **not started** (new plan: J1) |
 | WASM 3.0 semantics and engine available locally (`wasm-acl2` `1ce59e0`, engine-plan2; the 26 semantics books and the engine books certified; IL reproducible from SpecTec) | **done** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |
 
