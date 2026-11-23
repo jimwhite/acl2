@@ -165,13 +165,15 @@ initial function table --> checker soundness theorem
   the engine's `step-of-flat-block`; the value-prefix step uses
   `engine-ctxt-from-values-instr-step`; and `add-body-inner3` composes the
   three inner body steps to `(:CONST (:I32) (+ v1 v2))`.  In
-  `refinement/ops-add-label.lisp`, the **conditional** label lifts for the
-  three body steps and the conditional frame lifts for the three label steps
-  are proved via `engine-admin-term-in-block`, with a local
-  `milawa-state-pair-p`/`we::state-shape-p` bridge and the `exit-body-p`
-  facts.  The concrete composition of those conditionals (instantiating the
-  inner terms) to `ir-op-add-body`/`ir-op-add-call-result` did not reduce and
-  remains.  The other opcode bodies and the `STEP` dispatcher also remain.
+  `refinement/ops-add-label.lisp`, the conditional label/frame lifts are
+  instantiated at the explicit inner terms (using bare extraction lemmas,
+  `add-body-step1-specific`, `add-body-step2`, `add-innerbin-explicit`,
+  `add-state-pair-z`), and `ir-op-add-body`/`ir-op-add-call-result` are
+  proved: five steps from the callee config to the value and six from
+  `$invoke`.  The value is `(loghead 32 (+ v1 v2))`; the theorems carry the
+  type side condition `(unsigned-byte-p 32 (loghead 32 (+ v1 v2)))` (not yet
+  discharged).  The `sub`/`lt`/`ifz`/`jmp`/`label` bodies and the `STEP`
+  dispatcher remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving

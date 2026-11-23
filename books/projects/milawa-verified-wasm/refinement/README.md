@@ -85,12 +85,13 @@ suffix), and the one-step call entry are proved.  The redex steps
 proves the `op_add` body at the body config: the first step via the engine's
 `step-of-flat-block`, the value-prefix step via
 `engine-ctxt-from-values-instr-step`, and `add-body-inner3` composes the three
-inner steps.  `ops-add-label.lisp` proves the **conditional** label lifts for
-those three steps and the conditional frame lifts for the three label steps
-(via `engine-admin-term-in-block`, a local state-pair bridge, and the
-`exit-body-p` facts).  The concrete composition of the conditionals to the
-callee-frame config/`ir-op-add-call-result`, the other opcode bodies, and the
-`STEP` dispatcher remain.  This is not yet the plan's
+inner steps.  `ops-add-label.lisp` proves the conditional label/frame lifts
+and instantiates them at the explicit inner terms, giving
+`ir-op-add-body` (five steps from the callee config to the value) and
+`ir-op-add-call-result` (six steps from `$invoke`).  The value is
+`(loghead 32 (+ v1 v2))`; the theorems carry the side condition
+`(unsigned-byte-p 32 (loghead 32 (+ v1 v2)))`.  The `sub`/`lt`/`ifz`/`jmp`/
+`label` bodies and the `STEP` dispatcher remain.  This is not yet the plan's
 full J2 acceptance.
 
 ## Design finding (2026-11-23)
