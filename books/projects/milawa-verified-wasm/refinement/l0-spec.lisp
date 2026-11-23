@@ -291,12 +291,31 @@
   (declare (xargs :guard t :verify-guards nil))
   (l0-run (l0-parse-commands sexps) fuel))
 
+(defun l0-exec-chars (chars ftbl io labels fuel)
+  (declare (xargs :guard t :verify-guards nil :measure (nfix fuel)))
+  (if (zp fuel)
+      (l0-abort :fuel ftbl io)
+    (let ((chars (l0-skip-whitespace chars)))
+      (if (endp chars)
+          (l0-ok nil ftbl io)
+        (mv-let (sexp rest labels2)
+          (l0-read-sexp chars (1- (nfix fuel)) labels)
+          (cond ((eq sexp :eof) (l0-ok nil ftbl io))
+                ((eq sexp :error) (l0-abort :parse-error ftbl io))
+                (t
+                 (let ((r (l0-ev (l0-sexp2term sexp) nil ftbl io
+                                 (1- (nfix fuel)))))
+                   (if (l0-abortp r)
+                       r
+                     (l0-exec-chars rest
+                                    (l0-ftbl r)
+                                    (append (l0-io r) (list (l0-value r)))
+                                    labels2
+                                    (1- (nfix fuel))))))))))))
+
 (defun l0-run-chars (chars fuel)
   (declare (xargs :guard t :verify-guards nil))
-  (let ((sexps (l0-read-all chars)))
-    (if (equal sexps '(:parse-error))
-        (l0-abort :parse-error nil nil)
-      (l0-run-source sexps fuel))))
+  (l0-exec-chars chars *l0-initial-ftbl* nil nil fuel))
 
 ;; ---------------------------------------------------------------------------
 ;; Printer (the output side of the read-eval-print loop)
