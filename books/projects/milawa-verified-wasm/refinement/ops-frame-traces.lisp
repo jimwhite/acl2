@@ -48,6 +48,10 @@
                                (:e cons)))
               :do-not-induct t))))
 
+(def-frame-trace frame-trace-0 0 frame-tail-0-raw 6 (sel a) nil)
+
+(def-frame-trace frame-trace-1-full 1 frame-tail-1-raw 6 (sel a) nil)
+
 (def-frame-trace frame-trace-2 2 frame-tail-2-sel 8
   (loghead 32 (+ (sel a) (sel b))) nil)
 

@@ -104,6 +104,7 @@
                                (:e cons)))
               :do-not-induct t))))
 
+(def-frame-tail-get frame-tail-0-raw 0 d-local-get-1-rest (sel a))
 (def-frame-tail-get frame-tail-1-raw 1 d-local-get-1-rest (sel a))
 (def-frame-tail-get frame-tail-7-raw 7 d-local-get-1-rest (sel a))
 (def-frame-tail-get frame-tail-6-raw 6 d-local-get-2-rest (sel b))

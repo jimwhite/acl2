@@ -121,11 +121,23 @@ the frame-level lift, the function-label frame lift, the frame return,
 and the append/frame config steps, `ops-frame-6.lisp` proves the
 six-step frame trace, and `ops-frame-8.lisp` closes the full eight-step
 op0 frame trace to the value configuration (with totalized `sel`/`tail-sel`
-eliminating the un-p/no-br side conditions).  What remains is the
-generalization of the eight-step trace to ops 1-7, the resulting
-`$invoke *ir-store* 7` call result, and the exported `STEP` theorem.  The
-model-level `ir-step-table` and `machine-step-dispatches` are proved.
-This is not yet the plan's full J2 acceptance.
+eliminating the un-p/no-br side conditions).  The dispatcher is now closed
+for every opcode.  `ops-tails.lisp` proves the raw true-branch tails for
+ops 1, 3, 4, 6, 7, `ops-eqz`/`ops-tail-5` the ifz/mul tail, and
+`ops-frame-skips.lisp` the 28 false-comparison skips at the frame level;
+`ops-frame-traces.lisp` composes each opcode's trace from the first
+comparison to its value.  `ops-step-call.lisp` proves the four-value
+`STEP/PREFIX7` and the no-context facts for every prefix of the dispatcher
+call, `ops-step-entry.lisp` the one-step `$INVOKE` entry into function 7 for
+each opcode, `ops-step-results.lisp` the composed
+`ir-op-step-call-result0..7`, and `ops-step-theorem.lisp` the exported
+`ir-op-step-call-result`: for every opcode 0-7 and well-formed operands,
+`$INVOKE *ir-store* 7` reaches the opcode's value (9/14/21/26/31/37/39/44
+steps; the signed compare carries its 31-bit bounds).  The model-level
+`ir-step-table` and `machine-step-dispatches` are proved.  This meets the
+plan's J2 acceptance (one theorem per opcode plus a dispatcher theorem);
+the step clocks are the per-branch WASM block structure, not a concrete
+program trace.
 
 ## Design finding (2026-11-23)
 
@@ -140,11 +152,11 @@ bottleneck.
 
 ## What is deliberately not here yet
 
-- **J2b-2 -- the W3T link.**  The per-opcode module, table and model are in
-  (`milawa-ops.wat`, `ops-state.lisp`, `ops.lisp`), and the full `op_const`
-  chain is proved from `$INVOKE` to the value; the other opcode bodies and
-  the `STEP` dispatcher are the remaining J2b-2 work (see the J2b-1
-  section).
+- **J2b-2 -- the W3T link (done).**  The per-opcode module, table and model
+  are in (`milawa-ops.wat`, `ops-state.lisp`, `ops.lisp`), and every
+  dispatcher branch and opcode function is proved from `$INVOKE` to its
+  value, with `ir-op-step-call-result` as the exported dispatcher theorem.
+  J3 is the remaining run-level layer.
 - **J3 -- the run-level theorem.**  `machine-run (lower-program ...)` equals
   `bc-eval`/`r-ev` for all terms; the closed instances are the J2a checks,
   the general theorem is J3.

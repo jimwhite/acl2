@@ -145,7 +145,28 @@ initial function table --> checker soundness theorem
   `refinement/ops-state.lisp` pins it; `refinement/ops.lisp` has the checked
   table, the i32 model, per-opcode dispatcher theorems, and value-level
   agreement with `machine-step`.  0.5 s.
-- **J2b-2 W3T link: all opcode chains done; dispatcher remains.**
+- **J2b-2 W3T link: done (per opcode and dispatcher).**  The dispatcher
+  chain is now closed too.  `refinement/ops-trace-*.lisp`,
+  `ops-frame-*.lisp` and `ops-tails*.lisp` prove the false-comparison skips,
+  the true-comparison prefix, the branch body (including value-prefixed
+  `local.get` steps and the ifz/eqz cost), and the label/frame returns;
+  `ops-frame-traces.lisp` composes them into one symbolic frame trace per
+  opcode, from the dispatcher's first comparison to the value
+  configuration (`(sel a)`, `loghead` add/sub, the 31-bit signed compare,
+  `(if (sel a)=0 (sel b) 0)`, `(sel b)`, `(sel a)`).
+  `ops-step-call.lisp` proves the four-value `STEP/PREFIX7` and the
+  no-context facts for every prefix of the dispatcher call,
+  `ops-step-entry.lisp` proves the one-step `$INVOKE` entry into function 7's
+  callee frame for each opcode, `ops-step-results.lisp` composes entry and
+  trace into <code>ir-op-step-call-result0..7</code>, and
+  `ops-step-theorem.lisp` packages them as
+  <code>ir-op-step-call-result</code>: for every opcode 0-7 and
+  well-formed operands, `$INVOKE *ir-store* 7` reaches the opcode's value
+  configuration (9/14/21/26/31/37/39/44 steps; the signed compare carries
+  its 31-bit bounds).  The earlier per-opcode chains (functions 0-6) are
+  unchanged.  The step counts are the dispatcher's branch structure, not a
+  single concrete program trace; the operands stay symbolic.
+- **J2b-2 W3T link history (op_const/op_add):**
   `refinement/ops-w3t.lisp` proves the frame/label `local.get`, the
   label/frame value returns, the frame-around-label-around-value step, the
   three-step `ir-op-const-body`, the value-prefixed
@@ -284,9 +305,14 @@ artifact implements.
   extended for this.
 
 **Acceptance (J2b):** `STEP`-correct for the subset, with one theorem per
-opcode plus one dispatcher theorem; no exact 67-step trace in the statement
-or proof.  The existing `abs.lisp` concrete checks remain as a regression
-suite.
+opcode plus one dispatcher theorem.  This is met: functions 0-6 have
+`ir-op-*-call-result`, the dispatcher has `ir-op-step-call-result0..7`, and
+the exported theorem is `ir-op-step-call-result` (all opcodes, symbolic
+operands).  The dispatcher theorem uses the per-branch step clocks
+(9/14/21/26/31/37/39/44) because a dispatcher branch is a straight-line
+WASM block; there is no monolithic concrete-program trace, and the operands
+remain symbolic.  The existing `abs.lisp` concrete checks remain as a
+regression suite.
 
 ### J3 -- Run level and the front door (`refinement/top/`)
 

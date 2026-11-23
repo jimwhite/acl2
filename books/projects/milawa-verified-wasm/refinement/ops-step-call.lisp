@@ -235,3 +235,13 @@
                               we::vals-p)
                               (we::step/r-ctxt-instrs-becomes-flat-search)))))
 
+
+(defthm no-ctxt-instrs-on-op-step-call-cfg
+  (implies (and (unsigned-byte-p 32 op)
+                (unsigned-byte-p 32 a)
+                (unsigned-byte-p 32 b))
+           (equal (w3t::step/r-ctxt-instrs
+                   (ir-op-step-invoke-cfg op a b))
+                  nil))
+  :hints (("Goal" :in-theory (enable ir-op-step-invoke-cfg
+                                     no-ctxt-instrs-on-op-step-call))))
