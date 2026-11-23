@@ -480,7 +480,219 @@
                  (:instance ir-op-const-body-o
                             (outer *ir-call-frame*))))))
 
-;; The remaining J2b-2 pieces are the other opcode bodies/dispatcher.
+;; ---------------------------------------------------------------------------
+;; op_add (function 1): entry and one-step call entry
+;; ---------------------------------------------------------------------------
+
+(defconst *op-add-type*
+  '(:_def (:rec ((:sub ((:final)) nil
+                        (:func%->% ((:i32) (:i32)) ((:i32)))))) 0))
+
+(defun ir-op-add-invoke-cfg (v1 v2)
+  (list :|%;%|
+        (list :|%;%| *ir-store* *ir-call-frame*)
+        (list (list :const (list :i32) v1)
+              (list :const (list :i32) v2)
+              (list :ref.func_addr 1)
+              (list :call_ref *op-add-type*))))
+
+(defthm ir-op-add-invoke
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::$invoke *ir-store* 1
+                                (list (list :const (list :i32) v1)
+                                      (list :const (list :i32) v2)))
+                  (ir-op-add-invoke-cfg v1 v2)))
+  :hints (("Goal" :in-theory (enable w3t::$invoke))))
+
+(defthm prefix7-op-add-call
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step/prefix7
+                   (list (list :const (list :i32) v1)
+                         (list :const (list :i32) v2)
+                         (list :ref.func_addr 1)
+                         (list :call_ref *op-add-type*)))
+                  3))
+  :hints (("Goal" :in-theory (enable w3t::step/prefix7
+                                     w3t::val-p))))
+
+(defmacro add-suffix-cfg (v2)
+  `(list :|%;%|
+         (list :|%;%| *ir-store* *ir-call-frame*)
+         (list (list :const (list :i32) ,v2)
+               (list :ref.func_addr 1)
+               (list :call_ref *op-add-type*))))
+
+(defthm no-ctxt-instrs-on-ref-func-call-ref1
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z
+                (list (list :ref.func_addr 1)
+                      (list :call_ref *op-add-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step/r-ctxt-instrs
+                     (list :|%;%| z
+                           (list (list :ref.func_addr 1)
+                                 (list :call_ref *op-add-type*))))
+                    (:free (k lo hi i t9 zz a0)
+                     (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+(defthm no-ctxt-instrs-on-call-ref-alone1
+  (equal (w3t::step/r-ctxt-instrs
+          (list :|%;%| z (list (list :call_ref *op-add-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step/r-ctxt-instrs
+                     (list :|%;%| z (list (list :call_ref *op-add-type*))))
+                    (:free (k lo hi i t9 zz a0)
+                     (w3t::step/search21 k lo hi i t9 zz a0))))))
+
+(defthm step-call-ref-alone-nil-add
+  (equal (w3t::step
+          (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                (list (list :call_ref *op-add-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                           (list (list :call_ref *op-add-type*)))))
+           :in-theory (enable no-ctxt-instrs-on-call-ref-alone1))))
+
+(defthm step-ref-func-call-ref-nil-add
+  (equal (w3t::step
+          (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                (list (list :ref.func_addr 1)
+                      (list :call_ref *op-add-type*))))
+         nil)
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%| (list :|%;%| *ir-store* *ir-call-frame*)
+                           (list (list :ref.func_addr 1)
+                                 (list :call_ref *op-add-type*)))))
+           :in-theory (enable no-ctxt-instrs-on-ref-func-call-ref1))))
+
+(defthm search21-add-suffix-k0
+  (equal (w3t::step/search21
+          0 0 2
+          (caddr (add-suffix-cfg v2))
+          2
+          (cadr (add-suffix-cfg v2))
+          (add-suffix-cfg v2))
+         nil)
+  :hints (("Goal"
+           :expand ((:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 0 lo hi i t9 zz a0))))))
+
+(defthm search21-add-suffix-k1
+  (equal (w3t::step/search21
+          1 0 2
+          (caddr (add-suffix-cfg v2))
+          2
+          (cadr (add-suffix-cfg v2))
+          (add-suffix-cfg v2))
+         nil)
+  :hints (("Goal"
+           :expand ((:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 1 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 0 lo hi i t9 zz a0)))
+           :in-theory (enable step-ref-func-call-ref-nil-add))))
+
+(defthm search21-add-suffix-k2
+  (equal (w3t::step/search21
+          2 0 2
+          (caddr (add-suffix-cfg v2))
+          2
+          (cadr (add-suffix-cfg v2))
+          (add-suffix-cfg v2))
+         nil)
+  :hints (("Goal"
+           :expand ((:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 2 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 1 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 0 lo hi i t9 zz a0)))
+           :in-theory (enable step-call-ref-alone-nil-add
+                              step-ref-func-call-ref-nil-add))))
+
+(defthm no-ctxt-instrs-on-const-ref-func-call-ref-add
+  (implies (unsigned-byte-p 32 v2)
+           (equal (w3t::step/r-ctxt-instrs (add-suffix-cfg v2))
+                  nil))
+  :hints (("Goal"
+           :expand ((w3t::step/r-ctxt-instrs (add-suffix-cfg v2))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 2 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 1 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 0 lo hi i t9 zz a0)))
+           :in-theory (enable w3t::step/prefix7
+                              w3t::val-p
+                              step-call-ref-alone-nil-add
+                              step-ref-func-call-ref-nil-add))))
+
+(defthm step-const-ref-func-call-ref-nil-add
+  (implies (unsigned-byte-p 32 v2)
+           (equal (w3t::step (add-suffix-cfg v2))
+                  nil))
+  :hints (("Goal"
+           :expand ((w3t::step (add-suffix-cfg v2)))
+           :in-theory (enable no-ctxt-instrs-on-const-ref-func-call-ref-add))))
+
+(defmacro add-call-cfg (v1 v2)
+  `(list :|%;%|
+         (list :|%;%| *ir-store* *ir-call-frame*)
+         (list (list :const (list :i32) ,v1)
+               (list :const (list :i32) ,v2)
+               (list :ref.func_addr 1)
+               (list :call_ref *op-add-type*))))
+
+(defthm no-ctxt-instrs-on-op-add-call
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step/r-ctxt-instrs (add-call-cfg v1 v2))
+                  nil))
+  :hints (("Goal"
+           :expand ((w3t::step/r-ctxt-instrs (add-call-cfg v1 v2))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 3 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 2 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 1 lo hi i t9 zz a0))
+                    (:free (lo hi i t9 zz a0)
+                     (w3t::step/search21 0 lo hi i t9 zz a0)))
+           :in-theory (enable w3t::step/prefix7
+                              w3t::val-p
+                              step-call-ref-alone-nil-add
+                              step-const-ref-func-call-ref-nil-add
+                              step-ref-func-call-ref-nil-add))))
+
+(defun ir-frame-add-cfg (v1 v2)
+  (list :|%;%|
+        (list :|%;%| *ir-store* *ir-call-frame*)
+        (list (list :frame_%{%}% 1
+                    (ir-frame-with-locals
+                     (list (list (list :const (list :i32) v1))
+                           (list (list :const (list :i32) v2))))
+                    (list (list :label_%{%}% 1 nil
+                                (list (list :local.get 0)
+                                      (list :local.get 1)
+                                      (list :binop (list :i32) (list :add)))))))))
+
+(defthm ir-op-add-call-entry
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (car (w3t::step (add-call-cfg v1 v2)))
+                  (ir-frame-add-cfg v1 v2)))
+  :hints (("Goal"
+           :expand ((w3t::step (add-call-cfg v1 v2)))
+           :in-theory (enable no-ctxt-instrs-on-op-add-call
+                              ir-frame-add-cfg
+                              ir-frame-with-locals)
+           :do-not-induct t)))
+
+;; The remaining J2b-2 pieces are the op_add body (the two local.gets and
+;; binop through the frame), the other opcode bodies, and the dispatcher.
 ;;
 ;; Call-entry finding (checked by evaluation).  Calling function 0 with the
 ;; value (:CONST (:I32) v) is

@@ -153,8 +153,14 @@ initial function table --> checker soundness theorem
   the one-step `ir-op-const-call-entry`, and the four-step
   `ir-op-const-call-result` from `$INVOKE` to the value.  The outer frame is
   the **empty call frame** (`:locals` / empty `:module`), not `*ir-frame*`;
-  the body lemmas are generalized over the outer frame.  The other opcode
-  bodies and the `STEP` dispatcher remain.
+  the body lemmas are generalized over the outer frame.  For `op_add`
+  (function 1), `ir-op-add-invoke`, `prefix7-op-add-call`, the value-prefixed
+  `no-ctxt-instrs-on-op-add-call` chain (including the one-const suffix),
+  and `ir-op-add-call-entry` are proved.  The `op_add` body (two `local.get`s
+  and `binop` through the frame) is the next blocker: the body has a
+  multi-instruction label body, so it needs the label-lift/context lemmas,
+  not the single-`local.get` value dissolve that made `op_const` easy.  The
+  other opcode bodies and the `STEP` dispatcher also remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving

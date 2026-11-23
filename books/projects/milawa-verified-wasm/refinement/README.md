@@ -78,8 +78,12 @@ opcode theorem.
 `ir-op-const-call-entry` (one `STEP` from `$INVOKE` into the callee frame),
 and `ir-op-const-call-result` (four `STEP`s from `$INVOKE` to the value).
 The call's outer frame is the **empty call frame**, so the body lemmas are
-generalized over the outer frame.  The other opcode bodies and the `STEP`
-dispatcher remain; this is not yet the plan's full J2 acceptance.
+generalized over the outer frame.  For `op_add` (function 1), the entry
+configuration, the value-prefixed no-ctxt chain (including the one-constant
+suffix), and the one-step call entry are proved.  The `op_add` body has a
+multi-instruction label body (two `local.get`s and `binop`), so it needs the
+label-lift/context lemmas; it and the other opcode bodies and the `STEP`
+dispatcher remain.  This is not yet the plan's full J2 acceptance.
 
 ## Design finding (2026-11-23)
 
