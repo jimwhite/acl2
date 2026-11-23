@@ -146,12 +146,12 @@ initial function table --> checker soundness theorem
   table, the i32 model, per-opcode dispatcher theorems, and value-level
   agreement with `machine-step`.  0.5 s.
 - **J2b-2 W3T link: partial.**  `refinement/ops-w3t.lisp` proves the
-  frame/label `local.get`, the label/frame value returns, and the
-  frame-around-label-around-value step for `*ir-store*`/`*ir-frame*`.  The
-  three-step op_const body composition and the `$invoke` call entry remain;
-  `$invoke` timed out (op_const 180 s; call-entry 300 s) on the generated
-  `val-ok`/call machinery.  Needs the body composition fixed, the old
-  call/entry lemmas, or J5's verified translation.
+  frame/label `local.get`, the label/frame value returns, the
+  frame-around-label-around-value step for `*ir-store*`/`*ir-frame*`, and
+  the three-step `ir-op-const-body` composition.  The `$invoke` call entry
+  and the other opcodes/dispatcher remain; `$invoke` timed out (op_const
+  180 s; call-entry 300 s) on the generated `val-ok`/call machinery.  Needs
+  the old call/entry lemmas or J5's verified translation.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving

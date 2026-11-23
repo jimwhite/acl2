@@ -14,9 +14,9 @@
 ;   frame around a value                        -> frame dissolves
 ;   frame around a label around a value         -> the label dissolves
 ;
-; The remaining J2b-2 pieces are the three-step body composition (the helper
-; terms do not normalize across the three facts yet), the call entry from
-; $INVOKE, and the remaining opcodes/dispatcher.
+; This file now also proves the three-step op_const body composition
+; (ir-op-const-body), by taking CAR after each STEP.  The remaining J2b-2
+; pieces are the call entry from $INVOKE and the other opcodes/dispatcher.
 
 (in-package "MILAWA-WASM")
 
@@ -123,16 +123,89 @@
                          (list :|%;%| store outer) f v))))
   :hints (("Goal" :in-theory (enable w3t::step) :do-not-induct t)))
 
-;; The op_const body is the three-step chain
-;;   ir-step-in-frame-local-get  ->  ir-step-label-vals-in-frame  ->
-;;   ir-step-frame-vals
-;; at l0 = (:CONST (:I32) v).  Each step is proved above; composing them in
-;; one defthm with :use still does not close (the config helper terms do not
-;; normalize across the three facts yet).  That composition is the next
-;; J2b-2 piece.  The call entry from $INVOKE and the remaining opcodes follow.
 ;; ---------------------------------------------------------------------------
+;; Composing the three steps: the op_const body
+;; ---------------------------------------------------------------------------
+;;
+;; The three lemmas above are stated for a whole STEP result, a trace of one
+;; configuration.  The body of op_const drives the machine by taking CAR after
+;; each STEP, so the composition uses the CAR forms below.
 
-;; The body theorem is the op_const W3T body: from the callee frame with local
-;; v, three spec steps leave ((:CONST (:I32) v)).  The call entry from
-;; $INVOKE and the remaining opcodes are the next J2b-2 pieces.
+(defthm ir-step1-in-frame-local-get
+  (equal (car (w3t::step (ir-frame-local-get-cfg l0)))
+         (ir-frame-value-cfg l0))
+  :hints (("Goal" :use (ir-step-in-frame-local-get)
+                  :in-theory (enable ir-frame-local-get-cfg
+                                     ir-frame-value-cfg
+                                     ir-frame-with-locals))))
+
+;; Rewrite IR-FRAME-VALUE-CFG at the op_const argument to the generic
+;; frame-around-label-around-value shape, so IR-STEP-LABEL-VALS-IN-FRAME
+;; applies without unfolding either helper.
+(defthm ir-frame-value-cfg-is-in-frame
+  (equal (ir-frame-value-cfg (list :const (list :i32) v))
+         (ir-label-vals-in-frame-cfg
+          *ir-store* *ir-frame*
+          (ir-frame-with-locals (list (list (list :const (list :i32) v))))
+          v))
+  :hints (("Goal" :in-theory (enable ir-frame-value-cfg
+                                     ir-label-vals-in-frame-cfg
+                                     ir-frame-with-locals))))
+
+(defthm ir-step1-frame-value
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step
+                        (ir-frame-value-cfg (list :const (list :i32) v))))
+                  (ir-frame-vals-cfg
+                   (list :|%;%| *ir-store* *ir-frame*)
+                   (ir-frame-with-locals
+                    (list (list (list :const (list :i32) v))))
+                   v)))
+  :hints (("Goal" :in-theory (e/d (ir-frame-value-cfg-is-in-frame)
+                                  (ir-frame-value-cfg
+                                   ir-label-vals-in-frame-cfg
+                                   ir-frame-with-locals
+                                   w3t::step)))))
+
+(defthm ir-step1-frame-vals
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step (ir-frame-vals-cfg z f v)))
+                  (ir-value-cfg z v)))
+  :hints (("Goal" :in-theory (disable w3t::step
+                                     ir-frame-vals-cfg
+                                     ir-value-cfg))))
+
+;; The op_const body: from the callee frame with local v, three spec steps
+;; leave the value ((:CONST (:I32) v)).  This is the local.get -> label
+;; dissolve -> frame dissolve chain, composed by the three CAR step lemmas.
+(defthm ir-op-const-body
+  (implies (unsigned-byte-p 32 v)
+           (equal (car (w3t::step
+                        (car (w3t::step
+                              (car (w3t::step
+                                    (ir-frame-local-get-cfg
+                                     (list :const (list :i32) v))))))))
+                  (ir-value-cfg
+                   (list :|%;%| *ir-store* *ir-frame*)
+                   v)))
+  :hints (("Goal"
+           :in-theory (disable w3t::step
+                               ir-frame-local-get-cfg
+                               ir-frame-value-cfg
+                               ir-label-vals-in-frame-cfg
+                               ir-frame-vals-cfg
+                               ir-value-cfg
+                               ir-frame-with-locals
+                               ir-frame-value-cfg-is-in-frame)
+           :use ((:instance ir-step1-in-frame-local-get
+                            (l0 (list :const (list :i32) v)))
+                 (:instance ir-step1-frame-value (v v))
+                 (:instance ir-step1-frame-vals
+                            (z (list :|%;%| *ir-store* *ir-frame*))
+                            (f (ir-frame-with-locals
+                                (list (list (list :const (list :i32) v)))))
+                            (v v))))))
+
+;; The remaining J2b-2 pieces are the call entry from $INVOKE and the other
+;; opcode bodies/dispatcher.
 ;; ---------------------------------------------------------------------------
