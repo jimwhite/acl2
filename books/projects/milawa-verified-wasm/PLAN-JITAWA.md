@@ -362,8 +362,9 @@ data; `refinement/milawa-check.lisp` is the untrusted front end from surface
 Lisp to core syntax (COND/AND/OR/LET/LET*/LIST expansion; LET is closed over
 its free variables because the evaluator's lambdas are not closures;
 CL-USER::FUNCALL in CORE.CHECK-PROOF is specialized to the initial checker
-LOGIC.PROOFP; FIRST..FIFTH/ENDP/NULL/PRINT/ERROR/DEFINE are the runtime's
-system functions).  The front end is validated: no untranslated macro or
+LOGIC.PROOFP; FIRST..FIFTH/ENDP/NULL/PRINT/DEFINE are the runtime's system functions;
+ERROR is left undefined so a malformed event aborts the run instead of
+being masked).  The front end is validated: no untranslated macro or
 unknown function head remains, and every translated body's variables are
 bound.  `refinement/milawa-events.lisp` is the milawa-on-jitawa
 `100.events` demo as data (labels/sharing respected by ACL2's reader).
