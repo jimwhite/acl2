@@ -691,8 +691,142 @@
                               ir-frame-with-locals)
            :do-not-induct t)))
 
-;; The remaining J2b-2 pieces are the op_add body (the two local.gets and
-;; binop through the frame), the other opcode bodies, and the dispatcher.
+;; ---------------------------------------------------------------------------
+;; The op_add redex steps (the inner instructions, before the context lift)
+;; ---------------------------------------------------------------------------
+
+(defun add-frame (v1 v2)
+  (ir-frame-with-locals
+   (list (list (list :const (list :i32) v1))
+         (list (list :const (list :i32) v2)))))
+
+(defun add-z (v1 v2)
+  (list :|%;%| *ir-store* (add-frame v1 v2)))
+
+(defun add-body () '((:local.get 0) (:local.get 1) (:binop (:i32) (:add))))
+
+(defthm add-inner0
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step (list :|%;%| (add-z v1 v2)
+                                   (list (list :local.get 0))))
+                  (list (list :|%;%| (add-z v1 v2)
+                              (list (list :const (list :i32) v1))))))
+  :hints (("Goal"
+           :expand ((w3t::step (list :|%;%| (add-z v1 v2)
+                                     (list (list :local.get 0)))))
+           :in-theory (enable add-z add-frame)
+           :do-not-induct t)))
+
+(defthm add-inner1
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step (list :|%;%| (add-z v1 v2)
+                                   (list (list :local.get 1))))
+                  (list (list :|%;%| (add-z v1 v2)
+                              (list (list :const (list :i32) v2))))))
+  :hints (("Goal"
+           :expand ((w3t::step (list :|%;%| (add-z v1 v2)
+                                     (list (list :local.get 1)))))
+           :in-theory (enable add-z add-frame)
+           :do-not-induct t)))
+
+(defthm add-innerbin
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step
+                   (list :|%;%| (add-z v1 v2)
+                         (list (list :const (list :i32) v1)
+                               (list :const (list :i32) v2)
+                               (list :binop (list :i32) (list :add)))))
+                  (list (list :|%;%| (add-z v1 v2)
+                              (list (list :const (list :i32)
+                                          (loghead 32 (+ v1 v2))))))))
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%| (add-z v1 v2)
+                           (list (list :const (list :i32) v1)
+                                 (list :const (list :i32) v2)
+                                 (list :binop (list :i32) (list :add))))))
+           :in-theory (enable add-z add-frame)
+           :do-not-induct t)))
+
+(defthm add-innerbin-swap
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step
+                   (list :|%;%| (add-z v1 v2)
+                         (list (list :const (list :i32) v2)
+                               (list :const (list :i32) v1)
+                               (list :binop (list :i32) (list :add)))))
+                  (list (list :|%;%| (add-z v1 v2)
+                              (list (list :const (list :i32)
+                                          (loghead 32 (+ v1 v2))))))))
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%| (add-z v1 v2)
+                           (list (list :const (list :i32) v2)
+                                 (list :const (list :i32) v1)
+                                 (list :binop (list :i32) (list :add))))))
+           :in-theory (enable add-z add-frame)
+           :do-not-induct t)))
+
+; The same three redex steps with the state pair written out, which is the
+; form the engine's flat-block lift produces.
+(defthm add-inner0-explicit
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step
+                   (list :|%;%|
+                         (list :|%;%| *ir-store* (add-frame v1 v2))
+                         (list (list :local.get 0))))
+                  (list (list :|%;%|
+                              (list :|%;%| *ir-store* (add-frame v1 v2))
+                              (list (list :const (list :i32) v1))))))
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%|
+                           (list :|%;%| *ir-store* (add-frame v1 v2))
+                           (list (list :local.get 0)))))
+           :in-theory (enable add-frame)
+           :do-not-induct t)))
+
+(defthm add-inner1-explicit
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step
+                   (list :|%;%|
+                         (list :|%;%| *ir-store* (add-frame v1 v2))
+                         (list (list :local.get 1))))
+                  (list (list :|%;%|
+                              (list :|%;%| *ir-store* (add-frame v1 v2))
+                              (list (list :const (list :i32) v2))))))
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%|
+                           (list :|%;%| *ir-store* (add-frame v1 v2))
+                           (list (list :local.get 1)))))
+           :in-theory (enable add-frame)
+           :do-not-induct t)))
+
+(defthm add-innerbin-explicit
+  (implies (and (unsigned-byte-p 32 v1) (unsigned-byte-p 32 v2))
+           (equal (w3t::step
+                   (list :|%;%|
+                         (list :|%;%| *ir-store* (add-frame v1 v2))
+                         (list (list :const (list :i32) v1)
+                               (list :const (list :i32) v2)
+                               (list :binop (list :i32) (list :add)))))
+                  (list (list :|%;%|
+                              (list :|%;%| *ir-store* (add-frame v1 v2))
+                              (list (list :const (list :i32)
+                                          (loghead 32 (+ v1 v2))))))))
+  :hints (("Goal"
+           :expand ((w3t::step
+                     (list :|%;%|
+                           (list :|%;%| *ir-store* (add-frame v1 v2))
+                           (list (list :const (list :i32) v1)
+                                 (list :const (list :i32) v2)
+                                 (list :binop (list :i32) (list :add))))))
+           :in-theory (enable add-frame)
+           :do-not-induct t)))
+
+;; The remaining J2b-2 pieces are the op_add context lift, the other opcode
+;; bodies, and the dispatcher.
 ;;
 ;; Call-entry finding (checked by evaluation).  Calling function 0 with the
 ;; value (:CONST (:I32) v) is
