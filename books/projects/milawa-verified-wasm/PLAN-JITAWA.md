@@ -160,7 +160,11 @@ initial function table --> checker soundness theorem
   and `binop` through the frame) is the next blocker: the body has a
   multi-instruction label body, so it needs the label-lift/context lemmas,
   not the single-`local.get` value dissolve that made `op_const` easy.  The
-  other opcode bodies and the `STEP` dispatcher also remain.
+  redex steps (`add-inner0/1/bin` and their explicit-state-pair forms) are
+  proved.  The engine's `step-of-flat-block` closes the first (`vals nil`)
+  body step; the value-prefix step's inner/`operands` normalization does not
+  close, so that lift is the next concrete blocker.  The other opcode bodies
+  and the `STEP` dispatcher also remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving
