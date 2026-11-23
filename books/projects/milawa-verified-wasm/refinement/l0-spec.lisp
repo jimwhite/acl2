@@ -20,7 +20,7 @@
 
 (in-package "MILAWA-WASM")
 
-(include-book "l0-parse")
+(include-book "l0-read")
 (include-book "std/strings/decimal" :dir :system)
 
 ;; ---------------------------------------------------------------------------
@@ -291,6 +291,13 @@
   (declare (xargs :guard t :verify-guards nil))
   (l0-run (l0-parse-commands sexps) fuel))
 
+(defun l0-run-chars (chars fuel)
+  (declare (xargs :guard t :verify-guards nil))
+  (let ((sexps (l0-read-all chars)))
+    (if (equal sexps '(:parse-error))
+        (l0-abort :parse-error nil nil)
+      (l0-run-source sexps fuel))))
+
 ;; ---------------------------------------------------------------------------
 ;; Printer (the output side of the read-eval-print loop)
 ;; ---------------------------------------------------------------------------
@@ -378,6 +385,38 @@
                (cons (list 'inc '(n) '(+ n (quote 1)))
                      *l0-initial-ftbl*)
                '(nil 6))))
+
+; Reader and printer agree on printed values.
+(assert-event (equal (l0-read-all (coerce "(+ 1 2)" 'list))
+                     '((+ 1 2))))
+(value-triple
+ (list :read (l0-read-all
+              (coerce "(defun inc (n) (+ n 1)) (funcall 'inc 5)" 'list))
+       :run (l0-run-chars
+             (coerce "(defun inc (n) (+ n 1)) (funcall 'inc 5)" 'list)
+             10000)))
+
+(assert-event
+ (equal (l0-run-chars
+         (coerce "(defun inc (n) (+ n 1)) (funcall 'inc 5)" 'list)
+         10000)
+        (l0-ok nil
+               (cons (list 'inc '(n) '(+ n (quote 1)))
+                     *l0-initial-ftbl*)
+               '(nil 6))))
+(assert-event
+ (equal (l0-read-all (coerce "#1=(a b) #1#" 'list))
+        '((a b) (a b))))
+(assert-event
+ (mv-let (x rest labels)
+   (l0-read-sexp (l0-print-chars '(1 2 3)) 100 nil)
+   (declare (ignore labels))
+   (and (equal x '(1 2 3)) (null rest))))
+(assert-event
+ (mv-let (x rest labels)
+   (l0-read-sexp (l0-print-chars '(1 . 2)) 100 nil)
+   (declare (ignore labels))
+   (and (equal x '(1 . 2)) (null rest))))
 
 (value-triple
  (list :add-code (l0-sexp2term '(+ 1 2))

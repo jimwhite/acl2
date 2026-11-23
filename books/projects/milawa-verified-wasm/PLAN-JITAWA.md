@@ -234,15 +234,18 @@ plan.  The active plan follows Jitawa's two directories.
 
 #### L -- the verified Lisp runtime
 
-- **L0 (s-expression layer) -- done.**  `refinement/l0-parse.lisp` is the
-  surface-to-core parser: `LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda with
-  closure conversion, `DEFUN`, and `FUNCALL`.  `refinement/l0-spec.lisp` has
-  the core term predicate, the big-step `l0-ev`/`l0-evl`/`l0-ap` evaluator
+- **L0 -- done.**  `refinement/l0-parse.lisp` is the surface-to-core parser:
+  `LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda with closure conversion,
+  `DEFUN`, and `FUNCALL`.  `refinement/l0-read.lisp` is the character reader:
+  numbers, symbols, lists, dotted pairs, `QUOTE`, and `#n=`/`#n#` sharing,
+  with an input stream of character lists.  `refinement/l0-spec.lisp` has the
+  core term predicate, the big-step `l0-ev`/`l0-evl`/`l0-ap` evaluator
   (primitives, lambdas, function table, `DEFINE`/`L0-DEFUN`/`PRINT`/`ERROR`/
-  `FUNCALL`), the `l0-exec` read-eval-print loop, `l0-run-source`, and the
-  string printer.  It is deterministic by construction; fuel bounds recursion
-  and is not exposed in the top statement.  The ASCII/character reader and
-  stream (the `next_sexp` analogue) are L0b, the next layer.
+  `FUNCALL`), the `l0-exec` read-eval-print loop, `l0-run-source`,
+  `l0-run-chars`, and the string printer.  It is deterministic by
+  construction; fuel bounds recursion and is not exposed in the top
+  statement.  Reader/printer round trips and a character-level
+  `defun`/`funcall` run are checked.
 - **L1 -- the compiler and bytecode (`lisp_compiler` analogue).**  Define
   bytecode syntax and the relational `BC_ev` semantics (stack, return stack,
   function table, constants, I/O, `ok`).  Define the untrusted compiler.

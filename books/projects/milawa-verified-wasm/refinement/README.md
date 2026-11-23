@@ -200,15 +200,17 @@ not part of correctness.  See [`../JITAWA-REVIEW.md`](../JITAWA-REVIEW.md).
 
 The active track is:
 
-- **L0 (s-expression layer) -- done.**  `l0-parse.lisp` is the surface-to-core
-  front end (`LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda, closure conversion,
-  `DEFUN`, `FUNCALL`).  `l0-spec.lisp` has the core term predicate, the
+- **L0 -- done.**  `l0-parse.lisp` is the surface-to-core front end
+  (`LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda, closure conversion, `DEFUN`,
+  `FUNCALL`).  `l0-read.lisp` is the character reader: numbers, symbols,
+  lists, dotted pairs, `QUOTE`, and `#n=`/`#n#` sharing, with an input stream
+  of character lists.  `l0-spec.lisp` has the core term predicate, the
   big-step evaluator `l0-ev`/`l0-evl`/`l0-ap` (primitives, lambdas, function
   table, `DEFINE`/`L0-DEFUN`/`PRINT`/`ERROR`/`FUNCALL`), the `l0-exec` read-
-  eval-print loop, `l0-run-source`, and the string printer
+  eval-print loop, `l0-run-source`, `l0-run-chars`, and the string printer
   `l0-print-value`/`l0-print-values`.  No clocks are exposed; fuel only bounds
-  recursion.  The ASCII/character reader and stream are the remaining L0b
-  layer.
+  recursion.  Reader/printer round trips and a character-level
+  `defun`/`funcall` run are checked.
 - **L1** -- relational bytecode `BC_ev` and the compiler theorem
   `BC_ev_thm`, with `BC_REFINES`; no clocks.
 - **L2** -- generated machine/W3T code and a relational `STEP^*`/Hoare
@@ -219,9 +221,9 @@ The active track is:
 
 ## What is deliberately not here yet
 
-- **L0b: the character reader.**  L0 starts from a list of s-expressions
-  (`l0-run-source`); the verified ASCII reader/stream and its inverse to the
-  printer are the next L0 layer.
+- **A general reader/printer inverse theorem.**  L0 checks the round trip on
+  representative values; the general theorem over printed values is future
+  polish.
 - **L1.**  There is no `BC_ev`/`BC_ev_thm` yet; this is the next book.
 - **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
   and representative forms; the theorem for all terms is part of L0/L1.
