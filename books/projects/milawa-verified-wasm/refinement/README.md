@@ -221,9 +221,12 @@ The active track is:
 
 ## What is deliberately not here yet
 
-- **A general reader/printer inverse theorem.**  L0 checks the round trip on
-  representative values; the general theorem over printed values is future
-  polish.
+- **The list half of the reader/printer inverse theorem.**  `l0-inverse.lisp`
+  certifies determinism for `l0-ev`/`l0-ap`/`l0-exec` and the general atom
+  inverse, including the suffix-general `l0-read-sexp-atom-append` lemma.  The
+  cons half is future work: a cons prints as `(car tail)`, so the inverse
+  induction must carry a suffix through the `l0-read-sexp` to `l0-read-list`
+  switch that consumes the closing parenthesis.
 - **L1.**  There is no `BC_ev`/`BC_ev_thm` yet; this is the next book.
 - **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
   and representative forms; the theorem for all terms is part of L0/L1.

@@ -14,6 +14,7 @@
 (in-package "MILAWA-WASM")
 
 (include-book "l0-parse")
+(include-book "std/strings/decimal" :dir :system)
 
 ;; ---------------------------------------------------------------------------
 ;; Character classification and whitespace
@@ -109,19 +110,24 @@
   (intern-in-package-of-symbol (coerce chars 'string)
                                'l0-variable-p))
 
-(defun l0-pipe-token (chars acc)
+(defun l0-take-until-pipe (chars)
   (declare (xargs :guard t :verify-guards nil :measure (acl2-count chars)))
   (cond ((endp chars) (mv :error chars))
         ((eql (car chars) #\|)
-         (mv (reverse acc) (cdr chars)))
-        (t (l0-pipe-token (cdr chars) (cons (car chars) acc)))))
+         (mv nil (cdr chars)))
+        (t
+         (mv-let (name rest)
+           (l0-take-until-pipe (cdr chars))
+           (if (eq name :error)
+               (mv :error rest)
+             (mv (cons (car chars) name) rest))))))
 
 (defun l0-read-atom (chars)
   (declare (xargs :guard t :verify-guards nil))
   (cond
    ((and (consp chars) (eql (car chars) #\|))
     (mv-let (token rest)
-      (l0-pipe-token (cdr chars) nil)
+      (l0-take-until-pipe (cdr chars))
       (if (eq token :error)
           (mv :error chars)
         (mv (l0-chars-to-symbol-raw token) rest))))
@@ -129,8 +135,8 @@
     (let ((token (l0-token-chars chars))
           (rest  (l0-token-rest chars)))
       (cond ((endp token) (mv :error chars))
-            ((l0-all-digits-p token)
-             (mv (l0-chars-to-nat token 0) rest))
+            ((str::dec-digit-char-list*p token)
+             (mv (str::dec-digit-chars-value token) rest))
             (t
              (mv (l0-chars-to-symbol token) rest)))))))
 

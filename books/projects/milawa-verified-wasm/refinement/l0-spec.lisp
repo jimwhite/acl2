@@ -323,10 +323,10 @@
 
 (defun l0-symbol-char-ok-p (c)
   (declare (xargs :guard t :verify-guards nil))
-  (or (and (<= (char-code #\A) (char-code c))
-           (<= (char-code c) (char-code #\Z)))
-      (l0-digit-char-p c)
-      (member-equal c '(#\- #\+ #\* #\/ #\< #\= #\> #\? #\! #\_ #\. #\:))))
+  (and (standard-char-p c)
+       (or (and (<= (char-code #\A) (char-code c))
+                (<= (char-code c) (char-code #\Z)))
+           (l0-digit-char-p c))))
 
 (defun l0-symbol-chars-ok-p (chars)
   (declare (xargs :guard t :verify-guards nil :measure (acl2-count chars)))
@@ -338,7 +338,8 @@
 (defun l0-symbol-print-chars (x)
   (declare (xargs :guard t :verify-guards nil))
   (let ((chars (coerce (symbol-name x) 'list)))
-    (if (l0-symbol-chars-ok-p chars)
+    (if (and (l0-symbol-chars-ok-p chars)
+             (not (str::dec-digit-char-list*p chars)))
         chars
       (append (list #\|) chars (list #\|)))))
 
@@ -373,6 +374,31 @@
   (if (consp vals)
       (cons (l0-print-value (car vals)) (l0-print-values (cdr vals)))
     nil))
+
+;; ---------------------------------------------------------------------------
+;; Determinism
+;;
+;; The specification is functional, so these are the relational determinism
+;; facts Jitawa states separately: the same configuration has one result.
+;; ---------------------------------------------------------------------------
+
+(defthm l0-ev-deterministic
+  (implies (and (equal r1 (l0-ev term env ftbl io fuel))
+                (equal r2 (l0-ev term env ftbl io fuel)))
+           (equal r1 r2))
+  :rule-classes nil)
+
+(defthm l0-ap-deterministic
+  (implies (and (equal r1 (l0-ap fn args ftbl io fuel))
+                (equal r2 (l0-ap fn args ftbl io fuel)))
+           (equal r1 r2))
+  :rule-classes nil)
+
+(defthm l0-exec-deterministic
+  (implies (and (equal r1 (l0-exec cmds ftbl io fuel))
+                (equal r2 (l0-exec cmds ftbl io fuel)))
+           (equal r1 r2))
+  :rule-classes nil)
 
 ;; ---------------------------------------------------------------------------
 ;; Small checks and entry points
