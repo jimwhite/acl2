@@ -136,13 +136,18 @@ initial function table --> checker soundness theorem
   2.5 s, 2.1M prover steps.
 - **Bridge checks: done.**  `refinement/bridge.lisp` checks that `r-ev` and
   `MILAWA-RUN` agree on the PoC and representative forms by evaluation.
-- **Design finding.**  The flat ACL2 stack/pc machine (CEK with fuel) is a
-  slog (600 s, still diverging in the primitive case) and is not on the
-  critical path; the machine that matters is the WASM artifact in J2.  The
-  flat ACL2 VM is dropped from J1.  The general `r-ev = MILAWA-RUN` bridge
-  remains the open J1b piece.
-- **Next.**  The general bridge, then J2: per-opcode WASM against
-  `bc-eval`/`compile-correct`.
+- **J2a machine: done.**  `refinement/machine.lisp` lowers the IR to a flat
+  stack/pc program, gives it `machine-step`/`machine-run`, proves one step
+  theorem per opcode, the dispatcher coverage, and the closed `(+ 1 2)`,
+  `if`, `cons` passes.  0.4 s.  The general run-level theorem is J3.
+- **Design finding.**  A CEK-style flat machine with a fuel/continuation
+  run proof is a slog (600 s, still diverging in the primitive case); J2a
+  avoids it by proving the per-opcode layer and the closed pass, leaving
+  the run-level to J3 (where the exact-count `MILAWA-RUNS` pattern is the
+  better target).  The general `r-ev = MILAWA-RUN` bridge remains the open
+  J1b piece.
+- **Next.**  J2b: the per-opcode WASM artifact against the J2a machine, then
+  J3.
 
 
 The milestones are ordered so that each one produces a theorem a reviewer
@@ -184,21 +189,31 @@ one term.  The PoC's program is an instance.
 
 ### J2 -- The machine (`refinement/wasm/`)
 
+**J2a (done, `refinement/machine.lisp`).**  The IR is lowered to a flat
+stack/pc instruction list (`:const`, `:load`, `:prim`, `:ifz`, `:jmp`,
+`:label`, `:halt`) with `lower-term`/`lower-program`; the machine is
+`machine-step`/`machine-run`; each opcode has its own step theorem, the
+dispatcher coverage is `machine-step-dispatches`, and the closed
+`(+ 1 2)`/`if`/`cons` passes certify.  This is the ACL2 machine the WASM
+artifact implements.
+
+**J2b (next).**
+
 - Refactor the artifact into **per-opcode exported functions** plus a
   **tiny dispatcher**; keep the single exported `STEP` for deployment.  The
   module is generated from a table (a checked generator, not a hand-written
   instruction sequence).
-- For each opcode, prove **one symbolic theorem**:
-  the artifact's opcode function implements the VM's opcode step for all
-  well-formed states and operands (including the abort cases).
+- For each opcode, prove **one symbolic theorem**: the artifact's opcode
+  function implements the J2a opcode step for all well-formed states and
+  operands (including the abort cases).
 - Prove the dispatcher once: the exported `STEP` selects the right opcode
-  function and returns the same state as `bc-step`.
+  function and returns the same state as `machine-step`.
 - Retire the per-path chain: no `chain*`, `const*`, or `engine*` book is
   extended for this.
 
-**Acceptance:** `STEP`-correct for the subset, with one theorem per opcode
-plus one dispatcher theorem; no exact 67-step trace in the statement or
-proof.  The existing `abs.lisp` concrete checks remain as a regression
+**Acceptance (J2b):** `STEP`-correct for the subset, with one theorem per
+opcode plus one dispatcher theorem; no exact 67-step trace in the statement
+or proof.  The existing `abs.lisp` concrete checks remain as a regression
 suite.
 
 ### J3 -- Run level and the front door (`refinement/top/`)

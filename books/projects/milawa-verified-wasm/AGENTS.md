@@ -14,15 +14,19 @@ the earlier per-path experiment: keep them certified, do not extend them as
 the proof path.  The PoC and the `abs.lisp`/memory/numerics books are kept as
 the regression suite.
 
-**Refinement tree (J0/J1 compiler done, 2026-11-23).**  `refinement/spec.lisp`
-has `variable-p`/`term-p`/`r-ev`; `refinement/compile.lisp` has
-`compile-term`, `bc-eval`, and `compile-correct` for the arithmetic/control
-subset (all twelve primitives + `if`), with the PoC expressions as
-corollaries.  `refinement/bridge.lisp` checks `r-ev` against `MILAWA-RUN` on
-those forms.  The flat ACL2 CEK machine was prototyped and is a slog (600 s,
-diverging); it is dropped from J1, and the WASM artifact is the machine
-layer in J2.  The general `r-ev = MILAWA-RUN` bridge is the open J1b piece.
-Build with `make refinement ACL2=...`; it is separate from `make check`.
+**Refinement tree (J0/J1 compiler + J2a machine done, 2026-11-23).**
+`refinement/spec.lisp` has `variable-p`/`term-p`/`r-ev`;
+`refinement/compile.lisp` has `compile-term`, `bc-eval`, and
+`compile-correct` for the arithmetic/control subset (all twelve primitives +
+`if`), with the PoC expressions as corollaries.  `refinement/bridge.lisp`
+checks `r-ev` against `MILAWA-RUN` on those forms.  `refinement/machine.lisp`
+is J2a: the flat stack/pc lowering and `machine-step`/`machine-run`, one step
+theorem per opcode, the dispatcher coverage, and the closed
+`(+ 1 2)`/`if`/`cons` passes.  A CEK-style run proof was prototyped and is a
+slog (600 s, diverging); the general run-level theorem is J3, and the
+per-opcode WASM artifact is J2b.  The general `r-ev = MILAWA-RUN` bridge is
+the open J1b piece.  Build with `make refinement ACL2=...`; separate from
+`make check`.
 
 ## Where the truth lives
 
