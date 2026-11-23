@@ -251,6 +251,6 @@
 (defun l0-read-all (chars)
   (declare (xargs :guard t :verify-guards nil))
   (mv-let (sexps labels)
-    (l0-parse-all chars (+ 100 (len chars)) nil)
+    (l0-parse-all chars (+ 100 (* 10 (len chars))) nil)
     (declare (ignore labels))
     sexps))
