@@ -12,8 +12,8 @@
 #   make experiment FILE=... [BOOK=...] [DIR=wasm3]
 #                         run a scratch ACL2 script with a timeout and a summary
 #   make walk             ask the semantics what each step of the frozen path is
-#   make poc              the smallest Milawa-Lisp expression, end to end:
-#                         MILAWA-EVAL -> MVM -> four exported STEP calls
+#   make poc              the smallest Milawa-Lisp expressions, end to end:
+#                         spec -> compiler -> bytecode machine -> host loop
 #   make refinement       the Jitawa-shaped tree (J0 spec + J1 compiler)
 #   make clean
 #
@@ -156,7 +156,7 @@ walk:
 # MVM-RUN gives the same answer in four steps, and four calls to the artifact's
 # exported STEP reach a configuration whose observations are that MVM state.
 poc:
-	@$(MAKE) -s -C $(PROJECT)/wasm3 ACL2=$(abspath $(ACL2)) poc
+	@$(MAKE) -s -C $(PROJECT)/refinement ACL2=$(abspath $(ACL2)) poc
 
 # The Jitawa-shaped tree (J0 spec + J1 compiler correctness).  It is certified
 # separately from the wasm3 archive; see refinement/README.md and
