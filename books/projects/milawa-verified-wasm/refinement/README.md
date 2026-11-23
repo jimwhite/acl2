@@ -194,9 +194,12 @@ runs all 100 events: `(:MILAWA-OK . SUCCESS)` in ~100 s, certified.
 The per-opcode W3T link and host loop above are archived.  The active layer
 is a verified code generator from the `machine` IR to a W3T module:
 
-- **K1** -- generated code for the arithmetic/control subset, with one
-  theorem that W3T execution of the generated code refines `machine-run`;
-  the PoC's module is compiler output.
+- **K1 (partial)** -- `k1-arith.lisp` has the generated-code path: a small
+  `+` term language, `k1-gen` to engine instructions, `k1-value`, and the
+  proved engine step lemmas for `:const` and `:binop add` (including the
+  engine's result-goes-to-IS-then-VALS behavior).  Closed generated programs
+  `(+ 1 2)` and `(+ 1 (+ 2 3))` are proved to run to their values.  The
+  general composition for every term is the remaining K1 proof.
 - **K2** -- conses, symbols, environments, and the heap.
 - **K3** -- the function table, calls, and runtime/REPL; compile the kernel
   and run `100.events` on the generated module.
@@ -205,8 +208,9 @@ is a verified code generator from the `machine` IR to a W3T module:
 
 ## What is deliberately not here yet
 
-- **The generated-code layer (K1).**  There is no `gen-wasm`/simulation
-  theorem yet; this is the next book.
+- **The general generated-code layer (K1).**  The step lemmas and closed
+  generated checks are in `k1-arith.lisp`; the all-terms composition of
+  `machine-run` over `k1-gen` is the next K1 book.
 - **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
   and representative forms; the theorem for all terms at a computed clock
   is the remaining J1b piece (and also validates the spec against the

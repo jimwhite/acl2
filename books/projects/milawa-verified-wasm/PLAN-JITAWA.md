@@ -171,11 +171,14 @@ path.  The active track is:
   source language as the core Lisp that the Milawa front end already
   produces, and fix the compiler interface: source -> IR -> W3T module
   (generated code plus the data layout).
-- **K1 -- generated code for the arithmetic/control subset.**  Write an
-  untrusted ACL2 code generator from the `machine` IR to W3T instructions.
-  Prove one theorem: W3T execution of the generated code refines
-  `machine-run` for every IR program and state.  Emit the module from the
-  generator; no WAT.  A generated PoC is a corollary.
+- **K1 (partial) -- generated code for the arithmetic subset.**
+  `refinement/k1-arith.lisp` has the generator (`k1-gen`), the value
+  semantics (`k1-value`), and the proved engine step lemmas for `:const` and
+  `:binop add`, including the engine's result-goes-to-IS-then-VALS
+  behavior.  Closed generated programs `(+ 1 2)` and `(+ 1 (+ 2 3))` are
+  proved to run to their values.  The all-terms composition of
+  `machine-run` over `k1-gen` is the remaining K1 proof; the module is
+  emitted from the generator, no WAT.
 - **K2 -- the Lisp data model.**  Add conses, symbols, environments, and the
   heap to the IR and the generator; prove the simulation for every source
   construct.
