@@ -162,6 +162,24 @@ position invariant `positional-from`, and `label-pc` resolution on that
 code.  The run-level induction (`machine-run` of the lowered code equals
 `bc-eval`, and hence `r-ev` by `compile-correct`) is the next book.
 
+## Running the Milawa demo on the model
+
+`milawa2-data.lisp` holds the simplified kernel's `DEFINE` forms as data and
+`milawa-events.lisp` the `milawa-on-jitawa` `100.events` demo (ACL2's reader
+handles the `#n=` sharing).  `milawa-check.lisp` is the untrusted front end
+from surface Lisp to core syntax: it expands `COND`/`AND`/`OR`/`LET`/`LET*`/
+`LIST`, closes `LET` over its free variables (the evaluator's lambdas are not
+closures), specializes `CL-USER::FUNCALL` to `LOGIC.PROOFP`, and supplies the
+runtime system functions (`FIRST`..`FIFTH`, `ENDP`, `NULL`, `DEFINE`, `ERROR`,
+`PRINT`).  A validator checks that no surface macro or unknown function head
+remains and that the translated bodies are closed.
+
+`milawa-run.lisp` starts the kernel from the initial state (translated
+function table, initial axioms and arity table, checker `LOGIC.PROOFP`) and
+runs all 100 events: `(:MILAWA-OK . SUCCESS)` in ~100 s, certified.
+`make milawa-check` reproduces it.  This is the Jitawa demo on the verified
+*evaluator model*: a checked run, not yet the WASM artifact.
+
 ## Design finding (2026-11-23)
 
 A CEK-style flat machine with a fuel/continuation run proof was prototyped

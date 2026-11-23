@@ -15,6 +15,7 @@
 #   make poc              the smallest Milawa-Lisp expressions, end to end:
 #                         spec -> compiler -> bytecode machine -> host loop
 #   make refinement       the Jitawa-shaped tree (J0 spec + J1 compiler)
+#   make milawa-check     the milawa-on-jitawa 100-event demo on the model
 #   make clean
 #
 # The pieces were built one at a time and each has its own Makefile; this file
@@ -157,6 +158,9 @@ walk:
 # exported STEP reach a configuration whose observations are that MVM state.
 poc:
 	@$(MAKE) -s -C $(PROJECT)/refinement ACL2=$(abspath $(ACL2)) poc
+
+milawa-check:
+	@$(MAKE) -s -C $(PROJECT)/refinement ACL2=$(abspath $(ACL2)) milawa-check
 
 # The Jitawa-shaped tree (J0 spec + J1 compiler correctness).  It is certified
 # separately from the wasm3 archive; see refinement/README.md and

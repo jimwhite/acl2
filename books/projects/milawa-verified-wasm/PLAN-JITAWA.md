@@ -356,6 +356,28 @@ specific WASM step chains.
 
 ### J4 -- Milawa core and soundness (`refinement/milawa/`)
 
+**Status (2026-11-23): the milawa2 kernel runs the demo on the verified
+model.**  `refinement/milawa2-data.lisp` holds milawa2.lsp's DEFINE forms as
+data; `refinement/milawa-check.lisp` is the untrusted front end from surface
+Lisp to core syntax (COND/AND/OR/LET/LET*/LIST expansion; LET is closed over
+its free variables because the evaluator's lambdas are not closures;
+CL-USER::FUNCALL in CORE.CHECK-PROOF is specialized to the initial checker
+LOGIC.PROOFP; FIRST..FIFTH/ENDP/NULL/PRINT/ERROR/DEFINE are the runtime's
+system functions).  The front end is validated: no untranslated macro or
+unknown function head remains, and every translated body's variables are
+bound.  `refinement/milawa-events.lisp` is the milawa-on-jitawa
+`100.events` demo as data (labels/sharing respected by ACL2's reader).
+`refinement/milawa-run.lisp` builds the initial state (translated function
+table, initial axioms and arity table, checker LOGIC.PROOFP) in the kernel's
+own CORE.STATE and runs all 100 events: `(:MILAWA-OK . SUCCESS)` in ~100 s.
+`make milawa-check` reproduces it.
+
+This is the Jitawa demo run on the verified evaluator *model*: the kernel is
+interpreted, and this is a checked run (evaluation), not a soundness
+theorem.  Parsing the ACL2 `core.lisp` text into a logic constant, proving
+the interpreter implements the logic (the MILAWA-RUN/MR_ev layer), and
+refining the evaluator to `milawa-verified.wasm` remain.
+
 - Parse the actual `core.lisp` text into a logic constant (Jitawa
   `MILAWA_CORE_TEXT_THM`).
 - Evaluate `milawa-init` in the spec to get the initial function table;
