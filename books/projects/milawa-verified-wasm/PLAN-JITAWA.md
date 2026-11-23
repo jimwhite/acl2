@@ -234,12 +234,15 @@ plan.  The active plan follows Jitawa's two directories.
 
 #### L -- the verified Lisp runtime
 
-- **L0 -- the specification (`lisp_semantics` analogue).**  Define the core
-  Lisp `term` syntax, `sexp2term`, the big-step `R_ev`/`R_evl`/`R_ap`
-  relations with an `ok` flag, the read-eval-print `R_exec` relation, and the
-  parser/printer specification.  Determinism (`R_ev`/`R_ap` functional) is a
-  separate theorem.  The existing `milawa-lisp` evaluator is a reference, not
-  the final spec shape.
+- **L0 (s-expression layer) -- done.**  `refinement/l0-parse.lisp` is the
+  surface-to-core parser: `LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda with
+  closure conversion, `DEFUN`, and `FUNCALL`.  `refinement/l0-spec.lisp` has
+  the core term predicate, the big-step `l0-ev`/`l0-evl`/`l0-ap` evaluator
+  (primitives, lambdas, function table, `DEFINE`/`L0-DEFUN`/`PRINT`/`ERROR`/
+  `FUNCALL`), the `l0-exec` read-eval-print loop, `l0-run-source`, and the
+  string printer.  It is deterministic by construction; fuel bounds recursion
+  and is not exposed in the top statement.  The ASCII/character reader and
+  stream (the `next_sexp` analogue) are L0b, the next layer.
 - **L1 -- the compiler and bytecode (`lisp_compiler` analogue).**  Define
   bytecode syntax and the relational `BC_ev` semantics (stack, return stack,
   function table, constants, I/O, `ok`).  Define the untrusted compiler.

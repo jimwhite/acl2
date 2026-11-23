@@ -200,8 +200,15 @@ not part of correctness.  See [`../JITAWA-REVIEW.md`](../JITAWA-REVIEW.md).
 
 The active track is:
 
-- **L0** -- relational Lisp spec (`term`, `sexp2term`, `R_ev`/`R_ap`/`R_exec`,
-  parser/printer).
+- **L0 (s-expression layer) -- done.**  `l0-parse.lisp` is the surface-to-core
+  front end (`LET`/`LET*`/`COND`/`AND`/`OR`/`LIST`/lambda, closure conversion,
+  `DEFUN`, `FUNCALL`).  `l0-spec.lisp` has the core term predicate, the
+  big-step evaluator `l0-ev`/`l0-evl`/`l0-ap` (primitives, lambdas, function
+  table, `DEFINE`/`L0-DEFUN`/`PRINT`/`ERROR`/`FUNCALL`), the `l0-exec` read-
+  eval-print loop, `l0-run-source`, and the string printer
+  `l0-print-value`/`l0-print-values`.  No clocks are exposed; fuel only bounds
+  recursion.  The ASCII/character reader and stream are the remaining L0b
+  layer.
 - **L1** -- relational bytecode `BC_ev` and the compiler theorem
   `BC_ev_thm`, with `BC_REFINES`; no clocks.
 - **L2** -- generated machine/W3T code and a relational `STEP^*`/Hoare
@@ -212,14 +219,14 @@ The active track is:
 
 ## What is deliberately not here yet
 
-- **L0/L1.**  There is no relational Lisp spec or `BC_ev`/`BC_ev_thm` yet;
-  this is the next book.
+- **L0b: the character reader.**  L0 starts from a list of s-expressions
+  (`l0-run-source`); the verified ASCII reader/stream and its inverse to the
+  printer are the next L0 layer.
+- **L1.**  There is no `BC_ev`/`BC_ev_thm` yet; this is the next book.
 - **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
   and representative forms; the theorem for all terms is part of L0/L1.
-- **The parser/REPL.**  Terms are ACL2 s-expressions here; the verified
-  parser/printer are part of L0/L3.
-- **Calls/lambdas/heap.**  The subset is primitives + `if`; the function
-  table, `cons`-cell heap, and the full kernel belong to L1/L2 and M0-M3.
+- **Calls/lambdas/heap.**  L0 has the evaluator and function table; the
+  bytecode/compiler and heap are L1/L2, and the full kernel is M0-M3.
 
 ## Why this shape
 
