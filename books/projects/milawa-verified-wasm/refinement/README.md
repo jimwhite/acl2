@@ -1,12 +1,13 @@
 # refinement/ -- the Jitawa-shaped tree
 
-> **Direction (2026-11-23).** The goal is a Lisp runtime for Milawa that is
-> correct by construction: the WASM artifact is the output of a verified
-> compiler, and the correctness theorem is stated against the ACL2 `W3T`
-> model.  The hand-written `wasm/milawa-ops.wat`, the `ops-*` books, and the
-> host loop in `top-host.lisp` are an archive of the earlier experiment, not
-> the proof path.  The active path is `spec`/`compile`/`machine` as the
-> source and IR, then a generated-code (IR -> `W3T`) layer.
+> **Direction (2026-11-23, after the Jitawa review).** The goal has two
+> stages: a verified Lisp runtime (relational spec, `BC_ev`/`BC_ev_thm`,
+> generated machine/W3T code, parser/printer, top Hoare-style theorem), then
+> the Milawa prover.  Correctness is relational/partial, not clocked.  The
+> hand-written `wasm/milawa-ops.wat`, the `ops-*` books, the host loop in
+> `top-host.lisp`, and the exact-clock `k1-arith` top theorem are archive and
+> regression, not the proof path.  See [`../JITAWA-REVIEW.md`](../JITAWA-REVIEW.md)
+> and the L/M track in [`../PLAN-JITAWA.md`](../PLAN-JITAWA.md).
 
 This is the new proof tree from [`../PLAN-JITAWA.md`](../PLAN-JITAWA.md).  It
 is certified separately from the `wasm3/` archive:
@@ -189,41 +190,43 @@ runs all 100 events: `(:MILAWA-OK . SUCCESS)` in ~100 s, certified.
 `make milawa-check` reproduces it.  This is the Jitawa demo on the verified
 *evaluator model*: a checked run, not yet the WASM artifact.
 
-## Corrected active path (2026-11-23)
+## Corrected active path (2026-11-23, after the Jitawa review)
 
-The per-opcode W3T link and host loop above are archived.  The active layer
-is a verified code generator from the `machine` IR to a W3T module:
+The per-opcode W3T link, host loop and exact-clock K1 top theorem above are
+archived.  Jitawa's correctness theorems are relational and partial: `BC_ev_thm`
+uses `iSTEP^*`, and `jitawa_correctness_thm` is a Hoare triple with a
+`terminates` premise and `error \/ R_exec` postcondition.  Exact clocks are
+not part of correctness.  See [`../JITAWA-REVIEW.md`](../JITAWA-REVIEW.md).
 
-- **K1 (partial)** -- `k1-arith.lisp` has the generated-code path: a small
-  `+` term language, `k1-gen` to engine instructions, `k1-value`, and the
-  proved engine step lemmas for `:const` and `:binop add` (including the
-  engine's result-goes-to-IS-then-VALS behavior).  Closed generated programs
-  `(+ 1 2)` and `(+ 1 (+ 2 3))` are proved to run to their values.  The
-  general composition for every term is the remaining K1 proof.
-- **K2** -- conses, symbols, environments, and the heap.
-- **K3** -- the function table, calls, and runtime/REPL; compile the kernel
-  and run `100.events` on the generated module.
-- **K4** -- the Milawa soundness composition.
-- **K5** -- binary serialization and the artifact/regression suite.
+The active track is:
+
+- **L0** -- relational Lisp spec (`term`, `sexp2term`, `R_ev`/`R_ap`/`R_exec`,
+  parser/printer).
+- **L1** -- relational bytecode `BC_ev` and the compiler theorem
+  `BC_ev_thm`, with `BC_REFINES`; no clocks.
+- **L2** -- generated machine/W3T code and a relational `STEP^*`/Hoare
+  simulation; no hand-written module.
+- **L3** -- top runtime theorem `{init * terminates} code {error \/ R_exec}`.
+- **M0-M3** -- Milawa logic, kernel deep-to-shallow, invariant, and top
+  soundness composition.
 
 ## What is deliberately not here yet
 
-- **The general generated-code layer (K1).**  The step lemmas and closed
-  generated checks are in `k1-arith.lisp`; the all-terms composition of
-  `machine-run` over `k1-gen` is the next K1 book.
+- **L0/L1.**  There is no relational Lisp spec or `BC_ev`/`BC_ev_thm` yet;
+  this is the next book.
 - **The general `R-EV = MILAWA-RUN` bridge.**  `bridge.lisp` checks the PoC
-  and representative forms; the theorem for all terms at a computed clock
-  is the remaining J1b piece (and also validates the spec against the
-  runtime).
-- **The parser/REPL.**  Terms are ACL2 s-expressions here; the surface
-  parser and REPL are J0b.
+  and representative forms; the theorem for all terms is part of L0/L1.
+- **The parser/REPL.**  Terms are ACL2 s-expressions here; the verified
+  parser/printer are part of L0/L3.
 - **Calls/lambdas/heap.**  The subset is primitives + `if`; the function
-  table, `cons`-cell heap, and the full kernel are K2/K3.
+  table, `cons`-cell heap, and the full kernel belong to L1/L2 and M0-M3.
 
 ## Why this shape
 
 The earlier `wasm3/const-*` chain proved one fixed WASM dispatch trace for
 one opcode path.  This tree proves the compiler once, for all terms.  The
 correction is that the next layer is *generated* code, not a hand-written
-per-opcode module: the compiler emits the W3T module, and the proof is about
-the emitted module.  See the plan for the K-track.
+per-opcode module: the compiler emits the module, and the proof is about the
+emitted module.  The Jitawa review adds the second correction: state the
+correctness theorem relationally (not with exact clocks), and put the parser,
+printer, heap and Milawa kernel inside the compositional stack.

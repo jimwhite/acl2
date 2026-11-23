@@ -14,23 +14,25 @@ HOL4 and WebAssembly in place of x86-64:
 > WebAssembly engine, it can only accept theorems of formulas that are
 > semantically true.
 
-## Direction (2026-11-23)
+## Direction (2026-11-23, after the Jitawa review)
 
-The goal is a Lisp runtime for Milawa that is **correct by construction**: the
-WASM artifact is emitted by a verified compiler from the Lisp core, and the
-correctness theorem is stated against the ACL2 `W3T` model.  The PoC proved
-the right shape, but both the earlier per-instruction chain and the later
-hand-written per-opcode module are off the proof path.  See
-[`PLAN-JITAWA.md`](PLAN-JITAWA.md): a small spec, one compiler-correctness
-theorem, one generated-code theorem (IR -> `W3T`), a run-level composition,
-and the Milawa soundness composition.
+The goal has two stages, in Jitawa's order: a verified **Lisp runtime**
+(specification, relational compiler/bytecode theorem, generated machine/WASM
+implementation, parser/printer, top Hoare-style theorem), then the **Milawa
+prover** (logic soundness, kernel faithfulness, top soundness composition).
+Correctness is relational/partial correctness; exact step counts are not part
+of it.  The PoC proved the right shape, but both the earlier per-instruction
+chain, the later hand-written per-opcode module, and our exact-clock K1
+attempt are off the top-level proof path.
 
-The `wasm3/chain*`, `wasm3/const*`, and `wasm3/engine*` books, and the newer
-`refinement/ops-*`/`wasm/milawa-ops.wat` path, are the archive: they stay
-certified and are the regression suite, but they are **not extended**.  New
-work goes in `refinement/` and is judged by the K-track in the plan.  In
-particular, the hand-written `milawa-verified.wat` is not the shipped
-artifact, and no final theorem is about it.
+See [`JITAWA-REVIEW.md`](JITAWA-REVIEW.md) for the review and
+[`PLAN-JITAWA.md`](PLAN-JITAWA.md) for the L/M track.  The
+`wasm3/chain*`, `wasm3/const*`, and `wasm3/engine*` books, the newer
+`refinement/ops-*`/`wasm/milawa-ops.wat` path, and the exact-clock
+`refinement/k1-arith` top-level attempt are the archive: they stay certified
+and are the regression suite, but they are **not extended**.  In particular,
+the hand-written `milawa-verified.wat` is not the shipped artifact, and no
+final theorem is about it.
 
 ## Status
 
@@ -77,15 +79,15 @@ any book in the tree has been skipped.
 | **The out-of-code entry and the abort callee**: the in-code comparison's zero case — the testop tier (the value 0, its slice, the ifelse on 0 with its else branch) and the ifelse tier's slice/lifts through the empty block and label, the `(:CALL 4)` abort split at the body level and its entry, `$abort`'s frame lift, the callee's body end to end (status := 2 through the lone/slice/ctxt/write recipe and the frame descent), and the unknown-opcode fallthrough's label/frame value-returns (`frame-label-vals`, the callee-frame-around-a-value wrapper) | **proved** (`wasm3/oob.lisp`, 46 events, 9.18M prover steps) |
 | **The CONST tail (opcode 1)**: the testop/ifelse true branch of the CONST test — the `$in_code` call's lone split and entry, `$in_code`'s seven body positions (read/sub/read/mul/ltu and the two value dissolves), the testop/ifelse/empty-block/label tiers (the search's result spliced as `(const 0) :: (cdr of the tail)`), the `(global.get 1)` read of pc, the `(i32.load)` of the instruction word under the memory hypotheses, the `local.set 1` write (index 1 — the first write whose `update-nth` needs the opaque-`$with_local` treatment), the pc increment `(global.get 1)(const 4)(add)(global.set 1)` with the store global 6 write, and the `(local.get 1)` read-back of the word; then the `(call 0)` hand-off — the call's expansion and 3-element entry slice (the argument W), the dispatcher's ctxt refusals that make the search terminate, and the whole-config lifts at the tail's continuation; and function 0 `$push`: its seven instructions end to end through the seven-layer chain per position (slice, body ctxt, body step, label, arity-0 frame wrapper, continuation lift, step) at the explicit z spellings the frame rule builds — positions 0-4 (the two global reads, the local read, the memory store with its generic in-z slice and its lone/one-value refusals, and the add) — plus the arity-0 frame wrapper, the generic ctxt lift, the respell bridge and the value facts; position 5 (the `global.set 0` write of `sp + 4`) is also closed — its two-element slice does not fire the ctxt rule (the search's measure ties), so its step is the `global.set` rule itself and the ctxt is nil; the val-p of `(dadd sp)` and the opaque `$with_global` make the tier cheap; the void-return dissolves (the label-vals inside the frame and the frame-vals) are the remaining pieces of the callee, and the module's function 0 is confirmed as the stack-push (`sp` in global 0) | **proved** (`wasm3/const.lisp`, 132 facts; the callee through its last instruction) |
 | **Jitawa J0/J1 compiler (new tree)**: `term-p`/`r-ev` for core terms, and **`compile-correct`** -- `bc-eval (compile-term term) = r-ev term` for every term of the arithmetic/control subset (all twelve primitives plus `if`), with the PoC expressions as corollaries; `bridge.lisp` checks `r-ev` against `MILAWA-RUN` on those forms | **proved** (`refinement/spec.lisp`, `refinement/compile.lisp`, `refinement/bridge.lisp`; `make refinement`); the general `r-ev = MILAWA-RUN` bridge is the open J1b piece |
-| **Jitawa J2a (new tree)**: the flat stack/pc machine, the lowering from the IR, one step theorem per opcode, the dispatcher coverage, and the closed `(+ 1 2)`/`if`/`cons` passes | **proved** (`refinement/machine.lisp`; `make refinement`); this is the source IR semantics for the generated-code layer (K1) |
+| **Jitawa J2a (new tree)**: the flat stack/pc machine, the lowering from the IR, one step theorem per opcode, the dispatcher coverage, and the closed `(+ 1 2)`/`if`/`cons` passes | **proved** (`refinement/machine.lisp`; `make refinement`); a useful reference for L1, not the final relational `BC_ev` |
 | **Jitawa J2b-1 (new tree)**: `wasm/milawa-ops.wat`/`.wasm`, the checked opcode table and i32 model, per-opcode dispatcher theorems, and value-level agreement with `machine-step`; `ops-w3t.lisp` proves the frame/label/return W3T steps, the value-prefixed no-ctxt facts, and the `op_const` chain, and the per-opcode books prove every `$invoke`-to-value chain (const/add/sub/lt/ifz/jmp/label) | **archive/off-goal** — hand-written module; kept as a regression suite, not extended (`refinement/ops-*`) |
-| **K1 — generated-code layer (new plan)**: an ACL2 generator from the `machine` IR to a W3T module, and one theorem that W3T execution of the generated code refines `machine-run` | **not started** — the active next step |
+| **Exact-clock K1 slice**: `refinement/k1-arith.lisp` generates arithmetic engine instructions and proves the step lemmas and closed `(+ 1 2)`/`(+ 1 (+ 2 3))` runs | **certified regression only** — the exact-clock top theorem is not the Jitawa shape; L0/L1 relational spec and compiler are the active next step |
 | **The PoC**: Milawa-Lisp `(+ (quote 1) (quote 2))` from `MILAWA-EVAL` through `MVM-RUN` to **four exported `STEP` calls** on the artifact, with the compiler's output checked and the four calls threaded through the store each returns | **proved** (`wasm3/poc.lisp`, `POC.md`, `make poc`); a closed instance, not L1/L2/L3 |
 | **The CONST path's join**: the front's 34 steps (`front-advance-19` + `front2-advance-15`) and the tail's first two run-level steps (`tail-frame1`, the lone `(:CALL 3)` split, then `tail-entry-zl-frame`, the call entry) compose into one **36-step advance**; the front's unfolded endpoint is proved equal to the tail's `gset` entry | **proved** (`wasm3/const-join.lisp`, 8 events, 3.38M prover steps) |
 | **The CONST callee's first five positions**: the reads of globals 1 and 2, the sub, the mul and the ltu, re-stated at one generic run-level state (`const-tail-callee-state`) with the body progressing `(milawa-func-body 3)` → `dbody0` → `dbody1` → `dbody2` → `dbody3` → `dbody4`; the ltu gets a literal-spelling state because its frame fact's body is literal | **proved** (`wasm3/const-steps.lisp`, 6 events, 402 s) |
 | **The CONST front through the callee's first five**: `const-front-37..41` add those five steps to the 36-step advance, each a `steps-fuel-succ-of-a-step` at the state the previous advance leaves; the run is now **41 of 67 steps** | **proved** (`wasm3/const-front.lisp`, 6 events, 162 s) |
-| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **archived** — the frozen path and the CONST 41-step trace are the earlier experiment; the corrected plan replaces this with a generated-code theorem (K1) |
-| L2 — generated runtime = `W3T::STEPS` | **not started** (new plan: K1/K3) |
+| L1 — one call to `STEP` equals `MVM-STEP` **for symbolic state** | **archived** — the frozen path and the CONST 41-step trace are the earlier experiment; the L-track replaces this with relational `BC_ev` + `STEP^*` |
+| L2 — generated runtime = `W3T::STEPS` | **not started** (new plan: L2/L3, relational/partial correctness, no clocks) |
 | L3 — generated runtime refines `MILAWA-EVAL` | **not started** (new plan: K2/K4) |
 | WASM 3.0 semantics and engine available locally (`wasm-acl2` `1ce59e0`, engine-plan2; the 26 semantics books and the engine books certified; IL reproducible from SpecTec) | **done** |
 | Whole kernel (`milawa-init` from `milawa2.lsp`) | **not started** |

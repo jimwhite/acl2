@@ -1,38 +1,94 @@
-# PLAN: a verified Lisp runtime for Milawa, compiled to WASM
+# PLAN: a verified Lisp runtime for Milawa, in Jitawa's shape
 
-This is the project plan the PoC pointed at.  It rebuilds the verified runtime
-in the shape Jitawa actually has, but with the machine code *generated*, not
-hand-written: a small Lisp specification, a compiler from the Milawa core Lisp
-to WebAssembly checked by one correctness theorem against the ACL2 WASM model,
-a generated runtime, and a run-level theorem that composes them with Milawa's
-soundness proof.  The existing `wasm3/chain*`, `const*`, and `engine*` books,
-and the newer `refinement/ops-*`/`wasm/milawa-ops.wat` books, stay certified
-as an archive and regression suite; they are not the route to the theorem.
+This is the project plan the PoC pointed at, revised after a close review of
+Jitawa's papers and HOL sources (`jitawa-docs/`,
+`/home/vscode/HOL/examples/theorem-prover/`).  See
+[`JITAWA-REVIEW.md`](JITAWA-REVIEW.md) for the review that drives this plan.
 
-## 0. The goal (corrected 2026-11-23)
+The project has two stages, in Jitawa's order:
 
-The deliverable is a **Lisp runtime for Milawa that is correct by
-construction**.  Concretely:
+1. **`lisp-runtime`** -- a verified Lisp read-eval-print loop: a small Lisp
+   specification, a compiler to bytecode, a generated machine/WASM
+   implementation, a parser, a printer, and a top Hoare-style theorem.
+2. **`milawa-prover`** -- formalize Milawa's logic, prove it sound, prove the
+   kernel source faithful to it, and compose the two at
+   `MILAWA_CORE_TEXT ++ input`.
 
-- the source is the Milawa core Lisp, with the existing `MILAWA-STEP` /
-  `MILAWA-RUN` semantics as its reference;
-- the object program is emitted by an ACL2 compiler (Lisp -> IR -> WASM), and
-  the shipped `.wasm` is the compiler's output;
-- one theorem, stated against the ACL2 model of WASM 3.0 (`W3T`), says that the
-  generated code refines the Lisp semantics for every program and state; and
-- the Milawa composition is instantiated at the kernel text and the events, so
-  acceptance by the running artifact implies truth of the accepted formula.
+The existing `wasm3/chain*`, `const*`, and `engine*` books, and the newer
+`refinement/ops-*`/`wasm/milawa-ops.wat` books, stay certified as an archive
+and regression suite; they are not the route to the theorem.
+
+## 0. The goal (revised after the Jitawa review)
+
+The deliverable is a **verified Lisp runtime followed by the Milawa prover**,
+not a per-program trace and not a clocked machine simulation.  Concretely:
+
+- the Lisp specification is small and relational: a `term` syntax, big-step
+  `R_ev`/`R_ap`/`R_exec` semantics with an `ok` flag, the parser and printer,
+  and explicit input/output streams;
+- the compiler and bytecode semantics are related by one theorem: if the
+  source evaluation relation returns, the bytecode relation reaches a related
+  state (`BC_ev_thm`, with a `BC_REFINES` invariant);
+- the generated machine/WASM code is related to bytecode by a relational
+  simulation (`W3T::STEP^*` or an equivalent Hoare triple), not by exact step
+  counts;
+- the top runtime theorem is partial correctness with a termination premise
+  and an error disjunct, as in Jitawa's `jitawa_correctness_thm`;
+- the Milawa composition is instantiated at the kernel text and the input, so
+  a printed theorem is semantically true.
 
 "Correct by construction" is used in Jitawa's sense: **the compiler need not be
-trusted**.  It is an ACL2 function, the correctness theorem is the guarantee,
+trusted**.  It is an ACL2 function; the correctness theorem is the guarantee,
 and the artifact is produced by evaluating that function.  A wrong compiler
 produces code that fails the theorem; it does not produce code that escapes it.
 
+**Step counts are not part of the goal.**  Jitawa's `BC_ev_thm` uses
+`iSTEP^*` (a reflexive-transitive closure), and `jitawa_correctness_thm` is a
+Hoare triple with a `terminates` premise and `error \/ R_exec` postcondition.
+Exact clocks are a performance/regression concern, not a correctness
+requirement.  Our earlier exact-clock K1 slice is therefore demoted to a
+regression; the active K/L1 shape is relational.
+
 This rules out the earlier shape in which the WASM module was a hand-written
 WAT file and the proofs were about that file's instruction sequence.  The
-hand-written module, the per-opcode `ops-*` books, and the host loop that calls
-its `STEP` are an experiment.  They are archived, not extended, and no part of
-the final theorem depends on them.
+hand-written module, the per-opcode `ops-*` books, the host loop that calls its
+`STEP`, and the exact-clock `k1-arith` top-level attempt are an experiment.
+They are archived, not extended, and no part of the final theorem depends on
+them.
+
+## 0.1 The two top theorems to copy
+
+From Jitawa (see `JITAWA-REVIEW.md` for the file/theorem names):
+
+- **Runtime**: if the input is one for which the specification terminates,
+  the machine code either reports an error or reaches a final state described
+  by `R_exec`.  The parser and printer are inside the specification; the
+  runtime may aborts on resource limits.
+- **Milawa**: if the kernel source is `core.lisp`, the top theorem is
+  instantiated at `input = MILAWA_CORE_TEXT ++ rest`, and every printed
+  `THEOREM` line is true in the formalized logic.  The kernel is related to the
+  logic through the deep-to-shallow certificate (`M_ev ==> MR_ev ==> R_ev`).
+
+## 0.2 Why step counts are not important
+
+They are not part of either Jitawa theorem.  `BC_ev_thm` uses the closure
+`iSTEP^*`; `jitawa_correctness_thm` is a Hoare triple with a `terminates`
+premise and `error \/ R_exec` postcondition.  Jitawa reports speed separately
+and never makes correctness depend on a clock.
+
+Our exact-clock K1 attempt was therefore a proof-shape mistake, not a semantic
+requirement.  A theorem of the form
+`machine-run (clock (gen x)) initial = value-state` is stronger than needed and
+forces an additivity/clock-arithmetic induction that Jitawa avoids entirely.
+The active plan uses relations:
+
+- source: `R_ev` returning implies a related bytecode state;
+- bytecode: `BC_ev` reaching a state implies a related machine configuration
+  under `STEP^*`;
+- top: `{init * terminates} code {error \/ R_exec result}`.
+
+If we later want clocks, they belong to a separate timing/regression layer and
+must not appear in the soundness theorem.
 
 ## 1. What went wrong
 
@@ -99,110 +155,158 @@ The important structural facts:
   instruction.
 - **The top-level proof is a composition**, not a trace.
 
-## 3. The new architecture
+## 3. The architecture (Jitawa's layers, with ACL2 and WASM)
+
+The Lisp runtime, which is the first deliverable:
 
 ```
-        Milawa core Lisp (core.lisp / translated core terms)
-                  |
-                  |  source semantics: MILAWA-STEP / MILAWA-RUN
-                  v
-        Lisp program
-                  |
-                  |  compile        (untrusted ACL2 function)
-                  v
-        IR  (compile-term / lower-program; J1/J2a)
-                  |
-                  |  code generation (untrusted ACL2 function)
-                  v
-        WASM module  (generated code + data layout)
-                  |
-                  |  compiler-correctness (one theorem, all programs)
-                  v
-        W3T::STEP / W3T::RUN  (the certified WASM 3.0 semantics)
+Lisp source text (core.lisp + input)
+        |
+        |  verified parser: next_sexp / sexp2term
+        v
+term / sexp
+        |
+        |  relational spec: R_ev / R_ap / R_exec  (ok flag, io)
+        v
+source evaluation relation
+        |
+        |  compiler (untrusted ACL2 function)
+        v
+bytecode (bc_inst_type) + BC_ev relation
+        |
+        |  BC_ev_thm: R_ev returning ==> BC_ev reaches a related state
+        v
+generated machine/W3T code (no hand-written module)
+        |
+        |  STEP^* / Hoare triple (relational, no clock)
+        v
+top runtime theorem:
+  {init * terminates} code {error \/ R_exec result}
 ```
 
-On top of that, the Milawa side is:
+Then the Milawa prover, which is the second deliverable:
 
 ```
 core.lisp text --> MILAWA-CORE-TEXT (logic constant)
       |
-      | milawa-init evaluated in the spec
+      |  M_ev / MR_ev / R_ev   (deep-to-shallow certificate)
       v
-initial function table --> checker soundness theorem
+kernel invariant --> proofp faithful --> milawa_main_soundness
       |
-      +--> runtime theorem (compiler + generated code + W3T)
-                 |
-                 v
-      milawa_soundness: accepted theorems are semantically true
+      |  compose with the runtime theorem at MILAWA_CORE_TEXT ++ input
+      v
+milawa_soundness_thm: every printed THEOREM line is semantically true
 ```
 
 ### Design principles
 
-1. **Spec first.**  The reference semantics is small and total; the
-   compiler and the generated code are judged against it.
-2. **One theorem per layer, one lemma per source construct.**  Compiler
-   correctness is parametric in the term; code-generation correctness is
-   parametric in the IR and the generated W3T state; run-level correctness is
-   an induction on the number of steps.  No proof is per program and no proof
-   is per opcode path.
-3. **The compiler is untrusted.**  Its output is checked by
-   `compile-correct` and the code-generation theorem; a wrong compiler fails
-   the theorem, not the users.
+1. **Spec first, and relational.**  The reference semantics is small and
+   relational; the compiler and generated code are judged against it.  The
+   specification owns parsing, evaluation, printing, and the `ok` flag.
+2. **One theorem per layer, parametric in the program/state.**  Compiler
+   correctness is one theorem (`BC_ev_thm`); machine correctness is one
+   relational simulation; the top is a composition.  No proof is per program
+   and no proof is per opcode path.
+3. **The compiler is untrusted.**  Its output is related to the source by the
+   correctness theorem; a wrong compiler fails the theorem, not the users.
 4. **The artifact is generated, not hand-written.**  The compiler emits the
-   WASM module from the IR, and the proof is about the emitted code.  There is
-   no hand-written WAT, no per-opcode hand proof, and no per-program trace.
-   The module is correct because it is the compiler's output, and the theorem
-   applies to every output.
-5. **Determinism supplies the answer.**  The top-level theorem is
-   existential/conditional (the spec's result exists); concrete evaluation
-   gives the value, as in the PoC.
-6. **The front door is a corollary.**  `poc` is a closed instance of the
-   general theorem, not a separate proof style.
+   machine/WASM code and the proof is about the emitted code.  There is no
+   hand-written WAT, no per-opcode hand proof, and no per-program trace.
+5. **Partial correctness with an error disjunct.**  The top theorem assumes
+   termination of the specification and concludes `error \/ R_exec result`, as
+   Jitawa does.  Resource exhaustion and runtime errors are allowed; they are
+   not false acceptance.
+6. **No exact clocks at the top.**  Correctness is stated with `STEP^*` and
+   relations, not step counts.  Clocks belong to a separate timing/regression
+   layer; they are never a premise of the soundness theorem.
+7. **The parser and printer are in the runtime.**  They are part of the
+   specification and the top theorem, not an untrusted shim.  Input is read
+   incrementally and output is printed eagerly.
+
+
 
 ## 4. Milestones
 
-### Corrected milestone track (2026-11-23)
+### Active track: L (lisp-runtime) then M (milawa-prover)
 
-The old J2b/J3 bullets below are retained as history.  They are off the proof
-path.  The active track is:
+The old K/J bullets below are retained as history.  They are not the active
+plan.  The active plan follows Jitawa's two directories.
 
-- **K0 -- source semantics and interface.**  Reuse `refinement/spec.lisp`,
-  `compile.lisp`, `machine.lisp`, and `milawa-lisp/eval.lisp`.  Define the
-  source language as the core Lisp that the Milawa front end already
-  produces, and fix the compiler interface: source -> IR -> W3T module
-  (generated code plus the data layout).
-- **K1 (partial) -- generated code for the arithmetic subset.**
-  `refinement/k1-arith.lisp` has the generator (`k1-gen`), the value
-  semantics (`k1-value`), and the proved engine step lemmas for `:const` and
-  `:binop add`, including the engine's result-goes-to-IS-then-VALS
-  behavior.  Closed generated programs `(+ 1 2)` and `(+ 1 (+ 2 3))` are
-  proved to run to their values.  The all-terms composition of
-  `machine-run` over `k1-gen` is the remaining K1 proof; the module is
-  emitted from the generator, no WAT.
-- **K2 -- the Lisp data model.**  Add conses, symbols, environments, and the
-  heap to the IR and the generator; prove the simulation for every source
-  construct.
-- **K3 -- the runtime.**  Add the function table, calls,
-  closures/lambdas, and the reader/REPL loop.  The compiled kernel and
-  `100.events` run on the generated module.
-- **K4 -- Milawa composition.**  Parse the core text, initialize the kernel,
-  prove `M_ev => MR_ev => R_ev`, and compose with the Milawa soundness
-  theorem at `MILAWA_CORE_TEXT ++ events`.
-- **K5 -- serialization and artifact.**  Emit the binary (or generated WAT)
-  from the proved module with a verified encoder or a checked decoding step;
-  run the generated artifact in a conforming engine and keep the corpus as a
-  regression suite.
+#### L -- the verified Lisp runtime
+
+- **L0 -- the specification (`lisp_semantics` analogue).**  Define the core
+  Lisp `term` syntax, `sexp2term`, the big-step `R_ev`/`R_evl`/`R_ap`
+  relations with an `ok` flag, the read-eval-print `R_exec` relation, and the
+  parser/printer specification.  Determinism (`R_ev`/`R_ap` functional) is a
+  separate theorem.  The existing `milawa-lisp` evaluator is a reference, not
+  the final spec shape.
+- **L1 -- the compiler and bytecode (`lisp_compiler` analogue).**  Define
+  bytecode syntax and the relational `BC_ev` semantics (stack, return stack,
+  function table, constants, I/O, `ok`).  Define the untrusted compiler.
+  Prove one theorem `BC_ev_thm`: if `R_ev` returns, `BC_ev` reaches a state
+  related by `BC_REFINES`.  No clocks.
+- **L2 -- the machine/WASM layer.**  Generate the bytecode/W3T instruction
+  stream from the compiler; define the heap/stack invariant; prove a
+  relational `STEP^*` or Hoare-style simulation from the generated code to
+  `BC_ev` (the `zBYTECODE_EVAL_THM` analogue).  The artifact is compiler
+  output; no hand-written WAT.  Emit a small instruction subset and prove the
+  per-instruction snippets once.
+- **L3 -- the top runtime theorem.**  Compose init code, parser, eval/compile,
+  print and the main loop into the `READ_EVAL_PRINT_LOOP_THM` /
+  `jitawa_correctness_thm` analogue:
+  `{init * terminates} code {error \/ R_exec result}`.  Parser/printer are
+  included; resource limits may abort.
+- **L4 -- the artifact and regression.**  Emit the binary/module from the
+  proved generator (verified encoder or checked decoding); run it in a
+  conforming engine; keep the corpus as a regression suite.  Exact clocks, if
+  wanted, live here for timing only.
+
+**Acceptance for L:** the top runtime theorem for the generated code,
+including parsing and printing, with no hand-written module and no exact
+clock in the correctness statement.
+
+#### M -- the Milawa prover
+
+- **M0 -- logic and soundness.**  Reuse the sibling `books/projects/milawa`
+  formalization/soundness proof (or its ACL2 port).  Formalize the logic,
+  `context_ok`, the inference rules, and the soundness theorem; the kernel is
+  not reproved from scratch.
+- **M1 -- kernel source and deep-to-shallow.**  Parse the actual `core.lisp`
+  text through the verified parser; build the initial state; prove
+  `M_ev ==> MR_ev ==> R_ev` (the `milawa_execScript` analogue).  Use a
+  shallow ACL2 embedding of the kernel with a certificate theorem, or a
+  proof-producing translation; the kernel source is not hand-transcribed
+  without a theorem.
+- **M2 -- the kernel invariant and checker.**  Prove the kernel invariant
+  (logical context, theorem list, arity table, current checker, runtime
+  function table) and `proofp` faithful to the inference rules
+  (`milawa_proofpScript` analogue).
+- **M3 -- the top soundness theorem.**  Compose M2 with the L3 runtime
+  theorem at `input = MILAWA_CORE_TEXT ++ rest`:
+  `milawa_soundness_thm`; every printed `THEOREM` line is semantically true.
+
+**Acceptance for M:** the Jitawa sentence with ACL2 in place of HOL4 and WASM
+in place of x86-64.
+
+#### Old K-track (history, not active)
+
+- **K0 -- source/IR interface.**  Superseded by L0/L1.
+- **K1 (partial, exact clocks) -- generated arithmetic code.**
+  `refinement/k1-arith.lisp` proves the engine step lemmas and closed runs.
+  It is kept as a regression for the generated instruction layer; the
+  exact-clock run theorem is not the L1 shape and is not extended.
+- **K2/K3/K4/K5** -- superseded by L2/L3/M0-M3.
 
 **Acceptance at the end:** the top-level theorem says that acceptance by the
 generated runtime implies truth, and the runtime is the compiler's output.  No
 hand-written WASM is on the proof path.
 
-### Status (2026-11-23)
+### Status (2026-11-23, history)
 
-> **Archive notice.**  The J2b/J3 per-opcode and host-loop results below are
-> historical.  They prove facts about a hand-written WAT module, which the
-> corrected goal (section 0) does not use.  Do not extend them.  The K-track
-> above is the active plan.
+> **Archive notice.**  The J0-J4/K-track status below is historical.  It
+> includes exact-clock and hand-written-module experiments that are not the
+> active plan.  The active plan is the L-track followed by the M-track above.
+> Do not extend the old J/K work except as regression.
 
 - **J0 (subset): done.**  `refinement/spec.lisp` has `variable-p`,
   `term-p`, and `r-ev` for `QUOTE`, variables, `IF`, and the twelve
@@ -477,9 +581,10 @@ implies semantic truth.
 
 | Asset | Decision |
 |---|---|
-| `milawa-lisp/values`, `eval`, `programs`, `metatheory`, `reachability` | **keep**; the reference Lisp semantics and exact-step relation |
-| `refinement/spec.lisp`, `compile.lisp`, `machine.lisp`, `top-run.lisp` | **keep**; source AST, compiler, IR semantics, and lowering groundwork |
-| `refinement/milawa2-data`, `milawa-check`, `milawa-events`, `milawa-run` | **keep**; kernel data, front end, and the model run used as the compiler's reference |
+| `milawa-lisp/values`, `eval`, `programs`, `metatheory`, `reachability` | **keep**; reference evaluator and exact-step relation, but the final L0 spec is the relational `R_ev`/`R_exec` shape |
+| `refinement/spec.lisp`, `compile.lisp`, `machine.lisp`, `top-run.lisp` | **keep as reference**; the tiny AST/IR is useful for L1, but L0/L1 must be extended to the full Lisp terms and a relational `BC_ev` |
+| `refinement/milawa2-data`, `milawa-check`, `milawa-events`, `milawa-run` | **keep as reference**; the front end and model run show the kernel works, but the final M1 needs a verified parser and a deep-to-shallow certificate |
+| `refinement/k1-arith.lisp` | **regression only**; the engine step lemmas and closed generated runs are useful, but the exact-clock top theorem is not the L shape |
 | `wasm-acl2` (`W3T`, engine) | **keep**; the ACL2 WASM 3.0 target semantics |
 | `wasm3/decode`, `module`, `state`, `memory`, `numerics` | **keep** as W3T/artifact infrastructure and decoding regression |
 | `wasm3/poc.lisp`, `POC.md`, `examples/*.mvm` | **keep** as front-door regression; not the proof |
@@ -490,68 +595,71 @@ implies semantic truth.
 | The 57-book `make check` | **keep green** while the new tree is built separately |
 
 The archive is not wasted: it is the concrete evidence for the W3T
-instruction library, the step clocks, and the traps recorded in `AGENTS.md`.
-It is simply not the proof the project will ship.
+instruction library, the generated-instruction step lemmas, and the traps
+recorded in `AGENTS.md`.  It is simply not the proof the project will ship.
 
 ## 6. Risks and mitigations
 
-- **The code generator is the long pole.**  We need a verified compiler
-  from the core Lisp/IR to W3T.  ACL2 has no ready-made WASM backend, so the
-  generator is our own.  Mitigation: reuse the J1 compiler and J2a machine as
-  the source IR; prove one simulation theorem per source construct; generate
-  the module from the function; start with the arithmetic/control slice.
-  The compiler need not be trusted: the theorem is the guarantee.
-- **The source language is larger than the J1 subset.**  The full kernel
-  needs `cons`/`car`/`cdr`, symbols, environments, closures, the function
-  table, and the heap.  Mitigation: extend the IR and generator one source
-  construct at a time; each extension is an induction over terms/IR, not a
-  new machine proof.
-- **The VM must grow.**  The current MVM has seven arithmetic/control
-  opcodes; the full kernel needs cons cells, a heap, and a function table.
-  Mitigation: J1 defines the bytecode VM for the subset first; the heap is
-  a data-structure refinement (Jitawa's `BC` state already carries the
-  function table and output), not a new machine.
+- **The compiler and bytecode semantics are the long pole.**  We need a
+  relational `BC_ev`, a compiler theorem, and a generated-code simulation
+  against W3T.  ACL2 has no ready-made WASM backend.  Mitigation: copy
+  Jitawa's layering; prove one theorem per layer, relational and parametric;
+  start with the L0/L1 subset and extend one source construct at a time.
+  The compiler need not be trusted: `BC_ev_thm` is the guarantee.
+- **The parser, printer, and heap are in scope.**  Jitawa's top theorem
+  includes parsing, printing, function definitions, I/O and resource limits,
+  and its runtime has a verified heap/GC.  Mitigation: make them part of L0
+  and L3 from the start; do not treat them as an untrusted shim.  An abort on
+  resource exhaustion is allowed by the error disjunct.
+- **The deep-to-shallow translation.**  Jitawa uses proof-producing
+  deep-to-shallow extraction.  ACL2 has no equivalent tool.  Mitigation:
+  write shallow ACL2 functions for the kernel and prove the certificate
+  theorem relating them to the deep `M_ev`/`MR_ev`/`R_ev` semantics, or
+  implement the small translation for the core language.  Do not hand-wave
+  the kernel transcription.
 - **The Milawa composition is large.**  Mitigation: reuse the sibling
   Milawa checker/soundness proof and Jitawa's `milawa_exec` pattern; the
-  runtime side only has to instantiate the general theorem at the core
-  text.
-- **The runtime loop.**  The host that reads the input and drives the
-  generated code is part of the trusted boundary unless it is generated and
-  proved.  Mitigation: generate the runtime/REPL loop as part of the module,
-  or prove the small host driver; do not hand-write a dispatcher.
+  runtime side only has to instantiate the top theorem at the core text.
+- **The runtime loop.**  The host that reads input and drives the generated
+  code is in the trusted boundary.  Mitigation: include the loop in the
+  specification and generate/prove it as part of the runtime, as Jitawa's
+  `exec` loop does; do not hand-write a dispatcher.
+- **Exact clocks are a trap.**  They are not needed for correctness and are
+  expensive to prove.  Mitigation: keep the correctness statement relational
+  (`STEP^*`, `BC_ev`, `R_exec`); put clocks in a separate timing layer.
 
 ## 7. Goal statement
 
-> **Goal (corrected):** A verified Lisp runtime for Milawa that is correct
-> by construction.  The source is the Milawa core Lisp with the existing
-> `MILAWA-STEP`/`MILAWA-RUN` semantics.  An untrusted ACL2 compiler emits
-> WASM from the IR; one correctness theorem, stated against the ACL2 `W3T`
-> model, says the generated code refines the Lisp semantics for every
-> program and state.  The generated runtime is composed with the Milawa
-> soundness theorem so that acceptance implies truth.  The shipped artifact
-> is the compiler's output; no hand-written WAT and no per-opcode path is on
-> the proof path.  The first slice is the arithmetic/control subset with a
-> generated-code PoC; the end is the Jitawa sentence for the generated
-> runtime.
+> **Goal (Jitawa-shaped):** A verified Lisp runtime, followed by the Milawa
+> prover.  The runtime is a small relational Lisp specification (`R_ev` /
+> `R_ap` / `R_exec`, parser and printer), an untrusted compiler with one
+> relational correctness theorem (`BC_ev_thm`), a generated machine/WASM
+> implementation proved by `STEP^*` / a Hoare-style simulation, and a top
+> partial-correctness theorem `{init * terminates} code {error \/ R_exec}`.
+> The prover formalizes Milawa's logic, proves it sound, proves the kernel
+> source faithful through a deep-to-shallow certificate, and composes at
+> `MILAWA_CORE_TEXT ++ input`.  The end is the Jitawa sentence with ACL2 in
+> place of HOL4 and WASM in place of x86-64.  No hand-written WAT and no
+> exact clock is on the proof path.
 
 ## 8. Immediate next actions
 
-1. **Stop** extending `const-*`, `chain-*`, `engine*`, `ops-*`, and the
-   hand-written `milawa-verified.wat`/`milawa-ops.wat`.  Leave them
-   certified as archive.
-2. Fix the compiler interface: source core Lisp -> IR
-   (`compile-term`/`lower-program`) -> a generated W3T module, with the
-   simulation relation stated once.
-3. Prove K1 for the arithmetic/control subset: W3T execution of the
-   generated code refines `machine-run`; emit the module from the generator
-   and make the PoC an instance.
-4. Extend to `cons`/`car`/`cdr`, symbols, environments, and the heap (K2),
-   then the function table, calls, and runtime loop (K3).
-5. Compile the kernel and run `100.events` on the generated module (K3);
-   then compose the Milawa soundness theorem (K4).
-6. Emit and check the binary artifact, and keep the corpus as the
-   regression suite (K5).
+1. **Stop** extending `const-*`, `chain-*`, `engine*`, `ops-*`, `top-host`,
+   the exact-clock `k1-arith` top theorem, and the hand-written
+   `milawa-verified.wat`/`milawa-ops.wat`.  Leave them certified as archive.
+2. **L0**: write the relational Lisp spec (`term`, `sexp2term`,
+   `R_ev`/`R_ap`/`R_exec`, parser/printer) in ACL2; use the existing
+   `milawa-lisp` as a reference, not as the final shape.
+3. **L1**: write the relational bytecode `BC_ev` and the compiler; prove
+   `BC_ev_thm` with `BC_REFINES`; no clocks.
+4. **L2**: generate machine/W3T code from the compiler; prove the
+   relational `STEP^*`/Hoare simulation and the heap invariant; no
+   hand-written module.
+5. **L3**: compose parser, evaluator, compiler, machine and printer into the
+   `READ_EVAL_PRINT_LOOP_THM` analogue.
+6. **M0-M3**: reuse the Milawa formalization; parse `core.lisp`; prove
+   `M_ev ==> MR_ev ==> R_ev`; prove the kernel invariant and the top
+   soundness theorem at `MILAWA_CORE_TEXT ++ input`.
 
-The first reviewable deliverable is K1: the generated-code theorem plus a
-PoC whose WASM module is produced by the compiler.  There is no hand-written
-module in that deliverable.
+The first reviewable deliverable is L0+L1: the relational Lisp spec and the
+compiler theorem, with no exact clocks and no hand-written machine module.
