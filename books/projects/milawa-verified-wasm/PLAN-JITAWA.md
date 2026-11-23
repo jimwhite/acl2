@@ -333,7 +333,12 @@ spec/machine/host answers and the dispatcher value.
 The general term-to-machine composition (`machine-run` of a lowered
 `compile-term` equals `bc-eval`/`r-ev` for every term, the J1b lowering
 theorem) is the remaining run-level piece; it is independent of the host
-loop and the front-door instances above.
+loop and the front-door instances above.  `refinement/top-run.lisp` has the
+verified lowering groundwork for it: an untrusted lowering whose labels are
+the absolute pcs of their label instructions, the instruction count, the
+position invariant (`positional-from`: a label instruction's value is its
+pc), and the `label-pc` resolution theorem for that code.  The run-level
+induction over that lowering is the next book.
 
 - Prove the host loop: `n` calls to the exported `STEP`, at the
   opcode-determined clocks, equal `bc-run` for `n` steps
