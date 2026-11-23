@@ -145,7 +145,7 @@ initial function table --> checker soundness theorem
   `refinement/ops-state.lisp` pins it; `refinement/ops.lisp` has the checked
   table, the i32 model, per-opcode dispatcher theorems, and value-level
   agreement with `machine-step`.  0.5 s.
-- **J2b-2 W3T link: op_const done, other opcodes partial.**
+- **J2b-2 W3T link: op_const/add/sub/lt done, ifz/jmp/label partial.**
   `refinement/ops-w3t.lisp` proves the frame/label `local.get`, the
   label/frame value returns, the frame-around-label-around-value step, the
   three-step `ir-op-const-body`, the value-prefixed
@@ -178,8 +178,15 @@ initial function table --> checker soundness theorem
   `acl2::cancel-mod-+-basic` from `ihs/quotient-remainder-lemmas`), the sub
   call entry and body steps; `refinement/ops-sub-label.lisp` proves
   `ir-op-sub-body` and `ir-op-sub-call-result` (same conditional pattern,
-  side condition `(unsigned-byte-p 32 (loghead 32 (- v1 v2)))`).  The
-  `lt`/`ifz`/`jmp`/`label` bodies and the `STEP` dispatcher remain.
+  side condition `(unsigned-byte-p 32 (loghead 32 (- v1 v2)))`).  For
+  `op_lt` (function 3), `refinement/ops-lt-body.lisp` proves the signed
+  comparison bridge
+  `$ILT_ 32 (:s) v1 v2 = (if (< v1 v2) 1 0)` under 31-bit operands (and
+  `unsigned-byte-p 31 => unsigned-byte-p 32`), the call entry, the three
+  body steps, and `refinement/ops-lt-label.lisp` proves
+  `ir-op-lt-body`/`ir-op-lt-call-result`.  The value is
+  `(if (< v1 v2) 1 0)`; the theorems carry the (trivial) 32-bit value
+  bound.  The `ifz`/`jmp`/`label` bodies and the `STEP` dispatcher remain.
 - **Design finding.**  A CEK-style flat machine with a fuel/continuation
   run proof is a slog (600 s, still diverging in the primitive case); J2a
   avoids it by proving the per-opcode layer and the closed pass, leaving

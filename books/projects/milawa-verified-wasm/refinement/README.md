@@ -95,7 +95,13 @@ and instantiates them at the explicit inner terms, giving
 `(rem (- (+ 2^32 i1) i2) 2^32) = (loghead 32 (- i1 i2))` using
 `rem-positive-as-mod`, `loghead-32-as-mod`, and the non-local
 `acl2::cancel-mod-+-basic`; `ops-sub-label.lisp` proves `ir-op-sub-body` and
-`ir-op-sub-call-result`.  The `lt`/`ifz`/`jmp`/`label` bodies and the `STEP`
+`ir-op-sub-call-result`.  For `op_lt` (function 3), `ops-lt-body.lisp`
+proves the signed comparison bridge
+`$ILT_ 32 (:s) v1 v2 = (if (< v1 v2) 1 0)` (under 31-bit operands, via
+`$SIGNED_`/`$BOOL`, plus `unsigned-byte-p 31 => unsigned-byte-p 32`), the
+call entry and three body steps; `ops-lt-label.lisp` proves
+`ir-op-lt-body` and `ir-op-lt-call-result` with value
+`(if (< v1 v2) 1 0)`.  The `ifz`/`jmp`/`label` bodies and the `STEP`
 dispatcher remain.  This is not yet the plan's full J2 acceptance.
 
 ## Design finding (2026-11-23)
