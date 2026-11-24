@@ -43,6 +43,33 @@
                   (l0-read-list rest (1- (nfix fuel)) nil)))
   :hints (("Goal" :in-theory (enable l0-read-sexp))))
 
+(defthm l0-print-atom-chars-first-safe
+  (implies (l0-printable-atom-p x)
+           (and (not (l0-whitespace-char-p
+                      (car (l0-print-atom-chars x))))
+                (not (eql (car (l0-print-atom-chars x))
+                          *l0-semicolon*))))
+  :hints (("Goal" :cases ((natp x) (l0-raw-symbol-p x) (l0-pipe-symbol-p x))
+                  :in-theory (enable l0-printable-atom-p
+                                     l0-print-atom-chars
+                                     l0-symbol-print-chars
+                                     l0-raw-symbol-p
+                                     l0-pipe-symbol-p
+                                     l0-digit-char-not-special
+                                     l0-symbol-char-not-special
+                                     l0-whitespace-char-p))))
+
+(defthm l0-skip-whitespace-of-atom-chars
+  (implies (l0-printable-atom-p a)
+           (equal (l0-skip-whitespace
+                   (append (l0-print-atom-chars a) suffix))
+                  (append (l0-print-atom-chars a) suffix)))
+  :hints (("Goal" :use ((:instance l0-print-atom-chars-first-safe (x a))
+                        (:instance l0-print-atom-chars-first-not-special (x a))
+                        (:instance l0-skip-whitespace-of-safe-append
+                                   (chars (l0-print-atom-chars a))))
+                  :in-theory (enable l0-skip-whitespace-of-safe-append))))
+
 (defthm l0-read-list-after-print-atom
   (implies (and (l0-printable-atom-p a)
                 (l0-printable-list-p d)
