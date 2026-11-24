@@ -76,6 +76,25 @@
       (l0-read-sexp chars fuel nil)
     (l0-read-list chars fuel nil)))
 
+(defun l0-vl-ind (flag x chars rest fuel)
+  (declare (xargs :measure (acl2-count x))
+           (ignore chars flag)
+           (irrelevant fuel))
+  (if (consp x)
+      (let ((rest1 (append (l0-print-tail (cdr x))
+                           (cons *l0-rparen* rest))))
+        (list (l0-vl-ind :value
+                         (car x)
+                         (append (l0-print-chars (car x)) rest1)
+                         rest1
+                         (1- (nfix fuel)))
+              (l0-vl-ind :list
+                         (cdr x)
+                         rest1
+                         rest
+                         (1- (nfix fuel)))))
+    nil))
+
 (defthm l0-vl-printed-inverse
   (implies (and (l0-vl-printed flag x chars rest fuel)
                 (integerp fuel)
@@ -88,7 +107,7 @@
                        rest)
                 (equal (mv-nth 2 (l0-vl-read flag chars fuel))
                        nil)))
-  :hints (("Goal" :induct (l0-vl-printed flag x chars rest fuel)
+  :hints (("Goal" :induct (l0-vl-ind flag x chars rest fuel)
                   :in-theory (disable l0-read-sexp
                                       l0-read-list
                                       l0-context
