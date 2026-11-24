@@ -43,6 +43,84 @@
                   (l0-read-list rest (1- (nfix fuel)) nil)))
   :hints (("Goal" :in-theory (enable l0-read-sexp))))
 
+(defthm l0-read-list-after-print-atom
+  (implies (and (l0-printable-atom-p a)
+                (l0-printable-list-p d)
+                (integerp fuel)
+                (<= 20 (1- fuel))
+                (equal (mv-nth 0
+                               (l0-read-list
+                                (l0-skip-whitespace
+                                 (append (l0-print-tail d)
+                                         (append (list *l0-rparen*)
+                                                 (l0-context stack suffix))))
+                                (1- (nfix fuel))
+                                nil))
+                       d)
+                (equal (mv-nth 1
+                               (l0-read-list
+                                (l0-skip-whitespace
+                                 (append (l0-print-tail d)
+                                         (append (list *l0-rparen*)
+                                                 (l0-context stack suffix))))
+                                (1- (nfix fuel))
+                                nil))
+                       (l0-context stack suffix))
+                (equal (mv-nth 2
+                               (l0-read-list
+                                (l0-skip-whitespace
+                                 (append (l0-print-tail d)
+                                         (append (list *l0-rparen*)
+                                                 (l0-context stack suffix))))
+                                (1- (nfix fuel))
+                                nil))
+                       nil))
+           (and (equal (mv-nth 0
+                               (l0-read-list
+                                (append (l0-print-atom-chars a)
+                                        (append (l0-print-tail d)
+                                                (append (list *l0-rparen*)
+                                                        (l0-context stack suffix))))
+                                fuel nil))
+                       (cons a d))
+                (equal (mv-nth 1
+                               (l0-read-list
+                                (append (l0-print-atom-chars a)
+                                        (append (l0-print-tail d)
+                                                (append (list *l0-rparen*)
+                                                        (l0-context stack suffix))))
+                                fuel nil))
+                       (l0-context stack suffix))
+                (equal (mv-nth 2
+                               (l0-read-list
+                                (append (l0-print-atom-chars a)
+                                        (append (l0-print-tail d)
+                                                (append (list *l0-rparen*)
+                                                        (l0-context stack suffix))))
+                                fuel nil))
+                       nil)))
+  :hints (("Goal" :do-not-induct t
+                  :use (l0-read-list-after-car-step
+                        (:instance l0-read-sexp-atom-append-0
+                                   (x a)
+                                   (suffix (append (l0-print-tail d)
+                                                   (append (list *l0-rparen*)
+                                                           (l0-context stack suffix))))
+                                   (fuel (1- (nfix fuel))))
+                        (:instance l0-read-sexp-atom-append-1
+                                   (x a)
+                                   (suffix (append (l0-print-tail d)
+                                                   (append (list *l0-rparen*)
+                                                           (l0-context stack suffix))))
+                                   (fuel (1- (nfix fuel))))
+                        (:instance l0-read-sexp-atom-append-2
+                                   (x a)
+                                   (suffix (append (l0-print-tail d)
+                                                   (append (list *l0-rparen*)
+                                                           (l0-context stack suffix))))
+                                   (fuel (1- (nfix fuel)))))
+                  :in-theory (enable l0-printable-value-p-when-list))))
+
 (defthm l0-read-inverse-cons
   (and
    (implies (and (consp x)
